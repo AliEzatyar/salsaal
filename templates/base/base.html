@@ -36,7 +36,11 @@
 
 </head>
 <body>
-    {%include 'header.html'%}
+    {%include 'base/navbar.html'%}
     {%block body%}
     {%endblock%}
+    {%include 'base/footer.html'%}
+    <!-- Modal Popup End -->
+    <script src="{%static 'js/scripts.js'%}"></script>
+    <script src="{%static 'js/functions.js'%}"></script>
 </body>
