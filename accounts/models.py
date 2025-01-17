@@ -4,6 +4,7 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 SHOP = 1
 CUSTOMER = 2
 
+
 # Create your models here.
 class UserManager(BaseUserManager):
     def create_user(
@@ -87,21 +88,30 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_lable: str):
         return True
 
+    def get_role(self):
+        role = "Customer"
+        if self.role == 1:
+            role = "Shop"
+        return role
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
-        "accounts.User", on_delete=models.CASCADE, blank=True, null=True,related_name="profile"
+        "accounts.User",
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="profile",
     )
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     cover = models.ImageField(upload_to="users/covers/", blank=True, null=True)
-    address1 = models.CharField(blank=True,null=True,max_length=60)
-    address2 = models.CharField(blank=True, null=True,max_length=60)
-    city = models.CharField(max_length=15,blank=True,null=True)
-    lattitude = models.CharField(max_length=20,blank=True,null=True)
-    longtitiude = models.FloatField(max_length=20,blank=True,null=True)
+    address1 = models.CharField(blank=True, null=True, max_length=60)
+    address2 = models.CharField(blank=True, null=True, max_length=60)
+    city = models.CharField(max_length=15, blank=True, null=True)
+    lattitude = models.CharField(max_length=20, blank=True, null=True)
+    longtitiude = models.FloatField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-
 
     def __str__(self):
         return str(self.user)
