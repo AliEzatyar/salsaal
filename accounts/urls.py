@@ -5,8 +5,9 @@ from  rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshVie
 app_name = 'accounts'
 
 urlpatterns = [
-    path("register-resturant", views.register_rest, name="reg_res"),
+    path("register-vendor", views.register_vendor, name="reg_vend"),
     path("register", views.register_user, name="reg_user"),
+    
     # rest
     path("api/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("api/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),

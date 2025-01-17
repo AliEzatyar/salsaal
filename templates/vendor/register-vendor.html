@@ -7,11 +7,11 @@
 						<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 ">
 							<div class="user-dashboard loader-holder">
 								<div class="user-holder">
-                            <h4 class="text-center" style="margin-bottom: 0;">WELCOME TO FOODONLINE</h4>
-                            <p class="text-center">Please fill this form to get yourself onboarded in the foodOnline marketplace.</p>
+                            <h4 class="text-center" style="margin-bottom: 0;">WELCOME TO SALSAAL MARKETPLACE</h4>
+                            <p class="text-center">Fill The Following Form To Join SALSAAL.</p>
                             <hr>
                             <div id="restaurant-sets-holder">
-                                <form class="form-fields-set foodbakery-dev-restaurant-form" method="post" action="{%url 'accounts:reg_res'%}">
+                                <form class="form-fields-set foodbakery-dev-restaurant-form" method="post" enctype="multipart/form-data"  action="{%url 'accounts:reg_vend'%}">
                                     <ul class="register-add-restaurant-tab-container restaurant-information-tab-container">
                                         <li>
                                             <div class="row">
@@ -21,32 +21,32 @@
                                                             <li>
                                                                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
                                                                     <div class="field-holder">
-                                                                        <label>First name</label>{{form.first_name}}
+                                                                        <label>First name</label>{{u_form.first_name}}
                                                                     </div>
                                                                 </div>
                                                                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
                                                                     <div class="field-holder">
-                                                                        <label>Last name</label>{{form.last_name}}
+                                                                        <label>Last name</label>{{u_form.last_name}}
 																	</div>
                                                                 </div>
                                                                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
                                                                     <div class="field-holder">
-                                                                        <label>Restaurant name </label>{{form.username}}
+                                                                        <label>username </label>{{u_form.username}}
 																	</div>
                                                                 </div>
                                                                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
                                                                     <div class="field-holder">
-                                                                        <label>Restaurant phone</label>{{form.phone_number}}
+                                                                        <label>Email Address</label>{{u_form.email}}
 																	</div>
                                                                 </div>
                                                                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
                                                                     <div class="field-holder">
-                                                                        <label>Email Address</label>{{form.email}}
+                                                                        <label>Shop Name</label>{{v_form.vendor_name}}
 																	</div>
                                                                 </div>
-                                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+																<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
                                                                     <div class="field-holder">
-                                                                        <label>Username</label>{{form.username}}
+                                                                        <label>License</label>{{v_form.vendor_license}}
 																	</div>
                                                                 </div>
                                                             </li>
@@ -54,13 +54,13 @@
                                                             <li>
                                                                 <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
                                                                     <div class="field-holder">
-                                                                        <label>Password</label>{{form.password}}
+                                                                        <label>Password</label>{{u_form.password}}
 																	</div>
                                                                 </div>
                                                                 <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
                                                                     <div class="field-holder">
                                                                         <label>Confirm Password</label>
-                                                                        {{form.confirm}}
+                                                                        {{u_form.confirm}}
 																	</div>
                                                                 </div>
                                                             </li>
@@ -70,6 +70,24 @@
                                             </div>
                                         </li>
                                         <li>
+											<ul>
+                                                {%for field in u_form%}
+                                                    {%if field.errors%}
+                                                        {%for err in field.errors%} 
+                                                            <li class="mb-0" style="color: red;">{{err}}</li>
+                                                        {%endfor%}
+                                                    {%endif%}
+                                                {%endfor%}
+                                                <li style="color: red;">{{u_form.non_field_errors}}</li>
+												{%for field in v_form%}
+                                                    {%if field.errors%}
+                                                        {%for err in field.errors%} 
+                                                            <li class="mb-0" style="color: red;">{{err}}</li>
+                                                        {%endfor%}
+                                                    {%endif%}
+                                                {%endfor%}
+                                                <li style="color: red;">{{v_form.non_field_errors}}</li>
+                                            </ul>
                                             <div class="row">
                                                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                                                     <div class="field-holder">
