@@ -4,9 +4,9 @@ from accounts.models import User, UserProfile
 
 class Vendor(models.Model):
     user = models.OneToOneField(User,on_delete=models.CASCADE,related_name="vendor")
-    user_profile = models.OneToOneField(UserProfile,on_delete=models.CASCADE,related_name="vendor")
-    vendor_name = models.CharField(max_length=60)
-    vendor_license = models.ImageField(upload_to="vendor/license/")
+    user_profile = models.OneToOneField(UserProfile,on_delete=models.CASCADE,related_name="vendor",blank=True,null=True)
+    vendor_name = models.CharField(max_length=60,unique=True)
+    vendor_license = models.ImageField(upload_to="vendor/license/",blank=True,null=True)
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
