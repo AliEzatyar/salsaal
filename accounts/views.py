@@ -9,7 +9,6 @@ from django.db.transaction import atomic
 from .utils import send_email
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_bytes
 
 
 # utility funciton
@@ -114,17 +113,20 @@ def register_user(request):
 
 
 def activate_user_account(request, uidb64:bytes, token):
-    user_id = urlsafe_base64_decode(uidb64)
-    user = User.objects.filter(pk=user_id).first()
-    check = default_token_generator.check_token(user,token)
-    if check:
+    try:
+        user_id = urlsafe_base64_decode(uidb64)
+        user = User.objects.filter(pk=user_id).first()
+    except (TypeError,ValueError,OverflowError):
+        user = None
+    if user and default_token_generator.check_token(user,token):
         user.is_active = True
         user.save()
         messages.success(request, "Email Verification Successfull!")
         auth.login(request,user)
         return redirect("accounts:dashboard")
-    messages.error(request, "Email Verification Unsuccessfull!")
-    return redirect("main:home")
+    messages.error(request, "Token Invalid!")
+
+    return render(request, "accounts/verification_invalid.html")
 
 
 def login(request):
