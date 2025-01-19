@@ -6,6 +6,10 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import User, CUSTOMER, SHOP
 from .forms import UserRegForm, VendorRegForm
 from django.db.transaction import atomic
+from .utils import send_email
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_bytes
 
 
 # utility funciton
@@ -35,11 +39,13 @@ def register_vendor(request):
             user.role = SHOP
             with atomic():
                 user.save()
+                # sending the email
                 # registering the shop
                 vendor = v_form.save(commit=False)
                 vendor.user = user
                 vendor.user_profile = user.profile
                 vendor.save()
+                send_email(request, user)
                 messages.success(
                     request,
                     message="Your details were saved and we are verifiying your documents, answer will be sent through the email you provided us.",
@@ -80,6 +86,8 @@ def register_user(request):
             user.role = CUSTOMER
             user.set_password(cd["password"])
             user.save()
+            send_email(request, user)
+
             # everything successfull
             messages.success(
                 request, message="Your account has been created successfully!"
@@ -99,10 +107,24 @@ def register_user(request):
 
     # GET
     if request.user.is_authenticated:
-        return redirect("accounts:user_dashboard")
+        return redirect("accounts:dashboard")
 
     reg_form = UserRegForm()
     return render(request, "customer/register_user.html", {"form": reg_form})
+
+
+def activate_user_account(request, uidb64:bytes, token):
+    user_id = urlsafe_base64_decode(uidb64)
+    user = User.objects.filter(pk=user_id).first()
+    check = default_token_generator.check_token(user,token)
+    if check:
+        user.is_active = True
+        user.save()
+        messages.success(request, "Email Verification Successfull!")
+        auth.login(request,user)
+        return redirect("accounts:dashboard")
+    messages.error(request, "Email Verification Unsuccessfull!")
+    return redirect("main:home")
 
 
 def login(request):

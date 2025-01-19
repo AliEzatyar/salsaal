@@ -7,6 +7,7 @@ app_name = 'accounts'
 urlpatterns = [
     path("register-vendor", views.register_vendor, name="reg_vend"),
     path("register", views.register_user, name="reg_user"),
+    path("activate-account/<uidb64>/<token>/",views.activate_user_account,name="activate"),
     # authentication
     path("login/", views.login, name="login"),
     path("logout/", views.logout, name="logout"),
