@@ -6,9 +6,13 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import User, CUSTOMER, SHOP
 from .forms import UserRegForm, VendorRegForm
 from django.db.transaction import atomic
+from django.utils.encoding import force_str
+
 from .utils import send_email
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
+from .utils import send_forgot_email
+from django.views.decorators.http import require_POST
 
 
 # utility funciton
@@ -112,21 +116,71 @@ def register_user(request):
     return render(request, "customer/register_user.html", {"form": reg_form})
 
 
-def activate_user_account(request, uidb64:bytes, token):
+# email verification
+def activate_user_account(request, uidb64: bytes, token):
     try:
         user_id = urlsafe_base64_decode(uidb64)
         user = User.objects.filter(pk=user_id).first()
-    except (TypeError,ValueError,OverflowError):
+    except (TypeError, ValueError, OverflowError):
         user = None
-    if user and default_token_generator.check_token(user,token):
+    if user and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
         messages.success(request, "Email Verification Successfull!")
-        auth.login(request,user)
+        auth.login(request, user)
         return redirect("accounts:dashboard")
     messages.error(request, "Token Invalid!")
 
     return render(request, "accounts/verification_invalid.html")
+
+
+# 1
+def forgot_password(request):
+    if request.method == "POST":
+        email = request.POST.get("email", None)
+        if email:
+            user = User.objects.filter(email=email).first()
+            if user:
+                send_forgot_email(request, user)
+                return render(request, "accounts/password_reset_verification_sent.html")
+        return render(request, "accounts/forgot_password.html", {"no_email": True})
+    return render(request, "accounts/forgot_password.html")
+
+
+# 2
+def reset_password_validate(request, uidb64, token):
+    try:
+        user_id = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.filter(pk=user_id).first()
+    except (TypeError, ValueError, OverflowError):
+        user = None
+    if user and default_token_generator.check_token(user, token):
+        request.session["uid"] = user_id
+        return redirect("accounts:reset_password")
+
+    messages.error(request, "Token Invalid!")
+    return render(request, "accounts/verification_invalid.html")
+
+
+# 3
+def reset_password(request):
+    error = False  # two errors possible
+    if request.method == "POST":
+        # getting the user by its id saved in session
+        user = User.objects.filter(pk=request.session.get("uid", None)).first()
+        new_password = request.POST["password"]
+        new_password_confirm = request.POST["password_confirm"]
+        # if user found, set the new password for it
+        if user:
+            if new_password == new_password_confirm:
+                user.set_password(new_password)
+                user.save()
+                request.session["uid"] = None
+                return redirect("accounts:login")
+            error = "Passwords didn't match!"
+        else:
+            error = "Password Reset Not Allowed"
+    return render(request, "accounts/reset_password.html", {"error": error})
 
 
 def login(request):
