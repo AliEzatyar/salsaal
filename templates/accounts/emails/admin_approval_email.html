@@ -1,0 +1,7 @@
+{% autoescape off %}
+Hi {{ user.username }},{% if is_approved %}
+    Congratulations! Your shop is approved by our team. --SALSAAL Ecommrece
+    {% else %}
+    We are sorry, your shop is not approved by our team. For more info, mail to support@salsaal.com
+  {% endif %}With Regards!
+{% endautoescape %}
