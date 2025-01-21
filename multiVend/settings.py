@@ -114,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_REDIRECT_URL = "accounts:user_dashboard"
 LOGIN_URL = "accounts:login"
-
+PASSWORD_RESET_TIMEOUT_DAYS = 1
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 

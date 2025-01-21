@@ -7,10 +7,10 @@ from accounts.models import User, CUSTOMER, SHOP
 from .forms import UserRegForm, VendorRegForm
 from django.db.transaction import atomic
 from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 
 from .utils import send_email
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_decode
 from .utils import send_forgot_email
 
 

@@ -23,6 +23,7 @@ class UserCreationSerializer(ser.ModelSerializer):
         user.set_password(cd["password"])
         user.role = CUSTOMER
         user.save()
+        
         return user
 
 

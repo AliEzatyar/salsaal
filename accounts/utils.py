@@ -6,7 +6,10 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 
 
-def send_email(request, user):
+def send_email(request, user): 
+    """
+        sends an email to verify the new registered user
+    """
     current_site = get_current_site(request)
     mail_title = "Verify You Email"
     mail_body = render_to_string(
@@ -23,7 +26,7 @@ def send_email(request, user):
     mail.send()
 
 
-def send_forgot_email(request, user):
+def send_forgot_email(request, user,template=None):
     current_site = get_current_site(request)
     mail_title = "Reset Your Password"
     mail_body = render_to_string(
