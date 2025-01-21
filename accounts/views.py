@@ -12,14 +12,7 @@ from .utils import send_email
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from .utils import send_forgot_email
-from django.views.decorators.http import require_POST
 
-
-# utility funciton
-def vendor_tester(user):
-    if user.role != 1:
-        raise PermissionDenied
-    return True
 
 
 # utility funciton
@@ -214,7 +207,7 @@ def login(request):
 @login_required
 def logout(request):
     auth.logout(request)
-    messages.info(request, "You have logged out!")
+    messages.error(request, "You have logged out!")
     return redirect("main:home")
 
 
@@ -225,13 +218,9 @@ def dashboard(request):
     elif request.user.get_role() == "Customer":
         return redirect("accounts:customer_dashboard")
     elif request.user.get_role() == "Shop":
-        return redirect("accounts:vend_dashboard")
+        return redirect("vendor:vendor_dashboard")
 
 
-@login_required
-@user_passes_test(vendor_tester)
-def vend_dashboard(request):
-    return render(request, "vendor/vend_dashboard.html")
 
 
 @login_required

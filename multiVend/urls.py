@@ -20,12 +20,11 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('',include('main.urls',namespace="home")),
-    path('accounts/',include('accounts.urls',namespace="accounts")),
+    path("admin/", admin.site.urls),
+    path("", include("main.urls", namespace="home")),
+    path("accounts/", include("accounts.urls", namespace="accounts")),
+    path("vendor/", include("vendor.urls", namespace="vendor")),
 ]
 # in production, NGINX does it, but in debug mode, django should do
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL,document_root =settings.MEDIA_ROOT)
-
-

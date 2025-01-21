@@ -26,7 +26,6 @@ urlpatterns = [
     path("logout/", views.logout, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("customer-dashboard/", views.customer_dashboard, name="customer_dashboard"),
-    path("vendor-dashboard/", views.vend_dashboard, name="vend_dashboard"),
     # rest
     path("api/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("api/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
@@ -38,4 +37,5 @@ urlpatterns = [
         api_views.UpdateDeleteRetriveUser.as_view(),
         name="user_detail",
     ),
+    # vendor app urls
 ]

@@ -33,16 +33,19 @@
       color: #515151 !important;
     }
   </style>
-  {%block head%}
-  {%endblock%}
+  {% block head %}
 
+  {% endblock %}
 </head>
 <body>
-    {%include 'base/navbar.html'%}
-    {%block body%}
-    {%endblock%}
-    {%include 'base/footer.html'%}
-    <!-- Modal Popup End -->
-    <script src="{%static 'js/scripts.js'%}"></script>
-    <script src="{%static 'js/functions.js'%}"></script>
+  {% include 'base/navbar.html' %}
+  {% include 'base/alerts.html' %}
+  {% block body %}
+  
+  {% endblock %}
+
+  {% include 'base/footer.html' %}
+  <!-- Modal Popup End -->
+  <script src="{% static 'js/scripts.js' %}"></script>
+  <script src="{% static 'js/functions.js' %}"></script>
 </body>

@@ -9,6 +9,9 @@
     bottom: 100%;
     right: 20px;
     animation-name: show-up;
-    animation-duration: 5s;
-
+    animation-duration: 8s;
+    z-index: 100;
+    width: 100%;
+    padding: 4px 6px;
 }
+
