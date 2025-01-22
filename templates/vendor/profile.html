@@ -5,22 +5,22 @@
   <div class="wrapper">
     <!-- Main Section Start -->
     <div class="main-section">
-      {% include "vendor/vendor_cover.html" %}
+      {% include 'vendor/vendor_cover.html' %}
       <!-- Cover Image Section End -->
 
-      <div class="page-section account-header buyer-logged-in">
+      <div class="page-section account-header buyer-logged-in" style="padding-top: 0;">
         <div class="container">
           <div class="row">
             <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-            <!-- Sidebar -->
-            {% include 'base/v_sidebar.html' %}
-          </div>
+              <!-- Sidebar -->
+              {% include 'base/v_sidebar.html' %}
+            </div>
             <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
               <div class="user-dashboard loader-holder">
                 <div class="user-holder">
                   <h2>Manage Your Shop</h2>
                   <!-- My Restaurants Form Start -->
-                  <form action="restaurant-location.html">
+                  <form action="{% url 'vendor:vendor_profile_edit' %}" method="post" enctype="multipart/form-data">
                     <div class="form-fields-set">
                       <ul>
                         <li>
@@ -32,7 +32,7 @@
                                     <li class="gal-img">
                                       <div class="drag-list">
                                         <div class="item-thumb">
-                                          <img class="thumbnail" src="assets/extra-images/listing-logo18.png" alt="" />
+                                          <img src="{{ profile.picture.url }}" alt="" />
                                         </div>
                                       </div>
                                     </li>
@@ -40,9 +40,8 @@
                                 </div>
                                 <div class="text-holder">
                                   <label>Update Logo</label>
-                                  <div class="upload-gallery">
-                                    <input type="file" class="btn btn-info" name="profile_picture" />
-                                  </div>
+                                  <div class="upload-gallery">{{ profile_form.picture }}</div>
+                                  <label class="text-danger">{{ profile_form.picture.errors }}</label>
                                 </div>
                               </div>
                             </div>
@@ -53,7 +52,7 @@
                                     <li class="gal-img">
                                       <div class="drag-list">
                                         <div class="item-thumb">
-                                          <img class="thumbnail" src="assets/extra-images/cover-photo01.jpg" alt="" />
+                                          <img class="thumbnail" src="{{ profile.cover.url }}" alt="" />
                                         </div>
                                       </div>
                                     </li>
@@ -61,9 +60,8 @@
                                 </div>
                                 <div class="text-holder">
                                   <label>Update Cover Photo</label>
-                                  <div class="upload-gallery">
-                                    <input type="file" class="btn btn-info" name="cover_photo" />
-                                  </div>
+                                  <div class="upload-gallery">{{ profile_form.cover }}</div>
+                                  <label class="text-danger">{{ profile_form.picture.errors }}</label>
                                 </div>
                               </div>
                             </div>
@@ -74,7 +72,7 @@
                                     <li class="gal-img">
                                       <div class="drag-list">
                                         <div class="item-thumb">
-                                          <img class="thumbnail" src="assets/extra-images/cover-photo01.jpg" alt="" />
+                                          <img class="thumbnail" src="{{ vendor.vendor_license.url }}" alt="" />
                                         </div>
                                       </div>
                                     </li>
@@ -82,16 +80,44 @@
                                 </div>
                                 <div class="text-holder">
                                   <label>Update License</label>
-                                  <div class="upload-gallery">
-                                    <input type="file" class="btn btn-info" name="license" />
-                                  </div>
+                                  <div class="upload-gallery">{{ vendor_form.vendor_license }}</div>
+                                  <label class="text-danger">{{ profile_form.picture.errors }}</label>
                                 </div>
                               </div>
                             </div>
                             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                               <div class="field-holder">
                                 <label>Shop name *</label>
-                                <input type="text" placeholder="i.e Pizza Hut" class="foodbakery-dev-req-field" />
+                                {{ vendor_form.vendor_name }}
+                              </div>
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                              <div class="field-holder">
+                                <label>Address *</label>
+                                {{ profile_form.address }}
+                                <small class="text-muted float-right">Powerd by Google</small>
+                              </div>
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                              <div class="field-holder">
+                                <label>City *</label>
+                                {{ profile_form.city }}
+                              </div>
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                              <div class="field-holder">
+                                <label>lattitude</label>
+                                {{ profile_form.lattitude }}
+                              </div>
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                              <div class="field-holder">
+                                <label>longtitiude</label>
+                                {{ profile_form.longtitiude }}
                               </div>
                             </div>
                           </div>
@@ -99,12 +125,13 @@
                       </ul>
                       <div>
                         <div class="field-holder">
-                          <div class="payment-holder input-button-loader">
-                            <input class="update-restaurant" type="submit" value="Update Restaurant" onclick="location.href='restaurant-location.html';" />
+                          <div class="">
+                            <input class="btn btn-primary w-100" type="submit" value="Save Changes" />
                           </div>
                         </div>
                       </div>
                     </div>
+                    {% csrf_token %}
                   </form>
                   <!-- My Restaurants Form End -->
                 </div>
