@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from accounts.models import UserProfile
+from catalog.models import Category, Product
 from vendor.forms import VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm
@@ -44,7 +45,6 @@ def vendor_profile(request):
             {
                 "vendor_form": vendor_form,
                 "profile_form": vendor_user_profile_form,
-                "vendor": vendor,
                 "profile": vendor_user_profile,
             },
         )
@@ -60,7 +60,6 @@ def vendor_profile(request):
                 {
                     "vendor_form": vendor_form,
                     "profile_form": vendor_user_profile_form,
-                    "vendor": vendor,
                     "profile": vendor_user_profile,
                 },
             )
@@ -72,3 +71,18 @@ def vendor_profile(request):
 def vend_dashboard(request):
     vendor = Vendor.objects.get(user=request.user)
     return render(request, "vendor/vend_dashboard.html", {"vendor": vendor})
+
+@login_required
+@user_passes_test(vendor_tester)
+def catalog_builder(request):
+    # sending all related products of this vendor
+    categories = Category.objects.filter(vendor=request.user.vendor)
+    return render(request,"vendor/catalog_builder.html",context=locals())
+
+@login_required
+@user_passes_test(vendor_tester)
+def products_by_category(request,cat_id):
+    category = Category.objects.get(id=cat_id)
+    products = Product.objects.filter(vendor=request.user.vendor,category_id=cat_id)
+    
+    return render(request, "vendor/products_by_category.html", context=locals())

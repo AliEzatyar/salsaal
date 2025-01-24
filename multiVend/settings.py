@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     "main.apps.MainConfig",
     "accounts.apps.AccountsConfig",
     "rest_framework",
-    "vendor.apps.VendorConfig"
+    "vendor.apps.VendorConfig",
+    "catalog.apps.CatalogConfig"
 ]
 
 MIDDLEWARE = [
@@ -70,6 +71,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "vendor.context_processors.vendor_context"
             ],
         },
     },

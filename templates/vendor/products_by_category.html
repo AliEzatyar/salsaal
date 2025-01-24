@@ -1,0 +1,64 @@
+{% extends 'base/base.html' %}
+
+{% block body %}
+  <!-- Main Wrapper -->
+  <div class="wrapper">
+    <!-- Main Section Start -->
+    <div class="main-section">
+      {% include 'vendor/vendor_cover.html' %}
+      <!-- Cover Image Section End -->
+
+      <div class="page-section account-header buyer-logged-in" style="padding-top: 0;">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+              <!-- Sidebar -->
+              {% include 'base/v_sidebar.html' %}
+            </div>
+            <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
+              <div class="user-dashboard loader-holder">
+                <div class="user-holder">
+                  <h2 class="text-center">{{category.name|title}} Products</h2>
+                  <!-- My Restaurants Form Start -->
+                  <hr />
+                  <a href="#" class="btn btn-primary float-right m-1"><i class="fa fa-plus" style="font-size:15px"></i> Add Category</a>
+                  <a href="#" class="btn btn-success float-right m-1"><i class="fa fa-plus" style="font-size:15px"></i> Add Product</a>
+
+                  <table class="table table-hover table-borderless">
+                    <thead class="thead-dark">
+                      <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Inventory</th>
+
+                        <th scope="col">Edit/Delete</th>
+
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for pro in products %}
+                        <tr>
+                          <td >{{ forloop.counter }}</td>
+                          <td ><a href="#">{{ pro.name }}</a></td>
+                          <td ><a href="#">{{ pro.description }}</a></td>
+                          <td ><a href="#">{{ pro.inventory }}</a></td>
+                          <td>
+                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                            <i class="fa fa-trash" aria-hidden="true"></i>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  <!-- My Restaurants Form End -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Main Section End -->
+  </div>
+{% endblock %}
