@@ -48,3 +48,5 @@ def send_notification(receiver,mail_title, mail_template: str, context: dict):
     mail_to = receiver
     mail = EmailMessage(subject=mail_title, to=[mail_to], body=mail_body)
     mail.send()
+
+

@@ -1,0 +1,89 @@
+{% extends 'base/base.html' %}
+
+{% block body %}
+  <!-- Main Wrapper -->
+  <div class="wrapper">
+    <!-- Main Section Start -->
+    <div class="main-section">
+      {% include 'vendor/vendor_cover.html' %}
+      <!-- Cover Image Section End -->
+
+      <div class="page-section account-header buyer-logged-in" style="padding-top: 0;">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+              <!-- Sidebar -->
+              {% include 'base/v_sidebar.html' %}
+            </div>
+            <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
+              <div class="user-dashboard loader-holder">
+                <div class="user-holder">
+                  <h2 class="text-center">Add Category By Filling The Form Bellow</h2>
+                  <!-- My Restaurants Form Start -->
+                  <hr />
+                  <form class="form-fields-set foodbakery-dev-restaurant-form" method="post" action="{% url 'vendor:add_category' %}">
+                    <ul class="register-add-restaurant-tab-container restaurant-information-tab-container">
+                      <li>
+                        <div class="row">
+                          <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                            <div class="row">
+                              <ul>
+                                <li>
+                                  <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                                    <div class="field-holder">
+                                      <label>Category Name</label>{{ form.name }}
+                                    </div>
+                                  </div>
+                                  <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                                    <div class="field-holder">
+                                      <label>Category Description</label>{{ form.description }}
+                                    </div>
+                                  </div>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                      <li>
+                        <ul>
+                          {% for field in form %}
+                            {% if field.errors %}
+                              {% for err in field.errors %}
+                                <li class="mb-0" style="color: red;">{{ err }}</li>
+                              {% endfor %}
+                            {% endif %}
+                          {% endfor %}
+                          <li style="color: red;">{{ form.non_field_errors }}</li>
+                        </ul>
+                        <div class="row">
+                          <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                            <div class="field-holder">
+                              <div class="payment-holder">
+                                <button type="button"  class="btn-success m-1 " onclick="history.back()">Back</button>
+                                <input type="submit" value="Add" id="btn-next-restaurant-information" class="bgcolor" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                            <!-- showing alerts -->
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                    {% csrf_token %}
+                  </form>
+
+                  <!-- My Restaurants Form End -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Main Section End -->
+  </div>
+{% endblock %}
