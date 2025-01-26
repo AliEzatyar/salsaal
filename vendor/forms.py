@@ -1,7 +1,7 @@
 from django import forms
 from accounts.forms import only_image_validator
 from catalog.models import Category, Product
-from vendor.models import Vendor
+from vendor.models import Rating, Vendor
 from vendor.utils import slugify_persian
 
 
@@ -31,3 +31,11 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         exclude = ["vendor", "slug", "modified", "created_at"]
+
+
+class RatingForm(forms.ModelForm):
+    
+    class Meta:
+        model = Rating
+        exclude = ["vendor","customer","created_at"]
+        

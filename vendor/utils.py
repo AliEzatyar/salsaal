@@ -1,6 +1,6 @@
 import re
 from unidecode import unidecode
-
+from django.core.exceptions import PermissionDenied
 
 def slugify_persian(text):
     # Step 1: Transliterate Persian characters to Latin
@@ -21,3 +21,13 @@ def slugify_persian(text):
     return text
 
 
+# utility funciton
+def vendor_tester(user):
+    if user.role != 1 or not hasattr(user, "vendor"):
+        raise PermissionDenied
+    return True
+
+
+# utility functions
+def get_vendor(req):
+    return req.user.vendor

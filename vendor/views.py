@@ -3,27 +3,17 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from accounts.models import UserProfile
+from accounts.utils import user_test
 from catalog.models import Category, Product
-from vendor.forms import CategoryForm, ProductForm, VendorForm
+from vendor.forms import CategoryForm, ProductForm, RatingForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm
 from django.contrib import messages
 from django.utils.text import slugify
 from django.urls import reverse
+from .utils import vendor_tester
 
 # Create your views here.
-
-
-# utility funciton
-def vendor_tester(user):
-    if user.role != 1 or not hasattr(user, "vendor"):
-        raise PermissionDenied
-    return True
-
-
-# utility functions
-def get_vendor(req):
-    return req.user.vendor
 
 
 @login_required
@@ -47,7 +37,6 @@ def vendor_profile(request):
             return redirect("vendor:vendor_profile_edit")
         # there were errros
         messages.error(request, "خطا در ثبت پروفایل!")
-        print(vendor_form.errors)
         return render(
             request,
             "vendor/profile.html",
@@ -213,7 +202,7 @@ def edit_product(request, id):
 @login_required
 @user_passes_test(vendor_tester)
 def delete_product(request, id):
-    product = Product.objects.filter(id=id,vendor=request.user.vendor).first()
+    product = Product.objects.filter(id=id, vendor=request.user.vendor).first()
     if product:
         # redirect the user back to catalog builder if no category
         category_id = product.category.id
@@ -223,3 +212,28 @@ def delete_product(request, id):
     else:
         messages.error(request, "چنین محصولی وجود ندارد!")
     return redirect("vendor:catalog_builder")
+
+
+@login_required
+@user_passes_test(user_test)
+def rate_vendor(request, vend_id):
+    vendor = Vendor.objects.filter(id=vend_id).first()
+    if not vendor:
+        messages.error(request,"No such vendor!")
+        return redirect("main:home")
+    # POST
+    if request.method == "POST":
+        form = RatingForm(request.POST)
+        if form.is_valid():
+            rating = form.save(commit=False)
+            rating.customer = request.user
+            rating.vendor = vendor
+            rating.save()
+            messages.success(request,"You have rated successfully!")
+            return redirect("main:home")
+        messages.error(request,"There were some errors while saving your ratings")
+        return render(request, "customer/rate_vendor.html")
+
+    # GET
+    form = RatingForm()
+    return render(request, "customer/rate_vendor.html",context=locals())
