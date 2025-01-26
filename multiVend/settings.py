@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "rest_framework",
     "vendor.apps.VendorConfig",
-    "catalog.apps.CatalogConfig"
+    "catalog.apps.CatalogConfig",
+    "marketplace.apps.MarketplaceConfig",
 ]
 
 MIDDLEWARE = [

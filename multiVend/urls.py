@@ -24,6 +24,7 @@ urlpatterns = [
     path("", include("main.urls", namespace="home")),
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("vendor/", include("vendor.urls", namespace="vendor")),
+    path("marketplace/", include("marketplace.urls", namespace="marketplace")),
 ]
 # in production, NGINX does it, but in debug mode, django should do
 if settings.DEBUG:

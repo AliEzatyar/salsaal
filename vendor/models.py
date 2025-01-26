@@ -49,7 +49,7 @@ class Vendor(models.Model):
 class Rating(models.Model):
     RATING_CHOICES = ((1, 1), (2, 2), (3, 3), (4, 4), (5, 5))
     vendor = models.ForeignKey(
-        "vendor.Vendor", on_delete=models.CASCADE, related_name="vendor_ratings"
+        "vendor.Vendor", on_delete=models.CASCADE, related_name="ratings"
     )
     customer = models.ForeignKey(
         "accounts.User", on_delete=models.CASCADE, related_name="+"
@@ -64,6 +64,7 @@ class Rating(models.Model):
         verbose_name="Customer Service", default=0, choices=RATING_CHOICES
     )
     created_at = models.DateTimeField(auto_now_add=True, choices=RATING_CHOICES)
+    overall_rating = models.PositiveSmallIntegerField(default=0, blank=True, null=True)
 
     @property
     def overall_rating(self):
