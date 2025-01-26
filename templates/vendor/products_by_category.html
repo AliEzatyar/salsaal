@@ -27,10 +27,12 @@
                     <thead class="thead-dark">
                       <tr>
                         <th scope="col">#</th>
+                        <th scope="col">Image</th>
+
                         <th scope="col">Name</th>
                         <th scope="col">Price</th>
                         <th scope="col">Inventory</th>
-
+                        <th scope="col">Available?</th>
                         <th scope="col">Edit/Delete</th>
                       </tr>
                     </thead>
@@ -38,11 +40,22 @@
                       {% for pro in products %}
                         <tr>
                           <td>{{ forloop.counter }}</td>
+                          <td><img class="img-thumbnail" style="width: 50px;" src="{{ pro.image.url }}" alt=""></td>
+                          
                           <td>
-                            <a href="{% url 'vendor:edit_product' pro.id %}">{{ pro.name }}</a>
+                            {{ pro.name }} 
                           </td>
                           <td>{{ pro.price }}</td>
                           <td>{{ pro.inventory }}</td>
+                          <td>
+                            {% if pro.is_available %}
+                            <span class="badge badge-success">Available</span>
+                            {%else%}
+                            <span class="badge badge-danger">Not Available</span>
+                            {% endif %}
+
+                          </td>
+
                           <td>
                             <a href="{% url 'vendor:edit_product' pro.id %}"><i class="fa fa-pencil" aria-hidden="true"></i></a>
                             <a href="{% url 'vendor:delete_product' pro.id %}" onclick="return confirm('Are you sure to delete this product?')"><i class="fa fa-trash ml-3 text-danger" aria-hidden="true"></i></a>

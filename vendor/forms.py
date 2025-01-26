@@ -20,9 +20,14 @@ class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
         fields = ["name", "description"]
-        
+
 
 class ProductForm(forms.ModelForm):
+    image = forms.FileField(
+        widget=forms.FileInput(attrs={"class": "btn-primary"}),
+        validators=[only_image_validator],
+    )
+
     class Meta:
         model = Product
-        exclude = ["vendor","slug","modified","created_at"]
+        exclude = ["vendor", "slug", "modified", "created_at"]

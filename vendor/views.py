@@ -46,6 +46,8 @@ def vendor_profile(request):
             messages.success(request, "Your profile has been updated.")
             return redirect("vendor:vendor_profile_edit")
         # there were errros
+        messages.error(request, "خطا در ثبت پروفایل!")
+        print(vendor_form.errors)
         return render(
             request,
             "vendor/profile.html",
@@ -105,7 +107,6 @@ def add_category(request):
         if form.is_valid():
             category = form.save(commit=False)
             category.vendor = request.user.vendor
-            category.slug = slugify(form.cleaned_data["name"])
             category.save()
             # successfull
             messages.success(request, "Category Added Successfully")
@@ -130,7 +131,6 @@ def edit_category(request, id):
         form = CategoryForm(request.POST, instance=category)
         if form.is_valid():
             category = form.save(commit=False)
-            category.slug = slugify(form.cleaned_data["name"])
             category.save()
             # successfull
             messages.success(request, "Category Updated Successfully")
@@ -161,14 +161,19 @@ def delete_category(request, id):
 def add_product(request):
     # POST
     if request.method == "POST":
-        form = ProductForm(request.POST)
+        form = ProductForm(request.POST, files=request.FILES)
         if form.is_valid():
-            product = form.save(commit=False)
-            product.vendor = request.user.vendor
-            product.save()
-            # successfull
-            messages.success(request, "محصول موفقانه ثبت شد")
-            return redirect("vendor:catalog_builder")
+            try:
+                product = form.save(commit=False)
+                category_id = product.category.id
+                product.vendor = request.user.vendor
+                product.save()
+                # successfull
+                messages.success(request, "محصول موفقانه ثبت شد")
+                return redirect("vendor:products_by_category", category_id)
+            except:
+                messages.error(request, "خطا در ثبت محصول!")
+                return render(request, "vendor/add_product.html", context=locals())
         # there are form errors
         messages.error(request, "خطا در ثبت محصول!")
         return render(request, "vendor/add_product.html", context=locals())
@@ -180,26 +185,25 @@ def add_product(request):
 @login_required
 @user_passes_test(vendor_tester)
 def edit_product(request, id):
-    product = Product.objects.filter(id=id).first()
+    product = Product.objects.filter(id=id, vendor=request.user.vendor).first()
     if not product:
-        # redirect the user back to catalog builder if no category
+        # redirect the vendor back to catalog builder if no such product
+        messages.error(request, "چنین محصولی وجود ندارد!")
+
         return redirect("vendor:catalog_builder")
     # POST
     if request.method == "POST":
         category_id = product.category.id
-
-        form = ProductForm(request.POST, instance=product)
+        form = ProductForm(request.POST, instance=product, files=request.FILES)
         if form.is_valid():
             form.save()
             # successful
             messages.success(request, "جزییات محصول تغییر یافت")
-            return redirect(
-                reverse("vendor:products_by_category", kwargs={"cat_id": category_id})
-            )
+            return redirect("vendor:products_by_category", category_id)
 
         # there are form errors
         messages.error(request, "در جریان ثبت تغییرات مشکلی بوجود آمد!")
-        return redirect(reverse("vendor:products_by_category", args=[category_id]))
+        return render(request, "vendor/edit_product.html", context=locals())
 
     # GET
     form = ProductForm(instance=product)
@@ -209,13 +213,13 @@ def edit_product(request, id):
 @login_required
 @user_passes_test(vendor_tester)
 def delete_product(request, id):
-    product = Product.objects.filter(id=id).first()
+    product = Product.objects.filter(id=id,vendor=request.user.vendor).first()
     if product:
         # redirect the user back to catalog builder if no category
         category_id = product.category.id
         product.delete()
         messages.success(request, "محصول موفقانه حذف گردید.")
-        return redirect(reverse("vendor:products_by_category", args=[category_id]))
+        return redirect("vendor:products_by_category", category_id)
     else:
         messages.error(request, "چنین محصولی وجود ندارد!")
     return redirect("vendor:catalog_builder")

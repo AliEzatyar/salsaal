@@ -1,5 +1,5 @@
 {% extends 'base/base.html' %}
-
+{% load static %}
 {% block body %}
   <!-- Main Wrapper -->
   <div class="wrapper">
@@ -89,6 +89,8 @@
                               <div class="field-holder">
                                 <label>Shop name *</label>
                                 {{ vendor_form.vendor_name }}
+                                {{ vendor_form.vendor_name.errors }}
+
                               </div>
                             </div>
 
@@ -96,6 +98,8 @@
                               <div class="field-holder">
                                 <label>Address *</label>
                                 {{ profile_form.address }}
+                                {{ profile_form.address.errors }}
+
                                 <small class="text-muted float-right">Powerd by Google</small>
                               </div>
                             </div>
@@ -104,6 +108,8 @@
                               <div class="field-holder">
                                 <label>City *</label>
                                 {{ profile_form.city }}
+                                {{ profile_form.city.errors }}
+
                               </div>
                             </div>
 
@@ -111,6 +117,8 @@
                               <div class="field-holder">
                                 <label>lattitude</label>
                                 {{ profile_form.lattitude }}
+                                {{ profile_form.lattitude.errors }}
+
                               </div>
                             </div>
 
@@ -118,6 +126,8 @@
                               <div class="field-holder">
                                 <label>longtitiude</label>
                                 {{ profile_form.longtitiude }}
+                                {{ profile_form.longtitiude.errors }}
+
                               </div>
                             </div>
                           </div>
@@ -143,4 +153,5 @@
     </div>
     <!-- Main Section End -->
   </div>
+  <script src="{% static 'js/get_current_location.js' %}"></script>
 {% endblock %}

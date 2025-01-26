@@ -21,6 +21,8 @@
                   <h2 class="text-center">Add New Product By Filling The Form Bellow</h2>
                   <!-- My Restaurants Form Start -->
                   <hr />
+                  <button class="btn btn-info" onclick="history.back()">Back</button>
+                  <hr />
                   <form action="{% url 'vendor:add_product' %}" method="post" enctype="multipart/form-data">
                     <div class="form-fields-set">
                       <ul>
@@ -30,7 +32,7 @@
                               <div class="field-holder">
                                 <label>Name *</label>
                                 {{ form.name }}
-                                {{ form.category.errors }}
+                                <label class="text-danger">{{ form.category.errors }}</label>
                               </div>
                             </div>
 
@@ -38,7 +40,7 @@
                               <div class="field-holder">
                                 <label>Price *</label>
                                 {{ form.price }}
-                                {{ form.price.errors }}
+                                <label class="text-danger">{{ form.price.errors }}</label>
                               </div>
                             </div>
 
@@ -46,7 +48,7 @@
                               <div class="field-holder">
                                 <label>Category *</label>
                                 {{ form.category }}
-                                {{ form.category.errors }}
+                                <label class="text-danger">{{ form.category.errors }}</label>
                               </div>
                             </div>
 
@@ -54,7 +56,7 @@
                               <div class="field-holder">
                                 <label>Inventory</label>
                                 {{ form.inventory }}
-                                {{ form.inventory.errors }}
+                                <label class="text-danger">{{ form.inventory.errors }}</label>
                               </div>
                             </div>
 
@@ -62,21 +64,21 @@
                               <div class="field-holder">
                                 <label>Description</label>
                                 {{ form.description }}
-                                {{ form.description.errors }}
+                                <label class="text-danger">{{ form.description.errors }}</label>
                               </div>
                             </div>
                             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                               <div class="field-holder">
                                 <label>Image</label>
                                 {{ form.image }}
-                                {{ form.image.errors }}
+                                <label class="text-danger">{{ form.image.errors }}</label>
                               </div>
                             </div>
                             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                               <div class="field-holder">
                                 <label>Is Available?</label>
                                 {{ form.is_available }}
-                                {{ form.is_available.errors }}
+                                <label class="text-danger">{{ form.is_available.errors }}</label>
                               </div>
                             </div>
                           </div>
@@ -88,7 +90,7 @@
                       <div>
                         <div class="field-holder">
                           <div class="">
-                            <input class="btn btn-primary w-100" type="submit" value="Add Product" />
+                            <input class="btn btn-primary w-100" type="submit" value="Save Changes" />
                           </div>
                         </div>
                       </div>
