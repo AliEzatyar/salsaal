@@ -1,27 +1,31 @@
 {% load static %}
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Salsaal Shop</title>
-  <link rel="shortcut icon" href="images/favicon.png" />
-  <script defer="defer" src="{% static 'js/app.bundle.js' %}"></script>
-  <link href="{%static 'css/app.min.css'%}" rel="stylesheet" />
-  {% block head %}
+<html dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Salsaal Shop</title>
+    <link rel="shortcut icon" href="images/favicon.png" />
+    <script defer="defer" src="{% static 'js/app.bundle.js' %}"></script>
+    <link href="{% static 'css/app.min.css' %}" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  {% endblock %}
-</head>
-<body>
-  {% include 'base/pre_loader.html' %}
+    {% block head %}
 
-  {% include 'base/navbar.html' %}
-  {% include 'base/alerts.html' %}
-  {% block body %}
+    {% endblock %}
+  </head>
+  <body>
+    {% include 'base/pre_loader.html' %}
 
-  {% endblock %}
+    {% include 'base/navbar.html' %}
+    {% include 'base/alerts.html' %}
+    {% block body %}
 
-  {% include 'base/footer.html' %}
-  <!-- Modal Popup End -->
-  <script src="{% static 'js/scripts.js' %}"></script>
-  <script src="{% static 'js/functions.js' %}"></script>
-</body>
+    {% endblock %}
+
+    {% include 'base/footer.html' %}
+    <!-- Modal Popup End -->
+    <script src="{% static 'js/scripts.js' %}"></script>
+    <script src="{% static 'js/functions.js' %}"></script>
+  </body>
+</html>

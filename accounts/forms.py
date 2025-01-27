@@ -5,17 +5,28 @@ from vendor.models import Vendor
 from .models import User, UserProfile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
-def only_image_validator(filename:InMemoryUploadedFile):
+
+def only_image_validator(filename: InMemoryUploadedFile):
     ext = path.splitext(filename.name)[1]
-    
+
     valid_extensions = [".jpg", ".png", ".jpeg"]
     if ext.lower() not in valid_extensions:
         raise ValidationError("باید فایل عکس انتخاب کنید")
 
 
 class UserRegForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput())
-    confirm = forms.CharField(widget=forms.PasswordInput())
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"class": "common-input"})
+    )
+    confirm = forms.CharField(
+        widget=forms.PasswordInput(attrs={"class": "common-input"})
+    )
+    first_name = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "common-input"})
+    )
+    last_name = forms.CharField(widget=forms.TextInput(attrs={"class": "common-input"}))
+    username = forms.CharField(widget=forms.TextInput(attrs={"class": "common-input"}))
+    email = forms.CharField(widget=forms.TextInput(attrs={"class": "common-input"}))
 
     class Meta:
         model = User
@@ -43,15 +54,25 @@ class VendorRegForm(forms.ModelForm):
 class UserProfileForm(forms.ModelForm):
     picture = forms.FileField(
         widget=forms.FileInput(attrs={"class": "btn-primary"}),
-        validators=[only_image_validator]
+        validators=[only_image_validator],
     )
     cover = forms.FileField(
         widget=forms.FileInput(attrs={"class": "btn-primary"}),
-        validators=[only_image_validator]
+        validators=[only_image_validator],
     )
-    lattitude = forms.CharField(widget=forms.TextInput(attrs={"readonly":"readonly"}))
-    longtitiude = forms.CharField(widget=forms.TextInput(attrs={"readonly": "readonly"}))
-    address = forms.CharField(widget=forms.TextInput(attrs={"placeholder":"start typing...","required":"requried",}))
+    lattitude = forms.CharField(widget=forms.TextInput(attrs={"readonly": "readonly"}))
+    longtitiude = forms.CharField(
+        widget=forms.TextInput(attrs={"readonly": "readonly"})
+    )
+    address = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "start typing...",
+                "required": "requried",
+            }
+        )
+    )
+
     class Meta:
         model = UserProfile
         fields = ["picture", "cover", "address", "city", "lattitude", "longtitiude"]

@@ -88,7 +88,7 @@ def register_user(request):
             messages.success(
                 request, message="Your account has been created successfully!"
             )
-            return redirect(reverse("accounts:reg_user"))
+            return redirect(reverse("main:home"))
 
         # form has got errors
         else:
@@ -97,7 +97,7 @@ def register_user(request):
             )
             return render(
                 request,
-                "accounts/register_user.html",
+                "customer/register_user.html",
                 {"form": form},
             )
 

@@ -1,3 +1,4 @@
+{% load static %}
 <!-- header search box -->
 <form action="#" class="search-box">
   <button type="button" class="search-box__close absolute inset-block-start-0 right-0 m-16 w-48 h-48 border border-gray-100 rounded-[50%] flex items-center justify-center text-white hover-text-gray-800 hover-bg-white text-2xl transition-1"><i class="ph ph-x"></i></button>
@@ -9,7 +10,7 @@
 </form>
 <!-- search box end -->
 <!-- header start -->
-<div class="mobile-menu scroll-sm xl:hidden block">
+{% comment %} <div class="mobile-menu scroll-sm xl:hidden block">
   <button type="button" class="close-button"><i class="ph ph-x"></i></button>
   <!-- mobile specific -->
   <div class="mobile-menu__inner">
@@ -100,13 +101,13 @@
       </ul>
     </div>
   </div>
-</div>
+</div> {% endcomment %}
 <!-- PC header top start -->
 <header class="header-middle style-two bg-color-neutral">
   <div class="container container-lg">
     <nav class="header-inner flex-between">
       <div class="logo">
-        <a href="{% url 'main:home' %}" class="link"><img src="images/logo-two.png" alt="Logo" /></a>
+        <a href="{% url 'main:home' %}" class="link"><img src="{% static 'logo/main_logo.png' %}" alt="Logo" /></a>
       </div>
       <div class="flex items-center md:gap-[16px] max-sm:gap-0">
         <div class="select-dropdown-for-home-two xl:hidden block">
@@ -162,27 +163,45 @@
         <form action="#" class="flex items-center flex-wrap form-location-wrapper">
           <div class="search-category style-two h-48 search-form md:flex hidden">
             <select class="js-example-basic-single border-gray-200 border-r-0 rounded-none border-0" name="state">
-              <option value="1" selected="selected" disabled="disabled">All Categories</option>
-              <option value="1">Grocery</option>
-              <option value="1">Breakfast & Dairy</option>
-              <option value="1">Vegetables</option>
-              <option value="1">Milks and Dairies</option>
-              <option value="1">Pet Foods & Toy</option>
-              <option value="1">Breads & Bakery</option>
-              <option value="1">Fresh Seafood</option>
-              <option value="1">Fronzen Foods</option>
-              <option value="1">Noodles & Rice</option>
-              <option value="1">Ice Cream</option>
+              <option value="1" selected="selected">همه کتگوری ها</option>
+              {% for cat in categories %}
+                <option value="1">{{ cat.name }}</option>
+              {% endfor %}
             </select>
             <div class="search-form__wrapper relative">
-              <input class="search-form__input common-input py-13 ps-16 pe-18 rounded-none border-0" placeholder="Search for a product or brand" />
+              <input class="search-form__input common-input py-13 ps-16 pe-18 rounded-none border-0" placeholder="نام محصول یا کمپنی را جستجو کنید" />
             </div><button type="submit" class="bg-main-two-600 items-center justify-center text-xl text-white flex-shrink-0 w-48 hover-bg-main-two-700 xl:flex hidden"><i class="ph ph-magnifying-glass"></i></button>
           </div>
         </form>
       </div>
       <div class="header-right items-center xl:block hidden">
         <div class="header-two-activities flex items-center flex-wrap gap-32">
-          <button type="button" class="items-center search-icon xl:hidden flex gap-4 item-hover-two"><span class="text-2xl text-white flex relative item-hover__text"><i class="ph ph-magnifying-glass"></i></span></button> <a href="{%url 'accounts:dashboard'%}" class="flex items-center flex-col gap-8 item-hover-two"><span class="text-2xl text-white flex relative item-hover__text"><i class="ph ph-user"></i></span><span class="text-md text-white item-hover__text hidden xl:flex">Profile</span></a><a href="wishlist.html" class="flex items-center flex-col gap-8 item-hover-two"><span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text"><i class="ph ph-heart"></i> <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span></span><span class="text-md text-white item-hover__text hidden xl:flex">Wishlist</span></a><a href="cart.html" class="flex items-center flex-col gap-8 item-hover-two"><span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text"><i class="ph-fill ph-shuffle"></i> <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span></span><span class="text-md text-white item-hover__text hidden xl:flex">Compare</span></a><a href="cart.html" class="flex items-center flex-col gap-8 item-hover-two"><span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text"><i class="ph ph-shopping-cart-simple"></i> <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span></span><span class="text-md text-white item-hover__text hidden xl:flex">Cart</span></a>
+          <button type="button" class="items-center search-icon xl:hidden flex gap-4 item-hover-two"><span class="text-2xl text-white flex relative item-hover__text"><i class="ph ph-magnifying-glass"></i></span></button>
+          <a href="{% url 'accounts:dashboard' %}" class="flex items-center flex-col gap-8 item-hover-two">
+            <span class="text-2xl text-white flex relative item-hover__text"><i class="ph ph-user"></i></span>
+            <span class="text-md text-white item-hover__text hidden xl:flex">پروفایل</span>
+          </a>
+          <a href="wishlist.html" class="flex items-center flex-col gap-8 item-hover-two">
+            <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
+              <i class="ph ph-heart"></i>
+              <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span>
+            </span>
+            <span class="text-md text-white item-hover__text hidden xl:flex">لیست علاقه</span>
+          </a>
+          <a href="cart.html" class="flex items-center flex-col gap-8 item-hover-two">
+            <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
+              <i class="ph ph-shopping-cart-simple"></i>
+              <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span>
+            </span>
+            <span class="text-md text-white item-hover__text hidden xl:flex">سبد خرید</span>
+          </a>
+          <a href="{% url "accounts:logout" %}" class="flex items-center flex-col gap-8 item-hover-two">
+            <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
+              <i class="ph-fill ph-shuffle"></i>
+              <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span>
+            </span>
+            <span class="text-md text-white item-hover__text hidden xl:flex">خروج</span>
+          </a>
         </div>
       </div>
     </nav>
@@ -196,14 +215,17 @@
       <div class="flex items-center menu-category-wrapper">
         <div class="category-two block">
           <button type="button" class="category__button flex items-center gap-8 font-[500] bg-main-two-600 p-16 text-white"><span class="icon text-2xl sm:flex hidden"><i class="ph ph-dots-nine"></i></span> <span class="md:flex hidden">All</span> Categories <span class="arrow-icon text-xl flex"><i class="ph ph-caret-down"></i></span></button>
-          <div class="responsive-dropdown common-dropdown xl:hidden block nav-submenu p-0 submenus-submenu-wrapper shadow-none border border-gray-100">
+          <div  class="rtl responsive-dropdown common-dropdown xl:hidden block nav-submenu p-0 submenus-submenu-wrapper shadow-none border border-gray-100">
+
             <button type="button" class="close-responsive-dropdown rounded-[50%] text-xl absolute right-0 inset-block-start-0 mt-4 me-8 xl:hidden flex"><i class="ph ph-x"></i></button>
+
             <div class="logo px-16 xl:hidden block">
-              <a href="{% url 'main:home' %}" class="link"><img src="images/logo.png" alt="Logo" /></a>
+              <a href="index.html" class="link"><img src="images/logo.png" alt="Logo" /></a>
             </div>
-            <ul class="scroll-sm p-0 py-8 overflow-y-auto">
+            <ul class="scroll-sm p-0 py-8 overflow-y-auto" >
               <li class="has-submenus-submenu">
-                <a href="javascript:void(0)" class="text-gray-500 text-15 py-12 px-16 flex items-center gap-8 rounded-none"><span>Cell Phone</span> <span class="icon text-md flex ms-auto"><i class="ph ph-caret-right"></i></span></a>
+                <a href="javascript:void(0)" class="text-gray-500 text-15 py-12 px-16 flex items-center gap-8 rounded-none">
+                  <span>Cell Phone</span> <span class="icon text-md flex ms-auto"><i class="ph ph-caret-right"></i></span></a>
                 <div class="submenus-submenu py-16">
                   <h6 class="text-lg px-16 submenus-submenu__title">Cell Phone</h6>
                   <ul class="submenus-submenu__list max-h-300 overflow-y-auto scroll-sm">
@@ -589,7 +611,7 @@
           <div class="responsive-dropdown on-hover-dropdown common-dropdown nav-submenu p-0 submenus-submenu-wrapper">
             <button type="button" class="close-responsive-dropdown rounded-[50%] text-xl absolute right-0 inset-block-start-0 mt-4 me-8 xl:hidden flex"><i class="ph ph-x"></i></button>
             <div class="logo px-16 xl:hidden block">
-              <a href="{% url 'main:home' %}" class="link"><img src="images/logo.png" alt="Logo" /></a>
+              <a href="index.html" class="link"><img src="images/logo.png" alt="Logo" /></a>
             </div>
             <ul class="scroll-sm p-0 py-8 w-300 max-h-400 overflow-y-auto">
               <li class="has-submenus-submenu">
@@ -783,7 +805,7 @@
               <a href="javascript:void(0)" class="nav-menu__link">Home</a>
               <ul class="on-hover-dropdown common-dropdown nav-submenu scroll-sm">
                 <li class="common-dropdown__item nav-submenu__item activePage">
-                  <a href="{% url 'main:home' %}" class="common-dropdown__link nav-submenu__link hover-bg-neutral-100">Home Grocery</a>
+                  <a href="index.html" class="common-dropdown__link nav-submenu__link hover-bg-neutral-100">Home Grocery</a>
                 </li>
                 <li class="common-dropdown__item nav-submenu__item">
                   <a href="index-two.html" class="common-dropdown__link nav-submenu__link hover-bg-neutral-100">Home Electronics</a>
