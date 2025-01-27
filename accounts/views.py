@@ -193,7 +193,7 @@ def login(request):
 
         # authentication invalid
         return render(
-            request, "accounts/login.html", {"error": "Email or password incorrect"}
+            request, "accounts/account.html", {"error": "Email or password incorrect"}
         )
 
     # GET
@@ -201,7 +201,7 @@ def login(request):
         return redirect("accounts:dashboard")
 
     next_ = request.GET.get("next")
-    return render(request, "accounts/login.html", {"next": next_})
+    return render(request, "accounts/account.html", {"next": next_})
 
 
 @login_required
