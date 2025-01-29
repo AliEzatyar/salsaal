@@ -147,8 +147,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # message auto classifying for bootstrap
 
 MESSAGE_TAGS = {
-    messages.ERROR: "danger",
-    messages.INFO: "info"
+    messages.ERROR: "red",
+    messages.INFO: "green",
+    messages.SUCCESS: "blue"
 }
 
 # REST SETTINGS

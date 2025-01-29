@@ -1,0 +1,28 @@
+@keyframes show-up {
+    0% {
+        bottom: -100%
+    }
+
+    20% {
+        bottom: 100px
+    }
+
+    80% {
+        bottom: 100px
+    }
+
+    100% {
+        bottom: -100%
+    }
+}
+
+.show-notification {
+    position: fixed;
+    bottom: 100%;
+    right: 80%;
+    animation-name: show-up;
+    animation-duration: 8s;
+    z-index: 100;
+    width: 10%;
+    padding: 4px 6px;
+}

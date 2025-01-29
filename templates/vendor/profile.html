@@ -1,157 +1,145 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% block body %}
-  <!-- Main Wrapper -->
-  <div class="wrapper">
-    <!-- Main Section Start -->
-    <div class="main-section">
-      {% include 'vendor/vendor_cover.html' %}
-      <!-- Cover Image Section End -->
-
-      <div class="page-section account-header buyer-logged-in" style="padding-top: 0;">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-              <!-- Sidebar -->
-              {% include 'base/v_sidebar.html' %}
-            </div>
-            <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
-              <div class="user-dashboard loader-holder">
-                <div class="user-holder">
-                  <h2>Manage Your Shop</h2>
-                  <!-- My Restaurants Form Start -->
-                  <form action="{% url 'vendor:vendor_profile_edit' %}" method="post" enctype="multipart/form-data">
-                    <div class="form-fields-set">
-                      <ul>
-                        <li>
-                          <div class="row">
-                            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                              <div class="restaurant-info">
-                                <div class="img-holder">
-                                  <ul class="foodbakery-gallery-holder">
-                                    <li class="gal-img">
-                                      <div class="drag-list">
-                                        <div class="item-thumb">
-                                          <img src="{{ profile.picture.url }}" alt="" />
-                                        </div>
+  <div class="banner-two">
+    <div class="container container-lg">
+      <div class="banner-two-wrapper flex items-start">
+        {% include 'vendor/sidebar.html' %}
+        <div class="container mx-auto p-6">
+          <div class="w-full lg:w-3/4 px-4">
+            <div class="user-dashboard bg-white shadow-lg p-6 rounded-lg">
+              <div class="user-holder">
+                <h3 class="text-2xl  mb-4 text-center">مدیریت پروفایل فروشگاه</h3>
+                <br />
+                <br />
+                <!-- My Restaurants Form Start -->
+                <form action="{% url 'vendor:vendor_profile_edit' %}" method="post" enctype="multipart/form-data">
+                  <div class="form-fields-set space-y-6">
+                    <ul>
+                      <li>
+                        <div class="grid grid-cols-1 gap-6">
+                          <div>
+                            <div class="restaurant-info">
+                              <div class="img-holder">
+                                <ul class="flex space-x-4">
+                                  <li class="gal-img">
+                                    <div class="drag-list">
+                                      <div class="item-thumb w-[20%]">
+                                        <img src="{{ profile.picture.url }}" alt="" class="rounded-lg shadow-md" />
                                       </div>
-                                    </li>
-                                  </ul>
-                                </div>
-                                <div class="text-holder">
-                                  <label>Update Logo</label>
-                                  <div class="upload-gallery">{{ profile_form.picture }}</div>
-                                  <label class="text-danger">{{ profile_form.picture.errors }}</label>
-                                </div>
+                                    </div>
+                                  </li>
+                                </ul>
                               </div>
-                            </div>
-                            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                              <div class="restaurant-info">
-                                <div class="img-holder">
-                                  <ul class="foodbakery-gallery-holder">
-                                    <li class="gal-img">
-                                      <div class="drag-list">
-                                        <div class="item-thumb">
-                                          <img class="thumbnail" src="{{ profile.cover.url }}" alt="" />
-                                        </div>
-                                      </div>
-                                    </li>
-                                  </ul>
-                                </div>
-                                <div class="text-holder">
-                                  <label>Update Cover Photo</label>
-                                  <div class="upload-gallery">{{ profile_form.cover }}</div>
-                                  <label class="text-danger">{{ profile_form.picture.errors }}</label>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                              <div class="restaurant-info">
-                                <div class="img-holder">
-                                  <ul class="foodbakery-gallery-holder">
-                                    <li class="gal-img">
-                                      <div class="drag-list">
-                                        <div class="item-thumb">
-                                          <img class="thumbnail" src="{{ vendor.vendor_license.url }}" alt="" />
-                                        </div>
-                                      </div>
-                                    </li>
-                                  </ul>
-                                </div>
-                                <div class="text-holder">
-                                  <label>Update License</label>
-                                  <div class="upload-gallery">{{ vendor_form.vendor_license }}</div>
-                                  <label class="text-danger">{{ profile_form.picture.errors }}</label>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Shop name *</label>
-                                {{ vendor_form.vendor_name }}
-                                {{ vendor_form.vendor_name.errors }}
-
-                              </div>
-                            </div>
-
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Address *</label>
-                                {{ profile_form.address }}
-                                {{ profile_form.address.errors }}
-
-                                <small class="text-muted float-right">Powerd by Google</small>
-                              </div>
-                            </div>
-
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>City *</label>
-                                {{ profile_form.city }}
-                                {{ profile_form.city.errors }}
-
-                              </div>
-                            </div>
-
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>lattitude</label>
-                                {{ profile_form.lattitude }}
-                                {{ profile_form.lattitude.errors }}
-
-                              </div>
-                            </div>
-
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>longtitiude</label>
-                                {{ profile_form.longtitiude }}
-                                {{ profile_form.longtitiude.errors }}
-
+                              <br />
+                              <br />
+                              <div class="text-holder">
+                                <label class="block font-medium mb-1">تغییر لوگو</label>
+                                <div class="upload-gallery">{{ profile_form.picture }}</div>
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.picture.errors }}</p>
                               </div>
                             </div>
                           </div>
-                        </li>
-                      </ul>
-                      <div>
-                        <div class="field-holder">
-                          <div class="">
-                            <input class="btn btn-primary w-100" type="submit" value="Save Changes" />
+                          <div>
+                            <div class="restaurant-info">
+                              <div class="img-holder">
+                                <ul class="flex space-x-4">
+                                  <li class="gal-img">
+                                    <div class="drag-list">
+                                      <div class="item-thumb w-[20%]">
+                                        <img src="{{ profile.cover.url }}" alt="" class="thumbnail rounded-lg shadow-md" />
+                                      </div>
+                                    </div>
+                                  </li>
+                                </ul>
+                              </div>
+                              <br />
+                              <br />
+
+                              <div class="text-holder">
+                                <label class="block font-medium mb-1">تغییر عکس پس زمینه</label>
+                                <div class="upload-gallery">{{ profile_form.cover }}</div>
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.picture.errors }}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div class="restaurant-info">
+                              <div class="img-holder">
+                                <ul class="flex space-x-4">
+                                  <li class="gal-img">
+                                    <div class="drag-list">
+                                      <div class="item-thumb w-[20%]">
+                                        <img src="{{ vendor.vendor_license.url }}" alt="" class="thumbnail rounded-lg shadow-md" />
+                                      </div>
+                                    </div>
+                                  </li>
+                                </ul>
+                              </div>
+                              <div class="text-holder">
+                                <label class="block font-medium mb-1">آپلود جواز</label>
+                                <div class="upload-gallery">{{ vendor_form.vendor_license }}</div>
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.picture.errors }}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <div class="field-holder">
+                              <label class="block font-medium mb-1">نام فروشگاه *</label>
+                              {{ vendor_form.vendor_name }}
+                              <p class="text-red-500 text-sm mt-1">{{ vendor_form.vendor_name.errors }}</p>
+                            </div>
+                          </div>
+                          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                              <div class="field-holder">
+                                <label class="block font-medium mb-1">آدرس *</label>
+                                {{ profile_form.address }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.address.errors }}</p>
+                                <small class="text-gray-500">Powered by Google</small>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="field-holder">
+                                <label class="block font-medium mb-1">شهر *</label>
+                                {{ profile_form.city }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.city.errors }}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="field-holder">
+                                <label class="block font-medium mb-1">عرض البلد</label>
+                                {{ profile_form.lattitude }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.lattitude.errors }}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="field-holder">
+                                <label class="block font-medium mb-1">طول البلد</label>
+                                {{ profile_form.longtitiude }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.longtitiude.errors }}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
+                      </li>
+                    </ul>
+                    <div>
+                      <div class="field-holder">
+                        <button type="submit" class="bg-blue-500 text-white w-full py-2 rounded-lg shadow hover:bg-blue-600">Save Changes</button>
                       </div>
                     </div>
-                    {% csrf_token %}
-                  </form>
-                  <!-- My Restaurants Form End -->
-                </div>
+                  </div>
+                  {% csrf_token %}
+                </form>
+                <!-- My Restaurants Form End -->
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- Main Section End -->
   </div>
   <script src="{% static 'js/get_current_location.js' %}"></script>
 {% endblock %}

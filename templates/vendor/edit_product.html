@@ -5,104 +5,84 @@
   <div class="wrapper">
     <!-- Main Section Start -->
     <div class="main-section">
-      {% include 'vendor/vendor_cover.html' %}
-      <!-- Cover Image Section End -->
+      <div class="page-section account-header buyer-logged-in py-0">
+        <div class="container mx-auto">
+          <div class="flex flex-wrap -mx-4 flex justify-center items-center">
+            <div class="w-full md:w-3/4 px-4">
+              <div class="user-dashboard bg-white shadow-lg rounded-lg p-6">
+                <br />
+                <h2 class="text-2xl font-semibold text-center mb-4">ویرایش محصول</h2>
+                <br />
+                <button class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition duration-300" onclick="history.back()"><i class="fa fa-toggle-right"></i> برگشت به صفحه قبل</button>
+                <br />
+                <br />
 
-      <div class="page-section account-header buyer-logged-in" style="padding-top: 0;">
-        <div class="container">
-          <div class="row">
-            <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-              <!-- Sidebar -->
-              {% include 'base/v_sidebar.html' %}
-            </div>
-            <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12">
-              <div class="user-dashboard loader-holder">
-                <div class="user-holder">
-                  <h2 class="text-center">Edit Product {{product.name}}</h2>
-                  <!-- My Restaurants Form Start -->
-                  <hr />
-                  <button class="btn btn-info fa" onclick="history.back()">Back</button>
-                  <hr>
-                  <form action="{% url 'vendor:edit_product' product.id %}" method="post" enctype="multipart/form-data">
-                    <div class="form-fields-set">
-                      <ul>
-                        <li>
-                          <div class="row">
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Name *</label>
-                                {{ form.name }}
-                                 <label class="text-danger">{{ form.category.errors }}</label>
-                              </div>
-                            </div>
+                <form action="{% url 'vendor:edit_product' product.id  %}" method="post" enctype="multipart/form-data">
+                  <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <!-- Name -->
+                      <div class="mb-20">
+                        <label class="block font-medium mb-2">نام *</label>
+                        {{ form.name }}
+                        <span class="text-red-500 text-sm">{{ form.name.errors }}</span>
+                      </div>
 
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Price *</label>
-                                {{ form.price }}
-                                <label class="text-danger">{{ form.price.errors }}</label>
-                              </div>
-                            </div>
+                      <!-- Price -->
+                      <div class="mb-20">
+                        <label class="block font-medium mb-2">قیمت *</label>
+                        {{ form.price }}
+                        <span class="text-red-500 text-sm">{{ form.price.errors }}</span>
+                      </div>
 
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Category *</label>
-                                {{ form.category }}
-                                <label class="text-danger">{{ form.category.errors }}</label>
-                              </div>
-                            </div>
+                      <!-- Category -->
+                      <div class="mb-20">
+                        <label class="block font-medium mb-2">کتگوری *</label>
+                        {{ form.category }}
+                        <span class="text-red-500 text-sm">{{ form.category.errors }}</span>
+                      </div>
 
-                            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Inventory</label>
-                                {{ form.inventory }}
-                                <label class="text-danger">{{ form.inventory.errors }}</label>
-                              </div>
-                            </div>
-
-                            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Description</label>
-                                {{ form.description }}
-                                <label class="text-danger">{{ form.description.errors }}</label>
-                              </div>
-                            </div>
-                            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Image</label>
-                                {{ form.image }}
-                                <label class="text-danger">{{ form.image.errors }}</label>
-                              </div>
-                            </div>
-                            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                              <div class="field-holder">
-                                <label>Is Available?</label>
-                                {{ form.is_available }}
-                                <label class="text-danger">{{ form.is_available.errors }}</label>
-                              </div>
-                            </div>
-                          </div>
-                        </li>
-                      </ul>
-                      <ul>
-                        <li style="color: red;">{{ form.non_field_errors }}</li>
-                      </ul>
-                      <div>
-                        <div class="field-holder">
-                          <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                            <input class="btn btn-primary fa fa-ok w-100" type="submit" value="Save Changes" />
-                          </div>
-                          <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                            <a class="btn btn-danger fa fa-trash  w-100" onclick="return confirm('Are you sure you want to delete it?')" href="{% url "vendor:delete_product" product.id %}"> Delete</a>
-                          </div>
-                        </div>
+                      <!-- Inventory -->
+                      <div class="mb-20">
+                        <label class="block font-medium mb-2">گدام</label>
+                        {{ form.inventory }}
+                        <span class="text-red-500 text-sm">{{ form.inventory.errors }}</span>
                       </div>
                     </div>
-                    {% csrf_token %}
-                  </form>
 
-                  <!-- My Restaurants Form End -->
-                </div>
+                    <!-- Description -->
+                    <div>
+                      <label class="block font-medium mb-2">توضیحات</label>
+                      {{ form.description }}
+                      <span class="text-red-500 text-sm">{{ form.description.errors }}</span>
+                    </div>
+
+                    <!-- Image -->
+                    <div>
+                      <label class="block font-medium mb-2">عکس</label>
+                      {{ form.image }}
+                      <span class="text-red-500 text-sm">{{ form.image.errors }}</span>
+                    </div>
+
+                    <!-- Is Available -->
+                    <div>
+                      <label class="block font-medium mb-2">قابل دسترس؟</label>
+                      {{ form.is_available }}
+                      <span class="text-red-500 text-sm">{{ form.is_available.errors }}</span>
+                    </div>
+
+                    <!-- Form Errors -->
+                    <ul class="text-red-500">
+                      <li>{{ form.non_field_errors }}</li>
+                    </ul>
+
+                    <!-- Submit Button -->
+                    <div>
+                      <input class="w-full bg-green-500 text-white py-3 px-6 rounded-lg shadow hover:bg-green-600 transition duration-300 cursor-pointer" type="submit" value="افزودن محصول" />
+                    </div>
+                  </div>
+                  {% csrf_token %}
+                </form>
+                <!-- My Restaurants Form End -->
               </div>
             </div>
           </div>

@@ -184,7 +184,7 @@ def login(request):
         user = auth.authenticate(email=email, password=password)
         if user:
             auth.login(request, user)
-            messages.success(request, "You are logged in...")
+            messages.info(request, "خوش آمدید")
             if request.POST.get("next") != "None":
                 return redirect(request.build_absolute_uri(request.POST.get("next")))
 
@@ -207,7 +207,7 @@ def login(request):
 @login_required
 def logout(request):
     auth.logout(request)
-    messages.error(request, "You have logged out!")
+    messages.error(request, "شما از حساب خویش خارج شدید!")
     return redirect("main:home")
 
 

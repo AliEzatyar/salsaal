@@ -11,7 +11,7 @@ from accounts.forms import UserProfileForm
 from django.contrib import messages
 from django.utils.text import slugify
 from django.urls import reverse
-from .utils import vendor_tester
+from .utils import get_vendor, vendor_tester
 
 # Create your views here.
 
@@ -33,10 +33,10 @@ def vendor_profile(request):
         if vendor_user_profile_form.is_valid() and vendor_form.is_valid():
             vendor_user_profile_form.save()
             vendor_form.save()
-            messages.success(request, "Your profile has been updated.")
+            messages.success(request, "پروفایل شما تغییر یافت.")
             return redirect("vendor:vendor_profile_edit")
         # there were errros
-        messages.error(request, "خطا در ثبت پروفایل!")
+        messages.error(request, "خطا در تغییر پروفایل!")
         return render(
             request,
             "vendor/profile.html",
@@ -66,9 +66,10 @@ def vendor_profile(request):
 
 @login_required
 @user_passes_test(vendor_tester)
-def vend_dashboard(request):
+def vendor_dashboard(request):
     vendor = Vendor.objects.get(user=request.user)
-    return render(request, "vendor/vend_dashboard.html", {"vendor": vendor})
+    products = Product.objects.filter(vendor=vendor)
+    return render(request, "vendor/vend_dashboard.html", context=locals())
 
 
 @login_required
@@ -81,10 +82,9 @@ def catalog_builder(request):
 
 @login_required
 @user_passes_test(vendor_tester)
-def products_by_category(request, cat_id):
-    category = Category.objects.get(id=cat_id)
-    products = Product.objects.filter(vendor=get_vendor(request), category_id=cat_id)
-    return render(request, "vendor/products_by_category.html", context=locals())
+def vendor_products(request):
+    products = Product.objects.filter(vendor=get_vendor(request))
+    return render(request, "vendor/vendor_products.html", context=locals())
 
 
 @login_required
@@ -142,7 +142,7 @@ def delete_category(request, id):
         messages.success(request, "Category deleted successfully!")
     else:
         messages.error(request, "There is no such category")
-    return redirect("vendor:catalog_builder")
+    return redirect("vendor:vendor_dashboard")
 
 
 @login_required
@@ -159,8 +159,8 @@ def add_product(request):
                 product.save()
                 # successfull
                 messages.success(request, "محصول موفقانه ثبت شد")
-                return redirect("vendor:products_by_category", category_id)
-            except:
+                return redirect("vendor:vendor_dashboard")
+            except Exception as e:
                 messages.error(request, "خطا در ثبت محصول!")
                 return render(request, "vendor/add_product.html", context=locals())
         # there are form errors
@@ -178,8 +178,7 @@ def edit_product(request, id):
     if not product:
         # redirect the vendor back to catalog builder if no such product
         messages.error(request, "چنین محصولی وجود ندارد!")
-
-        return redirect("vendor:catalog_builder")
+        return redirect("vendor:vendor_dashboard")
     # POST
     if request.method == "POST":
         category_id = product.category.id
@@ -188,7 +187,7 @@ def edit_product(request, id):
             form.save()
             # successful
             messages.success(request, "جزییات محصول تغییر یافت")
-            return redirect("vendor:products_by_category", category_id)
+            return redirect("vendor:vendor_dashboard")
 
         # there are form errors
         messages.error(request, "در جریان ثبت تغییرات مشکلی بوجود آمد!")
@@ -208,10 +207,10 @@ def delete_product(request, id):
         category_id = product.category.id
         product.delete()
         messages.success(request, "محصول موفقانه حذف گردید.")
-        return redirect("vendor:products_by_category", category_id)
+        return redirect("vendor:vendor_dashboard")
     else:
         messages.error(request, "چنین محصولی وجود ندارد!")
-    return redirect("vendor:catalog_builder")
+    return redirect("vendor:vendor_dashboard")
 
 
 @login_required

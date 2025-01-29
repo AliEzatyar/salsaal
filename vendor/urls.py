@@ -4,14 +4,14 @@ from . import views
 app_name = "vendor"
 
 urlpatterns = [
-    path("", views.vend_dashboard, name="vendor_dashboard"),
+    path("", views.vendor_dashboard, name="vendor_dashboard"),
     path("profile/", views.vendor_profile, name="vendor_profile_edit"),
     path("catalog-builder/", views.catalog_builder, name="catalog_builder"),
     # catalog CRUD
     path(
-        "catalog-builder/category/<int:cat_id>/",
-        views.products_by_category,
-        name="products_by_category",
+        "products/",
+        views.vendor_products,
+        name="vendor_products",
     ),
     path(
         "catalog-builder/category/add/",
@@ -45,7 +45,7 @@ urlpatterns = [
         name="delete_product",
     ),
     # dashboard
-    path("dashboard/", views.vend_dashboard, name="vendor_dashboard"),
+    path("dashboard/", views.vendor_dashboard, name="vendor_dashboard"),
     # rating
     path("rate-vendor/<int:vend_id>/",views.rate_vendor,name="rate_vendor"),
 ]

@@ -45,6 +45,9 @@ class UserRegForm(forms.ModelForm):
 
 
 class VendorRegForm(forms.ModelForm):
+    vendor_name = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "common-input"})
+    )
 
     class Meta:
         model = Vendor
@@ -69,6 +72,16 @@ class UserProfileForm(forms.ModelForm):
             attrs={
                 "placeholder": "start typing...",
                 "required": "requried",
+                "class": "common-input",
+            }
+        )
+    )
+    city = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "start typing...",
+                "required": "requried",
+                "class": "common-input",
             }
         )
     )

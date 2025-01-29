@@ -1,0 +1,70 @@
+{% extends 'base/base.html' %}
+
+{% block body %}
+  <div class="banner-two">
+    <div class="container container-lg">
+      <div class="banner-two-wrapper flex items-start">
+        {% include 'vendor/sidebar.html' %}
+        <div class="container mx-auto p-6">
+          <h4 class="text-center">مدیریت اجناس شما</h4>
+          <!-- CRUD Buttons -->
+          <div class="flex justify-between mb-6">
+            <a href="{% url 'vendor:add_product' %}" class="bg-green-600 text-white px-5 py-2 rounded-lg shadow hover:bg-green-700">افزودن محصول</a>
+          </div>
+
+          <!-- Table of products -->
+          <div class="overflow-x-auto bg-white shadow-lg rounded-lg">
+            <table class="w-full text-sm text-left border-collapse">
+              <thead class="bg-gray-100 text-gray-700">
+                <tr>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">#</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">نام محصول</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">قیمت</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">کتگوری</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">گدام نمبر</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">عکس</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">قابل دسترس</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">ویرایش کردن</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">حذف کردن</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for product in products %}
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 border-b text-center">{{ forloop.counter }}</td>
+                    <td class="px-6 py-4 border-b text-center bg-green-100">
+                      <a class="text-primary-600" href="{% url 'vendor:edit_product' product.id %}">{{ product.name }}</a>
+                    </td>
+                    <td class="px-6 py-4 border-b text-center">{{ product.price }}</td>
+                    <td class="px-6 py-4 border-b text-center">{{ product.category.name }}</td>
+
+                    <td class="px-6 py-4 border-b text-center">{{ product.inventory }}</td>
+                    <td class="px-6 py-4 border-b flex justify-center items-center">
+                      <img class="img-thumbnail" style="width: 50px;height: 50px; padding: 5px 5px;" src="{{ product.image.url }}" alt="" />
+                    </td>
+
+                    <td class="px-6 py-4 border-b text-center">
+                      <span class="text-lg text-green-600 px-3 py-1 rounded-full text-xs">
+                        {% if product.is_available %}
+                          بله
+                        {% else %}
+                          نخیر
+                        {% endif %}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 border-b text-center">
+                      <a href="{% url 'vendor:edit_product' product.id %}"><i class="fa fa-pencil bg-primary"></i></a>
+                    </td>
+                    <td class="px-6 py-4 border-b text-center">
+                      <a href="{% url 'vendor:delete_product' product.id %}" onclick="return confirm('Are you sure you want to delete it?')"><i class="fa fa-trash bg-green w-100"></i></a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

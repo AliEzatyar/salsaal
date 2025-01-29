@@ -1,5 +1,116 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% block body %}
+  <div class="banner-two">
+    <div class="container container-lg">
+      <div class="banner-two-wrapper flex items-start">
+        {% include "vendor/sidebar.html" %}
+        <!--main content start-->
+        <div class="banner-item-two-wrapper rounded-24 overflow-hidden relative arrow-center flex-grow mb-0">
+          <div class="container mx-auto p-6">
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-30">
+              <!-- Total Orders -->
+              <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg flex items-center">
+                <div class="mr-4">
+                  <!-- Icon for Orders -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11m-9 4h9M7 6h6M2 18h20" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-2xl font-bold  text-white">تعداد سفارشات</h2>
+                  <p class="text-xl">1,230</p>
+                </div>
+              </div>
 
+              <!-- Total Revenue -->
+              <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg flex items-center">
+                <div class="mr-4">
+                  <!-- Icon for Revenue -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7v14m0-14l5 5m-5-5L5 17" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-2xl font-bold text-white">عاید کلی</h2>
+                  <p class="text-xl">$45,670</p>
+                </div>
+              </div>
+
+              <!-- This Month's Revenue -->
+              <div class="bg-yellow-500 text-white p-6 rounded-lg shadow-lg flex items-center">
+                <div class="mr-4">
+                  <!-- Icon for Monthly Revenue -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v8m-4-4h8M2 12a10 10 0 1 1 20 0A10 10 0 0 1 2 12Z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-2xl font-bold text-white">عاید این ماه</h2>
+                  <p class="text-xl">$12,450</p>
+                </div>
+              </div>
+            </div>
+            <h4 class="text-center">لیست فروشات</h4>
+            <br />
+            <!-- Table of products -->
+            <div class="overflow-x-auto bg-white shadow-lg rounded-lg">
+              <table class="w-full text-sm text-left border-collapse">
+                <thead class="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">#</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">نام مشتری</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">آدرس مشتری</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">نام محصول</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">تعداد</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">قیمت مجموع</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">تاریخ</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">وضعیت پرداخت</th>
+                    <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">تیلفون مشتری</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for product in products %}
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-6 py-4 border-b text-center">{{ forloop.counter }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ product.name }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ product.price }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ product.category.name }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ product.inventory }}</td>
+                      <td class="px-6 py-4 border-b flex justify-center items-center">
+                        <img class="img-thumbnail" style="width: 50px;height: 50px; padding: 5px 5px;" src="{{ product.image.url }}" alt="" />
+                      </td>
+
+                      <td class="px-6 py-4 border-b text-center">
+                        <span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs">
+                          {% if product.is_available %}
+                            بله
+                          {% else %}
+                            نخیر
+                          {% endif %}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 border-b text-center">
+                        <a href="{% url 'vendor:edit_product' product.id %}"><i class="fa fa-pencil bg-primary"></i></a>
+                      </td>
+                      <td class="px-6 py-4 border-b text-center">
+                        <a href="{% url 'vendor:delete_product' product.id %}" onclick="return confirm('Are you sure you want to delete it?')"><i class="fa fa-trash bg-green w-100"></i></a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <!-- Table Section -->
+            <div class="overflow-x-auto bg-white shadow-lg rounded-lg">
+              <!-- Your existing table code goes here -->
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- dashboard start -->
 {% endblock %}
