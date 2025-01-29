@@ -4,6 +4,7 @@
   <div class="banner-two">
     <div class="container container-lg">
       <div class="banner-two-wrapper flex items-start">
+        <!-- drop down only for home -->
         <div class="w-265 xl:block hidden flex-shrink-0">
           <div class="responsive-dropdown style-two common-dropdown nav-submenu p-0 submenus-submenu-wrapper shadow-none border border-gray-100 !relative border-t-0">
             <button type="button" class="close-responsive-dropdown rounded-[50%] text-xl absolute right-0 inset-block-start-0 mt-4 me-8 xl:hidden flex"><i class="ph ph-x"></i></button>
@@ -11,33 +12,10 @@
               <a href="index.html" class="link"><img src="images/logo.png" alt="Logo" /></a>
             </div>
             <!-- categories drop down -->
-            <ul class="responsive-dropdown__list  scroll-sm p-0 py-8 overflow-y-auto">
+            <ul class="responsive-dropdown__list scroll-sm p-0 py-8 overflow-y-auto">
               {% for cat in categories %}
                 <li class="has-submenus">
-                  <a href="javascript:void(0)" class="text-gray-500 text-15 py-12 px-16 flex items-center gap-8 rounded-none"><span>{{cat.name}}</span> <span class="icon text-md flex ms-auto"><i class="ph ph-caret-right"></i></span></a>
-                  <div class="submenus-submenu py-16">
-                    <h6 class="text-lg px-16 submenus-submenu__title">{{cat.name}}</h6>
-                    <ul  class="absolute submenus-submenu__list max-h-300 overflow-y-auto scroll-sm">
-                      <li>
-                        <a href="shop.html">Samsung</a>
-                      </li>
-                      <li>
-                        <a href="shop.html">Iphone</a>
-                      </li>
-                      <li>
-                        <a href="shop.html">Vivo</a>
-                      </li>
-                      <li>
-                        <a href="shop.html">Oppo</a>
-                      </li>
-                      <li>
-                        <a href="shop.html">Itel</a>
-                      </li>
-                      <li>
-                        <a href="shop.html">Realme</a>
-                      </li>
-                    </ul>
-                  </div>
+                  <a href="{% url 'main:home_category' cat.name %}" class="text-gray-500 text-15 py-12 px-16 flex items-center gap-8 rounded-none"><span>{{ cat.name }}</span> <span class="icon text-md flex ms-auto"></span></a>
                 </li>
               {% endfor %}
             </ul>
@@ -45,15 +23,12 @@
         </div>
 
         <div class="banner-item-two-wrapper rounded-24 overflow-hidden relative arrow-center flex-grow mb-0">
-          <img src="images/banner-two-bg.png" alt="Image" class="banner-img absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1] object-fit-cover rounded-24" />
+          <img src="{% static 'images/top_banner.jpg' %}" alt="Image" class="banner-img absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1] object-fit-cover rounded-24" />
           <div class="banner-item-two__slider">
             <div class="banner-item-two">
               <div class="banner-item-two__content">
                 <span class="text-white mb-8 h6 wow bounceInDown">Starting at only $250</span>
                 <h2 class="banner-item-two__title bounce text-white wow bounceInLeft">Get The Sound You Love For Less</h2><a href="shop.html" class="btn btn-outline-white inline-flex items-center rounded-[50rem] gap-8 mt-48 wow bounceInUp">Shop Now<span class="icon text-xl flex"><i class="ph ph-shopping-cart-simple"></i></span></a>
-              </div>
-              <div class="banner-item-two__thumb absolute bottom-0 wow bounceInUp" data-wow-duration="1s" data-tilt data-tilt-max="12" data-tilt-speed="500" data-tilt-perspective="5000" data-tilt-scale="1.06">
-                <img src="images/banner-two-img.png" alt="Image" />
               </div>
             </div>
             <div class="banner-item-two">
@@ -75,7 +50,7 @@
       <div class="row g-4">
         <div class="xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="fade-up" data-aos-duration="600">
           <div class="relative rounded-16 overflow-hidden z-[1] p-32">
-            <img src="images/promo-bg-img1.png" alt="Image" class="absolute inset-block-start-0 inset-inline-start-0 w-full h-full object-fit-cover z-[-1]" />
+            <img src="{% static 'images/promo1.jpg' %}" alt="Image" class="absolute inset-block-start-0 inset-inline-start-0 w-full h-full object-fit-cover z-[-1]" />
             <div class="flex-between flex-wrap gap-16">
               <div>
                 <span class="text-heading text-sm mb-8">Latest Deal</span>
