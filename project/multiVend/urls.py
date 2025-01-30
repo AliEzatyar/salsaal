@@ -27,5 +27,5 @@ urlpatterns = [
     path("marketplace/", include("marketplace.urls", namespace="marketplace")),
 ]
 # in production, NGINX does it, but in debug mode, django should do
-if settings.DEBUG:
+if settings.DEBUG and settings.LOCAL:
     urlpatterns += static(settings.MEDIA_URL,document_root =settings.MEDIA_ROOT)

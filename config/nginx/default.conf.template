@@ -22,11 +22,11 @@ server{
         uwsgi_pass django_app;
     }
     location /static/ {
-        alias /code/static_/;
+        alias /code/project/static_/;
     }
 
     location /media/ {
-        alias /code/media/;
+        alias /code/project/media/;
     }
     client_max_body_size 5M;
 }
