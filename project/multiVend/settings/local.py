@@ -1,8 +1,6 @@
 from multiVend.settings.base import *
 from os import environ as env
 
-LOCAL = True
-
 ALLOWED_HOSTS = ["*"]
 
 DATABASES = {

@@ -15,3 +15,4 @@ DATABASES = {
 }
 
 SECRET_KEY = env.get("SECRET_KEY")
+LOCAL = False
