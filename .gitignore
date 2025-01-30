@@ -1,0 +1,14 @@
+venv/
+**pycache**
+**__pycache__**
+**_static
+**static_/admin
+.env
+apitesting_nots**
+mysite.json
+db.sqlite3
+docker-**
+**crt
+**.key
+local.tar
+uwsgi_app.sock

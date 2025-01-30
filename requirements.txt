@@ -1,0 +1,11 @@
+uwsgi
+asgiref
+Django
+django-decouple
+djangorestframework
+djangorestframework_simplejwt
+pillow
+psycopg2-binary
+PyJWT
+sqlparse
+unidecode
