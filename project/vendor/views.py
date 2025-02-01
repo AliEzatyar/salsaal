@@ -25,49 +25,47 @@ def become_seller(request):
 def register_vendor(request):
     # POST
     if request.method == "POST":
-        u_form = UserRegForm(request.POST)
-        v_form = VendorRegForm(request.POST, files=request.FILES)
+        profile_form = UserProfileForm(request.POST,instance = request.user.profile,files=request.FILES)
+        vendor_form = VendorRegForm(request.POST, files=request.FILES)
         # both forms are valid
-        if u_form.is_valid() and v_form.is_valid():
-            cd = u_form.cleaned_data
-            user = u_form.save(commit=False)
-            user.set_password(cd["password"])
-            user.role = SHOP
+        if profile_form.is_valid() and vendor_form.is_valid():
+            cd = profile_form.cleaned_data
+            profile = profile_form.save(commit=False)
+            request.user.role = SHOP
             with atomic():
-                user.save()
-                # sending the email
+                request.user.save()
                 # registering the shop
-                vendor = v_form.save(commit=False)
-                vendor.user = user
-                vendor.user_profile = user.profile
+                vendor = vendor_form.save(commit=False)
+                vendor.user = request.user
+                profile.save()
+                vendor.user_profile = profile
                 vendor.save()
-                send_email(request, user)
                 messages.success(
                     request,
-                    message="Your details were saved and we are verifiying your documents, answer will be sent through the email you provided us.",
+                    message="اطلاعات شما ثبت گردید. تیم ما به زودی اسناد شما را بررسی و جواب آن را ذربعه ایمیل برایتان ارسال خواهند کرد.",
                 )
                 # job done
-                return redirect(reverse("accounts:reg_vend"))
+                return redirect(reverse("accounts:dashboard"))
 
         # forms have got errors
         else:
             messages.error(
-                request, message="Please fix the errors and resubmit the form."
+                request, message="فورم پر شده دارای بعضی مشکلات است."
             )
             return render(
                 request,
                 "vendor/register-vendor.html",
-                {"u_form": u_form, "v_form": v_form},
+                {"profile_form": profile_form, "vendor_form": vendor_form},
             )
 
     # GET
-    u_form = UserRegForm()
-    v_form = VendorRegForm()
+    vendor_form = VendorRegForm()
+    profile_form = UserProfileForm()
     if request.user.role==1:
         return redirect("accounts:dashboard")
 
     return render(
-        request, "vendor/register-vendor.html", {"u_form": u_form, "v_form": v_form}
+        request, "vendor/register-vendor.html", {"profile_form": profile_form, "vendor_form": vendor_form}
     )
 
 

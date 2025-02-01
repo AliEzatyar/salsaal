@@ -70,7 +70,6 @@ class UserProfileForm(forms.ModelForm):
     address = forms.CharField(
         widget=forms.TextInput(
             attrs={
-                "placeholder": "start typing...",
                 "required": "requried",
                 "class": "common-input",
             }
@@ -79,7 +78,6 @@ class UserProfileForm(forms.ModelForm):
     city = forms.CharField(
         widget=forms.TextInput(
             attrs={
-                "placeholder": "start typing...",
                 "required": "requried",
                 "class": "common-input",
             }
