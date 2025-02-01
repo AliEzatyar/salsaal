@@ -7,7 +7,6 @@ app_name = "accounts"
 
 urlpatterns = [
     # accounts
-    path("register-vendor", views.register_vendor, name="reg_vend"),
     path("register", views.register_user, name="reg_user"),
     path(
         "activate-account/<uidb64>/<token>/",
@@ -23,6 +22,7 @@ urlpatterns = [
     path("reset-password/", views.reset_password, name="reset_password"),
     # authentication
     path("login/", views.login, name="login"),
+    path("login/<str:next>/", views.login, name="login_next"),
     path("logout/", views.logout, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("customer-dashboard/", views.customer_dashboard, name="customer_dashboard"),

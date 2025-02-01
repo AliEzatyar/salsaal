@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import debug_toolbar
 from django.contrib import admin
 from django.urls import include, path
 from django.conf.urls.static import static
@@ -25,6 +26,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("vendor/", include("vendor.urls", namespace="vendor")),
     path("marketplace/", include("marketplace.urls", namespace="marketplace")),
+    path("__debug__/", include(debug_toolbar.urls)),
 ]
 # in production, NGINX does it, but in debug mode, django should do
 if settings.DEBUG and settings.LOCAL:

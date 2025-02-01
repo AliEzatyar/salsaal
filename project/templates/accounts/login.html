@@ -1,21 +1,24 @@
 {% extends 'base/base.html' %}
 {% block body %}
-  <div class="breadcrumb mb-0 py-26 bg-main-two-50">
+  <!-- simple navigator -->
+  <div class="breadcrumb mb-0 py-26 bg-main-two-50" dir="rtl">
     <div class="container container-lg">
-      <div class="breadcrumb-wrapper flex-between flex-wrap gap-16">
-        <h6 class="mb-0">My Account</h6>
-        <ul class="flex items-center gap-8 flex-wrap">
-          <li class="text-sm">
-            <a href="index.html" class="text-gray-900 flex items-center gap-8 hover-text-main-600"><i class="ph ph-house"></i> Home</a>
-          </li>
-          <li class="flex items-center">
-            <i class="ph ph-caret-right"></i>
-          </li>
-          <li class="text-sm text-main-600">Account</li>
-        </ul>
-      </div>
+        <div class="breadcrumb-wrapper flex items-center justify-between flex-wrap gap-16">
+            <ul class="flex items-center gap-8 flex-wrap" dir="rtl">
+                <li class="text-sm">
+                    <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-600">
+                        <i class="ph ph-house"></i> صفحه اصلی
+                    </a>
+                </li>
+                <i class="ph ph-caret-left"></i> <!-- Maintained correct arrow direction -->
+                <li class="text-sm text-main-600">ورود</li>
+                <li class="flex items-center">
+                </li>
+            </ul>
+            <h6 class="mb-0">ورود</h6>
+        </div>
     </div>
-  </div>
+</div>
   <section class="account py-80">
     <div class="container container-lg">
       <div class="row g-4">

@@ -22,54 +22,6 @@ def customer_tester(user):
     return True
 
 
-def register_vendor(request):
-    # POST
-    if request.method == "POST":
-        u_form = UserRegForm(request.POST)
-        v_form = VendorRegForm(request.POST, files=request.FILES)
-        # both forms are valid
-        if u_form.is_valid() and v_form.is_valid():
-            cd = u_form.cleaned_data
-            user = u_form.save(commit=False)
-            user.set_password(cd["password"])
-            user.role = SHOP
-            with atomic():
-                user.save()
-                # sending the email
-                # registering the shop
-                vendor = v_form.save(commit=False)
-                vendor.user = user
-                vendor.user_profile = user.profile
-                vendor.save()
-                send_email(request, user)
-                messages.success(
-                    request,
-                    message="Your details were saved and we are verifiying your documents, answer will be sent through the email you provided us.",
-                )
-                # job done
-                return redirect(reverse("accounts:reg_vend"))
-
-        # forms have got errors
-        else:
-            messages.error(
-                request, message="Please fix the errors and resubmit the form."
-            )
-            return render(
-                request,
-                "vendor/register-vendor.html",
-                {"u_form": u_form, "v_form": v_form},
-            )
-
-    # GET
-    u_form = UserRegForm()
-    v_form = VendorRegForm()
-    if request.user.is_authenticated:
-        return redirect("accounts:user_dashboard")
-
-    return render(
-        request, "vendor/register-vendor.html", {"u_form": u_form, "v_form": v_form}
-    )
-
 
 def register_user(request):
     if request.method == "POST":
@@ -176,7 +128,7 @@ def reset_password(request):
     return render(request, "accounts/reset_password.html", {"error": error})
 
 
-def login(request):
+def login(request,next=None):
     # POST
     if request.method == "POST":
         email = request.POST.get("email")

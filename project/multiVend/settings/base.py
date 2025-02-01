@@ -35,6 +35,7 @@ LOCAL = True
 # Application definition
 
 INSTALLED_APPS = [
+    "debug_toolbar",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -146,11 +148,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # message auto classifying for bootstrap
 
-MESSAGE_TAGS = {
-    messages.ERROR: "red",
-    messages.INFO: "green",
-    messages.SUCCESS: "blue"
-}
+MESSAGE_TAGS = {messages.ERROR: "red", messages.INFO: "green", messages.SUCCESS: "blue"}
 
 # REST SETTINGS
 REST_FRAMEWORK = {
@@ -178,3 +176,11 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = config("EMAIL_PORT")
 EMAIL_USE_TLS = True
+
+
+# debug toolbar
+INTERNAL_IPS = [
+    "109.199.99.8",
+    "127.0.0.1",
+    # ...
+]

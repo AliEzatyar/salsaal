@@ -13,8 +13,8 @@
 <header class="header-middle style-two bg-color-neutral">
   <div class="container container-lg">
     <nav class="header-inner flex-between">
-      <div class="logo sm:w-1/2">
-        <a href="{% url 'main:home' %}" class="link"><img src="{% static 'logo/main_logo.png' %}" alt="Logo" /></a>
+      <div class="logo w-1/4 sm:w-1/4">
+        <a href="{% url 'main:home' %}" class="link"><img src="{% static 'logo/main_logo.png' %}" class="sm:w-1/4" alt="Logo" /></a>
       </div>
       <div class="flex items-center md:gap-[16px] max-sm:gap-0">
         <div class="select-dropdown-for-home-two xl:hidden block">
@@ -545,7 +545,7 @@
             </li>
 
             <li class="on-hover-item nav-menu__item">
-              <a href="become-seller.html" class="nav-menu__link text-md">فروشنده شوید</a>
+              <a href="{% url "vendor:become_seller" %}" class="nav-menu__link text-md">فروشنده شوید</a>
             </li>
             <!--add  class 'has-submenu' to ad <> -->
             <li class="on-hover-item nav-menu__item ">

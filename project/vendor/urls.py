@@ -5,6 +5,8 @@ app_name = "vendor"
 
 urlpatterns = [
     path("", views.vendor_dashboard, name="vendor_dashboard"),
+    path("become-seller/", views.become_seller, name="become_seller"),
+    path("register-vendor", views.register_vendor, name="register_vendor"),
     path("profile/", views.vendor_profile, name="vendor_profile_edit"),
     path("catalog-builder/", views.catalog_builder, name="catalog_builder"),
     # catalog CRUD
@@ -47,5 +49,5 @@ urlpatterns = [
     # dashboard
     path("dashboard/", views.vendor_dashboard, name="vendor_dashboard"),
     # rating
-    path("rate-vendor/<int:vend_id>/",views.rate_vendor,name="rate_vendor"),
+    path("rate-vendor/<int:vend_id>/", views.rate_vendor, name="rate_vendor"),
 ]
