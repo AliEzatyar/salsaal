@@ -182,5 +182,7 @@ EMAIL_USE_TLS = True
 INTERNAL_IPS = [
     "109.199.99.8",
     "127.0.0.1",
+    "shop.ahmadyar.pro",
+    "*"
     # ...
 ]
