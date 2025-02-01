@@ -86,14 +86,14 @@ def register_user(request):
 
             # everything successfull
             messages.success(
-                request, message="Your account has been created successfully!"
+                request, message="حساب شما ایجاد شد- لطفا ایمیل خود را چک کنید"
             )
             return redirect(reverse("main:home"))
 
         # form has got errors
         else:
             messages.error(
-                request, message="Please fix the errors and resubmit the form."
+                request, message="در ثبت معلومات مشکلی رخ داد!"
             )
             return render(
                 request,

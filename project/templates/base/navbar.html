@@ -13,7 +13,7 @@
 <header class="header-middle style-two bg-color-neutral">
   <div class="container container-lg">
     <nav class="header-inner flex-between">
-      <div class="logo">
+      <div class="logo sm:w-1/2">
         <a href="{% url 'main:home' %}" class="link"><img src="{% static 'logo/main_logo.png' %}" alt="Logo" /></a>
       </div>
       <div class="flex items-center md:gap-[16px] max-sm:gap-0">
@@ -547,7 +547,8 @@
             <li class="on-hover-item nav-menu__item">
               <a href="become-seller.html" class="nav-menu__link text-md">فروشنده شوید</a>
             </li>
-            <li class="on-hover-item nav-menu__item has-submenu">
+            <!--add  class 'has-submenu' to ad <> -->
+            <li class="on-hover-item nav-menu__item ">
               <a href="javascript:void(0)" class="text-md">فروشگاه ها</a>
             </li>
             <li class="nav-menu__item">
@@ -624,13 +625,7 @@
               </span>
               <span class="text-md text-white item-hover__text hidden xl:flex">Wishlist</span>
             </a>
-            <a href="cart.html" class="flex items-center flex-col gap-8 item-hover-two">
-              <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
-                <i class="ph-fill ph-shuffle"></i>
-                <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span>
-              </span>
-              <span class="text-md text-white item-hover__text hidden xl:flex">Compare</span>
-            </a>
+           
             <a href="cart.html" class="flex items-center flex-col gap-8 item-hover-two">
               <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
                 <i class="ph ph-shopping-cart-simple"></i>
