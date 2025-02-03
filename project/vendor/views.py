@@ -16,20 +16,20 @@ from django.db.transaction import atomic
 # Create your views here.
 
 
-# become a seller
 def become_seller(request):
-    
+    """this view presents seller account creation info"""
     return render(request,"vendor/become_seller.html")
 
 @login_required
 def register_vendor(request):
+    """this view registers a new vendor using vendor form and user profile form"""
     # POST
     if request.method == "POST":
+        # we pass instance since profiles are automatically created when user account is created
         profile_form = UserProfileForm(request.POST,instance = request.user.profile,files=request.FILES)
         vendor_form = VendorRegForm(request.POST, files=request.FILES)
         # both forms are valid
         if profile_form.is_valid() and vendor_form.is_valid():
-            cd = profile_form.cleaned_data
             profile = profile_form.save(commit=False)
             request.user.role = SHOP
             with atomic():
@@ -72,6 +72,7 @@ def register_vendor(request):
 @login_required
 @user_passes_test(vendor_tester)
 def vendor_profile(request):
+    """this view enables vendors to update their user profile and update licience"""
     vendor = request.user.vendor
     vendor_user_profile = UserProfile.objects.filter(user=request.user).first()
     # in POST
@@ -92,7 +93,7 @@ def vendor_profile(request):
         messages.error(request, "خطا در تغییر پروفایل!")
         return render(
             request,
-            "vendor/profile.html",
+            "vendor/vendor_profile.html",
             {
                 "vendor_form": vendor_form,
                 "profile_form": vendor_user_profile_form,
@@ -107,96 +108,31 @@ def vendor_profile(request):
             vendor_form = VendorForm(instance=vendor)
             return render(
                 request,
-                "vendor/profile.html",
+                "vendor/vendor_profile.html",
                 {
                     "vendor_form": vendor_form,
                     "profile_form": vendor_user_profile_form,
                     "profile": vendor_user_profile,
                 },
             )
-        return HttpResponse("You are not a vendor")
+        return HttpResponse("شما اجازه دسترسی به این صفحه را ندارید.")
 
 
 @login_required
 @user_passes_test(vendor_tester)
 def vendor_dashboard(request):
+    """this view represents sales page for a vendor"""
     vendor = Vendor.objects.get(user=request.user)
     products = Product.objects.filter(vendor=vendor)
-    return render(request, "vendor/vend_dashboard.html", context=locals())
-
-
-@login_required
-@user_passes_test(vendor_tester)
-def catalog_builder(request):
-    # sending all related products of this vendor
-    categories = Category.objects.filter(vendor=request.user.vendor)
-    return render(request, "vendor/catalog_builder.html", context=locals())
+    return render(request, "vendor/vendor_dashboard.html", context=locals())
 
 
 @login_required
 @user_passes_test(vendor_tester)
 def vendor_products(request):
+    """this view presents vendor's products with details """
     products = Product.objects.filter(vendor=get_vendor(request))
     return render(request, "vendor/vendor_products.html", context=locals())
-
-
-@login_required
-@user_passes_test(vendor_tester)
-def add_category(request):
-    # POST
-    if request.method == "POST":
-        form = CategoryForm(request.POST)
-        if form.is_valid():
-            category = form.save(commit=False)
-            category.vendor = request.user.vendor
-            category.save()
-            # successfull
-            messages.success(request, "Category Added Successfully")
-            return redirect("vendor:catalog_builder")
-        # there are form errors
-        messages.error(request, "An error occured during saving the category!")
-        return render(request, "vendor/add_category.html", context=locals())
-    # GET
-    form = CategoryForm()
-    return render(request, "vendor/add_category.html", context=locals())
-
-
-@login_required
-@user_passes_test(vendor_tester)
-def edit_category(request, id):
-    category = Category.objects.filter(id=id).first()
-    if not category:
-        # redirect the user back to catalog builder if no category
-        return redirect("vendor:catalog_builder")
-    # POST
-    if request.method == "POST":
-        form = CategoryForm(request.POST, instance=category)
-        if form.is_valid():
-            category = form.save(commit=False)
-            category.save()
-            # successfull
-            messages.success(request, "Category Updated Successfully")
-            return redirect("vendor:catalog_builder")
-        # there are form errors
-        messages.error(request, "An error occured during saving the changes!")
-        return render(request, "vendor/edit_category.html", context=locals())
-    # GET
-    form = CategoryForm(instance=category)
-    return render(request, "vendor/edit_category.html", context=locals())
-
-
-@login_required
-@user_passes_test(vendor_tester)
-def delete_category(request, id):
-    category = Category.objects.filter(id=id).first()
-    if category:
-        # redirect the user back to catalog builder if no category
-        category.delete()
-        messages.success(request, "Category deleted successfully!")
-    else:
-        messages.error(request, "There is no such category")
-    return redirect("vendor:vendor_dashboard")
-
 
 @login_required
 @user_passes_test(vendor_tester)
@@ -227,14 +163,15 @@ def add_product(request):
 @login_required
 @user_passes_test(vendor_tester)
 def edit_product(request, id):
+    """this view enables a vendor to modify and existing product"""
     product = Product.objects.filter(id=id, vendor=request.user.vendor).first()
     if not product:
         # redirect the vendor back to catalog builder if no such product
         messages.error(request, "چنین محصولی وجود ندارد!")
         return redirect("vendor:vendor_dashboard")
+    
     # POST
     if request.method == "POST":
-        category_id = product.category.id
         form = ProductForm(request.POST, instance=product, files=request.FILES)
         if form.is_valid():
             form.save()
@@ -254,10 +191,9 @@ def edit_product(request, id):
 @login_required
 @user_passes_test(vendor_tester)
 def delete_product(request, id):
+    """this view enables a vendor to delete a product"""
     product = Product.objects.filter(id=id, vendor=request.user.vendor).first()
     if product:
-        # redirect the user back to catalog builder if no category
-        category_id = product.category.id
         product.delete()
         messages.success(request, "محصول موفقانه حذف گردید.")
         return redirect("vendor:vendor_dashboard")
@@ -269,23 +205,5 @@ def delete_product(request, id):
 @login_required
 @user_passes_test(user_test)
 def rate_vendor(request, vend_id):
-    vendor = Vendor.objects.filter(id=vend_id).first()
-    if not vendor:
-        messages.error(request,"No such vendor!")
-        return redirect("main:home")
-    # POST
-    if request.method == "POST":
-        form = RatingForm(request.POST)
-        if form.is_valid():
-            rating = form.save(commit=False)
-            rating.customer = request.user
-            rating.vendor = vendor
-            rating.save()
-            messages.success(request,"You have rated successfully!")
-            return redirect("main:home")
-        messages.error(request,"There were some errors while saving your ratings")
-        return render(request, "customer/rate_vendor.html")
+    pass
 
-    # GET
-    form = RatingForm()
-    return render(request, "customer/rate_vendor.html",context=locals())

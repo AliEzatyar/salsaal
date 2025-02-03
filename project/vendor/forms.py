@@ -7,6 +7,8 @@ from django.core.exceptions import ValidationError
 
 
 class VendorForm(forms.ModelForm):
+    """For for creating and updating vendor"""
+
     vendor_license = forms.FileField(
         widget=forms.FileInput(attrs={"class": "btn-primary"}),
         validators=[only_image_validator],
@@ -14,18 +16,15 @@ class VendorForm(forms.ModelForm):
     vendor_name = forms.CharField(
         widget=forms.TextInput(attrs={"class": "common-input"})
     )
+
     class Meta:
         model = Vendor
         fields = ["vendor_license", "vendor_name"]
 
 
-class CategoryForm(forms.ModelForm):
-    class Meta:
-        model = Category
-        fields = ["name", "description"]
-
-
 class ProductForm(forms.ModelForm):
+    """form for product edit/create"""
+
     image = forms.FileField(
         widget=forms.FileInput(attrs={"class": "btn-primary"}),
         validators=[only_image_validator],
@@ -39,12 +38,12 @@ class ProductForm(forms.ModelForm):
     )
 
     def clean_name(self):
+        """this clean method enables unique name validation"""
         data = self.cleaned_data["name"]
         if Product.objects.filter(name=data).exclude(pk=self.instance.pk).exists():
             raise ValidationError("این نام محصول قبلا استفاده شده")
         return data
-    
-    
+
     class Meta:
         model = Product
         exclude = ["vendor", "slug", "modified", "created_at"]

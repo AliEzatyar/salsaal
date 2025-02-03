@@ -23,6 +23,7 @@ def slugify_persian(text):
 
 # utility funciton
 def vendor_tester(user):
+    """this function should be prepended with login required decorator"""
     if user.role != 1 or not hasattr(user, "vendor"):
         raise PermissionDenied
     return True
