@@ -139,7 +139,7 @@ def login(request,next=None):
             messages.info(request, "خوش آمدید")
             if request.POST.get("next") != "None":
                 return redirect(request.build_absolute_uri(request.POST.get("next")))
-
+            
             # redirecting to the dashboard
             return redirect("accounts:dashboard")
 
@@ -178,4 +178,4 @@ def dashboard(request):
 @login_required
 @user_passes_test(customer_tester)
 def customer_dashboard(request):
-    return render(request, "customer/dashboard.html")
+    return render(request, "customer/customer_dashboard.html")

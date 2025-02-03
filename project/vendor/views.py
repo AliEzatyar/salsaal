@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
 from accounts.utils import send_email, user_test
 from catalog.models import Category, Product
-from vendor.forms import CategoryForm, ProductForm, RatingForm, VendorForm
+from vendor.forms import  ProductForm, RatingForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
 from django.contrib import messages
@@ -18,6 +18,8 @@ from django.db.transaction import atomic
 
 def become_seller(request):
     """this view presents seller account creation info"""
+    if request.user.is_authenticated and request.user.role==1:
+        return redirect("accounts:dashboard")
     return render(request,"vendor/become_seller.html")
 
 @login_required
@@ -52,6 +54,7 @@ def register_vendor(request):
             messages.error(
                 request, message="فورم پر شده دارای بعضی مشکلات است."
             )
+            print(vendor_form.errors,"\n\n",profile_form.errors,"")
             return render(
                 request,
                 "vendor/register-vendor.html",
@@ -148,7 +151,7 @@ def add_product(request):
                 product.save()
                 # successfull
                 messages.success(request, "محصول موفقانه ثبت شد")
-                return redirect("vendor:vendor_dashboard")
+                return redirect("vendor:vendor_products")
             except Exception as e:
                 messages.error(request, "خطا در ثبت محصول!")
                 return render(request, "vendor/add_product.html", context=locals())
@@ -168,8 +171,8 @@ def edit_product(request, id):
     if not product:
         # redirect the vendor back to catalog builder if no such product
         messages.error(request, "چنین محصولی وجود ندارد!")
-        return redirect("vendor:vendor_dashboard")
-    
+        return redirect("vendor:vendor_products")
+
     # POST
     if request.method == "POST":
         form = ProductForm(request.POST, instance=product, files=request.FILES)
@@ -177,7 +180,7 @@ def edit_product(request, id):
             form.save()
             # successful
             messages.success(request, "جزییات محصول تغییر یافت")
-            return redirect("vendor:vendor_dashboard")
+            return redirect("vendor:vendor_products")
 
         # there are form errors
         messages.error(request, "در جریان ثبت تغییرات مشکلی بوجود آمد!")
@@ -196,14 +199,13 @@ def delete_product(request, id):
     if product:
         product.delete()
         messages.success(request, "محصول موفقانه حذف گردید.")
-        return redirect("vendor:vendor_dashboard")
+        return redirect("vendor:vendor_products")
     else:
         messages.error(request, "چنین محصولی وجود ندارد!")
-    return redirect("vendor:vendor_dashboard")
+    return redirect("vendor:vendor_products")
 
 
 @login_required
 @user_passes_test(user_test)
 def rate_vendor(request, vend_id):
     pass
-

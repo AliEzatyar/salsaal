@@ -10,6 +10,7 @@ def only_image_validator(filename: InMemoryUploadedFile):
     ext = path.splitext(filename.name)[1]
 
     valid_extensions = [".jpg", ".png", ".jpeg"]
+    print(ext," this was the extension",filename.name)
     if ext.lower() not in valid_extensions:
         raise ValidationError("باید فایل عکس انتخاب کنید")
 

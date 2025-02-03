@@ -14,7 +14,7 @@
             <!-- categories drop down -->
             <ul class="responsive-dropdown__list scroll-sm p-0 py-8 overflow-y-auto">
               {% for cat in categories %}
-                <li class="has-submenus ">
+                <li class="has-submenus">
                   <a href="{% url 'main:home_category' cat.name %}" class="activePage text-gray-500 text-15 py-12 px-16 flex items-center gap-8 rounded-none"><span>{{ cat.name }}</span> <span class="icon text-md flex ms-auto"></span></a>
                 </li>
               {% endfor %}
@@ -45,64 +45,17 @@
       </div>
     </div>
   </div>
-  <section class="promotional-banner mt-32">
-    <div class="container container-lg">
-      <div class="row g-4">
-        <div class="xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="fade-up" data-aos-duration="600">
-          <div class="relative rounded-16 overflow-hidden z-[1] p-32">
-            <img src="{% static 'images/promo1.jpg' %}" alt="Image" class="absolute inset-block-start-0 inset-inline-start-0 w-full h-full object-fit-cover z-[-1]" />
-            <div class="flex-between flex-wrap gap-16">
-              <div>
-                <span class="text-heading text-sm mb-8">Latest Deal</span>
-                <h6 class="mb-0">iPhone 15 Pro Max</h6><a href="shop.html" class="inline-flex items-center gap-8 mt-16 text-heading text-md font-[500] border border-t-0 border-r-0 border-l-0 border-gray-900 hover-text-main-two-600 hover-border-main-two-600">Shop Now <span class="icon text-md flex"><i class="ph ph-plus"></i></span></a>
-              </div>
-              <div class="pe-xxl-4">
-                <img src="images/promo-img1.png" alt="Image" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="fade-up" data-aos-duration="800">
-          <div class="relative rounded-16 overflow-hidden z-[1] p-32">
-            <img src="images/promo-bg-img2.png" alt="Image" class="absolute inset-block-start-0 inset-inline-start-0 w-full h-full object-fit-cover z-[-1]" />
-            <div class="flex-between flex-wrap gap-16">
-              <div class="">
-                <span class="text-heading text-sm mb-8">Get 60% Off</span>
-                <h6 class="mb-0">Instax Mini 11 Camera</h6><a href="shop.html" class="inline-flex items-center gap-8 mt-16 text-heading text-md font-[500] border border-t-0 border-r-0 border-l-0 border-gray-900 hover-text-main-two-600 hover-border-main-two-600">Shop Now <span class="icon text-md flex"><i class="ph ph-plus"></i></span></a>
-              </div>
-              <div class="pe-xxl-4">
-                <img src="images/promo-img2.png" alt="Image" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="fade-up" data-aos-duration="1000">
-          <div class="relative rounded-16 overflow-hidden z-[1] p-32">
-            <img src="images/promo-bg-img3.png" alt="Image" class="absolute inset-block-start-0 inset-inline-start-0 w-full h-full object-fit-cover z-[-1]" />
-            <div class="flex-between flex-wrap gap-16">
-              <div class="">
-                <span class="text-heading text-sm mb-8">Start From $250</span>
-                <h6 class="mb-0">Airpod Headphone</h6><a href="shop.html" class="inline-flex items-center gap-8 mt-16 text-heading text-md font-[500] border border-t-0 border-r-0 border-l-0 border-gray-900 hover-text-main-two-600 hover-border-main-two-600">Shop Now <span class="icon text-md flex"><i class="ph ph-plus"></i></span></a>
-              </div>
-              <div class="pe-xxl-4">
-                <img src="images/promo-img3.png" alt="Image" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+
   <section class="deals-weeek pt-80 overflow-hidden">
     <div class="container container-lg">
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0 wow bounceInLeft">Deal of The Week</h5>
+            <h5 class="mb-0 wow bounceInLeft">فروشات این هفته</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">View All Deals</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
-                <button type="button" id="deal-week-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button> <button type="button" id="deal-week-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button>
+                <button type="button" id="deal-week-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="deal-week-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
               </div>
             </div>
           </div>
@@ -137,182 +90,51 @@
             </div>
           </div>
         </div>
+        <!--sales of week slider -->
         <div class="deals-week-slider arrow-style-two">
+          {% for product in week_sold_products   %}
           <div data-aos="fade-up" data-aos-duration="200">
             <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Sold</span><img src="images/product-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
+              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Sold</span><img src="{{product.image.url}}" alt="Image" class="!w-auto max-w-[unset]" /></a>
               <div class="product-card__content mt-16">
+                <!--ranking -->
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
                 </div>
-                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">Taylor Farms Broccoli Florets Vegetables</a></h6>
+                <!--product name-->
+                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">{{product.name}}</a></h6>
+                <!--venodr name -->
                 <div class="flex items-center gap-4">
-                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">{{product.vendor.vendorname}}</span>
                 </div>
+                <!--sold and remaining -->
                 <div class="mt-8">
                   <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar bg-tertiary-600 rounded-[50rem]" style="width:35%"></div>
-                  </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
+                  </div><span class="text-gray-900 text-xs font-[500] mt-8">مقدار فروش : 18/35</span>
                 </div>
                 <div class="product-card__price my-20">
-                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
-                  <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
-                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">قیمت {{product.price}}</span>
+                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید </a>
               </div>
             </div>
           </div>
-          <div data-aos="fade-up" data-aos-duration="400">
-            <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-danger-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Sale 50%</span><img src="images/product-two-img2.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-              <div class="product-card__content mt-16">
-                <div class="flex items-center gap-6">
-                  <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
-                </div>
-                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">Taylor Farms Broccoli Florets Vegetables</a></h6>
-                <div class="flex items-center gap-4">
-                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
-                </div>
-                <div class="mt-8">
-                  <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-tertiary-600 rounded-[50rem]" style="width:35%"></div>
-                  </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
-                </div>
-                <div class="product-card__price my-20">
-                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
-                  <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
-                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">Add To Cart <i class="ph ph-shopping-cart"></i></a>
-              </div>
-            </div>
-          </div>
-          <div data-aos="fade-up" data-aos-duration="600">
-            <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-warning-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">New</span><img src="images/product-two-img3.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-              <div class="product-card__content mt-16">
-                <div class="flex items-center gap-6">
-                  <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
-                </div>
-                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">Taylor Farms Broccoli Florets Vegetables</a></h6>
-                <div class="flex items-center gap-4">
-                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
-                </div>
-                <div class="mt-8">
-                  <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-tertiary-600 rounded-[50rem]" style="width:35%"></div>
-                  </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
-                </div>
-                <div class="product-card__price my-20">
-                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
-                  <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
-                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">Add To Cart <i class="ph ph-shopping-cart"></i></a>
-              </div>
-            </div>
-          </div>
-          <div data-aos="fade-up" data-aos-duration="800">
-            <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best seller</span> <img src="images/product-two-img4.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-              <div class="product-card__content mt-16">
-                <div class="flex items-center gap-6">
-                  <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
-                </div>
-                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">Taylor Farms Broccoli Florets Vegetables</a></h6>
-                <div class="flex items-center gap-4">
-                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
-                </div>
-                <div class="mt-8">
-                  <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-tertiary-600 rounded-[50rem]" style="width:35%"></div>
-                  </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
-                </div>
-                <div class="product-card__price my-20">
-                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
-                  <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
-                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">Add To Cart <i class="ph ph-shopping-cart"></i></a>
-              </div>
-            </div>
-          </div>
-          <div data-aos="fade-up" data-aos-duration="1000">
-            <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best Seller</span><img src="images/product-two-img5.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-              <div class="product-card__content mt-16">
-                <div class="flex items-center gap-6">
-                  <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
-                </div>
-                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">Taylor Farms Broccoli Florets Vegetables</a></h6>
-                <div class="flex items-center gap-4">
-                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
-                </div>
-                <div class="mt-8">
-                  <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-tertiary-600 rounded-[50rem]" style="width:35%"></div>
-                  </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
-                </div>
-                <div class="product-card__price my-20">
-                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
-                  <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
-                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">Add To Cart <i class="ph ph-shopping-cart"></i></a>
-              </div>
-            </div>
-          </div>
-          <div data-aos="fade-up" data-aos-duration="1200">
-            <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best seller</span> <img src="images/product-two-img6.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-              <div class="product-card__content mt-16">
-                <div class="flex items-center gap-6">
-                  <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
-                </div>
-                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">Taylor Farms Broccoli Florets Vegetables</a></h6>
-                <div class="flex items-center gap-4">
-                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
-                </div>
-                <div class="mt-8">
-                  <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-tertiary-600 rounded-[50rem]" style="width:35%"></div>
-                  </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
-                </div>
-                <div class="product-card__price my-20">
-                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
-                  <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
-                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">Add To Cart <i class="ph ph-shopping-cart"></i></a>
-              </div>
-            </div>
-          </div>
-          <div data-aos="fade-up" data-aos-duration="1400">
-            <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-              <a href="product-details-two.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-warning-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">New</span><img src="images/product-two-img9.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-              <div class="product-card__content mt-16">
-                <div class="flex items-center gap-6">
-                  <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
-                </div>
-                <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details-two.html" class="link text-line-2" tabindex="0">Taylor Farms Broccoli Florets Vegetables</a></h6>
-                <div class="flex items-center gap-4">
-                  <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
-                </div>
-                <div class="mt-8">
-                  <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-tertiary-600 rounded-[50rem]" style="width:35%"></div>
-                  </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
-                </div>
-                <div class="product-card__price my-20">
-                  <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
-                  <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
-                </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">Add To Cart <i class="ph ph-shopping-cart"></i></a>
-              </div>
-            </div>
-          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
   </section>
+  
   <section class="top-selling-products pt-80 overflow-hidden">
     <div class="container container-lg">
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0 wow bounceInLeft">Top Selling Products</h5>
+            <h5 class="mb-0 wow bounceInLeft">اجناس پر فروش</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">View All Deals</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
-                <button type="button" id="top-selling-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button> <button type="button" id="top-selling-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button>
+                <button type="button" id="top-selling-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="top-selling-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
               </div>
             </div>
           </div>
@@ -458,7 +280,7 @@
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0 wow bounceInLeft">Trending Products</h5>
+            <h5 class="mb-0 wow bounceInLeft">مروج روز</h5>
             <ul class="nav common-tab style-two nav-pills wow bounceInRight" id="pills-tab" role="tablist">
               <li class="nav-item" role="presentation">
                 <button class="nav-link bt-tb-btn-p active" data-target="#pills-all" id="pills-all-tab" data-bs-toggle="pill" data-bs-target="#pills-all" type="button" role="tab" aria-controls="pills-all" aria-selected="true">All</button>
@@ -1355,7 +1177,7 @@
             <img src="images/discount-bg1.jpg" alt="Image" class="absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1]" />
             <div class="w-full flex-between gap-20">
               <div class="discount-item__content">
-                <span class="font-[600] text-tertiary-600 mb-20">UP TO 30% OFF</span>
+                <span class="font-[600] text-tertiary-600 mb-20">الی ۳۰ فیصد تخفیف</span>
                 <h6 class="mb-20">57" Odyssey Neo G9 Dual 4K UHD Quantum Mini-LED</h6><a href="shop.html" class="btn btn-outline-black rounded-[50rem] gap-8" tabindex="0">Shop Now</a>
               </div><img src="images/discount-img1.png" alt="Image" class="md:block hidden" />
             </div>
@@ -1366,7 +1188,7 @@
             <img src="images/discount-bg2.jpg" alt="Image" class="absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1]" />
             <div class="w-full flex-between gap-20">
               <div class="discount-item__content">
-                <span class="font-[600] text-tertiary-600 mb-20">UP TO 30% OFF</span>
+                <span class="font-[600] text-tertiary-600 mb-20">الی ۳۰ فیصد تخفیف</span>
                 <h6 class="mb-20">57" Odyssey Neo G9 Dual 4K UHD Quantum Mini-LED</h6><a href="shop.html" class="btn btn-outline-black rounded-[50rem] gap-8" tabindex="0">Shop Now</a>
               </div><img src="images/discount-img2.png" alt="Image" class="md:block hidden" />
             </div>
@@ -1382,11 +1204,11 @@
           <div class="border border-gray-100 p-24 rounded-16">
             <div class="section-heading mb-24">
               <div class="flex-between flex-wrap gap-8">
-                <h5 class="mb-0 wow bounceInLeft">Featured Products</h5>
+                <h5 class="mb-0 wow bounceInLeft">اجناس مخصوص</h5>
                 <div class="flex items-center gap-16 wow bounceInRight">
-                  <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">View All Deals</a>
+                  <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
                   <div class="flex items-center gap-8">
-                    <button type="button" id="featured-products-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button> <button type="button" id="featured-products-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button>
+                    <button type="button" id="featured-products-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="featured-products-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
                   </div>
                 </div>
               </div>
@@ -1571,11 +1393,11 @@
           <div class="border border-gray-100 p-24 rounded-16">
             <div class="section-heading mb-24">
               <div class="flex-between flex-wrap gap-8">
-                <h5 class="mb-0 wow bounceInLeft">Recommended For You</h5>
+                <h5 class="mb-0 wow bounceInLeft">توصیه شده برای شما</h5>
                 <div class="flex items-center gap-16 wow bounceInRight">
-                  <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">View All</a>
+                  <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
                   <div class="flex items-center gap-8">
-                    <button type="button" id="recommended-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button> <button type="button" id="recommended-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button>
+                    <button type="button" id="recommended-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="recommended-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
                   </div>
                 </div>
               </div>
@@ -1693,7 +1515,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0 wow bounceInLeft">Popular Products</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">View All Products</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
             </div>
           </div>
         </div>
@@ -1804,7 +1626,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0 wow bounceInLeft">Popular Products</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">View All Products</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
             </div>
           </div>
         </div>
@@ -1819,7 +1641,7 @@
                 </div>
               </div>
               <div class="relative slick-arrows-style-three">
-                <button type="button" id="vendor-prev" class="slick-prev slick-arrow absolute top-[50%] translate-y-[-50%] flex items-center justify-center rounded-[50%] bg-neutral-600 hover-bg-main-two-600 w-24 h-24 text-white text-sm z-[1] transition-1 inset-inline-start-0"><i class="ph ph-caret-left"></i></button> <button type="button" id="vendor-next" class="slick-next slick-arrow absolute top-[50%] translate-y-[-50%] flex items-center justify-center rounded-[50%] bg-neutral-600 hover-bg-main-two-600 w-24 h-24 text-white text-sm z-[1] transition-1 right-0"><i class="ph ph-caret-right"></i></button>
+                <button type="button" id="vendor-prev" class="slick-prev slick-arrow absolute top-[50%] translate-y-[-50%] flex items-center justify-center rounded-[50%] bg-neutral-600 hover-bg-main-two-600 w-24 h-24 text-white text-sm z-[1] transition-1 inset-inline-start-0"><i class="ph ph-caret-right"></i></button> <button type="button" id="vendor-next" class="slick-next slick-arrow absolute top-[50%] translate-y-[-50%] flex items-center justify-center rounded-[50%] bg-neutral-600 hover-bg-main-two-600 w-24 h-24 text-white text-sm z-[1] transition-1 right-0"><i class="ph ph-caret-left"></i></button>
                 <div class="vendor-card__list style-two mt-22">
                   <div class="">
                     <div class="vendor-card__item bg-white rounded-[50%] flex items-center justify-center">
@@ -2019,7 +1841,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0 wow bounceInLeft">Recently Viewed Products</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">View All Products</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
             </div>
           </div>
         </div>
@@ -2152,7 +1974,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0">Top Brands</h5>
             <div class="flex items-center gap-8">
-              <button type="button" id="topBrand-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-two-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button> <button type="button" id="topBrand-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-two-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button>
+              <button type="button" id="topBrand-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-two-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="topBrand-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-two-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
             </div>
           </div>
         </div>

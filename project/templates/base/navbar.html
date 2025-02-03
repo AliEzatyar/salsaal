@@ -14,7 +14,7 @@
   <div class="container container-lg">
     <nav class="header-inner flex-between">
       <div class="logo w-1/4 sm:w-1/4">
-        <a href="{% url 'main:home' %}" class="link"><img src="{% static 'logo/main_logo.png' %}" class="sm:w-1/4" alt="Logo" /></a>
+        <a href="{% url 'main:home' %}" class="link"><span class="text-2xl text-white"> صلصال استور</span></a>
       </div>
       <div class="flex items-center md:gap-[16px] max-sm:gap-0">
         <div class="select-dropdown-for-home-two xl:hidden block">
@@ -70,10 +70,10 @@
         <form action="#" class="flex items-center flex-wrap form-location-wrapper">
           <div class="search-category style-two h-48 search-form md:flex hidden">
             <select class="js-example-basic-single border-gray-200 border-r-0 rounded-none border-0" name="state">
-              <option value="1" selected="selected">همه کتگوری ها</option>
+              {% comment %} <option value="1" selected="selected">همه کتگوری ها</option>
               {% for cat in categories %}
                 <option value="1">{{ cat.name }}</option>
-              {% endfor %}
+              {% endfor %} {% endcomment %}
             </select>
             <div class="search-form__wrapper relative">
               <input class="search-form__input common-input py-13 ps-16 pe-18 rounded-none border-0" placeholder="نام محصول یا کمپنی را جستجو کنید" />
@@ -544,13 +544,18 @@
               </ul>
             </li>
 
-            <li class="on-hover-item nav-menu__item">
-              <a href="{% url "vendor:become_seller" %}" class="nav-menu__link text-md">فروشنده شوید</a>
-            </li>
-            <!--add  class 'has-submenu' to ad <> -->
-            <li class="on-hover-item nav-menu__item ">
-              <a href="javascript:void(0)" class="text-md">فروشگاه ها</a>
-            </li>
+            {% if request.user.role != 1 %}
+              <li class="on-hover-item nav-menu__item">
+                <a href="{% url 'vendor:become_seller' %}" class="nav-menu__link text-md">فروشنده شوید</a>
+              </li>
+            {% endif %}
+            <!-- add class 'has-submenu' to ad <> -->
+            {% if request.user.role != 1 %}
+              <li class="on-hover-item nav-menu__item">
+                <a href="javascript:void(0)" class="text-md">فروشگاه ها</a>
+              </li>
+            {% endif %}
+
             <li class="nav-menu__item">
               <a href="contact.html" class="nav-menu__link text-md">ارتباط با ما</a>
             </li>
@@ -625,7 +630,7 @@
               </span>
               <span class="text-md text-white item-hover__text hidden xl:flex">Wishlist</span>
             </a>
-           
+
             <a href="cart.html" class="flex items-center flex-col gap-8 item-hover-two">
               <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
                 <i class="ph ph-shopping-cart-simple"></i>

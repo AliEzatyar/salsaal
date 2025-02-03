@@ -15,6 +15,8 @@ def home(request, cat=None):
         if temp:
             products = products.filter(category__name=cat)
             
+    week_sold_products = products
+    top_selling_products = products
     vendors = Vendor.objects.annotate(
         average_rating=(
             Avg("ratings__c_service")

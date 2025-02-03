@@ -26,7 +26,7 @@ urlpatterns = [
     path("logout/", views.logout, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("customer-dashboard/", views.customer_dashboard, name="customer_dashboard"),
-    # rest
+    # rest API
     path("api/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("api/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/register/", api_views.RegisterUser.as_view(), name="reg_user_api"),

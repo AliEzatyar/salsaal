@@ -7,12 +7,6 @@ from vendor.utils import slugify_persian
 
 
 class Category(models.Model):
-    vendor = models.ForeignKey(
-        "vendor.Vendor",
-        on_delete=models.CASCADE,
-        related_name="categories",
-    )
-
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(max_length=250, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
