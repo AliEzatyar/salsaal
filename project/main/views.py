@@ -17,6 +17,8 @@ def home(request, cat=None):
             
     week_sold_products = products
     top_selling_products = products
+    trending_products = products
+    recently_viewed = products
     vendors = Vendor.objects.annotate(
         average_rating=(
             Avg("ratings__c_service")
