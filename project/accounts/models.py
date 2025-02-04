@@ -114,3 +114,6 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+    def get_full_address(self):
+        return self.address + ", " + self.city

@@ -179,10 +179,10 @@ EMAIL_USE_TLS = True
 
 
 # debug toolbar
-INTERNAL_IPS = [
-    "109.199.99.8",
-    "127.0.0.1",
-    "shop.ahmadyar.pro",
-    "*"
-    # ...
-]
+# INTERNAL_IPS = [
+#     "109.199.99.8",
+#     "127.0.0.1",
+#     "shop.ahmadyar.pro",
+#     "*"
+#     # ...
+# ]
