@@ -169,7 +169,7 @@
                     <div class="flex items-center gap-8">
                       <span class="flex items-center justify-center text-main-two-600 text-2xl flex-shrink-0"><i class="ph ph-phone"></i></span><a href="tel:0833081888" class="text-md text-gray-900 hover-text-main-60">{{ vendor.user_profile.phone_number }}</a>
                     </div>
-                  </div><a href="vendor-two-details.html" class="btn bg-neutral-600 hover-bg-neutral-700 text-white py-12 px-24 rounded-8 flex items-center justify-center gap-8 font-[500] mt-24">مشاهده جزيیات فروشنده<span class="text-xl flex text-main-two-600"><i class="ph ph-storefront"></i></span></a>
+                  </div><a href="{%url 'vendor:vendor_details' vendor.vendor_name %}" class="btn bg-neutral-600 hover-bg-neutral-700 text-white py-12 px-24 rounded-8 flex items-center justify-center gap-8 font-[500] mt-24">مشاهده جزيیات فروشنده<span class="text-xl flex text-main-two-600"><i class="ph ph-storefront"></i></span></a>
                 </div>
               </div>
             {% endfor %}

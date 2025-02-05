@@ -24,4 +24,4 @@ def vendors(request,page=None, category_slug=None, rating=None, city=None):
         except:
             pass
     
-    return render(request, "marketplace/listings.html", context=locals())
+    return render(request, "marketplace/vendors_list.html", context=locals())

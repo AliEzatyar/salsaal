@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
 from accounts.utils import send_email, user_test
 from catalog.models import Category, Product
-from vendor.forms import  ProductForm, RatingForm, VendorForm
+from vendor.forms import ProductForm, RatingForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
 from django.contrib import messages
@@ -13,14 +13,17 @@ from django.utils.text import slugify
 from django.urls import reverse
 from .utils import get_vendor, vendor_tester
 from django.db.transaction import atomic
+from django.db.models.aggregates import Count
+from collections import Counter
 # Create your views here.
 
 
 def become_seller(request):
     """this view presents seller account creation info"""
-    if request.user.is_authenticated and request.user.role==1:
+    if request.user.is_authenticated and request.user.role == 1:
         return redirect("accounts:dashboard")
-    return render(request,"vendor/become_seller.html")
+    return render(request, "vendor/become_seller.html")
+
 
 @login_required
 def register_vendor(request):
@@ -28,7 +31,9 @@ def register_vendor(request):
     # POST
     if request.method == "POST":
         # we pass instance since profiles are automatically created when user account is created
-        profile_form = UserProfileForm(request.POST,instance = request.user.profile,files=request.FILES)
+        profile_form = UserProfileForm(
+            request.POST, instance=request.user.profile, files=request.FILES
+        )
         vendor_form = VendorRegForm(request.POST, files=request.FILES)
         # both forms are valid
         if profile_form.is_valid() and vendor_form.is_valid():
@@ -51,10 +56,8 @@ def register_vendor(request):
 
         # forms have got errors
         else:
-            messages.error(
-                request, message="فورم پر شده دارای بعضی مشکلات است."
-            )
-            print(vendor_form.errors,"\n\n",profile_form.errors,"")
+            messages.error(request, message="فورم پر شده دارای بعضی مشکلات است.")
+            print(vendor_form.errors, "\n\n", profile_form.errors, "")
             return render(
                 request,
                 "vendor/register-vendor.html",
@@ -64,11 +67,13 @@ def register_vendor(request):
     # GET
     vendor_form = VendorRegForm()
     profile_form = UserProfileForm()
-    if request.user.role==1:
+    if request.user.role == 1:
         return redirect("accounts:dashboard")
 
     return render(
-        request, "vendor/register-vendor.html", {"profile_form": profile_form, "vendor_form": vendor_form}
+        request,
+        "vendor/register-vendor.html",
+        {"profile_form": profile_form, "vendor_form": vendor_form},
     )
 
 
@@ -121,21 +126,33 @@ def vendor_profile(request):
         return HttpResponse("شما اجازه دسترسی به این صفحه را ندارید.")
 
 
+def vendor_details(request, vendor_name):
+    """public accessible view to show details of a vendor"""
+    vendor = Vendor.objects.filter(vendor_name=vendor_name).first()
+    if not vendor:
+        return HttpResponse("حساب فروشنده با این نام موجود نیست!")
+    vendor_products = Product.objects.filter(vendor=vendor)
+    categories = [pro.category.name for pro in vendor_products]
+    cat_count_pro = Counter(categories).items()
+    products_count = vendor_products.count()
+    return render(request, "vendor/vendor_details.html", context=locals())
+
+
 @login_required
 @user_passes_test(vendor_tester)
 def vendor_dashboard(request):
     """this view represents sales page for a vendor"""
     vendor = Vendor.objects.get(user=request.user)
-    products = Product.objects.filter(vendor=vendor)
     return render(request, "vendor/vendor_dashboard.html", context=locals())
 
 
 @login_required
 @user_passes_test(vendor_tester)
 def vendor_products(request):
-    """this view presents vendor's products with details """
+    """this view presents vendor's products with details enables CRUD for products"""
     products = Product.objects.filter(vendor=get_vendor(request))
     return render(request, "vendor/vendor_products.html", context=locals())
+
 
 @login_required
 @user_passes_test(vendor_tester)
