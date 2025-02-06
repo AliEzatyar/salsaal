@@ -9,6 +9,11 @@
             <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-600"><i class="ph ph-house"></i> صفحه اصلی</a>
           </li>
           <i class="ph ph-caret-left"></i> <!-- Maintained correct arrow direction -->
+          <li class="text-sm text-main-600">
+            <a href="{% url 'marketplace:vendors' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-600"><i class="ph ph-house"></i>فروشنده ها</a>
+          </li>
+
+          <i class="ph ph-caret-left"></i> <!-- Maintained correct arrow direction -->
           <li class="text-sm text-main-600">جزییات فروشنده</li>
           <li class="flex items-center"></li>
         </ul>
@@ -52,7 +57,7 @@
               <ul class="max-h-540 overflow-y-auto scroll-sm">
                 {% for key, value in cat_count_pro %}
                   <li class="mb-24">
-                    <a href="product-details-two.html" class="text-gray-900 hover-text-main-600">{{key}} ({{value}})</a>
+                    <a href="product-details-two.html" class="text-gray-900 hover-text-main-600">{{ key }} ({{ value }})</a>
                   </li>
                 {% endfor %}
               </ul>
@@ -106,20 +111,17 @@
         <div class="vendor-two-details__contents">
           <!-- banner -->
           <div class="inner-banner-two bg-img rounded-16 overflow-hidden relative">
-            <div class="bg-orange-500">
-              
-            </div>
+            <div class="bg-orange-500"></div>
             <!-- simple details -->
             <div class="row justify-end bg-neutral-600 p-24 text-white">
               <div class="w-6/12 flex-grow-0 flex-shrink-0 basis-auto xl:block hidden"></div>
               <div class="w-full 2xl:w-6/12 flex-grow-0 flex-shrink-0 basis-auto">
                 <div class="text-center py-32">
                   <p class="text-center text-xl text-bold">مشخصات فروشنده</p>
-                  <p class="text-right">نام : {{vendor.vendor_name}}</p>
-                  <p class="text-right">ایمیل: {{vendor.user.email}}</p>
-                  <p class="text-right">آدزس : {{vendor.user_profile.address}}</p>
+                  <p class="text-right">نام : {{ vendor.vendor_name }}</p>
+                  <p class="text-right">ایمیل: {{ vendor.user.email }}</p>
+                  <p class="text-right">آدزس : {{ vendor.user_profile.address }}</p>
                   <p class="text-right">بدون جزییات</p>
-
                 </div>
               </div>
             </div>
@@ -129,7 +131,7 @@
               <input class="form-control block w-full p-[0.375rem_0.75rem] text-base leading-6 text-[#495057] bg-white bg-clip-padding border border-[#ced4da] rounded transition-all duration-150 ease-in-out focus:text-[#495057] focus:bg-white focus:border-main focus:outline-0 focus:shadow-none common-input rounded-start-3" placeholder="جستجو" /> <button type="submit" class="input-group relative flex flex-wrap items-center w-full-text border-0 bg-main-two-600 !rounded-tr-[0.5rem] !rounded-br-[0.5rem] text-white text-2xl hover-bg-main-two-700 px-24"><i class="ph ph-magnifying-glass"></i></button>
             </form>
             <div class="flex items-center justify-between md:justify-end gap-16 flex-grow">
-              <span class="text-gray-900"> {{products_count}} نتایج</span>
+              <span class="text-gray-900">{{ products_count }} نتایج</span>
               <div class="items-center gap-8 md:flex hidden">
                 <button type="button" class="grid-btn text-2xl flex w-48 h-48 border border-neutral-100 rounded-8 justify-center items-center border-main-600 text-white bg-main-600"><i class="ph ph-squares-four"></i></button> <button type="button" class="list-btn text-2xl flex w-48 h-48 border border-neutral-100 rounded-8 justify-center items-center"><i class="ph ph-list-bullets"></i></button>
               </div>

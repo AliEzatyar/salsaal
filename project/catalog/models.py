@@ -1,6 +1,4 @@
 from django.db import models
-
-from vendor.models import Vendor
 from vendor.utils import slugify_persian
 
 # Create your models here.

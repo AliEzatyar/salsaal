@@ -1,5 +1,5 @@
 {% extends 'base/base.html' %}
-
+{% load tags %}
 {% block body %}
   <!-- simple navigator -->
   <div class="breadcrumb mb-0 py-26 bg-main-two-50" dir="rtl">
@@ -21,13 +21,13 @@
   <section class="vendor-two py-40">
     <div class="container container-lg">
       <div class="flex items-center justify-between flex-wrap mb-48 gap-16">
-        <form action="#" class="input-group relative flex flex-wrap items-stretch w-full max-w-418">
-          <input class="form-control block w-full p-[0.375rem_0.75rem] text-base leading-6 text-[#495057] bg-white bg-clip-padding border border-[#ced4da] rounded transition-all duration-150 ease-in-out focus:text-[#495057] focus:bg-white focus:border-main focus:outline-0 focus:shadow-none common-input rounded-start-3" placeholder="جستجو" /> <button type="submit" class="input-group relative flex flex-wrap items-center w-full-text border-0 bg-main-two-600 !rounded-tr-[0.5rem] !rounded-br-[0.5rem] text-white text-2xl hover-bg-main-two-700 px-24"><i class="ph ph-magnifying-glass"></i></button>
+        <form action="{%url 'marketplace:search_vendor' %}" class="input-group relative flex flex-wrap items-stretch w-full max-w-418">
+          <input name="query" class="form-control block w-full p-[0.375rem_0.75rem] text-base leading-6 text-[#495057] bg-white bg-clip-padding border border-[#ced4da] rounded transition-all duration-150 ease-in-out focus:text-[#495057] focus:bg-white focus:border-main focus:outline-0 focus:shadow-none common-input rounded-start-3" placeholder="جستجو" /> <button type="submit" class="input-group relative flex flex-wrap items-center w-full-text border-0 bg-main-two-600 !rounded-tr-[0.5rem] !rounded-br-[0.5rem] text-white text-2xl hover-bg-main-two-700 px-24"><i class="ph ph-magnifying-glass"></i></button>
         </form>
         <div class="flex items-center justify-between md:justify-end gap-16 flex-grow">
           <div class="text-gray-600 text-md flex-shrink-0">
-            <span class="text-neutral-900 font-[600]">۵۲</span>
-            نتیجه پیدا شده
+            <span class="text-neutral-900 font-[600]">{{ amount_vendors }}</span>
+            نتیجه پیدا شد
           </div>
           <div class="flex items-center gap-8 md:flex hidden">
             <button type="button" class="grid-btn text-2xl flex w-48 h-48 border border-neutral-100 rounded-8 justify-center items-center border-main-600 text-white bg-main-600"><i class="ph ph-squares-four"></i></button> <button type="button" class="list-btn text-2xl flex w-48 h-48 border border-neutral-100 rounded-8 justify-center items-center"><i class="ph ph-list-bullets"></i></button>
@@ -41,12 +41,12 @@
             <div class="flex flex-col gap-12 px-lg-0 px-3 py-lg-0 py-4">
               <!-- filter by categories -->
               <div class="border border-gray-50 rounded-8 p-24">
-                <h6 class="text-xl border-b border-gray-100 pb-24 mb-24">کتگوری های اجناس</h6>
+                <h6 class="text-xl border-b border-gray-100 pb-24 mb-24">فیلتر بر اساس کتگوری</h6>
 
                 <ul class="max-h-540 overflow-y-auto scroll-sm">
                   {% for cat in categories %}
                     <li class="mb-24">
-                      <a href="product-details-two.html" class="text-gray-900 hover-text-main-600">{{ cat.name }}</a>
+                      <a href="{% update_query request category_slug=cat.slug %}" class="text-gray-900 hover-text-main-600">{{ cat.name }}</a>
                     </li>
                   {% endfor %}
                 </ul>
@@ -120,13 +120,14 @@
               <div class="border border-gray-50 rounded-8 p-24">
                 <h6 class="text-xl border-b border-gray-100 pb-24 mb-24">فیلتر بر اساس موقعیت</h6>
                 <div class="flex flex-col gap-8">
-                  <select class="common-input form-select">
-                    <option value="" selected="selected" disabled="disabled">شهر</option>
-                    <option value="">کابل</option>
-                    <option value="">هرات</option>
-                    <option value="">غزنی</option>
-                    <option value="">مزار شریف</option>
-                  </select>
+                  <form action="{% update_query request  %}" id="filterForm" method="GET">
+                    <select name="city" onchange="this.form.submit()" class="common-input form-select">
+                      <option value="" selected="selected" disabled="disabled">شهر</option>
+                      {% for city in cities %}
+                        <option value="{{ city }}">{{ city }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
                 </div>
               </div>
             </div>
@@ -161,15 +162,15 @@
                   <div class="flex flex-col gap-14">
                     <div class="flex items-center gap-8">
                       <span class="flex items-center justify-center text-main-two-600 text-2xl flex-shrink-0"><i class="ph ph-map-pin-line"></i></span>
-                      <p class="text-md text-gray-900">{{ vendor.user_profile.get_full_address }}</p>
+                      <p class="text-sm text-gray-900">{{ vendor.user_profile.get_full_address }}</p>
                     </div>
                     <div class="flex items-center gap-8">
-                      <span class="flex items-center justify-center text-main-two-600 text-2xl flex-shrink-0"><i class="ph ph-envelope-simple"></i></span><a href="mailto:info@watch.com" class="text-md text-gray-900 hover-text-main-60">{{ vendor.user.email }}</a>
+                      <span class="flex items-center justify-center text-main-two-600 text-2xl flex-shrink-0"><i class="ph ph-envelope-simple"></i></span><a href="mailto:info@watch.com" class="text-sm text-gray-900 hover-text-main-60">{{ vendor.user.email }}</a>
                     </div>
                     <div class="flex items-center gap-8">
-                      <span class="flex items-center justify-center text-main-two-600 text-2xl flex-shrink-0"><i class="ph ph-phone"></i></span><a href="tel:0833081888" class="text-md text-gray-900 hover-text-main-60">{{ vendor.user_profile.phone_number }}</a>
+                      <span class="flex items-center justify-center text-main-two-600 text-2xl flex-shrink-0"><i class="ph ph-phone"></i></span><a href="tel:0833081888" class="text-sm text-gray-900 hover-text-main-60">{{ vendor.user_profile.phone_number }}</a>
                     </div>
-                  </div><a href="{%url 'vendor:vendor_details' vendor.vendor_name %}" class="btn bg-neutral-600 hover-bg-neutral-700 text-white py-12 px-24 rounded-8 flex items-center justify-center gap-8 font-[500] mt-24">مشاهده جزيیات فروشنده<span class="text-xl flex text-main-two-600"><i class="ph ph-storefront"></i></span></a>
+                  </div><a href="{% url 'vendor:vendor_details' vendor.vendor_name %}" class="btn bg-neutral-600 hover-bg-neutral-700 text-white py-12 px-24 rounded-8 flex items-center justify-center gap-8 font-[500] mt-24">مشاهده جزيیات فروشنده<span class="text-xl flex text-main-two-600"><i class="ph ph-storefront"></i></span></a>
                 </div>
               </div>
             {% endfor %}
@@ -180,9 +181,9 @@
             <li class="page-item">
               <a class="page-link h-64 w-64 flex items-center justify-center text-xxl rounded-8 font-[500] text-neutral-600 border border-gray-100" href="index.html"><i class="ph-bold ph-arrow-right"></i></a>
             </li>
-            {% for page in amount_pages %}
+            {% for page in page_numbers %}
               <li class="page-item active">
-                <a class="page-link h-64 w-64 flex items-center justify-center text-md rounded-8 font-[500] text-neutral-600 border border-gray-100" href="{%url 'marketplace:vendors_by_page' page %}">{{page}}</a>
+                <a class="page-link h-64 w-64 flex items-center justify-center text-md rounded-8 font-[500] text-neutral-600 border border-gray-100" href="{% url 'marketplace:vendors_by_page' page %}">{{ page }}</a>
               </li>
             {% endfor %}
 

@@ -215,7 +215,7 @@
             <!-- add class 'has-submenu' to ad <> -->
             {% if request.user.role != 1 %}
               <li class="on-hover-item nav-menu__item">
-                <a href="{% url 'marketplace:all_vendors' %}" class="text-md">فروشنده ها</a>
+                <a href="{% url 'marketplace:vendors' %}" class="text-md">فروشنده ها</a>
               </li>
             {% endif %}
 
