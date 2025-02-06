@@ -6,7 +6,6 @@ app_name = "vendor"
 urlpatterns = [
     path("", views.vendor_dashboard, name="vendor_dashboard"),
     path("profile/", views.vendor_profile, name="vendor_profile_edit"),
-    path("vendor-details/<str:vendor_name>/",views.vendor_details,name="vendor_details"),
     path("become-seller/", views.become_seller, name="become_seller"),
     path("register-vendor", views.register_vendor, name="register_vendor"),
     # vendor products CRUD
