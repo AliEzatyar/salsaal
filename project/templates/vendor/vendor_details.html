@@ -172,7 +172,8 @@
                   <div class="product-card__price mt-16 mb-30">
                     <span class="text-gray-400 text-md font-[600] text-decoration line-through">{{ product.price }} افغانی</span>
                     <span class="text-heading text-md font-[600]">{{ product.price }} افغانی<span class="text-gray-500 font-normal">/Qty</span></span>
-                  </div><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0">افزودن به سبد حرید<i class="ph ph-shopping-cart"></i></a>
+                  </div>
+                  <button type="button"  data-addtocarturl="{%url 'cart:add_to_cart' product.id%}" data-product-id="{{product.id}}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
                 </div>
               </div>
             {% endfor %}

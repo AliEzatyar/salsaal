@@ -1,7 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
-from catalog.models import Category
+from catalog.models import Category, Product
 from vendor.models import Vendor
+
 
 # Create your views here.
 
@@ -45,3 +46,4 @@ def vendors(request, page=None):
             pass
 
     return render(request, "marketplace/vendors_list.html", context=locals())
+
