@@ -20,15 +20,16 @@
   <section class="cart py-80">
     <div class="container container-lg">
       <div class="row g-4">
-        <div class="2xl:w-9/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-8/12">
+        <div class="2xl:w-9/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-9/12">
           <!-- cart table -->
-          <div class="cart-table border border-gray-100 rounded-8 px-40 py-48">
+          <div class="cart-table border border-gray-200 rounded-8 px-24 py-24">
             <div class="overflow-x-auto scroll-sm scroll-sm-horizontal">
               <table class="table style-three">
                 <thead>
                   <tr>
-                    <th class="h6 mb-0 text-lg font-[700]">حذف</th>
+                    <th class="h6 mb-0 text-lg font-[700]"> حذف</th>
                     <th class="h6 mb-0 text-lg font-[700]">اسم جنس</th>
+                    <th class="h6 mb-0 text-lg font-[700]">تصویر</th>
                     <th class="h6 mb-0 text-lg font-[700]">قیمت</th>
                     <th class="h6 mb-0 text-lg font-[700]">مقدار</th>
                     <th class="h6 mb-0 text-lg font-[700]">مجموع قیمت</th>
@@ -38,35 +39,42 @@
                 <tbody>
                   {% for item in cart.items.all %}
                     <tr>
+                      <!-- delete button -->
                       <td>
-                        <button type="button" data-deletecartitemurl="{%url 'cart:delete_cart_item' item.id%}" class="delete-cart-item remove-tr-btn flex items-center gap-12 hover-text-danger-600"><i class="ph ph-x-circle text-2xl flex"></i> حذف کردن</button>
+                        <button type="button" data-deletecartitemurl="{% url 'cart:delete_cart_item' item.id %}" class="delete-cart-item remove-tr-btn flex items-center gap-12 hover-text-danger-600"><i class="ph ph-x-circle text-2xl flex"></i></button>
                       </td>
+                      <td>
+                        <span class="text-sm h6 mb-0 font-[600]">{{ item.product.name }}</span>
+                      </td>
+
+                      <!-- picture -->
                       <td>
                         <div class="table-product flex items-center gap-24">
                           <a href="product-details-two.html" class="table-product__thumb border border-gray-100 rounded-8 flex items-center justify-center"><img src="{{ item.product.image.url }}" alt="Image" /></a>
                           <div class="table-product__content text-start">
-                            <h6 class="title text-lg font-[600] mb-8"><a href="product-details.html" class="link text-line-2" tabindex="0">{{ item.product.title }}</a></h6>
                             {% comment %} <div class="flex items-center gap-16">
                               <a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Camera</a><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Videos</a>
                             </div> {% endcomment %}
                           </div>
                         </div>
                       </td>
+                      <!-- price -->
                       <td>
-                        <span class="text-lg h6 mb-0 font-[600]">{{ item.product.price }} افغانی</span>
+                        <span class="text-sm h6 mb-0 font-[600]">{{ item.product.price }} افغانی</span>
                       </td>
                       <td>
                         <div class="flex rounded-4 overflow-hidden">
                           <!-- increase by 1 -->
                           <button type="button" class="quantity__minus border border-r border-gray-100 flex-shrink-0 h-48 w-48 text-neutral-600 flex items-center justify-center hover-bg-main-600 hover-text-white"><i class="ph ph-minus"></i></button>
                           <!-- amount change -->
-                          <input type="number" data-itemid="{{item.id}}" class="item-quantity-input quantity__input flex-grow border border-gray-100 border-l-0 border-r-0 text-center w-32 px-4" value="{{item.quantity}}" min="1" />
+                          <input type="number" data-itemid="{{ item.id }}" class="item-quantity-input quantity__input flex-grow border border-gray-100 border-l-0 border-r-0 text-center w-32 px-4" value="{{ item.quantity }}" min="1" />
                           <!-- decrease by 1 -->
                           <button type="button" class="quantity__plus border border-r border-gray-100 flex-shrink-0 h-48 w-48 text-neutral-600 flex items-center justify-center hover-bg-main-600 hover-text-white"><i class="ph ph-plus"></i></button>
                         </div>
                       </td>
+                      <!--product unit price -->
                       <td>
-                        <span class="text-lg h6 mb-0 font-[600]">{{ item.get_total_price }} افعانی</span>
+                        <span class="text-sm h6 mb-0 font-[600]">{{ item.get_total_price }} افعانی</span>
                       </td>
                     </tr>
                   {% endfor %}
@@ -85,24 +93,21 @@
           </div>
         </div>
         <!-- cart side bar -->
-        <div class="2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12">
+        <div class="2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-3/12">
           <div class="cart-sidebar border border-gray-100 rounded-8 px-24 py-40">
-            <h6 class="text-xl mb-32">مجموع پرداختی</h6>
+            <h6 class="text-lg text-center mb-32">مجموع پرداختی</h6>
             <div class="bg-color-three rounded-8 p-24">
               <div class="mb-32 flex-between gap-8">
-                <span class="text-gray-900 font-heading-two">قیمت کلی اجناس</span> <span class="text-gray-900 font-[600]">{{ cart.calculate_total }} افغانی</span>
+                <span class="text-gray-900 text-sm font-heading-two">قیمت کلی اجناس</span> <span class="text-gray-900 text-sm font-[600]">{{ cart.calculate_total }} افغانی</span>
               </div>
               <div class="mb-32 flex-between gap-8">
-                <span class="text-gray-900 font-heading-two">هزینه انتقال</span> <span class="text-gray-900 font-[600]">Free</span>
-              </div>
-              <div class="mb-0 flex-between gap-8">
-                <span class="text-gray-900 font-heading-two">مالیه</span> <span class="text-gray-900 font-[600]">USD 10.00</span>
+                <span class="text-gray-900 text-sm font-heading-two">هزینه انتقال</span> <span class="text-gray-900 text-sm font-[600]">رایگان</span>
               </div>
             </div>
             <div class="bg-color-three rounded-8 p-24 mt-24">
               <div class="flex-between gap-8">
-                <span class="text-gray-900 text-xl font-[600]">مجموع</span>
-                <span class="text-gray-900 text-xl font-[600]">{{ cart.calculate_total }} افغانی</span>
+                <span class="text-gray-900 text-lg font-[600]">مجموع</span>
+                <span class="text-gray-900 text-lg font-[600]">{{ cart.calculate_total }} افغانی</span>
               </div>
             </div><a href="checkout.html" class="btn btn-main text-center text-white mt-40 py-18 w-full rounded-8">رفتن به بخش پرداخت</a>
           </div>

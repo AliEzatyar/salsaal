@@ -40,7 +40,8 @@ document.addEventListener("DOMContentLoaded", (e) => {
             }),
         };
         fetch(url,options).then(response => response.text()).then(text=>{
-            window.alert(text)
+            window.location.reload()
+
         })
 
     })
