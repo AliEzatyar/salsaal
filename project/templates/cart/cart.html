@@ -35,6 +35,7 @@
                     <th class="h6 mb-0 text-lg font-[700]">مجموع قیمت</th>
                   </tr>
                 </thead>
+                
                 <!-- table items -->
                 <tbody>
                   {% for item in cart.items.all %}
@@ -46,11 +47,11 @@
                       <td>
                         <span class="text-sm h6 mb-0 font-[600]">{{ item.product.name }}</span>
                       </td>
-
+                      
                       <!-- picture -->
                       <td>
                         <div class="table-product flex items-center gap-24">
-                          <a href="product-details-two.html" class="table-product__thumb border border-gray-100 rounded-8 flex items-center justify-center"><img src="{{ item.product.image.url }}" alt="Image" /></a>
+                          <a href="{% url 'marketplace:product_detail'  item.product.id%}" class="table-product__thumb border border-gray-100 rounded-8 flex items-center justify-center"><img src="{{ item.product.image.url }}" alt="Image" /></a>
                           <div class="table-product__content text-start">
                             {% comment %} <div class="flex items-center gap-16">
                               <a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Camera</a><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Videos</a>

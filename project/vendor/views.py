@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
 from accounts.utils import send_email, user_test
-from catalog.models import Category, Product
+from marketplace.models import Category, Product
 from vendor.forms import ProductForm, RatingForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm

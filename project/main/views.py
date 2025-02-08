@@ -1,8 +1,12 @@
 from django.shortcuts import render
 from django.contrib import messages
 from django.db.models import Avg
-from catalog.models import Product
+from marketplace.models import Product
+from main.models import FavItem
 from vendor.models import Rating, Vendor
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.http.response import JsonResponse
 
 # Create your views here.
 
@@ -14,7 +18,7 @@ def home(request, cat=None):
         temp = products.filter(category__name=cat).exists()
         if temp:
             products = products.filter(category__name=cat)
-            
+
     week_sold_products = products
     top_selling_products = products
     trending_products = products
@@ -27,3 +31,33 @@ def home(request, cat=None):
         )
     ).filter(ratings__isnull=False)[:5]
     return render(request, "base/home.html", context=locals())
+
+
+@login_required
+def favlist(request):
+    if hasattr(request.user, "favlist"):
+        favlist = request.user.favlist
+        favlist_items = favlist.items.all()
+        return render(request, "base/favlist.html", context=locals())
+    return redirect("main:home")
+
+
+@login_required
+def add_to_favlist(request, product_id):
+    if hasattr(request.user, "favlist"):
+        state = FavItem.objects.get_or_create(
+            favlist=request.user.favlist, product_id=product_id
+        )
+        if state[1]:
+            # if item is created now
+            return JsonResponse({"OK": 1})
+        return JsonResponse({"OK": 0})
+
+@login_required
+def delete_from_favlist(request,item_id):
+    if hasattr(request.user, "favlist"):
+        favitem = FavItem.objects.filter(id=item_id).first()
+        if favitem:
+            favitem.delete()
+            return JsonResponse({"OK":1})
+        return JsonResponse({"OK":0})

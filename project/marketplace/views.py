@@ -1,10 +1,15 @@
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
-from catalog.models import Category, Product
+from marketplace.models import Category, Product
 from vendor.models import Vendor
 
 
 # Create your views here.
+def product_detail(request, product_id):
+    product = Product.objects.filter(id=product_id).first()
+    if product:
+        return render(request, "marketplace/product_detail.html", context=locals())
+    return redirect("main:home")
 
 
 def vendors(request, page=None):
@@ -46,4 +51,3 @@ def vendors(request, page=None):
             pass
 
     return render(request, "marketplace/vendors_list.html", context=locals())
-

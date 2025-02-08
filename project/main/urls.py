@@ -1,8 +1,19 @@
 from django.urls import path
-from .views import home
+from . import views
 app_name = "main"
 
 urlpatterns = [
-    path("", home, name="home"),
-    path("<str:cat>/", home, name="home_category"),
+    path("favorites/", views.favlist, name="favlist"),
+    path(
+        "add-item-to-favorites/<int:product_id>",
+        views.add_to_favlist,
+        name="add_to_favlist",
+    ),
+    path(
+        "delete-item-favorite-item/<int:item_id>",
+        views.delete_from_favlist,
+        name="delete_fav_item",
+    ),
+    path("", views.home, name="home"),
+    path("<str:cat>/", views.home, name="home_category"),
 ]

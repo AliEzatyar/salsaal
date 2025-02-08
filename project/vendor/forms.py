@@ -1,6 +1,6 @@
 from django import forms
 from accounts.forms import only_image_validator
-from catalog.models import Category, Product
+from marketplace.models import Category, Product
 from vendor.models import Rating, Vendor
 from vendor.utils import slugify_persian
 from django.core.exceptions import ValidationError

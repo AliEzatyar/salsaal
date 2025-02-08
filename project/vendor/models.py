@@ -1,13 +1,13 @@
 from django.db import models
 from accounts.models import User, UserProfile
 from accounts.utils import send_notification
-from catalog.models import Product
+from marketplace.models import Product
 
 # Create your models here.
 
 
 class Vendor(models.Model):
-    
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor")
     user_profile = models.OneToOneField(
         UserProfile,
@@ -20,7 +20,7 @@ class Vendor(models.Model):
     vendor_license = models.ImageField(
         upload_to="vendor/license/", blank=True, null=True
     )
-    categories = models.ManyToManyField('catalog.Category',through=Product)
+    categories = models.ManyToManyField("marketplace.Category", through=Product)
     city = models.CharField(default="کابل")
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -42,13 +42,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "marketplace.apps.MarketplaceConfig",
+    "cart.apps.CartConfig",
     "main.apps.MainConfig",
     "accounts.apps.AccountsConfig",
     "rest_framework",
     "vendor.apps.VendorConfig",
-    "catalog.apps.CatalogConfig",
-    "marketplace.apps.MarketplaceConfig",
-    "cart.apps.CartConfig"
 ]
 
 MIDDLEWARE = [
