@@ -132,10 +132,10 @@
                 <span class="text-2xl text-white flex relative item-hover__text"><i class="ph ph-user"></i></span>
                 <span class="text-md text-white item-hover__text hidden xl:flex">پروفایل</span>
               </a>
-              <a href="{% url "main:favlist" %}" class="flex items-center flex-col gap-8 item-hover-two">
+              <a href="{% url 'main:favlist' %}" class="flex items-center flex-col gap-8 item-hover-two">
                 <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
                   <i class="ph ph-heart"></i>
-                  <span class="favlist-badge w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">{{favlist_badge}}</span>
+                  <span class="favlist-badge w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">{{ favlist_badge }}</span>
                 </span>
                 <span class="text-md text-white item-hover__text hidden xl:flex">لیست علاقه</span>
               </a>
@@ -298,7 +298,7 @@
             <a href="{% url 'main:favlist' %}" class="flex items-center flex-col gap-8 item-hover-two">
               <span class="text-2xl text-white flex relative me-6 mt-6 item-hover__text">
                 <i class="ph ph-heart"></i>
-                <span class="w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">2</span>
+                <span class="favlist-badge w-16 h-16 flex items-center justify-center rounded-[50%] bg-main-two-600 text-white text-xs absolute top-n6 end-n4">{{ favlist_badge }}</span>
               </span>
               <span class="text-md text-white item-hover__text hidden xl:flex">لیست علاقه</span>
             </a>
