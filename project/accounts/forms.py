@@ -10,7 +10,6 @@ def only_image_validator(filename: InMemoryUploadedFile):
     ext = path.splitext(filename.name)[1]
 
     valid_extensions = [".jpg", ".png", ".jpeg"]
-    print(ext," this was the extension",filename.name)
     if ext.lower() not in valid_extensions:
         raise ValidationError("باید فایل عکس انتخاب کنید")
 
@@ -41,8 +40,24 @@ class UserRegForm(forms.ModelForm):
 
     def clean(self):
         cd = super(UserRegForm, self).clean()
-        if cd["password"] != cd["confirm"]:
-            raise forms.ValidationError("Passwords does not match!")
+        if not cd["confirm"] == "account_settings":
+            if cd["password"] != cd["confirm"]:
+                raise forms.ValidationError("Passwords does not match!")
+
+
+class UserEditForm(forms.ModelForm):
+    first_name = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "common-input"})
+    )
+    last_name = forms.CharField(widget=forms.TextInput(attrs={"class": "common-input"}))
+    username = forms.CharField(widget=forms.TextInput(attrs={"class": "common-input"}))
+    class Meta:
+        model = User
+        fields = [
+            "first_name",
+            "last_name",
+            "username",
+        ]
 
 
 class VendorRegForm(forms.ModelForm):

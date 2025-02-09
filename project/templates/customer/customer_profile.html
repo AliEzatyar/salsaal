@@ -1,0 +1,93 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block body %}
+  <div class="banner-two">
+    <div class="container container-lg">
+      <div class="banner-two-wrapper flex items-start">
+        {% include 'customer/sidebar.html' %}
+        <div class="container mx-auto p-6 flex justify-center items-center">
+          <div class="w-full lg:w-3/4 px-4">
+            <div class="user-dashboard bg-white shadow-lg p-6 rounded-lg">
+              <div class="user-holder">
+                <p class="text-2xl mb-4 text-center">پروفایل کاربری شما</p>
+                <br />
+                <br />
+                <form action="{% url 'accounts:profile' %}" method="post" enctype="multipart/form-data">
+                  <div class="form-fields-set space-y-6">
+                    <ul>
+                      <li>
+                        <div class="grid grid-cols-1 gap-6">
+                          <div>
+                            <div class="restaurant-info">
+                              <div class="img-holder flex justify-center items-center">
+                                <div class="item-thumb w-[20%]">
+                                  <img src="{%if profile.picture%}{{ profile.picture.url }}{%else%}{%static 'images/defaultUserPhoto.png' %}{%endif%}" alt="" class="rounded-lg shadow-md" />
+                                </div>
+                              </div>
+                              <br />
+                              <br />
+
+                              <div class="text-holder flex justify-center items-center"></div>
+                            </div>
+                          </div>
+
+                          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                              <div class="field-holder">
+                                <label class="block font-medium mb-1">آدرس *</label>
+                                {{ profile_form.address }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.address.errors }}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="field-holder">
+                                <label class="block font-medium mb-1">شهر *</label>
+                                {{ profile_form.city }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.city.errors }}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="field-holder py-12 px-4">
+                                <label class="block font-medium mb-1">عرض البلد</label>
+                                {{ profile_form.lattitude }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.lattitude.errors }}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="field-holder py-12 px-4">
+                                <label class="block font-medium mb-1">طول البلد</label>
+                                {{ profile_form.longtitiude }}
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.longtitiude.errors }}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="field-holder">
+                                <label class="block font-medium mb-1">عکس پروفایل</label>
+                                <div class="upload-gallery">{{ profile_form.picture }}</div>
+                                <p class="text-red-500 text-sm mt-1">{{ profile_form.picture.errors }}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                    <div>
+                      <div class="field-holder">
+                        <button type="submit" class="bg-blue-500 text-white w-full py-2 rounded-lg shadow hover:bg-blue-600">ذخیره تغییرات</button>
+                      </div>
+                    </div>
+                  </div>
+                  {% csrf_token %}
+                </form>
+                <!-- My Restaurants Form End -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <br />
+  <br />
+  <script src="{% static 'js/get_current_location.js' %}"></script>
+{% endblock %}

@@ -4,15 +4,12 @@ from django.contrib import messages, auth
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from accounts.models import User, CUSTOMER, SHOP
-from .forms import UserRegForm, VendorRegForm
-from django.db.transaction import atomic
+from accounts.forms import UserProfileForm, UserRegForm, UserEditForm
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
-
 from .utils import send_email
 from .utils import send_forgot_email
-
 
 
 # utility funciton
@@ -20,7 +17,6 @@ def customer_tester(user):
     if user.role != 2:
         raise PermissionDenied
     return True
-
 
 
 def register_user(request):
@@ -44,12 +40,10 @@ def register_user(request):
 
         # form has got errors
         else:
-            messages.error(
-                request, message="در ثبت معلومات مشکلی رخ داد!"
-            )
+            messages.error(request, message="در ثبت معلومات مشکلی رخ داد!")
             return render(
                 request,
-                "customer/register_user.html",
+                "accounts/register_user.html",
                 {"form": form},
             )
 
@@ -58,7 +52,7 @@ def register_user(request):
         return redirect("accounts:dashboard")
 
     reg_form = UserRegForm()
-    return render(request, "customer/register_user.html", {"form": reg_form})
+    return render(request, "accounts/register_user.html", {"form": reg_form})
 
 
 # email verification
@@ -128,7 +122,7 @@ def reset_password(request):
     return render(request, "accounts/reset_password.html", {"error": error})
 
 
-def login(request,next=None):
+def login(request, next=None):
     # POST
     if request.method == "POST":
         email = request.POST.get("email")
@@ -139,7 +133,7 @@ def login(request,next=None):
             messages.info(request, "خوش آمدید")
             if request.POST.get("next") != "None":
                 return redirect(request.build_absolute_uri(request.POST.get("next")))
-            
+
             # redirecting to the dashboard
             return redirect("accounts:dashboard")
 
@@ -168,14 +162,37 @@ def dashboard(request):
     if request.user.is_admin:
         return redirect("/admin")
     elif request.user.get_role() == "Customer":
-        return redirect("accounts:customer_dashboard")
+        return redirect("accounts:profile")
     elif request.user.get_role() == "Shop":
         return redirect("vendor:vendor_dashboard")
 
 
+@login_required
+def account_settings(request):
+    """this view enables a user to update its account"""
+    form = UserEditForm(instance=request.user)
+    if request.method == "POST":
+        form = UserEditForm(instance=request.user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "تغییرات ثبت شد.")
+        else:
+            messages.error(request,"مشکلی رخ داد!")
+    return render(request, "accounts/account_settings.html", context=locals())
 
 
 @login_required
 @user_passes_test(customer_tester)
-def customer_dashboard(request):
-    return render(request, "customer/customer_dashboard.html")
+def profile(request):
+    profile = request.user.profile
+    profile_form = UserProfileForm(instance=profile)
+    if request.method == "POST":
+        profile_form = UserProfileForm(
+            instance=profile, data=request.POST, files=request.FILES
+        )
+        if profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, "پروفایل شما آپدیت شد.")
+        else:
+            messages.error(request, "مشکلاتی در ثبت تغییرات وجود داشت.")
+    return render(request, "customer/customer_profile.html", context=locals())

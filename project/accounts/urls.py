@@ -25,7 +25,8 @@ urlpatterns = [
     path("login/<str:next>/", views.login, name="login_next"),
     path("logout/", views.logout, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
-    path("customer-dashboard/", views.customer_dashboard, name="customer_dashboard"),
+    path("account-settings/", views.account_settings, name="account_settings"),
+    path("profile/", views.profile, name="profile"),
     # rest API
     path("api/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("api/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),

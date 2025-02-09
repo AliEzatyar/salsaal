@@ -1,0 +1,20 @@
+<div class="w-235 xl:block hidden flex-shrink-0 mt-44 bg-color-neutral text-white text-xl rounded-10">
+  <div class="logo px-16 xl:hidden block">
+    <a href="index.html" class="link"><img src="{{request.user.user_profile.picture.url}}" alt="Logo" /></a>
+  </div>
+  <!-- categories drop down -->
+  <ul class="scroll-sm p-10 py-8 mt-40 overflow-y-auto">
+    <li class="py-24 text-center {% if '/account/orders/' == request.path %}text-green-500{% endif %}">
+      <a href="{% url 'vendor:vendor_products' %}">سفارشات من</a>
+    </li>
+    <li class="rounded-lg py-24 text-center {% if '/account/account-settings/' == request.path %}text-green-500{% endif %}">
+      <a href="{% url 'accounts:account_settings' %}">تنظیمات حساب</a>
+    </li>
+    <li class="py-24 text-center {% if '/account/profile/' == request.path %}text-green-500{% endif %}">
+      <a href="{% url "accounts:profile" %}">تنظیمات پروفایل</a>
+    </li>
+    <li class="py-24 text-center">
+      <a href="{%url 'accounts:logout'%}">خارج شدن</a>
+    </li>
+  </ul>
+</div>
