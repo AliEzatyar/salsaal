@@ -51,6 +51,7 @@ class UserEditForm(forms.ModelForm):
     )
     last_name = forms.CharField(widget=forms.TextInput(attrs={"class": "common-input"}))
     username = forms.CharField(widget=forms.TextInput(attrs={"class": "common-input"}))
+
     class Meta:
         model = User
         fields = [
@@ -79,9 +80,11 @@ class UserProfileForm(forms.ModelForm):
         widget=forms.FileInput(attrs={"class": "btn-primary"}),
         validators=[only_image_validator],
     )
-    lattitude = forms.CharField(widget=forms.TextInput(attrs={"readonly": "readonly"}))
+    lattitude = forms.CharField(
+        widget=forms.TextInput(attrs={"readonly": "readonly", "value": "0"})
+    )
     longtitiude = forms.CharField(
-        widget=forms.TextInput(attrs={"readonly": "readonly"})
+        widget=forms.TextInput(attrs={"readonly": "readonly", "value": "0"})
     )
     address = forms.CharField(
         widget=forms.TextInput(
