@@ -7,10 +7,10 @@
       <div class="breadcrumb-wrapper flex items-center justify-between flex-wrap gap-16">
         <ul class="flex items-center gap-8 flex-wrap" dir="rtl">
           <li class="text-sm">
-            <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-600"><i class="ph ph-house"></i> صفحه اصلی</a>
+            <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-two-600"><i class="ph ph-house"></i> صفحه اصلی</a>
           </li>
           <i class="ph ph-caret-left"></i> <!-- Maintained correct arrow direction -->
-          <li class="text-sm text-main-600">سبد خرید</li>
+          <li class="text-sm text-main-two-600">سبد خرید</li>
           <li class="flex items-center"></li>
         </ul>
         <h6 class="mb-0">سبد خرید</h6>
@@ -27,15 +27,17 @@
               <table class="table style-three">
                 <thead>
                   <tr>
-                    <th class="h6 mb-0 text-lg font-[700]"> حذف</th>
+                    <th class="h6 mb-0 text-lg font-[700]">حذف</th>
                     <th class="h6 mb-0 text-lg font-[700]">اسم جنس</th>
                     <th class="h6 mb-0 text-lg font-[700]">تصویر</th>
                     <th class="h6 mb-0 text-lg font-[700]">قیمت</th>
+                    <th class="h6 mb-0 text-lg font-[700]">فروشنده</th>
+
                     <th class="h6 mb-0 text-lg font-[700]">مقدار</th>
                     <th class="h6 mb-0 text-lg font-[700]">مجموع قیمت</th>
                   </tr>
                 </thead>
-                
+
                 <!-- table items -->
                 <tbody>
                   {% for item in cart.items.all %}
@@ -47,11 +49,11 @@
                       <td>
                         <span class="text-sm h6 mb-0 font-[600]">{{ item.product.name }}</span>
                       </td>
-                      
+
                       <!-- picture -->
                       <td>
                         <div class="table-product flex items-center gap-24">
-                          <a href="{% url 'marketplace:product_detail'  item.product.id%}" class="table-product__thumb border border-gray-100 rounded-8 flex items-center justify-center"><img src="{{ item.product.image.url }}" alt="Image" /></a>
+                          <a href="{% url 'marketplace:product_detail' item.product.id %}" class="table-product__thumb border border-gray-100 rounded-8 flex items-center justify-center"><img src="{{ item.product.image.url }}" alt="Image" /></a>
                           <div class="table-product__content text-start">
                             {% comment %} <div class="flex items-center gap-16">
                               <a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Camera</a><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Videos</a>
@@ -64,16 +66,19 @@
                         <span class="text-sm h6 mb-0 font-[600]">{{ item.product.price }} افغانی</span>
                       </td>
                       <td>
+                        <span class="text-sm h6 mb-0 font-[600]">{{ item.product.vendor.vendor_name }}</span>
+                      </td>
+                      <td>
                         <div class="flex rounded-4 overflow-hidden">
                           <!-- increase by 1 -->
-                          <button type="button" class="quantity__minus border border-r border-gray-100 flex-shrink-0 h-48 w-48 text-neutral-600 flex items-center justify-center hover-bg-main-600 hover-text-white"><i class="ph ph-minus"></i></button>
+                          <button type="button" class="quantity__minus border border-r border-gray-100 flex-shrink-0 h-48 w-48 text-neutral-600 flex items-center justify-center hover-bg-main-two-600 hover-text-white"><i class="ph ph-minus"></i></button>
                           <!-- amount change -->
                           <input type="number" data-itemid="{{ item.id }}" class="item-quantity-input quantity__input flex-grow border border-gray-100 border-l-0 border-r-0 text-center w-32 px-4" value="{{ item.quantity }}" min="1" />
                           <!-- decrease by 1 -->
-                          <button type="button" class="quantity__plus border border-r border-gray-100 flex-shrink-0 h-48 w-48 text-neutral-600 flex items-center justify-center hover-bg-main-600 hover-text-white"><i class="ph ph-plus"></i></button>
+                          <button type="button" class="quantity__plus border border-r border-gray-100 flex-shrink-0 h-48 w-48 text-neutral-600 flex items-center justify-center hover-bg-main-two-600 hover-text-white"><i class="ph ph-plus"></i></button>
                         </div>
                       </td>
-                      <!--product unit price -->
+                      <!-- product unit price -->
                       <td>
                         <span class="text-sm h6 mb-0 font-[600]">{{ item.get_total_price }} افعانی</span>
                       </td>
@@ -86,10 +91,10 @@
               <!-- coupon part -->
               {% comment %} <div class="flex items-center gap-16">
                 <input class="common-input" placeholder="Coupon Code" />
-                <button type="submit" class="btn btn-main py-18 w-full rounded-8">اجرای تخفیف</button>
+                <button type="submit" class="btn btn-main-two py-18 w-full rounded-8">اجرای تخفیف</button>
               </div> {% endcomment %}
               <!-- update cart -->
-              <button type="submit" id="save-changes-btn" class="btn btn-main text-lg text-white hover-text-main-600">ذخیره تغییرات</button>
+              <button type="submit" id="save-changes-btn" class="btn btn-main-two text-lg text-white hover-text-main-two-600">ذخیره تغییرات</button>
             </div>
           </div>
         </div>
@@ -110,46 +115,7 @@
                 <span class="text-gray-900 text-lg font-[600]">مجموع</span>
                 <span class="text-gray-900 text-lg font-[600]">{{ cart.calculate_total }} افغانی</span>
               </div>
-            </div><a href="checkout.html" class="btn btn-main text-center text-white mt-40 py-18 w-full rounded-8">رفتن به بخش پرداخت</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="shipping mb-24" id="shipping">
-    <div class="container container-lg">
-      <div class="row g-4">
-        <div class="custom-2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="zoom-in" data-aos-duration="400">
-          <div class="shipping-item flex items-center gap-16 rounded-16 bg-main-50 hover-bg-main-100 transition-2">
-            <span class="w-56 h-56 flex items-center justify-center rounded-[50%] bg-main-600 text-white text-32 flex-shrink-0"><i class="ph-fill ph-car-profile"></i></span>
-            <div class="">
-              <h6 class="mb-0">Free Shipping</h6><span class="text-sm text-heading">Free shipping all over the US</span>
-            </div>
-          </div>
-        </div>
-        <div class="custom-2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="zoom-in" data-aos-duration="600">
-          <div class="shipping-item flex items-center gap-16 rounded-16 bg-main-50 hover-bg-main-100 transition-2">
-            <span class="w-56 h-56 flex items-center justify-center rounded-[50%] bg-main-600 text-white text-32 flex-shrink-0"><i class="ph-fill ph-hand-heart"></i></span>
-            <div class="">
-              <h6 class="mb-0">100% Satisfaction</h6><span class="text-sm text-heading">Free shipping all over the US</span>
-            </div>
-          </div>
-        </div>
-        <div class="custom-2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="zoom-in" data-aos-duration="800">
-          <div class="shipping-item flex items-center gap-16 rounded-16 bg-main-50 hover-bg-main-100 transition-2">
-            <span class="w-56 h-56 flex items-center justify-center rounded-[50%] bg-main-600 text-white text-32 flex-shrink-0"><i class="ph-fill ph-credit-card"></i></span>
-            <div class="">
-              <h6 class="mb-0">Secure Payments</h6><span class="text-sm text-heading">Free shipping all over the US</span>
-            </div>
-          </div>
-        </div>
-        <div class="custom-2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12" data-aos="zoom-in" data-aos-duration="1000">
-          <div class="shipping-item flex items-center gap-16 rounded-16 bg-main-50 hover-bg-main-100 transition-2">
-            <span class="w-56 h-56 flex items-center justify-center rounded-[50%] bg-main-600 text-white text-32 flex-shrink-0"><i class="ph-fill ph-chats"></i></span>
-            <div class="">
-              <h6 class="mb-0">24/7 Support</h6><span class="text-sm text-heading">Free shipping all over the US</span>
-            </div>
+            </div><a href="checkout.html" class="btn btn-main-two text-center text-white mt-40 py-18 w-full rounded-8">رفتن به بخش پرداخت</a>
           </div>
         </div>
       </div>

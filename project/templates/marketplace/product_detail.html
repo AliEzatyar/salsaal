@@ -1,17 +1,17 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% block body %}
-  <script src="{% static 'js/favlist.js'%}"></script>
-<!-- simple navigator -->
-  <div class="breadcrumb mb-0 py-26 bg-main-two-50" dir="rtl">
+  <script src="{% static 'js/favlist.js' %}"></script>
+  <!-- simple navigator -->
+  <div class="breadcrumb mb-0 py-26 bg-main-two-two-50" dir="rtl">
     <div class="container container-lg">
       <div class="breadcrumb-wrapper flex items-center justify-between flex-wrap gap-16">
         <ul class="flex items-center gap-8 flex-wrap" dir="rtl">
           <li class="text-sm">
-            <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-600"><i class="ph ph-house"></i> صفحه اصلی</a>
+            <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-two-600"><i class="ph ph-house"></i> صفحه اصلی</a>
           </li>
           <i class="ph ph-caret-left"></i> <!-- Maintained correct arrow direction -->
-          <li class="text-sm text-main-600">جزییات محصول</li>
+          <li class="text-sm text-main-two-600">جزییات کالا</li>
           <li class="flex items-center"></li>
         </ul>
         <h6 class="mb-0">{{ product.name }}</h6>
@@ -111,7 +111,7 @@
                         <button type="button" class="color-list__button w-20 h-20 border-2 border-gray-50 rounded-[50%] bg-info-600"></button>
                         <button type="button" class="color-list__button w-20 h-20 border-2 border-gray-50 rounded-[50%] bg-warning-600"></button>
                         <button type="button" class="color-list__button w-20 h-20 border-2 border-gray-50 rounded-[50%] bg-tertiary-600"></button>
-                        <button type="button" class="color-list__button w-20 h-20 border-2 border-gray-50 rounded-[50%] bg-main-600"></button>
+                        <button type="button" class="color-list__button w-20 h-20 border-2 border-gray-50 rounded-[50%] bg-main-two-600"></button>
                         <button type="button" class="color-list__button w-20 h-20 border-2 border-gray-50 rounded-[50%] bg-gray-100"></button>
                       </div>
                     </div>
@@ -132,7 +132,7 @@
             <div class="mb-32">
               <label for="delivery" class="h6 activePage mb-8 text-heading font-[600] block">شهر تحویل</label>
               <div class="flex items-center border border-gray-100 rounded-4 px-16">
-                <span class="text-xl flex text-main-600"><i class="ph ph-map-pin"></i></span><select class="common-input !border-0 px-8 rounded-4" id="delivery">
+                <span class="text-xl flex text-main-two-600"><i class="ph ph-map-pin"></i></span><select class="common-input !border-0 px-8 rounded-4" id="delivery">
                   <option value="1">کابل</option>
                   <option value="1">هرات</option>
                   <option value="1">غزنی</option>
@@ -141,9 +141,10 @@
               </div>
             </div>
             <div class="mb-32">
-              <label for="stock" class="text-lg mb-8 text-heading font-[600] block">موجودی کلی ۱</label> <span class="text-xl flex"><i class="ph ph-location"></i></span>
+              <label for="stock" class="text-lg mb-8 text-heading font-[600] block">مقدار موجود:</label> <span class="text-xl flex"><i class="ph ph-location"></i></span>
+              <label for="stock" class="text-lg mb-8 text-heading font-[600] block">مقدار درخواستی:</label>
               <div class="flex rounded-4 overflow-hidden">
-                <button type="button" class="quantity__minus flex-shrink-0 h-48 w-48 text-neutral-600 bg-gray-50 flex items-center justify-center hover-bg-main-600 hover-text-white"><i class="ph ph-minus"></i></button> <input type="number" class="quantity__input flex-grow border border-gray-100 border-l-0 border-r-0 text-center w-32 px-16" id="stock" value="1" min="1" /> <button type="button" class="quantity__plus flex-shrink-0 h-48 w-48 text-neutral-600 bg-gray-50 flex items-center justify-center hover-bg-main-600 hover-text-white"><i class="ph ph-plus"></i></button>
+                <button type="button" class="quantity__minus flex-shrink-0 h-48 w-48 text-neutral-600 bg-gray-50 flex items-center justify-center hover-bg-main-two-600 hover-text-white"><i class="ph ph-minus"></i></button> <input type="number" class="quantity__input flex-grow border border-gray-100 border-l-0 border-r-0 text-center w-32 px-16" id="stock" value="1" min="1" /> <button type="button" class="quantity__plus flex-shrink-0 h-48 w-48 text-neutral-600 bg-gray-50 flex items-center justify-center hover-bg-main-two-600 hover-text-white"><i class="ph ph-plus"></i></button>
               </div>
             </div>
             <div class="mb-32">
@@ -156,37 +157,37 @@
                 <h6 class="text-lg mb-0">0</h6>
               </div>
             </div>
-            <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' product.id %}" class="w-full add-to-cart btn btn-main flex items-center justify-center gap-8 rounded-8 py-16 font-normal mt-48"><i class="ph ph-shopping-cart-simple text-lg"></i>افزودن به سبد خرید</button>
-            <button type="button" data-addtofavlisturl="{% url 'main:add_to_favlist' product.id %}" id="add-to-favlist" class="w-full btn btn-main flex items-center justify-center gap-8 rounded-8 py-16 font-normal mt-12"><i class="ph ph-shopping-cart-simple text-lg"></i>افزودن به لیست علاقه</button>
+            <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' product.id %}" class="w-full add-to-cart btn btn-main-two flex items-center justify-center gap-8 rounded-8 py-16 font-normal mt-48"><i class="ph ph-shopping-cart-simple text-lg"></i>افزودن به سبد خرید</button>
+            <button type="button" data-addtofavlisturl="{% url 'main:add_to_favlist' product.id %}" id="add-to-favlist" class="w-full btn btn-main-two flex items-center justify-center gap-8 rounded-8 py-16 font-normal mt-12"><i class="ph ph-shopping-cart-simple text-lg"></i>افزودن به لیست علاقه</button>
 
-            <a href="index.html" class="btn btn-outline-main rounded-8 py-16 text-main-600 text-center mt-16 w-full">خرید عاجل</a>
+            <a href="index.html" class="btn btn-outline-main rounded-8 py-16 text-main-two-600 text-center mt-16 w-full">خرید عاجل</a>
 
             <div class="mt-32">
-              <div class="px-8 py-8 bg-main-50 rounded-8 flex gap-12 mb-14">
-                <span class="w-32 h-32 bg-white text-main-600 rounded-[50%] flex items-center justify-center text-lg flex-shrink-0"><i class="ph-fill ph-truck"></i></span><span class="text-sm text-neutral-600">تحویل کننده: <span class="font-[600]">صلصال استور</span></span>
+              <div class="px-8 py-8 bg-main-two-50 rounded-8 flex gap-12 mb-14">
+                <span class="w-32 h-32 bg-white text-main-two-600 rounded-[50%] flex items-center justify-center text-lg flex-shrink-0"><i class="ph-fill ph-truck"></i></span><span class="text-sm text-neutral-600">تحویل کننده: <span class="font-[600]">صلصال استور</span></span>
               </div>
-              <div class="px-8 py-8 bg-main-50 rounded-8 flex gap-12 mb-0">
-                <span class="w-32 h-32 bg-white text-main-600 rounded-[50%] flex items-center justify-center text-lg flex-shrink-0"><i class="ph-fill ph-storefront"></i></span><span class="text-sm text-neutral-600">فروشنده : <span class="font-[600]">{{ product.vendor.vendor_name }}</span></span>
+              <div class="px-8 py-8 bg-main-two-50 rounded-8 flex gap-12 mb-0">
+                <span class="w-32 h-32 bg-white text-main-two-600 rounded-[50%] flex items-center justify-center text-lg flex-shrink-0"><i class="ph-fill ph-storefront"></i></span><span class="text-sm text-neutral-600">فروشنده : <span class="font-[600]">{{ product.vendor.vendor_name }}</span></span>
               </div>
             </div>
             <div class="mt-32">
               <div class="px-32 py-16 rounded-8 border border-gray-100 flex-between gap-8">
-                <a href="index.html" class="flex text-main-600 text-28"><i class="ph-fill ph-chats-teardrop"></i></a> <span class="h-26 border border-gray-100"></span>
+                <a href="index.html" class="flex text-main-two-600 text-28"><i class="ph-fill ph-chats-teardrop"></i></a> <span class="h-26 border border-gray-100"></span>
                 <div class="dropdown on-hover-item">
-                  <button class="flex text-main-600 text-28" type="button"><i class="ph-fill ph-share-network"></i></button>
+                  <button class="flex text-main-two-600 text-28" type="button"><i class="ph-fill ph-share-network"></i></button>
                   <div class="on-hover-dropdown common-dropdown border-0 inset-inline-start-auto right-0">
                     <ul class="flex items-center gap-16">
                       <li>
-                        <a href="https://www.facebook.com/" class="w-44 h-44 flex items-center justify-center bg-main-100 text-main-600 text-xl rounded-[50%] hover-bg-main-600 hover-text-white"><i class="ph-fill ph-facebook-logo"></i></a>
+                        <a href="https://www.facebook.com/" class="w-44 h-44 flex items-center justify-center bg-main-two-100 text-main-two-600 text-xl rounded-[50%] hover-bg-main-two-600 hover-text-white"><i class="ph-fill ph-facebook-logo"></i></a>
                       </li>
                       <li>
-                        <a href="https://www.twitter.com/" class="w-44 h-44 flex items-center justify-center bg-main-100 text-main-600 text-xl rounded-[50%] hover-bg-main-600 hover-text-white"><i class="ph-fill ph-twitter-logo"></i></a>
+                        <a href="https://www.twitter.com/" class="w-44 h-44 flex items-center justify-center bg-main-two-100 text-main-two-600 text-xl rounded-[50%] hover-bg-main-two-600 hover-text-white"><i class="ph-fill ph-twitter-logo"></i></a>
                       </li>
                       <li>
-                        <a href="https://www.linkedin.com/" class="w-44 h-44 flex items-center justify-center bg-main-100 text-main-600 text-xl rounded-[50%] hover-bg-main-600 hover-text-white"><i class="ph-fill ph-instagram-logo"></i></a>
+                        <a href="https://www.linkedin.com/" class="w-44 h-44 flex items-center justify-center bg-main-two-100 text-main-two-600 text-xl rounded-[50%] hover-bg-main-two-600 hover-text-white"><i class="ph-fill ph-instagram-logo"></i></a>
                       </li>
                       <li>
-                        <a href="https://www.pinterest.com/" class="w-44 h-44 flex items-center justify-center bg-main-100 text-main-600 text-xl rounded-[50%] hover-bg-main-600 hover-text-white"><i class="ph-fill ph-linkedin-logo"></i></a>
+                        <a href="https://www.pinterest.com/" class="w-44 h-44 flex items-center justify-center bg-main-two-100 text-main-two-600 text-xl rounded-[50%] hover-bg-main-two-600 hover-text-white"><i class="ph-fill ph-linkedin-logo"></i></a>
                       </li>
                     </ul>
                   </div>
@@ -201,138 +202,70 @@
           <div class="product-dContent__header border-b border-gray-100 flex-between flex-wrap gap-16">
             <ul class="nav common-tab nav-pills mb-3" id="pills-tab" role="tablist">
               <li class="nav-item" role="presentation">
-                <button class="nav-link bt-tb-btn active" data-target="#pills-description" id="pills-description-tab" data-bs-toggle="pill" data-bs-target="#pills-description" type="button" role="tab" aria-controls="pills-description" aria-selected="true">Description</button>
+                <button class="nav-link bt-tb-btn  active" data-target="#pills-description" id="pills-description-tab" data-bs-toggle="pill" data-bs-target="#pills-description" type="button" role="tab" aria-controls="pills-description" aria-selected="true">جزییات</button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link bt-tb-btn" data-target="#pills-reviews" id="pills-reviews-tab" data-bs-toggle="pill" data-bs-target="#pills-reviews" type="button" role="tab" aria-controls="pills-reviews" aria-selected="false">Reviews</button>
+                <button class="nav-link bt-tb-btn" data-target="#pills-reviews" id="pills-reviews-tab" data-bs-toggle="pill" data-bs-target="#pills-reviews" type="button" role="tab" aria-controls="pills-reviews" aria-selected="false">بازدید ها</button>
               </li>
-            </ul><a href="index.html" class="btn bg-color-one rounded-16 flex items-center gap-8 text-main-600 hover-bg-main-600 hover-text-white"><img src="images/satisfaction-icon.png" alt="Image" /> 100% Satisfaction Guaranteed</a>
+            </ul><a href="index.html" class="btn bg-color-two rounded-16 flex items-center gap-8 text-main-two-600 hover-bg-main-two-two-600 hover-text-white"><img src="images/satisfaction-icon.png" alt="Image" /> 100% Satisfaction Guaranteed</a>
           </div>
+          <!-- description tab -->
           <div class="product-dContent__box">
             <div class="tab-content" id="pills-tabContent">
               <div class="tab-pane bt-tab-pane fade show active" id="pills-description" role="tabpanel" aria-labelledby="pills-description-tab" tabindex="0">
                 <div class="mb-40">
-                  <h6 class="mb-24">Product Description</h6>
-                  <p>Wherever celebrations and good times happen, the LAY'S brand will be there just as it has been for more than 75 years. With flavors almost as rich as our history, we have a chip or crisp flavor guaranteed to bring a smile on your face.</p>
-                  <p>Morbi ut sapien vitae odio accumsan gravida. Morbi vitae erat auctor, eleifend nunc a, lobortis neque. Praesent aliquam dignissim viverra. Maecenas lacus odio, feugiat eu nunc sit amet, maximus sagittis dolor. Vivamus nisi sapien, elementum sit amet eros sit amet, ultricies cursus ipsum. Sed consequat luctus ligula. Curabitur laoreet rhoncus blandit. Aenean vel diam ut arcu pharetra dignissim ut sed leo. Vivamus faucibus, ipsum in vestibulum vulputate, lorem orci convallis quam, sit amet consequat nulla felis pharetra lacus. Duis semper erat mauris, sed egestas purus commodo vel.</p>
-                  <ul class="list-inside mt-32 ms-16">
-                    <li class="text-gray-400 mb-4">8.0 oz. bag of LAY'S Classic Potato Chips</li>
-                    <li class="text-gray-400 mb-4">Tasty LAY's potato chips are a great snack</li>
-                    <li class="text-gray-400 mb-4">Includes three ingredients: potatoes, oil, and salt</li>
-                    <li class="text-gray-400 mb-4">Gluten free product</li>
-                  </ul>
+                  <h6 class="mb-24">جزییات کالا</h6>
+                  {{ product.description }}
                   <ul class="mt-32">
-                    <li class="text-gray-400 mb-4">Made in USA</li>
-                    <li class="text-gray-400 mb-4">Ready To Eat.</li>
+                    <li class="text-gray-400 mb-4">ساخت چین</li>
                   </ul>
                 </div>
                 <div class="mb-40">
-                  <h6 class="mb-24">Product Specifications</h6>
+                  <h6 class="mb-24">ویژه گی های کالا</h6>
                   <ul class="mt-32">
                     <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Product Type: <span class="text-gray-500">Chips & Dips</span></span>
+                      <span class="w-20 h-20 bg-main-two-50 text-main-two-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">کتگوری: <span class="text-gray-500">{{ product.category }}</span></span>
                     </li>
                     <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Product Name: <span class="text-gray-500">Potato Chips Classic</span></span>
+                      <span class="w-20 h-20 bg-main-two-50 text-main-two-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">نام: <span class="text-gray-500">{{ product.name }}</span></span>
                     </li>
                     <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Brand: <span class="text-gray-500">Lay's</span></span>
+                      <span class="w-20 h-20 bg-main-two-50 text-main-two-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">برند: <span class="text-gray-500">Lay's</span></span>
                     </li>
                     <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">FSA Eligible: <span class="text-gray-500">No</span></span>
+                      <span class="w-20 h-20 bg-main-two-50 text-main-two-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">اندازه/تعداد: <span class="text-gray-500">۸ سانتی</span></span>
                     </li>
                     <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Size/Count: <span class="text-gray-500">8.0oz</span></span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Item Code: <span class="text-gray-500">331539</span></span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Ingredients: <span class="text-gray-500">Potatoes, Vegetable Oil, and Salt.</span></span>
-                    </li>
-                  </ul>
-                </div>
-                <div class="mb-40">
-                  <h6 class="mb-24">Nutrition Facts</h6>
-                  <ul class="mt-32">
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Total Fat 10g 13%</span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Saturated Fat 1.5g 7%</span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Cholesterol 0mg 0%</span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Sodium 170mg 7%</span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">Potassium 350mg 6%</span>
-                    </li>
-                  </ul>
-                </div>
-                <div class="mb-0">
-                  <h6 class="mb-24">More Details</h6>
-                  <ul class="mt-32">
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-gray-500">Lunarlon midsole delivers ultra-plush responsiveness</span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-gray-500">Encapsulated Air-Sole heel unit for lightweight cushioning</span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-gray-500">Colour Shown: Ale Brown/Black/Goldtone/Ale Brown</span>
-                    </li>
-                    <li class="text-gray-400 mb-14 flex items-center gap-14">
-                      <span class="w-20 h-20 bg-main-50 text-main-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-gray-500">Style: 805899-202</span>
+                      <span class="w-20 h-20 bg-main-two-50 text-main-two-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">کد : <span class="text-gray-500">۲۳۴۵۴۲</span></span>
                     </li>
                   </ul>
                 </div>
               </div>
+              <!-- reviews tab -->
               <div class="tab-pane bt-tab-pane fade" id="pills-reviews" role="tabpanel" aria-labelledby="pills-reviews-tab" tabindex="0">
                 <div class="row g-4">
                   <div class="xl:w-6/12 flex-grow-0 flex-shrink-0 basis-auto">
-                    <h6 class="mb-24">Product Description</h6>
                     <div class="flex items-start gap-24 pb-44 border-b border-gray-100 mb-44">
                       <img src="images/comment-img1.png" alt="Image" class="w-52 h-52 object-fit-cover rounded-[50%] flex-shrink-0" />
                       <div class="flex-grow">
                         <div class="flex-between items-start gap-8">
                           <div class="">
-                            <h6 class="mb-12 text-md">Nicolas cage</h6>
+                            <h6 class="mb-12 text-md">سرور خان</h6>
                             <div class="flex items-center gap-8">
                               <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
                             </div>
-                          </div><span class="text-gray-800 text-xs">3 Days ago</span>
+                          </div><span class="text-gray-800 text-xs">سه روز قبل</span>
                         </div>
-                        <h6 class="mb-14 text-md mt-24">Greate Product</h6>
-                        <p class="text-gray-700">There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour</p>
+                        <p class="text-gray-700">بسیار بسیار بسیار خوبش است.</p>
                         <div class="flex items-center gap-20 mt-44">
-                          <button class="flex items-center gap-12 text-gray-700 hover-text-main-600"><i class="ph-bold ph-thumbs-up"></i> Like</button> <a href="#comment-form" class="flex items-center gap-12 text-gray-700 hover-text-main-600"><i class="ph-bold ph-arrow-bend-up-left"></i> Replay</a>
+                          <button class="flex items-center gap-12 text-gray-700 hover-text-main-two-600"><i class="ph-bold ph-thumbs-up"></i> پسندیدن</button> <a href="#comment-form" class="flex items-center gap-12 text-gray-700 hover-text-main-two-600"><i class="ph-bold ph-arrow-bend-up-left"></i> جواب دادن</a>
                         </div>
                       </div>
                     </div>
-                    <div class="flex items-start gap-24">
-                      <img src="images/comment-img1.png" alt="Image" class="w-52 h-52 object-fit-cover rounded-[50%] flex-shrink-0" />
-                      <div class="flex-grow">
-                        <div class="flex-between items-start gap-8">
-                          <div class="">
-                            <h6 class="mb-12 text-md">Nicolas cage</h6>
-                            <div class="flex items-center gap-8">
-                              <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
-                            </div>
-                          </div><span class="text-gray-800 text-xs">3 Days ago</span>
-                        </div>
-                        <h6 class="mb-14 text-md mt-24">Greate Product</h6>
-                        <p class="text-gray-700">There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour</p>
-                        <div class="flex items-center gap-20 mt-44">
-                          <button class="flex items-center gap-12 text-gray-700 hover-text-main-600"><i class="ph-bold ph-thumbs-up"></i> Like</button> <a href="#comment-form" class="flex items-center gap-12 text-gray-700 hover-text-main-600"><i class="ph-bold ph-arrow-bend-up-left"></i> Replay</a>
-                        </div>
-                      </div>
-                    </div>
+
                     <div class="mt-56">
                       <div class="">
-                        <h6 class="mb-24">Write a Review</h6><span class="text-heading mb-8">What is it like to Product?</span>
+                        <h6 class="mb-24">نظر شما</h6><span class="text-heading mb-8">این محصول چگونه است?</span>
                         <div class="flex items-center gap-8">
                           <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
                         </div>
@@ -340,31 +273,31 @@
                       <div class="mt-32">
                         <form action="#">
                           <div class="mb-32">
-                            <label for="title" class="text-neutral-600 mb-8">Review Title</label> <input class="common-input rounded-8" id="title" placeholder="Great Products" />
+                            <label for="title" class="text-neutral-600 mb-8">عنوان</label> <input class="common-input rounded-8" id="title" placeholder="Great Products" />
                           </div>
                           <div class="mb-32">
-                            <label for="desc" class="text-neutral-600 mb-8">Review Content</label>
-                            <textarea class="common-input rounded-8" id="desc">It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English.</textarea>
-                          </div><button type="submit" class="btn btn-main rounded-[50rem] mt-48">Submit Review</button>
+                            <label for="desc" class="text-neutral-600 mb-8">شرح</label>
+                            <textarea class="common-input rounded-8" placeholder="اینجا شرح دهید..." id="desc"></textarea>
+                          </div><button type="submit" class="btn btn-main-two rounded-[50rem] mt-48">پست کردن نظر</button>
                         </form>
                       </div>
                     </div>
                   </div>
                   <div class="xl:w-6/12 flex-grow-0 flex-shrink-0 basis-auto">
                     <div class="ms-xxl-5">
-                      <h6 class="mb-24">Customers Feedback</h6>
+                      <h6 class="mb-24">امتیاز مشتریان</h6>
                       <div class="flex flex-wrap gap-44">
                         <div class="border border-gray-100 rounded-8 px-40 py-52 flex items-center justify-center flex-col flex-shrink-0 text-center">
-                          <h2 class="mb-6 text-main-600">4.8</h2>
+                          <h2 class="mb-6 text-main-two-600">۵.۰</h2>
                           <div class="flex items-center justify-center gap-8">
                             <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
-                          </div><span class="mt-16 text-gray-500">Average Product Rating</span>
+                          </div><span class="mt-16 text-gray-500">اوسط امتیاز ها</span>
                         </div>
                         <div class="border border-gray-100 rounded-8 px-24 py-40 flex-grow">
                           <div class="flex items-center gap-8 mb-20">
                             <span class="text-gray-900 flex-shrink-0">5</span>
                             <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">
-                              <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:70%"></div>
+                              <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:70%"></div>
                             </div>
                             <div class="flex items-center gap-4">
                               <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
@@ -373,7 +306,7 @@
                           <div class="flex items-center gap-8 mb-20">
                             <span class="text-gray-900 flex-shrink-0">4</span>
                             <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
-                              <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:50%"></div>
+                              <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:50%"></div>
                             </div>
                             <div class="flex items-center gap-4">
                               <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
@@ -382,7 +315,7 @@
                           <div class="flex items-center gap-8 mb-20">
                             <span class="text-gray-900 flex-shrink-0">3</span>
                             <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                              <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:35%"></div>
+                              <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:35%"></div>
                             </div>
                             <div class="flex items-center gap-4">
                               <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
@@ -391,7 +324,7 @@
                           <div class="flex items-center gap-8 mb-20">
                             <span class="text-gray-900 flex-shrink-0">2</span>
                             <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
-                              <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:20%"></div>
+                              <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:20%"></div>
                             </div>
                             <div class="flex items-center gap-4">
                               <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
@@ -400,7 +333,7 @@
                           <div class="flex items-center gap-8 mb-0">
                             <span class="text-gray-900 flex-shrink-0">1</span>
                             <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100">
-                              <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:5%"></div>
+                              <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:5%"></div>
                             </div>
                             <div class="flex items-center gap-4">
                               <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
@@ -424,9 +357,9 @@
         <div class="flex-between flex-wrap gap-8">
           <h5 class="mb-0">You Might Also Like</h5>
           <div class="flex items-center gap-16">
-            <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">All Products</a>
+            <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">All Products</a>
             <div class="flex items-center gap-8">
-              <button type="button" id="new-arrival-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-600 text-xl hover-bg-main-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button> <button type="button" id="new-arrival-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-600 text-xl hover-bg-main-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button>
+              <button type="button" id="new-arrival-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button> <button type="button" id="new-arrival-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button>
             </div>
           </div>
         </div>
@@ -438,7 +371,7 @@
             <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2">C-500 Antioxidant Protect Dietary Supplement</a></h6>
               <div class="flex items-center gap-4">
-                <span class="text-main-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
               <div class="product-card__content mt-12">
                 <div class="product-card__price mb-8">
@@ -446,7 +379,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
@@ -457,7 +390,7 @@
             <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2">Marcel's Modern Pantry Almond Unsweetened</a></h6>
               <div class="flex items-center gap-4">
-                <span class="text-main-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
               <div class="product-card__content mt-12">
                 <div class="product-card__price mb-8">
@@ -465,7 +398,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
@@ -476,7 +409,7 @@
             <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2">O Organics Milk, Whole, Vitamin D</a></h6>
               <div class="flex items-center gap-4">
-                <span class="text-main-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
               <div class="product-card__content mt-12">
                 <div class="product-card__price mb-8">
@@ -484,7 +417,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
@@ -495,7 +428,7 @@
             <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2">Whole Grains and Seeds Organic Bread</a></h6>
               <div class="flex items-center gap-4">
-                <span class="text-main-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
               <div class="product-card__content mt-12">
                 <div class="product-card__price mb-8">
@@ -503,7 +436,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
@@ -514,7 +447,7 @@
             <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2">Lucerne Yogurt, Lowfat, Strawberry</a></h6>
               <div class="flex items-center gap-4">
-                <span class="text-main-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
               <div class="product-card__content mt-12">
                 <div class="product-card__price mb-8">
@@ -522,7 +455,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
@@ -533,7 +466,7 @@
             <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2">Nature Valley Whole Grain Oats and Honey Protein</a></h6>
               <div class="flex items-center gap-4">
-                <span class="text-main-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
               <div class="product-card__content mt-12">
                 <div class="product-card__price mb-8">
@@ -541,7 +474,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
@@ -552,7 +485,7 @@
             <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2">Whole Grains and Seeds Organic Bread</a></h6>
               <div class="flex items-center gap-4">
-                <span class="text-main-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
+                <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
               <div class="product-card__content mt-12">
                 <div class="product-card__price mb-8">
@@ -560,7 +493,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>

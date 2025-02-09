@@ -7,13 +7,14 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import redirect
 
+
 # Create your views here.
 
 
 @login_required
 def show_cart(request):
     cart = Cart.objects.get_or_create(user=request.user)[0]
-    items = cart.items.all()
+    items = CartItem.objects.filter(cart=cart).select_related("product__vendor")
     return render(request, "cart/cart.html", context=locals())
 
 

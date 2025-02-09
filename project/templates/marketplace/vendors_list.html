@@ -7,10 +7,10 @@
       <div class="breadcrumb-wrapper flex items-center justify-between flex-wrap gap-16">
         <ul class="flex items-center gap-8 flex-wrap" dir="rtl">
           <li class="text-sm">
-            <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-600"><i class="ph ph-house"></i> صفحه اصلی</a>
+            <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-two-600"><i class="ph ph-house"></i> صفحه اصلی</a>
           </li>
           <i class="ph ph-caret-left"></i> <!-- Maintained correct arrow direction -->
-          <li class="text-sm text-main-600">فروشنده ها</li>
+          <li class="text-sm text-main-two-600">فروشنده ها</li>
           <li class="flex items-center"></li>
         </ul>
         <h6 class="mb-0">فروشنده ها</h6>
@@ -46,7 +46,7 @@
                 <ul class="max-h-540 overflow-y-auto scroll-sm">
                   {% for cat in categories %}
                     <li class="mb-24">
-                      <a href="{% update_query request category_slug=cat.slug %}" class="text-gray-900 hover-text-main-600">{{ cat.name }}</a>
+                      <a href="{% update_query request category_slug=cat.slug %}" class="text-gray-900 hover-text-main-two-600">{{ cat.name }}</a>
                     </li>
                   {% endfor %}
                 </ul>

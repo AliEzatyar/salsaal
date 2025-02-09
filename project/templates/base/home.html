@@ -53,7 +53,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0 wow bounceInLeft">فروشات این هفته</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
                 <button type="button" id="deal-week-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="deal-week-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
               </div>
@@ -136,7 +136,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0 wow bounceInLeft">اجناس پر فروش</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
                 <button type="button" id="top-selling-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="top-selling-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
               </div>
@@ -290,7 +290,7 @@
                     </div>
                     <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' product.id %}" data-product-id="{{ product.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
 
-                    <span class="text-neutral-600">Delivered by <span class="text-main-600">Aug 02</span></span>
+                    <span class="text-neutral-600">Delivered by <span class="text-main-two-600">Aug 02</span></span>
                   </div>
                 </div>
               </div>
@@ -316,7 +316,7 @@
                       <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                       <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
                     </div>
-                    <span class="text-neutral-600">Delivered by <span class="text-main-600">Aug 02</span></span>
+                    <span class="text-neutral-600">Delivered by <span class="text-main-two-600">Aug 02</span></span>
                   </div>
                 </div>
               </div>
@@ -363,7 +363,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0 wow bounceInLeft">توصیه شده برای شما</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
                 <button type="button" id="top-selling-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="top-selling-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-neutral-600 text-xl hover-bg-neutral-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
               </div>
@@ -429,7 +429,7 @@
           <div class="flex-between flex-wrap gap-8">
             <h5 class="mb-0 wow bounceInLeft">آخرین بازدید ها</h5>
             <div class="flex items-center gap-16 wow bounceInRight">
-              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-600 hover-text-decoration-underline">دیدن همه</a>
+              <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
             </div>
           </div>
         </div>
@@ -439,7 +439,7 @@
               <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
                 <a href="{% url 'marketplace:product_detail'  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                 <div class="product-card__content mt-16">
-                  <span class="text-main-600 bg-main-50 text-sm font-[500] py-4 px-8">19%OFF</span>
+                  <span class="text-main-two-600 bg-main-50 text-sm font-[500] py-4 px-8">19%OFF</span>
                   <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                   <div class="flex items-center gap-6">
                     <div class="flex items-center gap-8">
