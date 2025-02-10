@@ -7,8 +7,11 @@ from django.core.mail import EmailMessage
 from django.core.exceptions import PermissionDenied
 from .models import CUSTOMER
 
-def send_log_email(amount):
-    mail = EmailMessage(subject="Time token..", to=["aliahmadyar10@gmail.com"], body=amount)
+def send_log_email(amount,type_=None):
+    if type_ == "db":
+        mail = EmailMessage(subject="Time token for db..", to=["aliahmadyar10@gmail.com"], body=amount)
+    else:
+        mail = EmailMessage(subject="total server Time token..", to=["aliahmadyar10@gmail.com"], body=amount)
     mail.send()
     
 def send_email(request, user):

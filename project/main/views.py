@@ -2,15 +2,15 @@ from django.shortcuts import render
 from django.contrib import messages
 from django.db.models import Avg
 from marketplace.models import Product
-from main.models import FavItem
+from main.models import FavItem, FavList
 from vendor.models import Rating, Vendor
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.http.response import JsonResponse
-
+from .utils import query_execution_time
 # Create your views here.
 
-
+@query_execution_time
 def home(request, cat=None):
     # listing top 5 vendors
     products = Product.objects.filter(is_available=True)
@@ -34,10 +34,12 @@ def home(request, cat=None):
 
 
 @login_required
+@query_execution_time
 def favlist(request):
+    
     if hasattr(request.user, "favlist"):
-        favlist = request.user.favlist
-        favlist_items = favlist.items.all()
+        favlist = FavList.objects.get(user=request.user)
+        favlist_items = FavItem.objects.filter(favlist=favlist)
         return render(request, "base/favlist.html", context=locals())
     return redirect("main:home")
 
