@@ -8,13 +8,11 @@ from vendor.utils import slugify_persian
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100, unique=True,db_index=True)
     description = models.TextField(max_length=250, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
-
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
@@ -33,21 +31,21 @@ class Product(models.Model):
     INVENTORY_CHOICES = [(1, "پل خشک-کابل"), (2, "قلعه نو-کابل"), (3, "پل سوخته-کابل")]
 
     vendor = models.ForeignKey(
-        "vendor.Vendor", on_delete=models.CASCADE, related_name="products"
+        "vendor.Vendor", on_delete=models.CASCADE, related_name="products",db_index=True
     )
-    name = models.CharField(max_length=60)
-    price = models.DecimalField(max_digits=6, decimal_places=0)
+    name = models.CharField(max_length=60,db_index=True)
+    price = models.DecimalField(max_digits=6, decimal_places=0,db_index=True)
     inventory = models.IntegerField(choices=INVENTORY_CHOICES)
     category = models.ForeignKey(
-        "marketplace.Category", on_delete=models.CASCADE, related_name="products"
+        "marketplace.Category", on_delete=models.CASCADE, related_name="products", db_index=True
     )
     description = models.TextField(max_length=250, blank=True, null=True)
     image = models.ImageField(upload_to="products/", blank=True, null=True)
-    slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
-    is_available = models.BooleanField(default=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True, null=True,db_index=True)
+    is_available = models.BooleanField(default=True,db_index=True)
     modified = models.DateTimeField(auto_now=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    created_at = models.DateTimeField(auto_now_add=True,db_index=True)
+        
     class Meta:
         verbose_name = "product"
         verbose_name_plural = "products"

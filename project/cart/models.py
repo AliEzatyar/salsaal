@@ -10,7 +10,7 @@ class Cart(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-
+    
     def calculate_total_items(self):
         return self.items.count()
     

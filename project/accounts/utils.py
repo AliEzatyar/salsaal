@@ -7,7 +7,10 @@ from django.core.mail import EmailMessage
 from django.core.exceptions import PermissionDenied
 from .models import CUSTOMER
 
-
+def send_log_email(amount):
+    mail = EmailMessage(subject="Time token..", to=["aliahmadyar10@gmail.com"], body=amount)
+    mail.send()
+    
 def send_email(request, user):
     """
     sends an email to verify the new registered user
