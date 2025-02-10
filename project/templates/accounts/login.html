@@ -15,7 +15,7 @@
                 <li class="flex items-center">
                 </li>
             </ul>
-            <h6 class="mb-0">ورود</h6>
+            <p class="mb-0 h6">ورود</p>
         </div>
     </div>
 </div>
@@ -25,7 +25,7 @@
         <form action="{% url 'accounts:login' %}" method="post" class="flex justify-center items-center">
           <div class="2xl:w-6/12 flex-grow-0 flex-shrink-0 basis-auto pe-xl-5">
             <div class="border border-gray-100 hover-border-main-600 transition-1 rounded-16 px-24 py-40 h-full">
-              <h4 class="mb-32 text-center">ورود به حساب</h4>
+              <p class="mb-32 text-center h4">ورود به حساب</p>
               {% if error %}
                 <p class="mb-8 text-danger-600 text-m font-[600] hover-text-decoration-underline">{{ error }}</p>
               {% endif %}

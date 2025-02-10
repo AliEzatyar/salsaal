@@ -21,24 +21,11 @@
             </ul>
           </div>
         </div>
-
-        <div class="banner-item-two-wrapper rounded-24 overflow-hidden relative arrow-center flex-grow mb-0">
-          <img src="{% static 'images/top_banner.jpg' %}" alt="Image" class="banner-img absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1] object-fit-cover rounded-24" />
-          <div class="banner-item-two__slider">
-            <div class="banner-item-two">
-              <div class="banner-item-two__content">
-                <span class="text-white mb-8 h6 wow bounceInDown">Starting at only $250</span>
-                <h2 class="banner-item-two__title bounce text-white wow bounceInLeft">Get The Sound You Love For Less</h2><a href="shop.html" class="btn btn-outline-white inline-flex items-center rounded-[50rem] gap-8 mt-48 wow bounceInUp">Shop Now<span class="icon text-xl flex"><i class="ph ph-shopping-cart-simple"></i></span></a>
-              </div>
-            </div>
-            <div class="banner-item-two">
-              <div class="banner-item-two__content">
-                <span class="text-white mb-8 h6 wow bounceInDown">Starting at only $250</span>
-                <h2 class="banner-item-two__title bounce text-white wow bounceInLeft">Get The Sound You Love For Less</h2><a href="shop.html" class="btn btn-outline-white inline-flex items-center rounded-[50rem] gap-8 mt-48 wow bounceInUp">Shop Now<span class="icon text-xl flex"><i class="ph ph-shopping-cart-simple"></i></span></a>
-              </div>
-              <div class="banner-item-two__thumb absolute bottom-0 wow bounceInUp" data-wow-duration="1s" data-tilt data-tilt-max="12" data-tilt-speed="500" data-tilt-perspective="5000" data-tilt-scale="1.06">
-                <img src="images/banner-two-img2.png" alt="Image" />
-              </div>
+        <div class="banner-item-two-wrapper rounded-12 overflow-hidden relative arrow-center flex-grow mb-0">
+          <img src="{% static 'images/background-home.jpg' %}" alt="Image" class="banner-img absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1] object-fit-cover rounded-12" />
+          <div class="banner-item-two">
+            <div class="text-center">
+              <strong class="text-white mb-8 h4 wow bounceInDown">صلصال استور - بزرگترین مرکز خرید و فروش آنلاین در افغانستان.</strong>
             </div>
           </div>
         </div>
@@ -51,7 +38,7 @@
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0 wow bounceInLeft">فروشات این هفته</h5>
+            <p class="mb-0 wow bounceInLeft h4">فروشات این هفته</p>
             <div class="flex items-center gap-16 wow bounceInRight">
               <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
@@ -95,14 +82,14 @@
           {% for product in week_sold_products %}
             <div data-aos="fade-up" data-aos-duration="200">
               <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                <a href="{% url "marketplace:product_detail"  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                 <div class="product-card__content mt-16">
                   <!-- ranking -->
                   <div class="flex items-center gap-6">
                     <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
                   </div>
                   <!-- product name -->
-                  <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
+                  <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="{% url 'marketplace:product_detail' product.id %}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                   <!-- venodr name -->
                   <div class="flex items-center gap-4">
                     <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">{{ product.vendor.vendorname }}</span>
@@ -134,7 +121,7 @@
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0 wow bounceInLeft">اجناس پر فروش</h5>
+            <p class="mb-0 wow bounceInLeft h4">اجناس پر فروش</p>
             <div class="flex items-center gap-16 wow bounceInRight">
               <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
@@ -162,13 +149,13 @@
               {% for product in top_selling_products %}
                 <div data-aos="fade-up" data-aos-duration="200">
                   <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                    <a href="{% url 'marketplace:product_detail'  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                    <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                     <div class="product-card__content mt-16">
                       <div class="flex items-center gap-6">
                         <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
                       </div>
                       <!-- product name -->
-                      <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
+                      <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="{% url 'marketplace:product_detail' product.id %}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                       <!-- vendor name -->
                       <div class="flex items-center gap-4">
                         <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">{{ product.vendor.vendor_name }}</span>
@@ -201,7 +188,8 @@
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
             <!-- trending -->
-            <h5 class="mb-0 wow bounceInLeft">مروج روز</h5>
+            <p class="mb-0 wow bounceInLeft h4">مروج روز</p>
+
             <ul class="nav common-tab style-two nav-pills wow bounceInRight" id="pills-tab" role="tablist">
               <li class="nav-item" role="presentation">
                 <button class="nav-link bt-tb-btn-p active" data-target="#pills-all" id="pills-all-tab" data-bs-toggle="pill" data-bs-target="#pills-all" type="button" role="tab" aria-controls="pills-all" aria-selected="true">همه</button>
@@ -248,10 +236,10 @@
               {% for product in trending_products %}
                 <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
                   <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                    <a href="{% url 'marketplace:product_detail'  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                    <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                     <div class="product-card__content mt-16">
                       <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
-                      <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
+                      <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:product_detail' product.id %}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                       <div class="flex items-center gap-6">
                         <div class="flex items-center gap-8">
                           <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
@@ -275,10 +263,10 @@
             {% for product in trending_products %}
               <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
                 <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                  <a href="{% url 'marketplace:product_detail'  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/product-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                  <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/product-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
                   <div class="product-card__content mt-16">
                     <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
-                    <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">Instax Mini 12 Instant Film Camera - Green</a></h6>
+                    <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:product_detail' product.id %}" class="link text-line-2" tabindex="0">Instax Mini 12 Instant Film Camera - Green</a></h6>
                     <div class="flex items-center gap-6">
                       <div class="flex items-center gap-8">
                         <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
@@ -303,10 +291,10 @@
             {% for product in trending_products %}
               <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
                 <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                  <a href="{% url 'marketplace:product_detail'  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/product-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                  <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/product-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
                   <div class="product-card__content mt-16">
                     <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
-                    <h6 class="title text-lg font-[600] my-16"><a href="product{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">Instax Mini 12 Instant Film Camera - Green</a></h6>
+                    <h6 class="title text-lg font-[600] my-16"><a href="product{% url 'marketplace:product_detail' product.id %}" class="link text-line-2" tabindex="0">Instax Mini 12 Instant Film Camera - Green</a></h6>
                     <div class="flex items-center gap-6">
                       <div class="flex items-center gap-8">
                         <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
@@ -361,7 +349,7 @@
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0 wow bounceInLeft">توصیه شده برای شما</h5>
+            <p class="mb-0 wow bounceInLeft h4">توصیه شده برای شما</p>
             <div class="flex items-center gap-16 wow bounceInRight">
               <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
               <div class="flex items-center gap-8">
@@ -389,13 +377,13 @@
               {% for product in top_selling_products %}
                 <div data-aos="fade-up" data-aos-duration="200">
                   <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                    <a href="{% url 'marketplace:product_detail'  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                    <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                     <div class="product-card__content mt-16">
                       <div class="flex items-center gap-6">
                         <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
                       </div>
                       <!-- product name -->
-                      <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
+                      <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="{% url 'marketplace:product_detail' product.id %}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                       <!-- vendor name -->
                       <div class="flex items-center gap-4">
                         <span class="text-tertiary-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">{{ product.vendor.vendor_name }}</span>
@@ -427,7 +415,8 @@
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0 wow bounceInLeft">آخرین بازدید ها</h5>
+            <p class="mb-0 wow bounceInLeft h4">آخرین بازدید ها</p>
+
             <div class="flex items-center gap-16 wow bounceInRight">
               <a href="shop.html" class="text-sm font-[500] text-gray-700 hover-text-main-two-600 hover-text-decoration-underline">دیدن همه</a>
             </div>
@@ -437,10 +426,10 @@
           {% for product in recently_viewed %}
             <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
               <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                <a href="{% url 'marketplace:product_detail'  product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                 <div class="product-card__content mt-16">
                   <span class="text-main-two-600 bg-main-50 text-sm font-[500] py-4 px-8">19%OFF</span>
-                  <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:product_detail'  product.id%}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
+                  <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:product_detail' product.id %}" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                   <div class="flex items-center gap-6">
                     <div class="flex items-center gap-8">
                       <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
@@ -465,7 +454,8 @@
       <div class="border border-gray-100 p-24 rounded-16">
         <div class="section-heading mb-24">
           <div class="flex-between flex-wrap gap-8">
-            <h5 class="mb-0">بهترین برند ها</h5>
+            <p class="mb-0 wow bounceInLeft h4">بهترین برند ها</p>
+
             <div class="flex items-center gap-8">
               <button type="button" id="topBrand-prev" class="slick-prev slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-two-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-right"></i></button> <button type="button" id="topBrand-next" class="slick-next slick-arrow flex items-center justify-center rounded-[50%] border border-gray-100 hover-border-main-two-600 text-xl hover-bg-main-two-600 hover-text-white transition-1"><i class="ph ph-caret-left"></i></button>
             </div>
