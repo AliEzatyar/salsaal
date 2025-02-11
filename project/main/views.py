@@ -10,7 +10,6 @@ from django.http.response import JsonResponse
 from .utils import query_execution_time
 # Create your views here.
 
-@query_execution_time
 def home(request, cat=None):
     # listing top 5 vendors
     products = Product.objects.filter(is_available=True)
@@ -34,7 +33,6 @@ def home(request, cat=None):
 
 
 @login_required
-@query_execution_time
 def favlist(request):
     
     if hasattr(request.user, "favlist"):

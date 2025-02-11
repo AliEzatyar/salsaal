@@ -1,10 +1,58 @@
+import json
+from django.http.response import JsonResponse
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
 from marketplace.models import Category, Product
+from main.utils import query_execution_time
 from vendor.models import Vendor
+from django.db.models.aggregates import Count
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
 
 
-# Create your views here.
+def marketplace(request):
+    """this view presents markeplace page"""
+    products = Product.objects.filter(is_available=True)
+    categories = Category.objects.annotate(products_count=Count("products"))
+    paginated = Paginator(products, 6)
+    if request.method == "POST":
+        """handling filter, sort and search"""
+        # the option attribute contains all filtering
+        data = json.loads(request.body)["options"]
+
+        # any search or filters
+
+        if "category" in data:
+            products = products.filter(category__id=int(data["category"]))
+        if "price" in data:
+            products = products.filter(
+                price__range=[int(data["price"][0]), int(data["price"][1])]
+            )
+
+        # paginating the results finally
+        paginated = Paginator(products, 6)
+        total_pages = paginated.num_pages
+        total_found = products.count()
+        # first page by default
+        products = paginated.get_page(1)
+
+        if "page" in request.POST:
+            products = paginated.get_page(int(request.POST["page"]))
+
+        str_html = render_to_string(
+            "marketplace/portional_list.html",
+            {"products": products},
+        )
+        return JsonResponse(
+            {"html": str_html, "total_pages": total_pages, "total_found": total_found}
+        )
+    # initial marketplace page
+    total_found = products.count()
+    total_pages = [i + 1 for i in range(paginated.num_pages)]
+    products = paginated.get_page(1)
+    return render(request, "marketplace/marketplace.html", context=locals())
+
+
 def product_detail(request, product_id):
     product = Product.objects.filter(id=product_id).first()
     if product:
@@ -12,6 +60,7 @@ def product_detail(request, product_id):
     return redirect("main:home")
 
 
+@query_execution_time
 def vendors(request, page=None):
     """this view presents all available vendors by either category, city or rating"""
     vendors = Vendor.objects.filter(is_approved=True)
