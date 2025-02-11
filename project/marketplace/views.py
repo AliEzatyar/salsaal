@@ -17,28 +17,36 @@ def marketplace(request):
     paginated = Paginator(products, 6)
     if request.method == "POST":
         """handling filter, sort and search"""
-        # the option attribute contains all filtering
+        # the option attribute contains all filtering and sorting
         data = json.loads(request.body)["options"]
 
-        # any search or filters
-
+        # filtering
         if "category" in data:
             products = products.filter(category__id=int(data["category"]))
         if "price" in data:
             products = products.filter(
                 price__range=[int(data["price"][0]), int(data["price"][1])]
             )
+        # sorting
+        print(data)
+        if "sort" in data:
+            sort_type = data["sort"]
+            if sort_type == "newest":
+                products = products.order_by("-created_at")
+            elif sort_type == "cheapest":
+                products = products.order_by("price")
+            elif sort_type == "costly":
+                products = products.order_by("-price")
 
         # paginating the results finally
         paginated = Paginator(products, 6)
         total_pages = paginated.num_pages
         total_found = products.count()
+
         # first page by default
         products = paginated.get_page(1)
-
-        if "page" in request.POST:
-            products = paginated.get_page(int(request.POST["page"]))
-
+        if "page" in data:
+            products = paginated.get_page(int(data["page"]))
         str_html = render_to_string(
             "marketplace/portional_list.html",
             {"products": products},

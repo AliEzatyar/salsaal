@@ -22,7 +22,7 @@
         <!-- sidebar -->
         <div class="xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto">
           <div class="shop-sidebar">
-            <button type="button" class="shop-sidebar__close xl:hidden flex w-32 h-32 flex items-center justify-center border border-gray-100 rounded-[50%] hover-bg-main-two-600 absolute right-0 mr-[10px] mt-8 hover-text-white hover-border-main-600"><i class="ph ph-x"></i></button>
+            <button type="button" class="shop-sidebar__close xl:hidden flex w-32 h-32 flex items-center justify-center border border-gray-100 rounded-[50%] hover-bg-main-two-600 absolute right-0 mr-[10px] mt-8 hover-text-white hover-border-main-two-600"><i class="ph ph-x"></i></button>
             <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
               <p class="text-xl border-b border-gray-100 pb-24 mb-24 h6">فیلتر بر اساس کتگوری</p>
               <ul class="max-h-540 overflow-y-auto scroll-sm">
@@ -35,12 +35,12 @@
             </div>
             <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
               <p class="text-xl border-b border-gray-100 pb-24 mb-24 h6">فیلتر بر اساس قیمت</p>
-              <div  class="flex gap-10">
+              <div class="flex gap-10">
                 <input type="number" class="min-price-input common-input w-1/2" placeholder="0" />
                 <input type="number" class="max-price-input common-input w-1/2" placeholder="10000" />
               </div>
               <div class="items-center justify-center flex py-20 w-full">
-                <button type="button"  class="price-filter-btn btn btn-main-two h-40 w-full text-center ">فیلتر</button>
+                <button type="button" class="price-filter-btn btn btn-main-two h-40 w-full text-center">فیلتر</button>
               </div>
             </div>
             <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
@@ -175,12 +175,14 @@
               <div class="list-grid-btns flex items-center gap-32">
                 <button type="button" class="w-44 h-44 flex items-center justify-center border border-gray-100 rounded-6 text-2xl list-btn"><i class="ph-bold ph-list-dashes"></i></button> <button type="button" class="hidden xl:block w-44 h-44 flex items-center justify-center border border-main-600 text-white bg-main-two-600 rounded-6 text-2xl grid-btn"><i class="ph ph-squares-four"></i></button>
               </div>
-              <div class="relative text-gray-500 flex items-center gap-4 text-14 ">
+              <div class="relative text-gray-500 flex items-center gap-4 text-14">
                 <label for="sorting" class="text-inherit flex-shrink-0">ترتیب نظر به:</label>
-                 <select class="form-control block w-full p-[0.375rem_0.75rem] text-base leading-6 text-[#495057] bg-white bg-clip-padding border border-[#ced4da] rounded transition-all duration-150 ease-in-out focus:text-[#495057] focus:bg-white focus:border-main focus:outline-0 focus:shadow-none common-input px-14 py-14 text-inherit rounded-6 w-1/2" id="sorting">
-                  <option value="1" selected="selected">مشهور </option>
-                  <option value="1">جدید </option>
-                  <option value="1">مروج </option>
+                <select class="sort-selector form-control block w-full p-[0.375rem_0.75rem] text-base leading-6 text-[#495057] bg-white bg-clip-padding border border-[#ced4da] rounded transition-all duration-150 ease-in-out focus:text-[#495057] focus:bg-white focus:border-main focus:outline-0 focus:shadow-none common-input px-14 py-14 text-inherit rounded-6 w-1/2" id="sorting">
+                  <option value="popular" selected="selected">مشهور</option>
+                  <option value="newest">جدید</option>
+                  <option value="costly">قیمت ترین</option>
+                  <option value="cheapest">ارزان ترین</option>
+
                 </select>
               </div>
               <button type="button" class="w-44 h-44 xl:hidden flex flex items-center justify-center border border-gray-100 rounded-6 text-2xl sidebar-btn"><i class="ph-bold ph-funnel"></i></button>
@@ -189,8 +191,8 @@
           <!-- container main -->
           <div class="list-grid-wrapper">
             {% for product in products %}
-              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                <a href="{%url 'marketplace:product_detail' product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /> <span class="product-card__badge bg-primary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best Sale</span></a>
+              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /> <span class="product-card__badge bg-primary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best Sale</span></a>
                 <div class="product-card__content mt-16">
                   <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                   <div class="flex items-center mb-20 mt-16 gap-6">

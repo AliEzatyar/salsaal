@@ -48,8 +48,8 @@
                 </div>
               </div>
               <div class="mt-32 flex flex-col gap-8">
-                <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-600">در مورد فروشگاه</a> <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-600">اجناس فروشنده</a>
-                <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-600">پالیسی برگشتی جنس</a> <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-600">پالیسی انتقال</a> <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-600">ارتباط با فروشنده</a>
+                <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-two-600">در مورد فروشگاه</a> <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-two-600">اجناس فروشنده</a>
+                <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-two-600">پالیسی برگشتی جنس</a> <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-two-600">پالیسی انتقال</a> <a href="javascript:void(0)" class="px-16 py-12 border text-white border-neutral-500 w-full rounded-4 hover-bg-main-two-600 hover-border-main-two-600">ارتباط با فروشنده</a>
               </div>
             </div>
             <div class="border border-gray-50 rounded-8 p-24">
@@ -124,7 +124,7 @@
           <!-- vendor products list -->
           <div class="list-grid-wrapper grid-columns-4">
             {% for product in vendor_products %}
-              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                 <!-- product image and banners -->
                 <div class="product-card__thumb rounded-8 bg-gray-50 relative">
                   <a href="{% url 'marketplace:product_detail' product.id %}" class="w-full h-full flex items-center justify-center"><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>

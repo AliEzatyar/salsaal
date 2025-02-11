@@ -17331,7 +17331,7 @@ input:focus-visible:focus-visible {
   border-color: var(--main-500) !important
 }
 
-.hover-border-main-600:hover {
+.hover-border-main-two-600:hover {
   border-color: #299e60 !important;
   border-color: var(--main-600) !important
 }

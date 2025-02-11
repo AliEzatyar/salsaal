@@ -81,7 +81,7 @@
         <div class="deals-week-slider arrow-style-two">
           {% for product in week_sold_products %}
             <div data-aos="fade-up" data-aos-duration="200">
-              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                 <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                 <div class="product-card__content mt-16">
                   <!-- ranking -->
@@ -148,7 +148,7 @@
             <div class="top-selling-product-slider arrow-style-two">
               {% for product in top_selling_products %}
                 <div data-aos="fade-up" data-aos-duration="200">
-                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                     <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                     <div class="product-card__content mt-16">
                       <div class="flex items-center gap-6">
@@ -235,7 +235,7 @@
               <!--  -->
               {% for product in trending_products %}
                 <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                     <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                     <div class="product-card__content mt-16">
                       <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
@@ -262,7 +262,7 @@
           <div class="row g-12">
             {% for product in trending_products %}
               <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-                <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+                <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                   <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/product-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
                   <div class="product-card__content mt-16">
                     <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
@@ -290,7 +290,7 @@
           <div class="row g-12">
             {% for product in trending_products %}
               <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-                <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+                <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                   <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/product-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
                   <div class="product-card__content mt-16">
                     <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
@@ -376,7 +376,7 @@
             <div class="top-selling-product-slider arrow-style-two">
               {% for product in top_selling_products %}
                 <div data-aos="fade-up" data-aos-duration="200">
-                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                     <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                     <div class="product-card__content mt-16">
                       <div class="flex items-center gap-6">
@@ -425,7 +425,7 @@
         <div class="row g-12">
           {% for product in recently_viewed %}
             <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
+              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
                 <a href="{% url 'marketplace:product_detail' product.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
                 <div class="product-card__content mt-16">
                   <span class="text-main-two-600 bg-main-50 text-sm font-[500] py-4 px-8">19%OFF</span>
