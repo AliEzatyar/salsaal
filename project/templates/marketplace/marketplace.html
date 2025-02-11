@@ -190,7 +190,7 @@
           <div class="list-grid-wrapper">
             {% for product in products %}
               <div class="product-card h-full p-16 border border-gray-100 hover-border-main-600 rounded-16 relative transition-2">
-                <a href="product-details.html" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /> <span class="product-card__badge bg-primary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best Sale</span></a>
+                <a href="{%url 'marketplace:product_detail' product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /> <span class="product-card__badge bg-primary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best Sale</span></a>
                 <div class="product-card__content mt-16">
                   <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
                   <div class="flex items-center mb-20 mt-16 gap-6">
