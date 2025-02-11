@@ -2,7 +2,7 @@
   "name": "صلصال استور",
   "short_name": "صلصال",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "scope": "/",
