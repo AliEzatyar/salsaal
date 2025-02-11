@@ -19,6 +19,17 @@ document.addEventListener("DOMContentLoaded", () => {
         side.classList.remove("show");
         document.body.classList.remove("scroll-hide-sm")
     }
+    // WPA
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+            .register("/static/sw.js")
+            .then((registration) => {
+                console.log("Service Worker Registered!", registration);
+            })
+            .catch((error) => {
+                console.log("Service Worker Registration Failed:", error);
+            });
+    }
 
 
 })
