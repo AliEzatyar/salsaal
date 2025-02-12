@@ -17,14 +17,15 @@ def create_order(request):
         return redirect("main:home")
     cart = user.cart
     order_items = []
+    OrderItem.objects.filter(order=order).delete() # flush previous items and recreate new items
     for item in CartItem.objects.filter(cart=cart).select_related("product__vendor"):
-        order_item = OrderItem.objects.create(
+        order_item = OrderItem.objects.get_or_create(
             order=order,
             product=item.product,
             vendor=item.product.vendor,
             quantity=item.quantity,
             price=item.product.price,
-        )
+        )[0]
         order_items.append(order_item)
     order.calculate_total_price()
     
