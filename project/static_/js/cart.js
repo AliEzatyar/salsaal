@@ -1,6 +1,5 @@
-document.addEventListener("DOMContentLoaded", (e) => {
-
-    // handling add to cart
+function addToCartBtnsEvent() {
+    // this function enables add-to-cart buttons
     const cartBtns = document.querySelectorAll(".add-to-cart");
     if (cartBtns) {
         cartBtns.forEach(btn => {
@@ -15,11 +14,20 @@ document.addEventListener("DOMContentLoaded", (e) => {
                             swal("اضافه شد", "مورد به سبد خرید اضافه شد", "success")
                         })
                     }
+                    else {
+                        swal("موجود است", "این مورد  در سبد خرید شما موجود است", "info")
+
+                    }
                 })
             })
 
         })
     }
+}
+document.addEventListener("DOMContentLoaded", (e) => {
+
+    // handling add to cart initially
+    addToCartBtnsEvent()
     // handling deleting cart item
     const deleteBtns = document.querySelectorAll(".delete-cart-item");
     if (deleteBtns) {
@@ -34,7 +42,6 @@ document.addEventListener("DOMContentLoaded", (e) => {
                         badges.forEach(span => {
                             span.innerText = parseInt(span.innerText) - 1;
                             swal("حذف شد", "مورد از سبد خرید حذف شد", "success")
-
                         })
                     }
                 })

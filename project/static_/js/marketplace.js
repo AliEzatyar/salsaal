@@ -40,6 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // inserting products
             productsMainContainer.innerHTML = "";
             productsMainContainer.insertAdjacentHTML("beforeend", data.html)
+            // handling add to cart button for all new product elements
+            addToCartBtnsEvent()
         })
     }
     // this is a gen-eric function for setting onclick event and fetching and inserting the result html to products container

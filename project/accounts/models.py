@@ -111,7 +111,7 @@ class UserProfile(models.Model):
     longtitiude = models.FloatField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-
+    phone = models.CharField(max_length=12,null=True,blank=True)
     def __str__(self):
         return str(self.user)
 

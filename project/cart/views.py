@@ -30,8 +30,9 @@ def add_to_cart(request, product_id):
             cart_item.save()
             cart.items.add(cart_item)
             return JsonResponse({"OK": 1})
-        # not added
-        return JsonResponse({"OK": 0})
+        else:
+            return JsonResponse({"OK": 0})
+
 
 
 @login_required
