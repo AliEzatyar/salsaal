@@ -10,13 +10,25 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 
 
-def marketplace(request):
-    """this view presents markeplace page"""
+def marketplace(request, query=None):
+    """this view presents markeplace page. It also hanldes search, sort and filtering products"""
     products = Product.objects.filter(is_available=True)
-    categories = Category.objects.annotate(products_count=Count("products"))
+    categories_by_products_count = Category.objects.annotate(
+        products_count=Count("products")
+    )
     paginated = Paginator(products, 6)
     if request.method == "POST":
         """handling filter, sort and search"""
+        # search handling
+        if "query" in request.POST:
+            products = products.filter(name__icontains=request.POST['query'])
+            paginated = Paginator(products, 6)
+            total_pages = [i + 1 for i in range(paginated.num_pages)]
+            total_found = products.count()
+            # first page by default
+            products = paginated.get_page(1)
+            return render(request, "marketplace/marketplace.html", context=locals())
+
         # the option attribute contains all filtering and sorting
         data = json.loads(request.body)["options"]
 
@@ -28,7 +40,6 @@ def marketplace(request):
                 price__range=[int(data["price"][0]), int(data["price"][1])]
             )
         # sorting
-        print(data)
         if "sort" in data:
             sort_type = data["sort"]
             if sort_type == "newest":
@@ -54,6 +65,7 @@ def marketplace(request):
         return JsonResponse(
             {"html": str_html, "total_pages": total_pages, "total_found": total_found}
         )
+
     # initial marketplace page
     total_found = products.count()
     total_pages = [i + 1 for i in range(paginated.num_pages)]
@@ -72,6 +84,7 @@ def product_detail(request, product_id):
 def vendors(request, page=None):
     """this view presents all available vendors by either category, city or rating"""
     vendors = Vendor.objects.filter(is_approved=True)
+    # handling search
     if "query" in request.GET:
         vendors = vendors.filter(vendor_name__icontains=request.GET["query"])
         amount_vendors = vendors.count()  # number of vendors found after all filterings

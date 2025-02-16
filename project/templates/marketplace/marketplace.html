@@ -26,7 +26,7 @@
             <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
               <p class="text-xl border-b border-gray-100 pb-24 mb-24 h6">فیلتر بر اساس کتگوری</p>
               <ul class="max-h-540 overflow-y-auto scroll-sm">
-                {% for cat in categories %}
+                {% for cat in categories_by_products_count %}
                   <li class="mb-0">
                     <button type="button" data-category="{{ cat.id }}" class="category-btn text-gray-900 hover-text-main-600">{{ cat.name }} ({{ cat.products_count }})</button>
                   </li>

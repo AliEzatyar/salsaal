@@ -25,7 +25,6 @@ function addToCartBtnsEvent() {
     }
 }
 document.addEventListener("DOMContentLoaded", (e) => {
-
     // handling add to cart initially
     addToCartBtnsEvent()
     // handling deleting cart item

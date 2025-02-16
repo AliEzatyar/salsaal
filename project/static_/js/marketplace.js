@@ -1,4 +1,4 @@
-// handling sending and handling fetch requests for pagination and searching and filtering
+// this code handles....
 
 document.addEventListener('DOMContentLoaded', () => {
     const productsMainContainer = document.querySelector('.list-grid-wrapper')
@@ -26,25 +26,27 @@ document.addEventListener('DOMContentLoaded', () => {
             totalFound.innerHTML = ``
             totalFound.innerText = data.total_found;
 
+            // updating and setting events to pagination buttons since changing in every query
             pageBtns.innerHTML = `<li class="page-item"><a class="page-link h-64 w-64 flex items-center justify-center text-xxl rounded-8 font-[500] text-neutral-600 border border-gray-100" href="index.html"><i class="ph-bold ph-arrow-left"></i></a></li>`
             for (i = 1; i <= data.total_pages; i++) {
                 pageBtns.insertAdjacentHTML("beforeend", `<li class="page-item active"><button class="pagination-button h-64 w-64 flex items-center justify-center text-md rounded-8 font-[500] text-neutral-600 border border-gray-100" data-page="${i}">${i}</button></li>`
                 )
-                // updating event setting to pagination buttons since changing in every query
                 paginationBtns = document.querySelectorAll('.pagination-button')
+                // activating filter by page for new page buttons created
                 genericElementsHandler(paginationBtns, "page")
             }
+            // handling page x of y results
             if (data.total_found < 6) {
                 headerRangeEnd.innerText = data.total_found;
             }
-            // inserting products
+            // inserting products to products container
             productsMainContainer.innerHTML = "";
             productsMainContainer.insertAdjacentHTML("beforeend", data.html)
             // handling add to cart button for all new product elements
             addToCartBtnsEvent()
         })
     }
-    // this is a gen-eric function for setting onclick event and fetching and inserting the result html to products container
+    // this is a gen-eric function for setting onclick event and calling fetchAndInsert()
     function genericElementsHandler(btn_objs, type) {
         if (type == "price" || type == "sort") {
             // since we have only one price button, we avoid forEach funciton does not exist error

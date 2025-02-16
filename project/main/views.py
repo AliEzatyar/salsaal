@@ -8,11 +8,13 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.http.response import JsonResponse
 from .utils import query_execution_time
+
 # Create your views here.
+
 
 def home(request, cat=None):
     # listing top 5 vendors
-    products = Product.objects.filter(is_available=True)
+    products = Product.objects.filter(is_available=True).select_related("vendor")
     if cat:
         temp = products.filter(category__name=cat).exists()
         if temp:
@@ -34,7 +36,7 @@ def home(request, cat=None):
 
 @login_required
 def favlist(request):
-    
+
     if hasattr(request.user, "favlist"):
         favlist = FavList.objects.get(user=request.user)
         favlist_items = FavItem.objects.filter(favlist=favlist)
@@ -53,11 +55,15 @@ def add_to_favlist(request, product_id):
             return JsonResponse({"OK": 1})
         return JsonResponse({"OK": 0})
 
+
 @login_required
-def delete_from_favlist(request,item_id):
+def delete_from_favlist(request, item_id):
     if hasattr(request.user, "favlist"):
         favitem = FavItem.objects.filter(id=item_id).first()
         if favitem:
             favitem.delete()
-            return JsonResponse({"OK":1})
-        return JsonResponse({"OK":0})
+            return JsonResponse({"OK": 1})
+        return JsonResponse({"OK": 0})
+
+
+
