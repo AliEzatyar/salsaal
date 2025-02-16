@@ -17,8 +17,9 @@ def query_execution_time(func):
         start_queries = len(connection.queries)
         start_time = perf_counter()
         result = func(*args, **kwargs)
-        for q in connection.queries:
-            print(q, "\n\n")
+        
+        # for q in connection.queries:
+        #     print(q, "\n\n")
         end_time = perf_counter()
 
         # end queries
@@ -26,7 +27,6 @@ def query_execution_time(func):
 
         total_time = f"{end_time - start_time} % 0.4f"
         total_queries = end_queries - start_queries
-        print(total_queries, "queries | ", total_time, "total time.")
         if not settings.LOCAL:
             send_log_email(str(total_time), type_="db")
         return result

@@ -1,4 +1,5 @@
 {% extends 'base/base.html' %}
+{% load static %}
 {% load tags %}
 {% block body %}
   <!-- simple navigator -->
@@ -20,13 +21,18 @@
 
   <section class="vendor-two py-40">
     <div class="container container-lg">
+      <!-- search and amount found containers-->
       <div class="flex items-center justify-between flex-wrap mb-48 gap-16">
-        <form action="{%url 'marketplace:search_vendor' %}" class="input-group relative flex flex-wrap items-stretch w-full max-w-418">
-          <input name="query" class="form-control block w-full p-[0.375rem_0.75rem] text-base leading-6 text-[#495057] bg-white bg-clip-padding border border-[#ced4da] rounded transition-all duration-150 ease-in-out focus:text-[#495057] focus:bg-white focus:border-main focus:outline-0 focus:shadow-none common-input rounded-start-3" placeholder="جستجو" /> <button type="submit" class="input-group relative flex flex-wrap items-center w-full-text border-0 bg-main-two-600 !rounded-tr-[0.5rem] !rounded-br-[0.5rem] text-white text-2xl hover-bg-main-two-700 px-24"><i class="ph ph-magnifying-glass"></i></button>
+        <!--search bar -->
+        <form method="post" action="{%url 'marketplace:vendors' %}" class="input-group relative flex flex-wrap items-stretch w-full max-w-418">
+          <input name="query" class="form-control block w-full p-[0.375rem_0.75rem] text-base leading-6 text-[#495057] bg-white bg-clip-padding border border-[#ced4da] rounded transition-all duration-150 ease-in-out focus:text-[#495057] focus:bg-white focus:border-main focus:outline-0 focus:shadow-none common-input rounded-start-3" placeholder="جستجو" /> 
+          <button type="submit" class="input-group relative flex flex-wrap items-center w-full-text border-0 bg-main-two-600 !rounded-tr-[0.5rem] !rounded-br-[0.5rem] text-white text-2xl hover-bg-main-two-700 px-24"><i class="ph ph-magnifying-glass"></i></button>
+          {% csrf_token %}
         </form>
+        <!--results found-->
         <div class="flex items-center justify-between md:justify-end gap-16 flex-grow">
           <div class="text-gray-600 text-md flex-shrink-0">
-            <span class="text-neutral-900 font-[600]">{{ amount_vendors }}</span>
+            <span id="total-found" class="text-neutral-900 font-[600]">{{ total_found }}</span>
             نتیجه پیدا شد
           </div>
           <div class="flex items-center gap-8 md:flex hidden">
@@ -34,7 +40,11 @@
           </div><button type="button" class="w-48 h-48 xl:hidden flex flex items-center justify-center border border-gray-100 rounded-6 text-2xl sidebar-btn"><i class="ph-bold ph-funnel"></i></button>
         </div>
       </div>
+
+      <!--sidebar and vendors grid-->      
       <div class="row">
+        
+        <!--sidebar-->
         <div class="2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto">
           <div class="shop-sidebar">
             <button type="button" class="shop-sidebar__close xl:hidden flex w-32 h-32 flex items-center justify-center border border-gray-100 rounded-[50%] hover-bg-main-600 absolute right-0 mr-[10px] mt-8 hover-text-white hover-border-main-two-600"><i class="ph ph-x"></i></button>
@@ -44,9 +54,12 @@
                 <h6 class="text-xl border-b border-gray-100 pb-24 mb-24">فیلتر بر اساس کتگوری</h6>
 
                 <ul class="max-h-540 overflow-y-auto scroll-sm">
+                    <li class="mb-24">
+                      <a href="{%url 'marketplace:vendors'%}"  class="text-gray-900 hover-text-main-two-600">همه</a>
+                    </li>
                   {% for cat in categories %}
                     <li class="mb-24">
-                      <a href="{% update_query request category_slug=cat.slug %}" class="text-gray-900 hover-text-main-two-600">{{ cat.name }}</a>
+                      <button type="button"  data-category="{{cat.id}}" class="category-btn text-gray-900 hover-text-main-two-600 ">{{ cat.name }}</a>
                     </li>
                   {% endfor %}
                 </ul>
@@ -118,22 +131,21 @@
 
               <!-- filter by Location -->
               <div class="border border-gray-50 rounded-8 p-24">
-                <h6 class="text-xl border-b border-gray-100 pb-24 mb-24">فیلتر بر اساس موقعیت</h6>
+                <p class="text-xl border-b border-gray-100 pb-24 mb-24 h6">فیلتر بر اساس موقعیت</p>
                 <div class="flex flex-col gap-8">
-                  <form action="{% update_query request  %}" id="filterForm" method="GET">
-                    <select name="city" onchange="this.form.submit()" class="common-input form-select">
+                    <select name="city" id="filter-city-selector" class="common-input form-select">
                       <option value="" selected="selected" disabled="disabled">شهر</option>
                       {% for city in cities %}
                         <option value="{{ city }}">{{ city }}</option>
                       {% endfor %}
                     </select>
-                  </form>
                 </div>
               </div>
             </div>
           </div>
         </div>
         <!-- sidebar end -->
+
         <!-- vendors grid -->
         <div class="2xl:w-9/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-8/12">
           <div class="list-grid-wrapper vendors-two-item-wrapper grid-columns-3">
@@ -181,18 +193,21 @@
             <li class="page-item">
               <a class="page-link h-64 w-64 flex items-center justify-center text-xxl rounded-8 font-[500] text-neutral-600 border border-gray-100" href="index.html"><i class="ph-bold ph-arrow-right"></i></a>
             </li>
-            {% for page in page_numbers %}
+            {% for page in total_pages %}
               <li class="page-item active">
-                <a class="page-link h-64 w-64 flex items-center justify-center text-md rounded-8 font-[500] text-neutral-600 border border-gray-100" href="{% url 'marketplace:vendors_by_page' page %}">{{ page }}</a>
+                <button data-page="{{page}}" class="pagination-button page-link h-64 w-64 flex items-center justify-center text-md rounded-8 font-[500] text-neutral-600 border border-gray-100" >
+                  {{ page }}
+                </button>
               </li>
             {% endfor %}
-
             <li class="page-item">
               <a class="page-link h-64 w-64 flex items-center justify-center text-xxl rounded-8 font-[500] text-neutral-600 border border-gray-100" href="index.html"><i class="ph-bold ph-arrow-left"></i></a>
             </li>
           </ul>
         </div>
+        <!-- vendors grid end-->
       </div>
     </div>
   </section>
+  <script src="{%static 'js/vendors.js'%}"></script>
 {% endblock %}

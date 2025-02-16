@@ -1,4 +1,4 @@
-// this code handles....
+// this code handles search, sort and filter in front end for products
 
 document.addEventListener('DOMContentLoaded', () => {
     const productsMainContainer = document.querySelector('.list-grid-wrapper')

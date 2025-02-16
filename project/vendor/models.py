@@ -7,7 +7,6 @@ from marketplace.models import Product
 
 
 class Vendor(models.Model):
-
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor",db_index=True)
     user_profile = models.OneToOneField(
         UserProfile,
@@ -17,6 +16,7 @@ class Vendor(models.Model):
         null=True,
         db_index=True
     )
+    
     vendor_name = models.CharField(max_length=60, unique=True,db_index=True)
     vendor_license = models.ImageField(
         upload_to="vendor/license/", blank=True, null=True
