@@ -86,11 +86,17 @@ def vendors(request, page=None):
     vendors = Vendor.objects.filter(is_approved=True)
     paginated = Paginator(vendors, per_page=6)
     if request.method == "POST":
+        # handling search NOT AJAX
+        if "query" in request.POST:
+            vendors = vendors.filter(vendor_name__icontains=request.POST['query'])
+            cities = {vendor.user_profile.city for vendor in vendors}  # needed in template
+            paginated = Paginator(vendors, per_page=6)
+            total_found = vendors.count()
+            total_pages = [i + 1 for i in range(paginated.num_pages)]
+            vendors = paginated.get_page(1)
+            return render(request, "marketplace/vendors_list.html", context=locals())
+
         data = json.loads(request.body)["options"]
-        print("this was the options", data)
-        # handling search
-        if "query" in data:
-            vendors = vendors.filter(vendor_name__icontains=data['query'])
         # filtering
         if "city" in data:
             vendors = vendors.filter(user_profile__city=data['city'])
@@ -118,7 +124,6 @@ def vendors(request, page=None):
         str_html = render_to_string(
             "marketplace/vendors_portional_list.html", context=locals()
         )
-        print("results came on", vendors)
         return JsonResponse(
             {"html": str_html, "total_pages": total_pages, "total_found": total_found}
         )

@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         fetch(mainUrl, options).then(response => response.json()).then(data => {
-            window.alert("response came......")
             totalFound.innerHTML = ``
             totalFound.innerText = data.total_found;
 
@@ -38,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // inserting products to products container
             vendorsMainContainer.innerHTML = "";
             vendorsMainContainer.insertAdjacentHTML("beforeend", data.html)
-            
+
         })
     }
     // this is a gen-eric function for setting onclick event and calling fetchAndInsert()
