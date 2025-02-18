@@ -9,10 +9,13 @@ from django.db.models.aggregates import Count
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 
-
-def marketplace(request, query=None):
+    
+def marketplace(request):
     """this view presents markeplace page. It also hanldes search, sort and filtering products"""
     products = Product.objects.filter(is_available=True)
+    
+    if request.method == "GET" and 'category' in request.GET:
+        products = products.filter(category__slug=request.GET['category'])
     categories_by_products_count = Category.objects.annotate(
         products_count=Count("products")
     )

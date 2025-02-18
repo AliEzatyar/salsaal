@@ -5,25 +5,36 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from marketplace.models import Product
 from vendor.models import Vendor
+from django_jalali.db.models import jDateTimeField
 
 User = get_user_model()
 
 
 class Order(models.Model):
-    STATUS_CHOICES = [
-        (-1, "لغو"),
-        (0, "تعلیق"),
-        (1, "اجرا"),
-        (2, "منتقل"),
-        (3, "تحویل"),
+    ORDER_STATUS_CHOICES = [
+        ("لغو", "لغو"),
+        ("انتظار", "انتظار"),
+        (" در حال اجرا", " در حال اجرا"),
+        ("در حال انتقال", "در حال انتقال"),
+        ("تحویل شد", "تحویل شد"),
+    ]
+    PAYMENT_STATUS_CHOICES = [
+        ("بدون پرداخت", "بدون پرداخت"),
+        ("پرداخت تکمیل", "پرداخت تکمیل"),
+        ("مسترد", "مسترد"),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
-    status = models.SmallIntegerField(choices=STATUS_CHOICES, default=0)
+    status = models.CharField(max_length=30,choices=ORDER_STATUS_CHOICES, default=ORDER_STATUS_CHOICES[1][0])
     total_price = models.PositiveIntegerField(default=0)
-    payment_id = models.CharField(max_length=250, blank=True, null= True)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
+    payment_status = models.CharField(max_length=30,
+        default=PAYMENT_STATUS_CHOICES[0][0], choices=PAYMENT_STATUS_CHOICES
+    )
+    payment_id = models.CharField(
+        max_length=250, blank=True, null=True, default="np..."
+    )
+    created = jDateTimeField(auto_now_add=True)
+    updated = jDateTimeField(auto_now=True)
 
     class Meta:
         indexes = [models.Index(fields=["-created"])]
@@ -35,6 +46,21 @@ class Order(models.Model):
         self.total_price = sum(item.total_price for item in self.items.all())
         self.save()
 
+    def get_total_items(self):
+        return sum([item.quantity for item in self.items.all()])
+
+    def get_vendors(self):
+        vendors = [
+            x["vendor__vendor_name"]
+            for x in OrderItem.objects.filter(order=self)
+            .values("vendor__vendor_name")
+            .distinct()
+        ]
+        if len(vendors) == 1:
+            vendors = vendors[0]
+        else:
+            vendors = ",".join(vendors)     
+        return vendors
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")

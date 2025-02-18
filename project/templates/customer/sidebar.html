@@ -5,7 +5,7 @@
   <!-- categories drop down -->
   <ul class="scroll-sm p-10 py-8 mt-40 overflow-y-auto">
     <li class="py-24 text-center {% if '/account/orders/' == request.path %}text-green-500{% endif %}">
-      <a href="{% url 'vendor:vendor_products' %}">سفارشات من</a>
+      <a href="{% url 'order:customer_orders' %}">سفارشات من</a>
     </li>
     <li class="rounded-lg py-24 text-center {% if '/account/account-settings/' == request.path %}text-green-500{% endif %}">
       <a href="{% url 'accounts:account_settings' %}">تنظیمات حساب</a>

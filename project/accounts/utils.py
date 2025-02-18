@@ -59,6 +59,6 @@ def send_notification(receiver, mail_title, mail_template: str, context: dict):
 
 
 def user_test(user):
-    if hasattr(user, "vendor") or user.role == CUSTOMER:
+    if user.role != CUSTOMER:
         raise PermissionDenied
     return True

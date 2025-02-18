@@ -1,8 +1,10 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required,user_passes_test
 from .models import Order, OrderItem
 from django.shortcuts import redirect
 from cart.models import CartItem
+from  accounts.utils import  user_test
+
 
 @login_required
 def create_order(request):
@@ -34,3 +36,10 @@ def create_order(request):
         "order/create_order.html",
         context=locals(),
     )
+
+
+@login_required
+@user_passes_test(user_test)
+def list_orders(request):
+    orders = Order.objects.filter(user=request.user)
+    return render(request,"customer/customer_orders.html",context=locals()) 
