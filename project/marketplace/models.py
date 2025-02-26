@@ -76,6 +76,8 @@ class Product(models.Model):
         """this utility method returns the rating average"""
         ratings = Rating.objects.filter(object_id=self.pk).values_list('rating')
         ratings = [r[0] for r in ratings]
+        if len(ratings) == 0:
+            return 0
         return sum(ratings)/len(ratings)
 
     def __str__(self):

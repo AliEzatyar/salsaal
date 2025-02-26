@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
 from accounts.utils import send_email, user_test
-from marketplace.models import Category, Product
+from marketplace.models import Category, Product, Rating
 from vendor.forms import ProductForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
@@ -133,8 +133,10 @@ def vendor_details(request, vendor_name):
         return HttpResponse("حساب فروشنده با این نام موجود نیست!")
     vendor_products = Product.objects.filter(vendor=vendor)
     categories = [pro.category.name for pro in vendor_products]
+    ratings = Rating.objects.filter(object_id=vendor.id)
     cat_count_pro = Counter(categories).items()
     products_count = vendor_products.count()
+    
     return render(request, "vendor/vendor_details.html", context=locals())
 
 
