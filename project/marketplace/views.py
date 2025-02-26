@@ -2,20 +2,24 @@ import json
 from django.http.response import JsonResponse
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
-from marketplace.models import Category, Product
+from marketplace.models import Category, Product, Rating
 from main.utils import query_execution_time
+from accounts.utils import user_test
 from vendor.models import Vendor
 from django.db.models.aggregates import Count
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import RatingForm
+from django.contrib.contenttypes.models import ContentType
 
-    
+
 def marketplace(request):
     """this view presents markeplace page. It also hanldes search, sort and filtering products"""
     products = Product.objects.filter(is_available=True)
-    
-    if request.method == "GET" and 'category' in request.GET:
-        products = products.filter(category__slug=request.GET['category'])
+
+    if request.method == "GET" and "category" in request.GET:
+        products = products.filter(category__slug=request.GET["category"])
     categories_by_products_count = Category.objects.annotate(
         products_count=Count("products")
     )
@@ -24,7 +28,7 @@ def marketplace(request):
         """handling filter, sort and search"""
         # search handling
         if "query" in request.POST:
-            products = products.filter(name__icontains=request.POST['query'])
+            products = products.filter(name__icontains=request.POST["query"])
             paginated = Paginator(products, 6)
             total_pages = [i + 1 for i in range(paginated.num_pages)]
             total_found = products.count()
@@ -78,6 +82,7 @@ def marketplace(request):
 
 def product_detail(request, product_id):
     product = Product.objects.filter(id=product_id).first()
+    ratings = Rating.objects.filter(object_id=product.id).select_related('user')
     if product:
         return render(request, "marketplace/product_detail.html", context=locals())
     return redirect("main:home")
@@ -91,8 +96,10 @@ def vendors(request, page=None):
     if request.method == "POST":
         # handling search NOT AJAX
         if "query" in request.POST:
-            vendors = vendors.filter(vendor_name__icontains=request.POST['query'])
-            cities = {vendor.user_profile.city for vendor in vendors}  # needed in template
+            vendors = vendors.filter(vendor_name__icontains=request.POST["query"])
+            cities = {
+                vendor.user_profile.city for vendor in vendors
+            }  # needed in template
             paginated = Paginator(vendors, per_page=6)
             total_found = vendors.count()
             total_pages = [i + 1 for i in range(paginated.num_pages)]
@@ -102,9 +109,9 @@ def vendors(request, page=None):
         data = json.loads(request.body)["options"]
         # filtering
         if "city" in data:
-            vendors = vendors.filter(user_profile__city=data['city'])
+            vendors = vendors.filter(user_profile__city=data["city"])
         if "category" in data:
-            vendors = vendors.filter(categories__in=[int(data['category'])]).distinct()
+            vendors = vendors.filter(categories__in=[int(data["category"])]).distinct()
 
         # applying all filters according to parameters
         vendors = vendors.select_related("user_profile", "user")  # for time optimizing
@@ -120,7 +127,7 @@ def vendors(request, page=None):
         # case sepecific page requested
         if "page" in data:
             try:
-                page = int(data['page'])
+                page = int(data["page"])
                 vendors = paginated.get_page(page)
             except:
                 pass
@@ -138,3 +145,22 @@ def vendors(request, page=None):
     total_pages = [i + 1 for i in range(paginated.num_pages)]
     vendors = paginated.get_page(1)
     return render(request, "marketplace/vendors_list.html", context=locals())
+
+
+@login_required
+@user_passes_test(user_test)
+def rate(request):
+    """this view handles rating a product or a vendor"""
+    data = json.loads(request.body)['options']
+    form = RatingForm(data)
+    type_ = data["type"]
+    if form.is_valid():
+        rating = form.save(commit=False)
+        if type_ == "product":
+            rating.content_type = ContentType.objects.get_for_model(Product)
+        elif type_ == "vendor":
+            rating.content_type = ContentType.objects.get_for_model(Vendor)
+        rating.object_id = data["object_id"]
+        rating.user = request.user
+        rating.save()
+        return JsonResponse({'OK':True})

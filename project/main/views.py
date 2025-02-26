@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.db.models import Avg
 from marketplace.models import Product
 from main.models import FavItem, FavList
-from vendor.models import Rating, Vendor
+from vendor.models import  Vendor
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.http.response import JsonResponse
@@ -24,13 +24,6 @@ def home(request, cat=None):
     top_selling_products = products
     trending_products = products
     recently_viewed = products
-    vendors = Vendor.objects.annotate(
-        average_rating=(
-            Avg("ratings__c_service")
-            + Avg("ratings__p_quality")
-            + Avg("ratings__d_time")
-        )
-    ).filter(ratings__isnull=False)[:5]
     return render(request, "base/home.html", context=locals())
 
 

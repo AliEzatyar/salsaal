@@ -32,5 +32,4 @@ urlpatterns = [
     ),
     path("dashboard/", views.vendor_dashboard, name="vendor_dashboard"),
     # rating
-    path("rate-vendor/<int:vend_id>/", views.rate_vendor, name="rate_vendor"),
 ]

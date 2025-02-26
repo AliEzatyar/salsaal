@@ -1,7 +1,7 @@
 from django import forms
 from accounts.forms import only_image_validator
 from marketplace.models import Category, Product
-from vendor.models import Rating, Vendor
+from vendor.models import Vendor
 from vendor.utils import slugify_persian
 from django.core.exceptions import ValidationError
 
@@ -48,9 +48,3 @@ class ProductForm(forms.ModelForm):
         model = Product
         exclude = ["vendor", "slug", "modified", "created_at"]
 
-
-class RatingForm(forms.ModelForm):
-
-    class Meta:
-        model = Rating
-        exclude = ["vendor", "customer", "created_at"]

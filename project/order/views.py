@@ -43,3 +43,4 @@ def create_order(request):
 def list_orders(request):
     orders = Order.objects.filter(user=request.user)
     return render(request,"customer/customer_orders.html",context=locals()) 
+

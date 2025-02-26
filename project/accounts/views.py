@@ -133,7 +133,8 @@ def login(request, next=None):
             messages.info(request, "خوش آمدید")
             if request.POST.get("next") != "None":
                 return redirect(request.build_absolute_uri(request.POST.get("next")))
-
+            if not hasattr(user,"vendor"):
+                return redirect("order:customer_orders")
             # redirecting to the dashboard
             return redirect("accounts:dashboard")
 

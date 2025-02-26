@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
 from accounts.utils import send_email, user_test
 from marketplace.models import Category, Product
-from vendor.forms import ProductForm, RatingForm, VendorForm
+from vendor.forms import ProductForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
 from django.contrib import messages
@@ -222,7 +222,4 @@ def delete_product(request, id):
     return redirect("vendor:vendor_products")
 
 
-@login_required
-@user_passes_test(user_test)
-def rate_vendor(request, vend_id):
-    pass
+
