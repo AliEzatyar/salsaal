@@ -85,7 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // price filtering
     const priceFilterBtn = document.querySelector('.price-filter-btn')
     genericElementsHandler(priceFilterBtn, "price")
-
+    // rating buttons
+    const ratingBtns = document.querySelectorAll('.rating-btn')
+    genericElementsHandler(ratingBtns, "rating");
     // sorting button
     genericElementsHandler(sortSelector, "sort")
 

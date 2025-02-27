@@ -1,3 +1,4 @@
+{%load tags%}
 {% for vendor in vendors %}
   <div class="vendors-two-item rounded-12 overflow-hidden bg-color-three border border-neutral-50 hover-border-main-two-600 transition-2">
     <div class="vendors-two-item__top bg-overlay style-two relative">
@@ -10,10 +11,22 @@
         </div>
         <div class="mt-16">
           <h6 class="text-white font-[600] mb-12"><a href="vendor-two-details.html" class="">{{ vendor.vendor_name }}</a></h6>
+          <!-- rating -->
           <div class="flex items-center gap-6">
+            <!-- vendor rating -->
             <div class="flex items-center gap-8">
-              <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
-            </div><span class="text-xs font-[500] text-white">{{vendor.overall_rating}}</span> <span class="text-xs font-[500] text-white">(12K)</span>
+              <!-- filled stars -->
+              {% create_array vendor.overall_rating as array %}
+              {% for star in array %}
+                <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
+              {% endfor %}
+              <!-- void stars -->
+              {% create_array 5|subtract:vendor.overall_rating as remaining %}
+              {% for star in remaining %}
+                <span class="text-15 font-[500] text-warning-600 flex"><i class="ph ph-star"></i></span>
+              {% endfor %}
+            </div>
+            <span class="text-xs font-[500] text-white">{{ vendor.overall_rating }}</span> <span class="text-xs font-[500] text-white">(12K)</span>
           </div>
         </div>
       </div>

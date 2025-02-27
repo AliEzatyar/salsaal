@@ -66,65 +66,70 @@
               <!-- filter by ratings -->
               <div class="shop-sidebar__box border border-gray-100 rounded-8 p-32 mb-32">
                 <h6 class="text-xl border-b border-gray-100 pb-24 mb-24">فیلتر بر اساس امتیاز</h6>
+                <!-- rating 5 -->
                 <div class="flex items-center gap-8 relative mb-20">
                   <label class="absolute w-full h-full cursor-pointer" for="rating5"></label>
                   <div class="common-check common-radio !mb-0">
-                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="rating5" />
+                    <input data-rating="5" class="rating-btn form-check-input" type="radio" name="flexRadioDefault" id="rating5" />
                   </div>
                   <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:70%"></div>
+                    <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:70%"></div>
                   </div>
                   <div class="flex items-center gap-4">
                     <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
-                  </div><span class="text-gray-900 flex-shrink-0">{{five_star_count}}</span>
+                  </div><span class="text-gray-900 flex-shrink-0">{{ five_star_count }}</span>
                 </div>
+                <!-- rating 4 -->
                 <div class="flex items-center gap-8 relative mb-20">
                   <label class="absolute w-full h-full cursor-pointer" for="rating4"></label>
                   <div class="common-check common-radio !mb-0">
-                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="rating4" />
+                    <input data-rating="4" class="rating-btn form-check-input" type="radio" name="flexRadioDefault" id="rating4" />
                   </div>
                   <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:50%"></div>
+                    <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:50%"></div>
                   </div>
                   <div class="flex items-center gap-4">
                     <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
-                  </div><span class="text-gray-900 flex-shrink-0">{{four_star_count}}</span>
+                  </div><span class="text-gray-900 flex-shrink-0">{{ four_star_count }}</span>
                 </div>
+                <!-- rating 3 -->
                 <div class="flex items-center gap-8 relative mb-20">
                   <label class="absolute w-full h-full cursor-pointer" for="rating3"></label>
                   <div class="common-check common-radio !mb-0">
-                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="rating3" />
+                    <input data-rating="3" class="rating-btn form-check-input" type="radio" name="flexRadioDefault" id="rating3" />
                   </div>
                   <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:35%"></div>
+                    <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:35%"></div>
                   </div>
                   <div class="flex items-center gap-4">
                     <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
-                  </div><span class="text-gray-900 flex-shrink-0">{{three_star_count}}</span>
+                  </div><span class="text-gray-900 flex-shrink-0">{{ three_star_count }}</span>
                 </div>
+                <!-- rating 2 -->
                 <div class="flex items-center gap-8 relative mb-20">
                   <label class="absolute w-full h-full cursor-pointer" for="rating2"></label>
                   <div class="common-check common-radio !mb-0">
-                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="rating2" />
+                    <input data-rating="2" class="rating-btn form-check-input" type="radio" name="flexRadioDefault" id="rating2" />
                   </div>
                   <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:20%"></div>
+                    <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:20%"></div>
                   </div>
                   <div class="flex items-center gap-4">
                     <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
-                  </div><span class="text-gray-900 flex-shrink-0">{{two_star_count}}</span>
+                  </div><span class="text-gray-900 flex-shrink-0">{{ two_star_count }}</span>
                 </div>
+                <!-- rating 1 -->
                 <div class="flex items-center gap-8 relative mb-0">
                   <label class="absolute w-full h-full cursor-pointer" for="rating1"></label>
                   <div class="common-check common-radio !mb-0">
-                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="rating1" />
+                    <input data-rating="1" class="rating-btn form-check-input" type="radio" name="flexRadioDefault" id="rating1" />
                   </div>
                   <div class="progress w-full bg-gray-100 rounded-[50rem] h-8" role="progressbar" aria-label="Basic example" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100">
-                    <div class="progress-bar bg-main-600 rounded-[50rem]" style="width:5%"></div>
+                    <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:5%"></div>
                   </div>
                   <div class="flex items-center gap-4">
                     <span class="text-xs font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-400 flex"><i class="ph-fill ph-star"></i></span>
-                  </div><span class="text-gray-900 flex-shrink-0">{{one_star_count}}</span>
+                  </div><span class="text-gray-900 flex-shrink-0">{{ one_star_count }}</span>
                 </div>
               </div>
 

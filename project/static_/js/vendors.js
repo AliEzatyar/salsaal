@@ -69,7 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
     genericElementsHandler(paginationBtns, "page")
     // category filtering
     genericElementsHandler(categoryBtns, "category");
+    
     // city filtering button
     genericElementsHandler(filterCity, "city")
+    // rating buttons
+    const ratingBtns = document.querySelectorAll('.rating-btn')
+    genericElementsHandler(ratingBtns, "rating");
 
 })

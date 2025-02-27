@@ -47,6 +47,9 @@ def marketplace(request):
             products = products.filter(
                 price__range=[int(data["price"][0]), int(data["price"][1])]
             )
+        if "rating" in data:
+            products = products.filter(id__in=[p.id for p in products if round(p.overall_rating())==int(data['rating'])])    
+        
         # sorting
         if "sort" in data:
             sort_type = data["sort"]
@@ -79,19 +82,19 @@ def marketplace(request):
     total_pages = [i + 1 for i in range(paginated.num_pages)]
     products = paginated.get_page(1)
     one_star_count = len(
-        [p.overall_rating for p in all_products if int(p.overall_rating()) == 1]
+        [p.overall_rating for p in all_products if round(p.overall_rating()) == 1]
     )
     two_star_count = len(
-        [p.overall_rating for p in all_products if int(p.overall_rating()) == 2]
+        [p.overall_rating for p in all_products if round(p.overall_rating()) == 2]
     )
     three_star_count = len(
-        [p.overall_rating for p in all_products if int(p.overall_rating()) == 3]
+        [p.overall_rating for p in all_products if round(p.overall_rating()) == 3]
     )
     four_star_count = len(
-        [p.overall_rating for p in all_products if int(p.overall_rating()) == 4]
+        [p.overall_rating for p in all_products if round(p.overall_rating()) == 4]
     )
     five_star_count = len(
-        [p.overall_rating for p in all_products if int(p.overall_rating()) == 5]
+        [p.overall_rating for p in all_products if round(p.overall_rating()) == 5]
     )
 
     return render(request, "marketplace/marketplace.html", context=locals())
@@ -130,7 +133,9 @@ def vendors(request, page=None):
             vendors = vendors.filter(user_profile__city=data["city"])
         if "category" in data:
             vendors = vendors.filter(categories__in=[int(data["category"])]).distinct()
-
+        if "rating" in data:
+            vendors = vendors.filter(id__in=[v.id for v in vendors if round(v.overall_rating())==int(data['rating'])])    
+        
         # applying all filters according to parameters
         vendors = vendors.select_related("user_profile", "user")  # for time optimizing
         total_found = vendors.count()  # number of vendors found after all filterings
