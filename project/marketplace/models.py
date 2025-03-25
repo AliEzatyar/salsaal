@@ -54,7 +54,10 @@ class Product(models.Model):
     is_available = models.BooleanField(default=True, db_index=True)
     modified = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-
+    existing_amount = models.PositiveSmallIntegerField(default=1)
+    sold_amount = models.PositiveSmallIntegerField(default=0)
+    
+    
     class Meta:
         verbose_name = "product"
         verbose_name_plural = "products"

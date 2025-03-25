@@ -33,7 +33,13 @@
                         {{ form.price }}
                         <span class="text-red-500 text-sm">{{ form.price.errors }}</span>
                       </div>
-
+                      <!-- existing amount -->
+                      <div class="mb-20">
+                        <label class="block font-medium mb-2">مقدار موجود *</label>
+                        {{ form.existing_amount }}
+                        <span class="text-red-500 text-sm">{{ form.existing_amount.errors }}</span>
+                      </div>
+                        
                       <!-- Category -->
                       <div class="mb-20">
                         <label class="block font-medium mb-2">کتگوری *</label>
@@ -47,6 +53,12 @@
                         {{ form.inventory }}
                         <span class="text-red-500 text-sm">{{ form.inventory.errors }}</span>
                       </div>
+                      <!-- Image -->
+                      <div>
+                        <label class="block font-medium mb-2">عکس</label>
+                        {{ form.image }}
+                        <span class="text-red-500 text-sm">{{ form.image.errors }}</span>
+                      </div>
                     </div>
 
                     <!-- Description -->
@@ -56,12 +68,6 @@
                       <span class="text-red-500 text-sm">{{ form.description.errors }}</span>
                     </div>
 
-                    <!-- Image -->
-                    <div>
-                      <label class="block font-medium mb-2">عکس</label>
-                      {{ form.image }}
-                      <span class="text-red-500 text-sm">{{ form.image.errors }}</span>
-                    </div>
 
                     <!-- Is Available -->
                     <div>

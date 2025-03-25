@@ -88,11 +88,6 @@
               </table>
             </div>
             <div class="float-left flex-wrap gap-16 mt-16">
-              <!-- coupon part -->
-              {% comment %} <div class="flex items-center gap-16">
-                <input class="common-input" placeholder="Coupon Code" />
-                <button type="submit" class="btn btn-main-two py-18 w-full rounded-8">اجرای تخفیف</button>
-              </div> {% endcomment %}
               <!-- update cart -->
               <button type="submit" id="save-changes-btn" class="btn btn-main-two text-lg text-white hover-text-main-two-600">ذخیره تغییرات</button>
             </div>
@@ -104,7 +99,7 @@
             <h6 class="text-lg text-center mb-32">مجموع پرداختی</h6>
             <div class="bg-color-three rounded-8 p-24">
               <div class="mb-32 flex-between gap-8">
-                <span class="text-gray-900 text-sm font-heading-two">قیمت کلی اجناس</span> <span class="text-gray-900 text-sm font-[600]">{{ cart.calculate_total }} افغانی</span>
+                <span class="text-gray-900 text-sm font-heading-two">قیمت کلی اجناس</span> <span class="text-gray-900 text-sm font-[600] "><span class="products-total-price">{{ cart.calculate_total }}</span> افغانی</span>
               </div>
               <div class="mb-32 flex-between gap-8">
                 <span class="text-gray-900 text-sm font-heading-two">هزینه انتقال</span> <span class="text-gray-900 text-sm font-[600]">رایگان</span>
@@ -113,7 +108,7 @@
             <div class="bg-color-three rounded-8 p-24 mt-24">
               <div class="flex-between gap-8">
                 <span class="text-gray-900 text-lg font-[600]">مجموع</span>
-                <span class="text-gray-900 text-lg font-[600]">{{ cart.calculate_total }} افغانی</span>
+                <span class="text-gray-900 text-lg font-[600]"><span class="products-total-price">{{ cart.calculate_total }}</span> افغانی</span>
               </div>
             </div><a href="{%url 'order:create_order' %}" class="btn btn-main-two text-center text-white mt-40 py-18 w-full rounded-8">ایجاد سفارش</a>
           </div>

@@ -24,7 +24,6 @@ class VendorForm(forms.ModelForm):
 
 class ProductForm(forms.ModelForm):
     """form for product edit/create"""
-
     image = forms.FileField(
         widget=forms.FileInput(attrs={"class": "btn-primary"}),
         validators=[only_image_validator],
@@ -33,10 +32,13 @@ class ProductForm(forms.ModelForm):
     price = forms.IntegerField(
         widget=forms.NumberInput(attrs={"class": "common-input"})
     )
-    description = forms.CharField(
-        widget=forms.TextInput(attrs={"class": "common-input"})
+    existing_amount = forms.IntegerField(
+        widget=forms.NumberInput(attrs={"class": "common-input"})
     )
-
+    description = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "common-input text "})
+    )
+    
     def clean_name(self):
         """this clean method enables unique name validation"""
         data = self.cleaned_data["name"]
@@ -46,5 +48,4 @@ class ProductForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ["vendor", "slug", "modified", "created_at"]
-
+        exclude = ["vendor", "slug", "modified", "created_at","sold_amount"]

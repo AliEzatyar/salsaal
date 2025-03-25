@@ -15,12 +15,13 @@ from django.contrib.contenttypes.models import ContentType
 
 
 def marketplace(request):
-    """this view presents markeplace page. It also hanldes search, sort and filtering products"""
+    """this view presents markeplace page. It also hanldes search, sort and filter of products"""
     all_products = Product.objects.filter(is_available=True)
     products = all_products
 
     if request.method == "GET" and "category" in request.GET:
         products = products.filter(category__slug=request.GET["category"])
+    
     categories_by_products_count = Category.objects.annotate(
         products_count=Count("products")
     )

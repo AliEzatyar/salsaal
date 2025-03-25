@@ -21,18 +21,21 @@ def show_cart(request):
 @login_required
 def add_to_cart(request, product_id):
     product = Product.objects.filter(pk=product_id).first()
-    if product:
+    if product and product.existing_amount > 0:
         cart = Cart.objects.get_or_create(user=request.user)[0]
         state = CartItem.objects.get_or_create(cart=cart, product=product)
         if state[1]:
-            # if item is created now
+            # if item is created now and added
+            product.existing_amount -= 1
             cart_item = state[0]
             cart_item.save()
             cart.items.add(cart_item)
-            return JsonResponse({"OK": 1})
+            return JsonResponse({"saved": True})
         else:
-            return JsonResponse({"OK": 0})
-
+            # if item was added before
+            return JsonResponse({"saved":False,"error": "exists_before"})
+    else:
+        return JsonResponse({"saved": False, "error": "no_existing"})
 
 
 @login_required
@@ -41,20 +44,24 @@ def delete_cart_item(request, item_id):
     item = CartItem.objects.filter(id=item_id).first()
     if item and item in cart.items.all():
         item.delete()
-        return JsonResponse({"OK": 1})
-    return redirect({"OK": 0})
+        return JsonResponse(
+            {"saved": True, "products_total_price": cart.calculate_total()}
+        )
+    return redirect({"saved": False})
 
 
 @require_POST
 @login_required
 def edit_cart(request):
-    cart = request.user.cart
+
     body = json.loads(request.body)
     items = body["items"]
     for item_id, quantity in items:
         item = CartItem.objects.filter(id=item_id).first()
-        if item:
+        if item and item.product.existing_amount > int(quantity):
             item.quantity = quantity
             item.save()
-
-    return HttpResponse("تغییرات موفقانه ذخیره شد")
+        else:
+            continue
+    cart = request.user.cart
+    return JsonResponse({"saved": True, "products_total_price": cart.calculate_total()})

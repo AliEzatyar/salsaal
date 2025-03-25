@@ -52,8 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // since we have only one price button, we avoid forEach funciton does not exist error
             btn_objs = [btn_objs]
         }
-
-
         // sorting 
         if (type == "sort") {
             sortSelector.addEventListener('change', () => {
