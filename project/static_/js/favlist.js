@@ -1,5 +1,10 @@
+/*
+    This code manages fav list:
+    * item addition to fav list
+    * item deletion from fav list
+*/
 document.addEventListener("DOMContentLoaded", (e) => {
-    // handling add to favorite list
+    // automating add to fav list by setting event controller on buttons
     const addToFavBtn = document.getElementById("add-to-favlist");
     if (addToFavBtn) {
         addToFavBtn.onclick = ((event) => {

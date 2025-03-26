@@ -8,27 +8,33 @@ from vendor.models import Vendor
 from django_jalali.db.models import jDateTimeField
 
 User = get_user_model()
-
-
-class Order(models.Model):
-    ORDER_STATUS_CHOICES = [
+ORDER_STATUS_CHOICES = [
         ("لغو", "لغو"),
         ("انتظار", "انتظار"),
         (" در حال اجرا", " در حال اجرا"),
         ("در حال انتقال", "در حال انتقال"),
         ("تحویل شد", "تحویل شد"),
     ]
-    PAYMENT_STATUS_CHOICES = [
-        ("بدون پرداخت", "بدون پرداخت"),
-        ("پرداخت تکمیل", "پرداخت تکمیل"),
-        ("مسترد", "مسترد"),
-    ]
+PAYMENT_STATUS_CHOICES = [
+    ("بدون پرداخت", "بدون پرداخت"),
+    ("پرداخت تکمیل", "پرداخت تکمیل"),
+    ("مسترد", "مسترد"),
+]
 
+
+class Order(models.Model):
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
-    status = models.CharField(max_length=30,choices=ORDER_STATUS_CHOICES, default=ORDER_STATUS_CHOICES[1][0])
+    status = models.CharField(
+        max_length=30,
+        default=ORDER_STATUS_CHOICES[1][0],
+        choices=ORDER_STATUS_CHOICES
+    )
     total_price = models.PositiveIntegerField(default=0)
-    payment_status = models.CharField(max_length=30,
-        default=PAYMENT_STATUS_CHOICES[0][0], choices=PAYMENT_STATUS_CHOICES
+    payment_status = models.CharField(
+        max_length=30,
+        default=PAYMENT_STATUS_CHOICES[0][0],
+        choices=PAYMENT_STATUS_CHOICES
     )
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."

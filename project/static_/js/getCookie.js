@@ -1,3 +1,6 @@
+/*
+    This code enables retriving any cookie by its name from browser
+*/
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== "") {

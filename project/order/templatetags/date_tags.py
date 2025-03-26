@@ -9,4 +9,4 @@ def format_datetime(datetime):
     date = datetime[0]
     time = datetime[1]
     hour = time.split('.')[0]
-    return date +"  " + hour
+    return  hour+"  " + date

@@ -1,3 +1,6 @@
+/*
+    This code enables achiving exact location of the user
+*/
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
         (position) => {

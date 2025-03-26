@@ -1,5 +1,9 @@
+/* 
+    This code handles cart management, add-to-cart functionality, delete from card
+*/
+
 function addToCartBtnsEvent() {
-    // this function enables add-to-cart buttons
+    // this function sets events on buttons to send AJAX request to add
     const cartBtns = document.querySelectorAll(".add-to-cart");
     if (cartBtns) {
         cartBtns.forEach(btn => {
@@ -28,14 +32,15 @@ function addToCartBtnsEvent() {
         })
     }
 }
+
 document.addEventListener("DOMContentLoaded", (e) => {
-    // handling add to cart initially
+    // activating add to cart buttons initially
     addToCartBtnsEvent()
 
     // total price elements
     const totalPrice = document.querySelectorAll(".products-total-price")
 
-    // handling deleting cart item
+    // handling deleting cart items
     const deleteBtns = document.querySelectorAll(".delete-cart-item");
     if (deleteBtns) {
 
@@ -69,7 +74,7 @@ document.addEventListener("DOMContentLoaded", (e) => {
     }
     if (saveChangesBtn) {
         saveChangesBtn.onclick = ((event) => {
-            // input elements
+            // saving input elements values
             const itemsQuantitiyInputs = document.querySelectorAll(".item-quantity-input");
             var data = new Array()
             itemsQuantitiyInputs.forEach(input => {
@@ -79,7 +84,7 @@ document.addEventListener("DOMContentLoaded", (e) => {
 
             })
             
-            // fetch 
+            // AJAX 
             var options = {
                 method: "POST",
                 headers: {

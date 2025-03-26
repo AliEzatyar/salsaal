@@ -1,3 +1,6 @@
+/*
+    This code enables menue bar on mobile devices using browser
+*/
 document.addEventListener("DOMContentLoaded", () => {
     const menuBtn = document.querySelector(".mobile-menu-button");
     const closeMenuBtn = document.querySelector(".close-mobile-menu");
@@ -14,12 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
         side.classList.remove("show");
         document.body.classList.remove("scroll-hide-sm")
     }
-    closeMenuBtn.onclick = (event) => {
-        menu.classList.remove("active");
-        side.classList.remove("show");
-        document.body.classList.remove("scroll-hide-sm")
-    }
-    // WPA
+    
+    // WPA for manifest.json app
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker
             .register("/static/sw.js")
