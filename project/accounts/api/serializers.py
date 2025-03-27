@@ -1,11 +1,11 @@
-import rest_framework.serializers as ser
+from  rest_framework.serializers import ModelSerializer
 
 from vendor.models import Vendor
 from ..models import User, UserProfile
 from ..models import CUSTOMER
 
 
-class UserCreationSerializer(ser.ModelSerializer):
+class UserCreationSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -27,7 +27,7 @@ class UserCreationSerializer(ser.ModelSerializer):
         return user
 
 
-class UserDetailSerializer(ser.ModelSerializer):
+class UserDetailSerializer(ModelSerializer):
 
     class Meta:
         model = User
@@ -45,13 +45,13 @@ class UserDetailSerializer(ser.ModelSerializer):
         ]  # Prevent updating the email, seperate view is made
 
 
-class UserProfileSerializer(ser.ModelSerializer):
+class UserProfileSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ["picture","cover","city"]
 
 
-class VendorCreateSerializer(ser.ModelSerializer):
+class VendorCreateSerializer(ModelSerializer):
     class Meta:
         model = Vendor
         fields = ["vendor_name"]
@@ -60,7 +60,7 @@ class VendorCreateSerializer(ser.ModelSerializer):
         return super().save(**kwargs)
 
 
-class VendorManageSerializer(ser.ModelSerializer):
+class VendorManageSerializer(ModelSerializer):
     user = UserDetailSerializer()
     user_profile = UserProfileSerializer()
 

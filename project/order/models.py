@@ -8,13 +8,14 @@ from vendor.models import Vendor
 from django_jalali.db.models import jDateTimeField
 
 User = get_user_model()
+
 ORDER_STATUS_CHOICES = [
-        ("لغو", "لغو"),
-        ("انتظار", "انتظار"),
-        (" در حال اجرا", " در حال اجرا"),
-        ("در حال انتقال", "در حال انتقال"),
-        ("تحویل شد", "تحویل شد"),
-    ]
+    ("لغو", "لغو"),
+    ("انتظار", "انتظار"),
+    ("در حال اجرا", "در حال اجرا"),
+    ("در حال انتقال", "در حال انتقال"),
+    ("تحویل شد", "تحویل شد"),
+]
 PAYMENT_STATUS_CHOICES = [
     ("بدون پرداخت", "بدون پرداخت"),
     ("پرداخت تکمیل", "پرداخت تکمیل"),
@@ -23,39 +24,37 @@ PAYMENT_STATUS_CHOICES = [
 
 
 class Order(models.Model):
-    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
     status = models.CharField(
-        max_length=30,
-        default=ORDER_STATUS_CHOICES[1][0],
-        choices=ORDER_STATUS_CHOICES
+        max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
     )
     total_price = models.PositiveIntegerField(default=0)
     payment_status = models.CharField(
         max_length=30,
         default=PAYMENT_STATUS_CHOICES[0][0],
-        choices=PAYMENT_STATUS_CHOICES
+        choices=PAYMENT_STATUS_CHOICES,
     )
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
     )
     created = jDateTimeField(auto_now_add=True)
     updated = jDateTimeField(auto_now=True)
-
+    total_items = models.SmallIntegerField(default=2)
+    
     class Meta:
         indexes = [models.Index(fields=["-created"])]
-
-    def __str__(self):
-        return f"Order {self.id} - {self.user.username}"
 
     def calculate_total_price(self):
         self.total_price = sum(item.total_price for item in self.items.all())
         self.save()
 
-    def get_total_items(self):
-        return sum([item.quantity for item in self.items.all()])
-
+    def set_total_items(self):
+        """returns total items amount in order"""
+        self.total_items =  sum([item.quantity for item in self.items.all()])
+        self.save()
+        
     def get_vendors(self):
+        """returns an string containing vendor names spillited by comma"""
         vendors = [
             x["vendor__vendor_name"]
             for x in OrderItem.objects.filter(order=self)
@@ -65,8 +64,22 @@ class Order(models.Model):
         if len(vendors) == 1:
             vendors = vendors[0]
         else:
-            vendors = ",".join(vendors)     
+            vendors = ",".join(vendors)
         return vendors
+
+    def cancel_order(self):
+        """reseting products existing amount if order is cancelled"""
+        items = self.items.all()
+        for item in items:
+            product = item.product
+            product.existing_amount += item.quantity
+            product.save()
+        self.status = ORDER_STATUS_CHOICES[0][0]  # cancelled
+        self.save()
+
+    def __str__(self):
+        return f"Order {self.id} - {self.user.username}"
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")

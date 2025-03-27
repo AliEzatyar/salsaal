@@ -35,7 +35,7 @@
                   {% for order in orders %}
                     <tr class="hover:bg-gray-50">
                       <td class="px-6 py-4 border-b text-center">{{ order.payment_id }}</td>
-                      <td class="px-6 py-4 border-b text-center">{{ order.get_total_items }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ order.total_items }}</td>
                       <td class="px-6 py-4 border-b text-center">{{ order.total_price }}</td>
                       <td class="px-6 py-4 border-b text-center">سرویس صلصال</td>
                       <td class="px-6 py-4 border-b text-center">{{ order.get_vendors }}</td>

@@ -32,6 +32,7 @@ def create_order(request):
         )[0]
         order_items.append(order_item)
     order.calculate_total_price()
+    order.set_total_items()
     
     return render(
         request,
@@ -43,6 +44,7 @@ def create_order(request):
 @login_required
 @user_passes_test(user_test)
 def list_orders(request):
+    """this view provides all orders of a customer"""
     orders = Order.objects.filter(user=request.user)
     return render(request,"customer/customer_orders.html",context=locals()) 
 
@@ -54,8 +56,7 @@ def cancel_order(request):
     order_id = data['id']
     order = Order.objects.filter(user=request.user,id=order_id).first()
     if order:
-        order.status = ORDER_STATUS_CHOICES[0][0]
-        order.save()
+        order.cancel_order()
         return JsonResponse({'saved':True})
     else:
         return JsonResponse({'saved':False})
