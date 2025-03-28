@@ -28,6 +28,7 @@ urlpatterns = [
     path("account/", include("accounts.urls", namespace="accounts")),
     path("vendor/", include("vendor.urls", namespace="vendor")),
     path("shopping-cart/", include("cart.urls", namespace="cart")),
+    path("api/", include("api.urls", namespace="api")),
     path("__debug__/", include(debug_toolbar.urls)),
 ]
 # in production, NGINX does it, but in debug mode, django should do

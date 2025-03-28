@@ -1,8 +1,8 @@
 from  rest_framework.serializers import ModelSerializer
 
 from vendor.models import Vendor
-from ..models import User, UserProfile
-from ..models import CUSTOMER
+from .models import User, UserProfile
+from .models import CUSTOMER
 
 
 class UserCreationSerializer(ModelSerializer):
