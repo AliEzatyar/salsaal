@@ -11,7 +11,8 @@ class ProductFilterSet(django_filters.FilterSet):
     category = django_filters.CharFilter(
         field_name="category__name", lookup_expr="iexact"
     )
+    min_rating = django_filters.NumberFilter(field_name="rating",lookup_expr="gte")
 
     class Meta:
         model = Product
-        fields = ["min_price", "max_price", "category"]
+        fields = ["min_price", "max_price", "category","min_rating"]

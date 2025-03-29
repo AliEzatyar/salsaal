@@ -56,8 +56,8 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     existing_amount = models.PositiveSmallIntegerField(default=1)
     sold_amount = models.PositiveSmallIntegerField(default=0)
-    
-    
+    rating = models.PositiveSmallIntegerField(default=0)
+
     class Meta:
         verbose_name = "product"
         verbose_name_plural = "products"
@@ -74,13 +74,15 @@ class Product(models.Model):
             context={"object_id": self.pk, "type": "product"},
         )
         return html
-    
+
     def overall_rating(self):
         """this utility method returns the rating average"""
         ratings = Rating.objects.filter(object_id=self.pk).values_list('rating')
         ratings = [r[0] for r in ratings]
         if len(ratings) == 0:
             return 0
+        self.rating = sum(ratings) / len(ratings)
+        self.save()
         return sum(ratings)/len(ratings)
 
     def __str__(self):
