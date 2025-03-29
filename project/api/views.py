@@ -1,7 +1,7 @@
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
-from rest_framework import generics
+from rest_framework import generics, filters
 from rest_framework.decorators import (
     api_view,
     permission_classes,
@@ -12,6 +12,7 @@ from rest_framework import viewsets, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
+from django_filters.rest_framework import DjangoFilterBackend
 
 from accounts.serializers import (
     UserCreationSerializer,
@@ -24,7 +25,11 @@ from accounts.utils import send_email, send_forgot_email
 from order.models import Order, OrderItem
 from order.serializers import OrderItemSerializer, OrderSerializer
 from cart.models import Cart, CartItem
+from marketplace.models import Product
+from marketplace.serializers import ProductSerializer
 from vendor.models import Vendor
+from marketplace.serializers import ProductSerializer
+from api.backends import ProductFilterSet
 
 """Account API Views"""
 
@@ -201,7 +206,6 @@ def validate_token(request):
 
 """Order API Views"""
 
-
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
@@ -212,6 +216,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.cancel_order()
         return Response({"saved": True},status=status.HTTP_200_OK)
 
+    def get_queryset(self):
+        """overrding it to get orders of specific user"""
+        user_id = self.request.query_params['user_id']
+        new_queryset = self.queryset.filter(user_id=int(user_id)) 
+        return new_queryset
+    
+    
     
 
     def create(self, request, *args, **kwargs):
@@ -260,3 +271,21 @@ class OrderItemDetailAPIView(views.APIView):
         return Response(
             {"message": "no_object_found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+"""Marketplace API Views"""
+
+class ProductReadViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Product.objects.filter(is_available=True)
+    serializer_class = ProductSerializer
+    # ordering
+    filter_backends = [filters.OrderingFilter, filters.SearchFilter, DjangoFilterBackend]
+    ordering_fields = ['name','price']
+    ordering = ['price']
+    # filering
+    filterset_class = ProductFilterSet
+    # searching
+    search_fields = ['name','category__name','description']
+    
+    
+    

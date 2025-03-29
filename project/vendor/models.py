@@ -20,7 +20,7 @@ class Vendor(models.Model):
         db_index=True,
     )
 
-    vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
+    vendor_name = models.CharField(max_length=60, primary_key=True, db_index=True)
     vendor_license = models.ImageField(
         upload_to="vendor/license/", blank=True, null=True
     )

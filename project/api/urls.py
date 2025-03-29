@@ -2,11 +2,14 @@ from django.urls import include, path
 from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
-from .views import OrderItemDetailAPIView, OrderItemListAPIView, OrderViewSet
+from .views import OrderItemDetailAPIView, OrderItemListAPIView, OrderViewSet,  ProductReadViewSet
 
 # Router Setup for order model
-order_router = DefaultRouter()
-order_router.register(r"orders", OrderViewSet)
+router = DefaultRouter()
+# order viewset routing
+router.register(r"orders", OrderViewSet)
+# product viewset routing
+router.register(r"products",ProductReadViewSet)
 
 app_name = "accounts"
 
@@ -23,8 +26,8 @@ urlpatterns = [
         views.UpdateDeleteRetriveUser.as_view(),
         name="user_detail",
     ),
-    # Order App Routing
-    path("", include(order_router.urls)),
+    # Order and Product  Routing
+    path("", include(router.urls)),
     path(
         "orders/<int:order_id>/items/",
         OrderItemListAPIView.as_view(),
@@ -36,4 +39,5 @@ urlpatterns = [
         name="order-item-detail",
     ),
     # Marketplace App Routing
+    
 ]
