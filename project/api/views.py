@@ -1,6 +1,8 @@
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.contenttypes.models import ContentType
+
 from rest_framework import generics, filters
 from rest_framework.decorators import (
     api_view,
@@ -24,11 +26,10 @@ from accounts.models import SHOP, User
 from accounts.utils import send_email, send_forgot_email
 from order.models import Order, OrderItem
 from order.serializers import OrderItemSerializer, OrderSerializer
-from cart.models import Cart, CartItem
-from marketplace.models import Product
-from marketplace.serializers import ProductSerializer
+from cart.models import CartItem
+from marketplace.models import Product, Rating
 from vendor.models import Vendor
-from marketplace.serializers import ProductSerializer
+from marketplace.serializers import ProductSerializer, RatingSerializer
 from api.backends import ProductFilterSet
 
 """Account API Views"""
@@ -206,6 +207,7 @@ def validate_token(request):
 
 """Order API Views"""
 
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
@@ -214,16 +216,13 @@ class OrderViewSet(viewsets.ModelViewSet):
     def cancel(self, request, pk=None):
         order = self.get_object()
         order.cancel_order()
-        return Response({"saved": True},status=status.HTTP_200_OK)
+        return Response({"saved": True}, status=status.HTTP_200_OK)
 
     def get_queryset(self):
         """overrding it to get orders of specific user"""
-        user_id = self.request.query_params['user_id']
-        new_queryset = self.queryset.filter(user_id=int(user_id)) 
+        user_id = self.request.query_params["user_id"]
+        new_queryset = self.queryset.filter(user_id=int(user_id))
         return new_queryset
-    
-    
-    
 
     def create(self, request, *args, **kwargs):
         """overriding this method to create order items from cart and calc totals"""
@@ -275,17 +274,77 @@ class OrderItemDetailAPIView(views.APIView):
 
 """Marketplace API Views"""
 
+
 class ProductReadViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Product.objects.filter(is_available=True)
     serializer_class = ProductSerializer
     # ordering
-    filter_backends = [filters.OrderingFilter, filters.SearchFilter, DjangoFilterBackend]
-    ordering_fields = ['name','price']
-    ordering = ['price']
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["name", "price"]
+    ordering = ["price"]
     # filering
     filterset_class = ProductFilterSet
     # searching
-    search_fields = ['name','category__name','description']
-    
-    
-    
+    search_fields = ["name", "category__name", "description"]
+
+
+class RatingViewSet(viewsets.ModelViewSet):
+    queryset = Rating.objects.filter(enabled=True)
+    serializer_class = RatingSerializer
+    # ordering
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["created_at", "rating"]
+    ordering = ["created_at"]
+
+    def get_queryset(self):
+        """overriding in order to distinguish by vendor or product"""
+        object_id = self.request.query_params.get("obj_id", None)
+        query_set = self.queryset
+        if object_id:
+            query_set = self.queryset.filter(object_id=int(object_id))
+        return query_set
+
+    def create(self, request, *args, **kwargs):
+        rating_type = request.query_params.get("type")
+        obj_id = request.query_params.get("obj_id")
+        if not rating_type or not obj_id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        previous = Rating.objects.filter(object_id=int(obj_id),user=request.user).first()
+        # handling indirect update
+        if previous:
+            # prviously exists, performing update
+            previous.comment = data['comment']
+            previous.rating = data['rating']
+            previous.enabled = True
+            previous.save()
+            return Response({'updated':True}, status=status.HTTP_200_OK)
+            
+        else:            
+            # performing new rating creation
+            serializer = self.get_serializer(data=data)
+            try:
+                serializer.is_valid(raise_exception=True)
+            except:
+                return Response(
+                    {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                )
+            self.perform_create(serializer)  # sets instance to serializer after creation
+            instance = serializer.instance
+            if rating_type == "vendor":
+                instance.content_type = ContentType.objects.get_for_model(Vendor)
+            elif rating_type == "product":
+                instance.content_type = ContentType.objects.get_for_model(Product)
+            instance.object_id = int(obj_id)
+            instance.enabled = True
+            instance.save()
+            # successfull creation
+            return Response(serializer.data, status=status.HTTP_201_CREATED)

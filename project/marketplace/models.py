@@ -100,26 +100,12 @@ class Rating(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     rating = models.PositiveSmallIntegerField(default=0, choices=RATING_CHOICES)
     content_type = models.ForeignKey(
-        "contenttypes.ContentType", on_delete=models.CASCADE
+        "contenttypes.ContentType", on_delete=models.CASCADE,null=True
     )
-    object_id = models.IntegerField()
+    object_id = models.IntegerField(null=True)
     related_obj = GenericForeignKey("content_type", "object_id")
-
+    enabled= models.BooleanField(default=True)
+    
     @property
     def get_rating(self):
         return [i for i in range(self.rating)]
-
-    def save(self, *args, **kwargs):
-        """overriding it to avoid duplicate rating"""
-        previous = Rating.objects.filter(
-            user=self.user, object_id=self.object_id
-        ).first()
-        # preventing recursion when existing before
-        if previous and not 'update_fields' in kwargs:
-            """overriding new"""
-            print("existing....")
-            previous.comment = self.comment
-            previous.rating = self.rating
-            previous.save(update_fields=['comment','rating'])
-        else:
-            return super().save(*args, **kwargs)

@@ -2,7 +2,7 @@ from django.urls import include, path
 from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
-from .views import OrderItemDetailAPIView, OrderItemListAPIView, OrderViewSet,  ProductReadViewSet
+from .views import OrderItemDetailAPIView, OrderItemListAPIView, OrderViewSet,  ProductReadViewSet, RatingViewSet
 
 # Router Setup for order model
 router = DefaultRouter()
@@ -10,6 +10,8 @@ router = DefaultRouter()
 router.register(r"orders", OrderViewSet)
 # product viewset routing
 router.register(r"products",ProductReadViewSet)
+# rating viewset routing
+router.register(r"ratings", RatingViewSet)
 
 app_name = "accounts"
 

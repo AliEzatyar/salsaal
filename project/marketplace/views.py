@@ -195,6 +195,17 @@ def rate(request):
     data = json.loads(request.body)["options"]
     form = RatingForm(data)
     type_ = data["type"]
+    previous = Rating.objects.filter(
+        object_id=int(data["object_id"]), user=request.user
+    ).first()
+    # handling indirect update
+    if previous:
+        # prviously exists, performing update
+        previous.comment = data['comment']
+        previous.rating = data['rating']
+        previous.save()
+        return JsonResponse({"OK": True})
+
     if form.is_valid():
         rating = form.save(commit=False)
         if type_ == "product":
