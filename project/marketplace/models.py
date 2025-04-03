@@ -30,7 +30,6 @@ class Category(models.Model):
 
 class Product(models.Model):
     INVENTORY_CHOICES = [(1, "پل خشک-کابل"), (2, "قلعه نو-کابل"), (3, "پل سوخته-کابل")]
-
     vendor = models.ForeignKey(
         "vendor.Vendor",
         on_delete=models.CASCADE,

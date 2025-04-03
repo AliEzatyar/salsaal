@@ -80,7 +80,7 @@ def register_vendor(request):
 @login_required
 @user_passes_test(vendor_tester)
 def vendor_profile(request):
-    """this view enables vendors to update their user profile and update licience"""
+    """this view enables vendors to update their user profile and update licence"""
     vendor = request.user.vendor
     vendor_user_profile = UserProfile.objects.filter(user=request.user).first()
     # in POST

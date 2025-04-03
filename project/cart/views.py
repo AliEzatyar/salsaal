@@ -53,7 +53,6 @@ def delete_cart_item(request, item_id):
 @require_POST
 @login_required
 def edit_cart(request):
-
     body = json.loads(request.body)
     items = body["items"]
     for item_id, quantity in items:
@@ -65,3 +64,4 @@ def edit_cart(request):
             continue
     cart = request.user.cart
     return JsonResponse({"saved": True, "products_total_price": cart.calculate_total()})
+

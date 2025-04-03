@@ -2,21 +2,35 @@ from django.urls import include, path
 from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
-from .views import OrderItemDetailAPIView, OrderItemListAPIView, OrderViewSet,  ProductReadViewSet, RatingViewSet
+from .views import (
+    OrderItemDetailAPIView,
+    OrderItemListAPIView,
+    OrderViewSet,
+    ProductReadViewSet,
+    RatingViewSet,
+    CartApiView,
+    VendorAPIView,
+    VendorProductsManageViewSet,
+)
 
-# Router Setup for order model
+
+# Router Setup for
 router = DefaultRouter()
 # order viewset routing
 router.register(r"orders", OrderViewSet)
-# product viewset routing
-router.register(r"products",ProductReadViewSet)
 # rating viewset routing
 router.register(r"ratings", RatingViewSet)
+# product managemet routing
+router.register(
+    r"vendor-products", VendorProductsManageViewSet, basename="vendor-products"
+)
+# product viewset routing
+router.register(r"products",ProductReadViewSet)
 
-app_name = "accounts"
+app_name = "api"
 
 urlpatterns = [
-    # Account App Routing
+    # Account App
     path("account/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("account/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
     path("account/register/", views.RegisterUser.as_view(), name="reg_user_api"),
@@ -28,7 +42,7 @@ urlpatterns = [
         views.UpdateDeleteRetriveUser.as_view(),
         name="user_detail",
     ),
-    # Order and Product  Routing
+    # Order and Product
     path("", include(router.urls)),
     path(
         "orders/<int:order_id>/items/",
@@ -40,6 +54,16 @@ urlpatterns = [
         OrderItemDetailAPIView.as_view(),
         name="order-item-detail",
     ),
-    # Marketplace App Routing
-    
+    # cart
+    path(
+        "cart/",
+        CartApiView.as_view(),
+        name="cart-detail",
+    ),
+    # vendor
+    path(
+        "vendor/",
+        VendorAPIView.as_view(),
+        name="vendor",
+    ),
 ]

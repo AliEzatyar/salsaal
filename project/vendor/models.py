@@ -36,6 +36,7 @@ class Vendor(models.Model):
         return self.vendor_name
 
     def rating_form(self):
+        """automates rating form template"""
         html = render_to_string(
             "marketplace/rating_form.html",
             context={"object_id": self.pk, "type": "vendor"},
@@ -48,15 +49,15 @@ class Vendor(models.Model):
         ratings = [r[0] for r in ratings]
         if len(ratings) == 0:
             return 0
-
         return sum(ratings) / len(ratings)
 
     def save(self, *args, **kwargs):
+        """overriding to send approved email"""
         if self.pk != None:
             # update happend
             obj = Vendor.objects.get(pk=self.pk)
             if self.is_approved != obj.is_approved:
-                # if there is a changes in approvment of the vendor
+                # if there is changes in approvment of the vendor
                 context = {"user": self.user, "is_approved": self.is_approved}
                 template = "accounts/emails/admin_approval_email.html"
                 if self.is_approved:

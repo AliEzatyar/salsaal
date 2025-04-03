@@ -1,3 +1,4 @@
+import json
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
@@ -14,6 +15,7 @@ from rest_framework import viewsets, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
+
 from django_filters.rest_framework import DjangoFilterBackend
 
 from accounts.serializers import (
@@ -21,16 +23,20 @@ from accounts.serializers import (
     UserDetailSerializer,
     VendorCreateSerializer,
     VendorManageSerializer,
+    UserProfileSerializer
 )
-from accounts.models import SHOP, User
+from accounts.models import CUSTOMER, SHOP, User
 from accounts.utils import send_email, send_forgot_email
 from order.models import Order, OrderItem
 from order.serializers import OrderItemSerializer, OrderSerializer
 from cart.models import CartItem
+from cart.serializers import CartSerializer
 from marketplace.models import Product, Rating
 from vendor.models import Vendor
+from vendor.serializers import VendorSerializer
 from marketplace.serializers import ProductSerializer, RatingSerializer
 from api.backends import ProductFilterSet
+from api.permissions import IsVendorOfProduct
 
 """Account API Views"""
 
@@ -220,7 +226,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """overrding it to get orders of specific user"""
-        user_id = self.request.query_params["user_id"]
+        user_id = self.request.user.id
         new_queryset = self.queryset.filter(user_id=int(user_id))
         return new_queryset
 
@@ -276,6 +282,7 @@ class OrderItemDetailAPIView(views.APIView):
 
 
 class ProductReadViewSet(viewsets.ReadOnlyModelViewSet):
+    """this view only handles representation of products to normal users"""
     queryset = Product.objects.filter(is_available=True)
     serializer_class = ProductSerializer
     # ordering
@@ -348,3 +355,134 @@ class RatingViewSet(viewsets.ModelViewSet):
             instance.save()
             # successfull creation
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+"""Cart API Views"""
+
+class CartApiView(views.APIView):
+
+    def get(self,*args, **kwargs):
+        """showing cart detail with items"""
+        cart = self.request.user.cart
+        serializer = CartSerializer(cart)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+    def patch(self,*args, **kwargs):
+        """partial update for cart-items amount change"""
+        data = self.request.data
+        items = data['items']
+        for item_id, quantity in items:
+            item = CartItem.objects.filter(id=item_id).first()
+            if item and item.product.existing_amount > int(quantity):
+                item.quantity = quantity
+                item.save()
+            else:
+                continue
+        # successful edit
+        cart = self.request.user.cart
+        serializer = CartSerializer(cart)
+        return Response(serializer.data,status=status.HTTP_200_OK) 
+
+    def delete(self,*args, **kwargs):
+        """deleting a cart item"""
+        item = self.request.data['item-id']
+        item = CartItem.objects.filter(id=item).first()
+        product = item.product
+        product.existing_amount += item.quantity
+        product.save()
+        item.delete()
+        return Response(status=status.HTTP_200_OK)
+
+    def post(self,*args, **kwargs):
+        """overriding for adding new item to cart"""
+        cart = self.request.user.cart
+        product_id = self.request.data['product-id']
+        product = Product.objects.filter(pk=product_id).first()
+        if product and product.existing_amount > 0:
+            state = CartItem.objects.get_or_create(cart=cart, product=product)
+            if state[1]:
+                # if item is created now and added
+                product.existing_amount -= 1
+                cart_item = state[0]
+                # cart_item.save()
+                cart.items.add(cart_item)
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response({'error':'not_existing'},status=status.HTTP_400_BAD_REQUEST)
+
+
+"""Vendor API Views"""
+
+class VendorAPIView(views.APIView):
+
+    def get(self,*args, **kwargs):
+        """returns all vendor details """
+        role = self.request.user.role
+        if role == 2 or not hasattr(self.request.user,"vendor"):
+            # a normal user is not allowed
+            return Response({"error":"user_not_a_vendor"},status=status.HTTP_400_BAD_REQUEST)
+        vendor = self.request.user.vendor
+        serializer = VendorSerializer(vendor)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+    def patch(self,*args, **kwargs):
+        """enables vendor and related userprofile update"""
+        role = self.request.user.role
+        if role == 2:
+            # a normal user is not allowed
+            return Response(
+                {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        data = self.request.data
+        vendor = self.request.user.vendor
+        vendor_serializer = VendorSerializer(vendor,data=data,partial=True)
+
+        # validation
+        try:
+            vendor_serializer.is_valid(raise_exception=True)
+        except:
+            return Response({'errors':vendor_serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+
+        vendor_serializer.save()
+        # success
+        return Response(vendor_serializer.data,status=status.HTTP_200_OK)
+    
+    def post(self,*args, **kwargs):
+        """overriden for converting to vendor"""
+        data = self.request.data
+        user = self.request.user
+        profile = user.profile
+        vendor = Vendor(user=user,user_profile=profile)
+        vendor.vendor_name = data['vendor_name']
+        vendor.save()
+        user.role= SHOP
+        user.save()
+        return Response(status=status.HTTP_201_CREATED)
+    
+    def delete(self,*args, **kwargs):
+        """overriden to cancel vendor account"""    
+        user = self.request.user
+        vendor = user.vendor
+        user.role = CUSTOMER
+        vendor.delete()
+        user.save()        
+        return Response(status=status.HTTP_200_OK)
+
+        
+"""Product Management API Views"""        
+
+class VendorProductsManageViewSet(viewsets.ModelViewSet):
+    """this class enables CRUD operations on products of a vendor"""
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfProduct]
+    
+    def get_queryset(self):
+        """any queryset should be of the requesting vendor"""
+        query_set = self.queryset.filter(vendor__user__id=self.request.user.id)
+        return query_set    
+    
+    def get_serializer_context(self):
+        context =  super().get_serializer_context()
+        context['vendor'] = self.request.user.vendor.id
+        return context
