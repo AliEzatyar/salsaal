@@ -1,4 +1,9 @@
 import json
+import weasyprint
+from django.template.loader import render_to_string
+from django.conf import settings
+from io import BytesIO
+from django.http import FileResponse
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
@@ -23,7 +28,7 @@ from accounts.serializers import (
     UserDetailSerializer,
     VendorCreateSerializer,
     VendorManageSerializer,
-    UserProfileSerializer
+    UserProfileSerializer,
 )
 from accounts.models import CUSTOMER, SHOP, User
 from accounts.utils import send_email, send_forgot_email
@@ -256,8 +261,29 @@ class OrderViewSet(viewsets.ModelViewSet):
             order_items.append(order_item)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # sending pdf file
+        buffer = BytesIO()
+        html = render_to_string("order/payment.html", {"order": order})
+        weasyprint.HTML(string=html).write_pdf(
+            buffer,
+            stylesheets=[
+                weasyprint.CSS(settings.STATICFILES_DIRS[0] + "css/payment.css")
+            ],
+        )
+        response = FileResponse(
+            buffer,
+            as_attachment=True,
+                                                                                                                                                                                                                                      )
+        response["Content-Disposition"] = "attachment;"+f" filename=order_{order.user.first_name}_{order.id}.pdf"
+        
 
+        return response
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user'] = self.request.user.id
+        return context
+ 
 
 class OrderItemListAPIView(views.APIView):
 
@@ -283,8 +309,10 @@ class OrderItemDetailAPIView(views.APIView):
 
 class ProductReadViewSet(viewsets.ReadOnlyModelViewSet):
     """this view only handles representation of products to normal users"""
+
     queryset = Product.objects.filter(is_available=True)
     serializer_class = ProductSerializer
+    permission_classes = [permissions.AllowAny]
     # ordering
     filter_backends = [
         filters.OrderingFilter,
@@ -325,17 +353,19 @@ class RatingViewSet(viewsets.ModelViewSet):
         if not rating_type or not obj_id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         data = request.data
-        previous = Rating.objects.filter(object_id=int(obj_id),user=request.user).first()
+        previous = Rating.objects.filter(
+            object_id=int(obj_id), user=request.user
+        ).first()
         # handling indirect update
         if previous:
             # prviously exists, performing update
-            previous.comment = data['comment']
-            previous.rating = data['rating']
+            previous.comment = data["comment"]
+            previous.rating = data["rating"]
             previous.enabled = True
             previous.save()
-            return Response({'updated':True}, status=status.HTTP_200_OK)
-            
-        else:            
+            return Response({"updated": True}, status=status.HTTP_200_OK)
+
+        else:
             # performing new rating creation
             serializer = self.get_serializer(data=data)
             try:
@@ -344,7 +374,9 @@ class RatingViewSet(viewsets.ModelViewSet):
                 return Response(
                     {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
-            self.perform_create(serializer)  # sets instance to serializer after creation
+            self.perform_create(
+                serializer
+            )  # sets instance to serializer after creation
             instance = serializer.instance
             if rating_type == "vendor":
                 instance.content_type = ContentType.objects.get_for_model(Vendor)
@@ -359,18 +391,19 @@ class RatingViewSet(viewsets.ModelViewSet):
 
 """Cart API Views"""
 
+
 class CartApiView(views.APIView):
 
-    def get(self,*args, **kwargs):
+    def get(self, *args, **kwargs):
         """showing cart detail with items"""
         cart = self.request.user.cart
         serializer = CartSerializer(cart)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def patch(self,*args, **kwargs):
+    def patch(self, *args, **kwargs):
         """partial update for cart-items amount change"""
         data = self.request.data
-        items = data['items']
+        items = data["items"]
         for item_id, quantity in items:
             item = CartItem.objects.filter(id=item_id).first()
             if item and item.product.existing_amount > int(quantity):
@@ -381,11 +414,11 @@ class CartApiView(views.APIView):
         # successful edit
         cart = self.request.user.cart
         serializer = CartSerializer(cart)
-        return Response(serializer.data,status=status.HTTP_200_OK) 
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self,*args, **kwargs):
+    def delete(self, *args, **kwargs):
         """deleting a cart item"""
-        item = self.request.data['item-id']
+        item = self.request.data["item-id"]
         item = CartItem.objects.filter(id=item).first()
         product = item.product
         product.existing_amount += item.quantity
@@ -393,10 +426,10 @@ class CartApiView(views.APIView):
         item.delete()
         return Response(status=status.HTTP_200_OK)
 
-    def post(self,*args, **kwargs):
+    def post(self, *args, **kwargs):
         """overriding for adding new item to cart"""
         cart = self.request.user.cart
-        product_id = self.request.data['product-id']
+        product_id = self.request.data["product-id"]
         product = Product.objects.filter(pk=product_id).first()
         if product and product.existing_amount > 0:
             state = CartItem.objects.get_or_create(cart=cart, product=product)
@@ -408,24 +441,29 @@ class CartApiView(views.APIView):
                 cart.items.add(cart_item)
             return Response(status=status.HTTP_200_OK)
         else:
-            return Response({'error':'not_existing'},status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "not_existing"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 """Vendor API Views"""
 
+
 class VendorAPIView(views.APIView):
 
-    def get(self,*args, **kwargs):
-        """returns all vendor details """
+    def get(self, *args, **kwargs):
+        """returns all vendor details"""
         role = self.request.user.role
-        if role == 2 or not hasattr(self.request.user,"vendor"):
+        if role == 2 or not hasattr(self.request.user, "vendor"):
             # a normal user is not allowed
-            return Response({"error":"user_not_a_vendor"},status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
+            )
         vendor = self.request.user.vendor
         serializer = VendorSerializer(vendor)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def patch(self,*args, **kwargs):
+    def patch(self, *args, **kwargs):
         """enables vendor and related userprofile update"""
         role = self.request.user.role
         if role == 2:
@@ -435,54 +473,70 @@ class VendorAPIView(views.APIView):
             )
         data = self.request.data
         vendor = self.request.user.vendor
-        vendor_serializer = VendorSerializer(vendor,data=data,partial=True)
+        vendor_serializer = VendorSerializer(vendor, data=data, partial=True)
 
         # validation
         try:
             vendor_serializer.is_valid(raise_exception=True)
         except:
-            return Response({'errors':vendor_serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": vendor_serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         vendor_serializer.save()
         # success
-        return Response(vendor_serializer.data,status=status.HTTP_200_OK)
-    
-    def post(self,*args, **kwargs):
+        return Response(vendor_serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, *args, **kwargs):
         """overriden for converting to vendor"""
         data = self.request.data
         user = self.request.user
         profile = user.profile
-        vendor = Vendor(user=user,user_profile=profile)
-        vendor.vendor_name = data['vendor_name']
+        vendor = Vendor(user=user, user_profile=profile)
+        vendor.vendor_name = data["vendor_name"]
         vendor.save()
-        user.role= SHOP
+        user.role = SHOP
         user.save()
         return Response(status=status.HTTP_201_CREATED)
-    
-    def delete(self,*args, **kwargs):
-        """overriden to cancel vendor account"""    
+
+    def delete(self, *args, **kwargs):
+        """overriden to cancel vendor account"""
         user = self.request.user
         vendor = user.vendor
         user.role = CUSTOMER
         vendor.delete()
-        user.save()        
+        user.save()
         return Response(status=status.HTTP_200_OK)
 
-        
-"""Product Management API Views"""        
+
+"""Product Management API Views"""
+
 
 class VendorProductsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on products of a vendor"""
+
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendorOfProduct]
-    
+    # ordering
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["name", "price", "created_at"]
+    ordering = ["-created_at"]
+    # filering
+    filterset_class = ProductFilterSet
+    # searching
+    search_fields = ["name", "category__name", "description"]
+
     def get_queryset(self):
         """any queryset should be of the requesting vendor"""
         query_set = self.queryset.filter(vendor__user__id=self.request.user.id)
-        return query_set    
-    
+        return query_set
+
     def get_serializer_context(self):
-        context =  super().get_serializer_context()
-        context['vendor'] = self.request.user.vendor.id
+        context = super().get_serializer_context()
+        context["vendor"] = self.request.user.vendor.id
         return context

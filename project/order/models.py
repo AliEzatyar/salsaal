@@ -34,6 +34,7 @@ class Order(models.Model):
         default=PAYMENT_STATUS_CHOICES[0][0],
         choices=PAYMENT_STATUS_CHOICES,
     )
+    paid = models.BooleanField(default=False)
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
     )

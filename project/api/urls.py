@@ -24,7 +24,7 @@ router.register(r"ratings", RatingViewSet)
 router.register(
     r"vendor-products", VendorProductsManageViewSet, basename="vendor-products"
 )
-# product viewset routing
+# product retrive  routing
 router.register(r"products",ProductReadViewSet)
 
 app_name = "api"
@@ -67,3 +67,4 @@ urlpatterns = [
         name="vendor",
     ),
 ]
+

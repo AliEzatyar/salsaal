@@ -11,3 +11,4 @@ sqlparse
 unidecode
 django-debug-toolbar
 django_filters
+weasyprint
