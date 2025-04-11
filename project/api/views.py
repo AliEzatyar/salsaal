@@ -39,7 +39,7 @@ from cart.serializers import CartSerializer
 from marketplace.models import Product, Rating
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializer
-from marketplace.serializers import ProductSerializer, RatingSerializer
+from marketplace.serializers import CProductSerializer, VProductSerializer ,RatingSerializer
 from api.backends import ProductFilterSet
 from api.permissions import IsVendorOfProduct
 
@@ -75,86 +75,7 @@ class UpdateDeleteRetriveUser(generics.RetrieveUpdateDestroyAPIView):
         return self.request.user
 
 
-@api_view(["POST"])
-@authentication_classes([])
-@permission_classes([permissions.AllowAny])
-def register_vendor(request):
-    # converting binary to dictionary using json since type was json
-    if request.body in ("None", None):
-        return Response(
-            {"ERROR": "REQUEST HAS NO DATA"}, status=status.HTTP_400_BAD_REQUEST
-        )
 
-    data = request.data
-    user_ser = UserCreationSerializer(data=data["user"])
-    vendor_ser = VendorCreateSerializer(data=data)
-    a, b = user_ser.is_valid(), vendor_ser.is_valid()
-    # if both serializers are valid
-    if a and b:
-        # saving the use
-        user = User(**user_ser.validated_data)
-        user.role = SHOP
-        user.is_active = True
-        user.set_password(user.password)
-        user.save()
-        # saving the vendor
-        vendor = Vendor(**vendor_ser.validated_data)
-        vendor.user_profile = user.profile
-        vendor.user = user
-        vendor.save()
-        # sending the email to activate the account
-        send_email(request, user)
-        # success
-        return Response({"DONE": True}, status=status.HTTP_200_OK)
-
-    # serializers not valid
-    return Response(
-        {
-            "ERRORS": [
-                user_ser.errors if not a else None,
-                vendor_ser.errors if not b else None,
-            ]
-        },
-        status=status.HTTP_400_BAD_REQUEST,
-    )
-
-
-@api_view(["GET", "PUT", "DELETE", "PATCH"])
-@permission_classes([permissions.IsAuthenticated])
-def manage_vendor(request):
-    if request.method == "GET":
-        # retrive the object
-        vendor = Vendor.objects.filter(user=request.user).first()
-        if vendor:
-            ser = VendorManageSerializer(instance=vendor)
-            return Response({"DONE": True, "data": ser.data}, status=status.HTTP_200_OK)
-        return Response(
-            {"ERROR": "user has no registered shop"}, status=status.HTTP_400_BAD_REQUEST
-        )
-
-    elif request.method == "DELETE":
-        # delete the object
-        vendor = Vendor.objects.filter(user=request.user).first()
-        vendor.delete()
-        return Response({"DONE": True}, status=status.HTTP_200_OK)
-
-    elif request.method == "PATCH":
-        # partial update the object
-        data = request.data
-        vendor = Vendor.objects.filter(user=request.user).first()
-        if vendor:
-            ser = VendorManageSerializer(instance=vendor, data=data, partial=True)
-            if ser.is_valid():
-                ser.save()
-                return Response({"DONE": True}, status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    {"ERROR": ser.errors}, status=status.HTTP_400_BAD_REQUEST
-                )
-
-        return Response(
-            {"ERROR": "user has no registered shop"}, status=status.HTTP_400_BAD_REQUEST
-        )
 
 
 @api_view(["POST"])
@@ -283,7 +204,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context['user'] = self.request.user.id
         return context
- 
+
 
 class OrderItemListAPIView(views.APIView):
 
@@ -311,7 +232,7 @@ class ProductReadViewSet(viewsets.ReadOnlyModelViewSet):
     """this view only handles representation of products to normal users"""
 
     queryset = Product.objects.filter(is_available=True)
-    serializer_class = ProductSerializer
+    serializer_class = CProductSerializer
     permission_classes = [permissions.AllowAny]
     # ordering
     filter_backends = [
@@ -516,7 +437,7 @@ class VendorProductsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on products of a vendor"""
 
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    serializer_class = VProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendorOfProduct]
     # ordering
     filter_backends = [
