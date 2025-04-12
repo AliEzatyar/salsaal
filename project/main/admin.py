@@ -11,7 +11,7 @@ class FavlistAdmin(admin.ModelAdmin):
 
 class FavlistItemAdmin(admin.ModelAdmin):
     model = FavItem
-    list_display = ["favlist","product"]
+    list_display = ["favlist","food"]
 
 
 admin.site.register(FavList, FavlistAdmin)

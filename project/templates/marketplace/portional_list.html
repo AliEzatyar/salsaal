@@ -1,21 +1,21 @@
 {%load tags%}
-{% for product in products %}
-  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-    <a href="{%url 'marketplace:product_detail' product.id%}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><img src="{{ product.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /> <span class="product-card__badge bg-primary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best Sale</span></a>
-    <div class="product-card__content mt-16">
-      <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="product-details.html" class="link text-line-2" tabindex="0">{{ product.name }}</a></h6>
+{% for food in foods %}
+  <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+    <a href="{%url 'marketplace:food_detail' food.id%}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /> <span class="food-card__badge bg-primary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">Best Sale</span></a>
+    <div class="food-card__content mt-16">
+      <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2" tabindex="0">{{ food.name }}</a></h6>
       <div class="flex items-center mb-20 mt-16 gap-6">
-        <span class="text-xs font-[500] text-gray-500">{{product.overall_rating}}</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
+        <span class="text-xs font-[500] text-gray-500">{{food.overall_rating}}</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
       </div>
       <div class="mt-8">
         <div class="progress w-full bg-color-three rounded-[50rem] h-4" role="progressbar" aria-label="Basic example" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100">
           <div class="progress-bar bg-main-two-600 rounded-[50rem]" style="width:35%"></div>
         </div><span class="text-gray-900 text-xs font-[500] mt-8">Sold: 18/35</span>
       </div>
-      <div class="product-card__price my-20">
-        <span class="text-gray-400 text-md font-[600] text-decoration-line-through">{{ product.price }} افغانی</span>
+      <div class="food-card__price my-20">
+        <span class="text-gray-400 text-md font-[600] text-decoration-line-through">{{ food.price }} افغانی</span>
       </div>
-      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' product.id %}" data-product-id="{{ product.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart food-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
     </div>
   </div>
 {% endfor %}

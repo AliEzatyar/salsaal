@@ -1,14 +1,14 @@
 from rest_framework import serializers
 from vendor.models import Vendor
 
-from marketplace.models import Product, Rating
+from marketplace.models import Food, Rating
 
 
-class ProductSerializer(serializers.ModelSerializer):
+class FoodSerializer(serializers.ModelSerializer):
     vendor= serializers.PrimaryKeyRelatedField(read_only=True)
     
     class Meta:
-        model = Product
+        model = Food
         fields = "__all__"
 
 

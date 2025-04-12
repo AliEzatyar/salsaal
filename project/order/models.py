@@ -3,7 +3,7 @@ from django.db import models
 # Create your models here.
 from django.db import models
 from django.contrib.auth import get_user_model
-from marketplace.models import Product
+from marketplace.models import Food
 from vendor.models import Vendor
 from django_jalali.db.models import jDateTimeField
 
@@ -69,12 +69,7 @@ class Order(models.Model):
         return vendors
 
     def cancel_order(self):
-        """reseting products existing amount if order is cancelled"""
-        items = self.items.all()
-        for item in items:
-            product = item.product
-            product.existing_amount += item.quantity
-            product.save()
+        """reseting food order """
         self.status = ORDER_STATUS_CHOICES[0][0]  # cancelled
         self.save()
 
@@ -84,7 +79,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    food = models.ForeignKey(Food, on_delete=models.CASCADE)
     vendor = models.ForeignKey(
         Vendor, on_delete=models.CASCADE, related_name="order_items"
     )
@@ -92,7 +87,7 @@ class OrderItem(models.Model):
     price = models.PositiveIntegerField()
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name} from {self.vendor.vendor_name}"
+        return f"{self.quantity} x {self.food.name} from {self.vendor.vendor_name}"
 
     @property
     def total_price(self):

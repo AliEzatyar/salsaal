@@ -1,7 +1,7 @@
 from django.db import models
 from accounts.models import User, UserProfile
 from accounts.utils import send_notification
-from marketplace.models import Product, Rating
+from marketplace.models import Food, Rating
 from django.template.loader import render_to_string
 
 # Create your models here.
@@ -25,7 +25,7 @@ class Vendor(models.Model):
         upload_to="vendor/license/", blank=True, null=True
     )
     categories = models.ManyToManyField(
-        "marketplace.Category", through=Product, db_index=True
+        "marketplace.Category", through=Food, db_index=True
     )
     city = models.CharField(default="کابل", db_index=True)
     is_approved = models.BooleanField(default=False, db_index=True)

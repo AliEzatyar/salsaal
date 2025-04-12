@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib import messages
 from django.db.models import Avg
-from marketplace.models import Product
+from marketplace.models import Food
 from main.models import FavItem, FavList
 from vendor.models import  Vendor
 from django.contrib.auth.decorators import login_required
@@ -14,16 +14,16 @@ from .utils import query_execution_time
 
 def home(request, cat=None):
     # listing top 5 vendors
-    products = Product.objects.filter(is_available=True).select_related("vendor")
+    foods = Food.objects.filter(is_available=True).select_related("vendor")
     if cat:
-        temp = products.filter(category__name=cat).exists()
+        temp = foods.filter(category__name=cat).exists()
         if temp:
-            products = products.filter(category__name=cat)
+            foods = foods.filter(category__name=cat)
 
-    week_sold_products = products
-    top_selling_products = products
-    trending_products = products
-    recently_viewed = products
+    week_sold_foods = foods
+    top_selling_foods = foods
+    trending_foods = foods
+    recently_viewed = foods
     return render(request, "base/home.html", context=locals())
 
 
@@ -38,10 +38,10 @@ def favlist(request):
 
 
 @login_required
-def add_to_favlist(request, product_id):
+def add_to_favlist(request, food_id):
     if hasattr(request.user, "favlist"):
         state = FavItem.objects.get_or_create(
-            favlist=request.user.favlist, product_id=product_id
+            favlist=request.user.favlist, food_id=food_id
         )
         if state[1]:
             # if item is created now

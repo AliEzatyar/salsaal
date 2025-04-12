@@ -36,12 +36,12 @@ from order.models import Order, OrderItem
 from order.serializers import OrderItemSerializer, OrderSerializer
 from cart.models import CartItem
 from cart.serializers import CartSerializer
-from marketplace.models import Product, Rating
+from marketplace.models import Food, Rating
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializer
-from marketplace.serializers import ProductSerializer, RatingSerializer
-from api.backends import ProductFilterSet
-from api.permissions import IsVendorOfProduct
+from marketplace.serializers import FoodSerializer, RatingSerializer
+from api.backends import FoodFilterSet
+from api.permissions import IsVendorOfFood
 
 """Account API Views"""
 
@@ -249,14 +249,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         ).delete()  # flush previous items and recreate new items
         # creating order item objects
         for item in CartItem.objects.filter(cart=cart).select_related(
-            "product__vendor"
+            "food__vendor"
         ):
             order_item = OrderItem.objects.get_or_create(
                 order=order,
-                product=item.product,
-                vendor=item.product.vendor,
+                food=item.food,
+                vendor=item.food.vendor,
                 quantity=item.quantity,
-                price=item.product.price,
+                price=item.food.price,
             )[0]
             order_items.append(order_item)
         order.calculate_total_price()  # setting total price field value
@@ -307,11 +307,11 @@ class OrderItemDetailAPIView(views.APIView):
 """Marketplace API Views"""
 
 
-class ProductReadViewSet(viewsets.ReadOnlyModelViewSet):
-    """this view only handles representation of products to normal users"""
+class FoodReadViewSet(viewsets.ReadOnlyModelViewSet):
+    """this view only handles representation of foods to normal users"""
 
-    queryset = Product.objects.filter(is_available=True)
-    serializer_class = ProductSerializer
+    queryset = Food.objects.filter(is_available=True)
+    serializer_class = FoodSerializer
     permission_classes = [permissions.AllowAny]
     # ordering
     filter_backends = [
@@ -322,7 +322,7 @@ class ProductReadViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ["name", "price"]
     ordering = ["price"]
     # filering
-    filterset_class = ProductFilterSet
+    filterset_class = FoodFilterSet
     # searching
     search_fields = ["name", "category__name", "description"]
 
@@ -340,7 +340,7 @@ class RatingViewSet(viewsets.ModelViewSet):
     ordering = ["created_at"]
 
     def get_queryset(self):
-        """overriding in order to distinguish by vendor or product"""
+        """overriding in order to distinguish by vendor or food"""
         object_id = self.request.query_params.get("obj_id", None)
         query_set = self.queryset
         if object_id:
@@ -380,8 +380,8 @@ class RatingViewSet(viewsets.ModelViewSet):
             instance = serializer.instance
             if rating_type == "vendor":
                 instance.content_type = ContentType.objects.get_for_model(Vendor)
-            elif rating_type == "product":
-                instance.content_type = ContentType.objects.get_for_model(Product)
+            elif rating_type == "food":
+                instance.content_type = ContentType.objects.get_for_model(Food)
             instance.object_id = int(obj_id)
             instance.enabled = True
             instance.save()
@@ -406,7 +406,7 @@ class CartApiView(views.APIView):
         items = data["items"]
         for item_id, quantity in items:
             item = CartItem.objects.filter(id=item_id).first()
-            if item and item.product.existing_amount > int(quantity):
+            if item and item.food.is_available :
                 item.quantity = quantity
                 item.save()
             else:
@@ -420,22 +420,18 @@ class CartApiView(views.APIView):
         """deleting a cart item"""
         item = self.request.data["item-id"]
         item = CartItem.objects.filter(id=item).first()
-        product = item.product
-        product.existing_amount += item.quantity
-        product.save()
         item.delete()
         return Response(status=status.HTTP_200_OK)
 
     def post(self, *args, **kwargs):
         """overriding for adding new item to cart"""
         cart = self.request.user.cart
-        product_id = self.request.data["product-id"]
-        product = Product.objects.filter(pk=product_id).first()
-        if product and product.existing_amount > 0:
-            state = CartItem.objects.get_or_create(cart=cart, product=product)
+        food_id = self.request.data["food-id"]
+        food = Food.objects.filter(pk=food_id).first()
+        if food and food.is_available :
+            state = CartItem.objects.get_or_create(cart=cart, food=food)
             if state[1]:
                 # if item is created now and added
-                product.existing_amount -= 1
                 cart_item = state[0]
                 # cart_item.save()
                 cart.items.add(cart_item)
@@ -509,15 +505,15 @@ class VendorAPIView(views.APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-"""Product Management API Views"""
+"""Food Management API Views"""
 
 
-class VendorProductsManageViewSet(viewsets.ModelViewSet):
-    """this class enables CRUD operations on products of a vendor"""
+class VendorFoodsManageViewSet(viewsets.ModelViewSet):
+    """this class enables CRUD operations on foods of a vendor"""
 
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendorOfProduct]
+    queryset = Food.objects.all()
+    serializer_class = FoodSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfFood]
     # ordering
     filter_backends = [
         filters.OrderingFilter,
@@ -527,7 +523,7 @@ class VendorProductsManageViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name", "price", "created_at"]
     ordering = ["-created_at"]
     # filering
-    filterset_class = ProductFilterSet
+    filterset_class = FoodFilterSet
     # searching
     search_fields = ["name", "category__name", "description"]
 

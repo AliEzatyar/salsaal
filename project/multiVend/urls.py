@@ -31,7 +31,7 @@ urlpatterns = [
     path("api/", include("api.urls", namespace="api")),
     path("__debug__/", include(debug_toolbar.urls)),
 ]
-# in production, NGINX does it, but in debug mode, django should do
+# in foodion, NGINX does it, but in debug mode, django should do
 if settings.DEBUG and settings.LOCAL:
     print("it is local settings")
     urlpatterns += static(settings.MEDIA_URL,document_root =settings.MEDIA_ROOT)

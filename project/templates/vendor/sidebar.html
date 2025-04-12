@@ -10,8 +10,8 @@
     <li class="py-24 text-center {% if '/vendor/profile/' == request.path %}text-green-500{% endif %}">
       <a href="{% url "vendor:vendor_profile_edit" %}">تنظیمات پروفایل</a>
     </li>
-    <li class="py-24 text-center {% if '/vendor/products/' == request.path %}text-green-500{% endif %}">
-      <a href="{% url 'vendor:vendor_products' %}">مدیریت اجناس</a>
+    <li class="py-24 text-center {% if '/vendor/foods/' == request.path %}text-green-500{% endif %}">
+      <a href="{% url 'vendor:vendor_foods' %}">مدیریت اجناس</a>
     </li>
     <li class="py-24 text-center">
       <a href="{%url 'accounts:logout'%}">خارج شدن</a>

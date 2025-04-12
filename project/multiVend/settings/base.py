@@ -20,13 +20,13 @@ from django.contrib.messages import constants as messages
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
-# Quick-start development settings - unsuitable for production
+# Quick-start development settings - unsuitable for foodion
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# SECURITY WARNING: keep the secret key used in foodion secret!
 SECRET_KEY = config("SECRET_KEY", cast=str)
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with debug turned on in foodion!
 DEBUG = True
 
 ALLOWED_HOSTS = []

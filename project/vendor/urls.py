@@ -10,26 +10,26 @@ urlpatterns = [
     path("vendor-details/<str:vendor_name>/",views.vendor_details,name="vendor_details"),
     path("become-seller/", views.become_seller, name="become_seller"),
     path("register-vendor", views.register_vendor, name="register_vendor"),
-    # vendor products CRUD
+    # vendor foods CRUD
     path(
-        "products/",
-        views.vendor_products,
-        name="vendor_products",
+        "foods/",
+        views.vendor_foods,
+        name="vendor_foods",
     ),
     path(
-        "catalog-builder/product/add/",
-        views.add_product,
-        name="add_product",
+        "catalog-builder/food/add/",
+        views.add_food,
+        name="add_food",
     ),
     path(
-        "catalog-builder/product/<int:id>/edit/",
-        views.edit_product,
-        name="edit_product",
+        "catalog-builder/food/<int:id>/edit/",
+        views.edit_food,
+        name="edit_food",
     ),
     path(
-        "catalog-builder/product/<int:id>/delete/",
-        views.delete_product,
-        name="delete_product",
+        "catalog-builder/food/<int:id>/delete/",
+        views.delete_food,
+        name="delete_food",
     ),
     # path("dashboard/", views.vendor_dashboard, name="vendor_dashboard"),
     # rating

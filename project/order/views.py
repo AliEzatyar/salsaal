@@ -28,13 +28,13 @@ def create_order(request):
     OrderItem.objects.filter(
         order=order
     ).delete()  # flush previous items and recreate new items
-    for item in CartItem.objects.filter(cart=cart).select_related("product__vendor"):
+    for item in CartItem.objects.filter(cart=cart).select_related("food__vendor"):
         order_item = OrderItem.objects.get_or_create(
             order=order,
-            product=item.product,
-            vendor=item.product.vendor,
+            food=item.food,
+            vendor=item.food.vendor,
             quantity=item.quantity,
-            price=item.product.price,
+            price=item.food.price,
         )[0]
         order_items.append(order_item)
     order.calculate_total_price()

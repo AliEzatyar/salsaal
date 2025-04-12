@@ -8,7 +8,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 class OrderItemAdmin(admin.ModelAdmin):
     model = OrderItem
-    list_display = ["id","product","price","quantity","order"]
+    list_display = ["id","food","price","quantity","order"]
 
 admin.site.register(Order,OrderAdmin)
 admin.site.register(OrderItem, OrderItemAdmin)

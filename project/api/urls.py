@@ -6,11 +6,11 @@ from .views import (
     OrderItemDetailAPIView,
     OrderItemListAPIView,
     OrderViewSet,
-    ProductReadViewSet,
+    FoodReadViewSet,
     RatingViewSet,
     CartApiView,
     VendorAPIView,
-    VendorProductsManageViewSet,
+    VendorFoodsManageViewSet,
 )
 
 
@@ -20,12 +20,12 @@ router = DefaultRouter()
 router.register(r"orders", OrderViewSet)
 # rating viewset routing
 router.register(r"ratings", RatingViewSet)
-# product managemet routing
+# food managemet routing
 router.register(
-    r"vendor-products", VendorProductsManageViewSet, basename="vendor-products"
+    r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods"
 )
-# product retrive  routing
-router.register(r"products",ProductReadViewSet)
+# food retrive  routing
+router.register(r"foods",FoodReadViewSet)
 
 app_name = "api"
 
@@ -42,7 +42,7 @@ urlpatterns = [
         views.UpdateDeleteRetriveUser.as_view(),
         name="user_detail",
     ),
-    # Order and Product
+    # Order and Food
     path("", include(router.urls)),
     path(
         "orders/<int:order_id>/items/",

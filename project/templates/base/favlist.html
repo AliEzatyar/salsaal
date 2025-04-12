@@ -41,25 +41,25 @@
                         <button type="button" data-deletefavitemurl="{% url 'main:delete_fav_item' item.id %}" class="delete-fav-item remove-tr-btn flex items-center gap-12 hover-text-danger-600"><i class="ph ph-x-circle text-2xl flex"></i></button>
                       </td>
                       <td class="px-40 py-32 border-r border-neutral-100">
-                        <div class="table-product flex items-center gap-24">
-                          <a href="{% url 'marketplace:product_detail'  item.product.id%}" class="table-product__thumb border border-gray-100 rounded-8 flex items-center justify-center"><img src="{{ item.product.image.url }}" alt="Image" /></a>
-                          <div class="table-product__content text-start">
-                            <h6 class="title text-lg font-[600] mb-8"><a href="product-details.html" class="link text-line-2" tabindex="0">{{ item.product.name }}</a></h6>
+                        <div class="table-food flex items-center gap-24">
+                          <a href="{% url 'marketplace:food_detail'  item.food.id%}" class="table-food__thumb border border-gray-100 rounded-8 flex items-center justify-center"><img src="{{ item.food.image.url }}" alt="Image" /></a>
+                          <div class="table-food__content text-start">
+                            <h6 class="title text-lg font-[600] mb-8"><a href="food-details.html" class="link text-line-2" tabindex="0">{{ item.food.name }}</a></h6>
                             <div class="flex items-center gap-16">
-                              <a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Camera</a><a href="cart.html" class="product-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Videos</a>
+                              <a href="cart.html" class="food-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Camera</a><a href="cart.html" class="food-card__cart btn bg-gray-50 text-heading text-sm hover-bg-main-600 hover-text-white py-7 px-8 rounded-8 flex items-center justify-center gap-8 font-[500]">Videos</a>
                             </div>
                           </div>
                         </div>
                       </td>
 
                       <td class="px-40 py-32 border-r border-neutral-100">
-                        <span class="text-lg h6 mb-0 font-[600]">{{ item.product.price }}</span>
+                        <span class="text-lg h6 mb-0 font-[600]">{{ item.food.price }}</span>
                       </td>
                       <td class="px-40 py-32 border-r border-neutral-100">
-                        <span class="text-lg h6 mb-0 font-[600]">{{ item.product.is_available }}</span>
+                        <span class="text-lg h6 mb-0 font-[600]">{{ item.food.is_available }}</span>
                       </td>
                       <td class="px-40 py-32">
-                        <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' item.product.id %}" class="add-to-cart btn btn-main-two rounded-8 px-64"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+                        <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' item.food.id %}" class="add-to-cart btn btn-main-two rounded-8 px-64"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
                       </td>
                     </tr>
                   {% endfor %}

@@ -44,11 +44,11 @@
               <div class="mb-32 pb-32 border-b border-gray-100 flex-between gap-8">
                 <span class="text-gray-900 font-[500] text-xl">کالا</span> <span class="text-gray-900 font-[500] text-xl">قیمت</span>
               </div>
-              <!-- products list -->
+              <!-- foods list -->
               {% for item in order_items %}
                 <div class="flex-between xl:gap-24  gap-12 mb-32">
                   <div class="flex items-center gap-12">
-                    <span class="text-gray-900 text-md xl:w-144 w-80">{{ item.product.name }}</span>
+                    <span class="text-gray-900 text-md xl:w-144 w-80">{{ item.food.name }}</span>
                     <span class="text-gray-900 text-md">{{ item.quantity }}</span>
                     <span class="text-gray-900 text-md"><i class="ph-bold ph-x"></i></span>
                     <span class="text-gray-900 text-md">{{ item.price }}</span>

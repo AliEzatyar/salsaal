@@ -4,8 +4,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
 from accounts.utils import send_email, user_test
-from marketplace.models import Category, Product, Rating
-from vendor.forms import ProductForm, VendorForm
+from marketplace.models import Category, Food, Rating
+from vendor.forms import FoodForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
 from django.contrib import messages
@@ -131,11 +131,11 @@ def vendor_details(request, vendor_name):
     vendor = Vendor.objects.filter(vendor_name=vendor_name).first()
     if not vendor:
         return HttpResponse("حساب فروشنده با این نام موجود نیست!")
-    vendor_products = Product.objects.filter(vendor=vendor)
-    categories = [pro.category.name for pro in vendor_products]
+    vendor_foods = Food.objects.filter(vendor=vendor)
+    categories = [pro.category.name for pro in vendor_foods]
     ratings = Rating.objects.filter(object_id=vendor.id)
     cat_count_pro = Counter(categories).items()
-    products_count = vendor_products.count()
+    foods_count = vendor_foods.count()
     
     return render(request, "vendor/vendor_details.html", context=locals())
 
@@ -150,78 +150,78 @@ def vendor_dashboard(request):
 
 @login_required
 @user_passes_test(vendor_tester)
-def vendor_products(request):
-    """this view presents vendor's products with details enables CRUD for products"""
-    products = Product.objects.filter(vendor=get_vendor(request))
-    return render(request, "vendor/vendor_products.html", context=locals())
+def vendor_foods(request):
+    """this view presents vendor's foods with details enables CRUD for foods"""
+    foods = Food.objects.filter(vendor=get_vendor(request))
+    return render(request, "vendor/vendor_foods.html", context=locals())
 
 
 @login_required
 @user_passes_test(vendor_tester)
-def add_product(request):
+def add_food(request):
     # POST
     if request.method == "POST":
-        form = ProductForm(request.POST, files=request.FILES)
+        form = FoodForm(request.POST, files=request.FILES)
         if form.is_valid():
             try:
-                product = form.save(commit=False)
-                category_id = product.category.id
-                product.vendor = request.user.vendor
-                product.save()
+                food = form.save(commit=False)
+                category_id = food.category.id
+                food.vendor = request.user.vendor
+                food.save()
                 # successfull
                 messages.success(request, "محصول موفقانه ثبت شد")
-                return redirect("vendor:vendor_products")
+                return redirect("vendor:vendor_foods")
             except Exception as e:
                 messages.error(request, "خطا در ثبت محصول!")
-                return render(request, "vendor/add_product.html", context=locals())
+                return render(request, "vendor/add_food.html", context=locals())
         # there are form errors
         messages.error(request, "خطا در ثبت محصول!")
-        return render(request, "vendor/add_product.html", context=locals())
+        return render(request, "vendor/add_food.html", context=locals())
     # GET
-    form = ProductForm()
-    return render(request, "vendor/add_product.html", context=locals())
+    form = FoodForm()
+    return render(request, "vendor/add_food.html", context=locals())
 
 
 @login_required
 @user_passes_test(vendor_tester)
-def edit_product(request, id):
-    """this view enables a vendor to modify and existing product"""
-    product = Product.objects.filter(id=id, vendor=request.user.vendor).first()
-    if not product:
-        # redirect the vendor back to catalog builder if no such product
+def edit_food(request, id):
+    """this view enables a vendor to modify and existing food"""
+    food = Food.objects.filter(id=id, vendor=request.user.vendor).first()
+    if not food:
+        # redirect the vendor back to catalog builder if no such food
         messages.error(request, "چنین محصولی وجود ندارد!")
-        return redirect("vendor:vendor_products")
+        return redirect("vendor:vendor_foods")
 
     # POST
     if request.method == "POST":
-        form = ProductForm(request.POST, instance=product, files=request.FILES)
+        form = FoodForm(request.POST, instance=food, files=request.FILES)
         if form.is_valid():
             form.save()
             # successful
             messages.success(request, "جزییات محصول تغییر یافت")
-            return redirect("vendor:vendor_products")
+            return redirect("vendor:vendor_foods")
 
         # there are form errors
         messages.error(request, "در جریان ثبت تغییرات مشکلی بوجود آمد!")
-        return render(request, "vendor/edit_product.html", context=locals())
+        return render(request, "vendor/edit_food.html", context=locals())
 
     # GET
-    form = ProductForm(instance=product)
-    return render(request, "vendor/edit_product.html", context=locals())
+    form = FoodForm(instance=food)
+    return render(request, "vendor/edit_food.html", context=locals())
 
 
 @login_required
 @user_passes_test(vendor_tester)
-def delete_product(request, id):
-    """this view enables a vendor to delete a product"""
-    product = Product.objects.filter(id=id, vendor=request.user.vendor).first()
-    if product:
-        product.delete()
+def delete_food(request, id):
+    """this view enables a vendor to delete a food"""
+    food = Food.objects.filter(id=id, vendor=request.user.vendor).first()
+    if food:
+        food.delete()
         messages.success(request, "محصول موفقانه حذف گردید.")
-        return redirect("vendor:vendor_products")
+        return redirect("vendor:vendor_foods")
     else:
         messages.error(request, "چنین محصولی وجود ندارد!")
-    return redirect("vendor:vendor_products")
+    return redirect("vendor:vendor_foods")
 
 
 

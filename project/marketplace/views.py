@@ -2,7 +2,7 @@ import json
 from django.http.response import JsonResponse
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
-from marketplace.models import Category, Product, Rating
+from marketplace.models import Category, Food, Rating
 from main.utils import query_execution_time
 from accounts.utils import user_test
 from vendor.models import Vendor
@@ -15,27 +15,27 @@ from django.contrib.contenttypes.models import ContentType
 
 
 def marketplace(request):
-    """this view presents markeplace page. It also hanldes search, sort and filter of products"""
-    all_products = Product.objects.filter(is_available=True)
-    products = all_products
+    """this view presents markeplace page. It also hanldes search, sort and filter of foods"""
+    all_foods = Food.objects.filter(is_available=True)
+    foods = all_foods
 
     if request.method == "GET" and "category" in request.GET:
-        products = products.filter(category__slug=request.GET["category"])
+        foods = foods.filter(category__slug=request.GET["category"])
     
-    categories_by_products_count = Category.objects.annotate(
-        products_count=Count("products")
+    categories_by_foods_count = Category.objects.annotate(
+        foods_count=Count("foods")
     )
-    paginated = Paginator(products, 6)
+    paginated = Paginator(foods, 6)
     if request.method == "POST":
         """handling filter, sort and search"""
         # search handling
         if "query" in request.POST:
-            products = products.filter(name__icontains=request.POST["query"])
-            paginated = Paginator(products, 6)
+            foods = foods.filter(name__icontains=request.POST["query"])
+            paginated = Paginator(foods, 6)
             total_pages = [i + 1 for i in range(paginated.num_pages)]
-            total_found = products.count()
+            total_found = foods.count()
             # first page by default
-            products = paginated.get_page(1)
+            foods = paginated.get_page(1)
             return render(request, "marketplace/marketplace.html", context=locals())
 
         # the option attribute contains all filtering and sorting
@@ -43,69 +43,69 @@ def marketplace(request):
 
         # filtering
         if "category" in data:
-            products = products.filter(category__id=int(data["category"]))
+            foods = foods.filter(category__id=int(data["category"]))
         if "price" in data:
-            products = products.filter(
+            foods = foods.filter(
                 price__range=[int(data["price"][0]), int(data["price"][1])]
             )
         if "rating" in data:
-            products = products.filter(id__in=[p.id for p in products if round(p.overall_rating())==int(data['rating'])])    
+            foods = foods.filter(id__in=[p.id for p in foods if round(p.overall_rating())==int(data['rating'])])    
         
         # sorting
         if "sort" in data:
             sort_type = data["sort"]
             if sort_type == "newest":
-                products = products.order_by("-created_at")
+                foods = foods.order_by("-created_at")
             elif sort_type == "cheapest":
-                products = products.order_by("price")
+                foods = foods.order_by("price")
             elif sort_type == "costly":
-                products = products.order_by("-price")
+                foods = foods.order_by("-price")
 
         # paginating the results finally
-        paginated = Paginator(products, 6)
+        paginated = Paginator(foods, 6)
         total_pages = paginated.num_pages
-        total_found = products.count()
+        total_found = foods.count()
 
         # first page by default
-        products = paginated.get_page(1)
+        foods = paginated.get_page(1)
         if "page" in data:
-            products = paginated.get_page(int(data["page"]))
+            foods = paginated.get_page(int(data["page"]))
         str_html = render_to_string(
             "marketplace/portional_list.html",
-            {"products": products},
+            {"foods": foods},
         )
         return JsonResponse(
             {"html": str_html, "total_pages": total_pages, "total_found": total_found}
         )
 
     # initial marketplace page
-    total_found = products.count()
+    total_found = foods.count()
     total_pages = [i + 1 for i in range(paginated.num_pages)]
-    products = paginated.get_page(1)
+    foods = paginated.get_page(1)
     one_star_count = len(
-        [p.overall_rating for p in all_products if round(p.overall_rating()) == 1]
+        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 1]
     )
     two_star_count = len(
-        [p.overall_rating for p in all_products if round(p.overall_rating()) == 2]
+        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 2]
     )
     three_star_count = len(
-        [p.overall_rating for p in all_products if round(p.overall_rating()) == 3]
+        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 3]
     )
     four_star_count = len(
-        [p.overall_rating for p in all_products if round(p.overall_rating()) == 4]
+        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 4]
     )
     five_star_count = len(
-        [p.overall_rating for p in all_products if round(p.overall_rating()) == 5]
+        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 5]
     )
 
     return render(request, "marketplace/marketplace.html", context=locals())
 
 
-def product_detail(request, product_id):
-    product = Product.objects.filter(id=product_id).first()
-    ratings = Rating.objects.filter(object_id=product.id).select_related("user")
-    if product:
-        return render(request, "marketplace/product_detail.html", context=locals())
+def food_detail(request, food_id):
+    food = Food.objects.filter(id=food_id).first()
+    ratings = Rating.objects.filter(object_id=food.id).select_related("user")
+    if food:
+        return render(request, "marketplace/food_detail.html", context=locals())
     return redirect("main:home")
 
 
@@ -191,7 +191,7 @@ def vendors(request, page=None):
 @login_required
 @user_passes_test(user_test)
 def rate(request):
-    """this view handles rating a product or a vendor"""
+    """this view handles rating a food or a vendor"""
     data = json.loads(request.body)["options"]
     form = RatingForm(data)
     type_ = data["type"]
@@ -208,8 +208,8 @@ def rate(request):
 
     if form.is_valid():
         rating = form.save(commit=False)
-        if type_ == "product":
-            rating.content_type = ContentType.objects.get_for_model(Product)
+        if type_ == "food":
+            rating.content_type = ContentType.objects.get_for_model(Food)
         elif type_ == "vendor":
             rating.content_type = ContentType.objects.get_for_model(Vendor)
         rating.object_id = data["object_id"]

@@ -5,7 +5,7 @@ app_name = "main"
 urlpatterns = [
     path("favorites/", views.favlist, name="favlist"),
     path(
-        "add-item-to-favorites/<int:product_id>",
+        "add-item-to-favorites/<int:food_id>",
         views.add_to_favlist,
         name="add_to_favlist",
     ),

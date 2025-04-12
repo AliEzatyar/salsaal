@@ -12,3 +12,4 @@ unidecode
 django-debug-toolbar
 django-filter
 weasyprint
+django-jalali

@@ -9,68 +9,48 @@ from django.template.loader import render_to_string
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True, db_index=True)
-    description = models.TextField(max_length=250, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-    slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
 
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
-        ordering = ["-modified"]
+        ordering = ["-created_at"]
 
     def __str__(self):
         return self.name
 
-    def save(self, *args, **kwargs):
-        """overriding for slugifying the name field"""
-        self.slug = slugify_persian(self.name)
-        return super().save()
 
-
-class Product(models.Model):
-    INVENTORY_CHOICES = [(1, "پل خشک-کابل"), (2, "قلعه نو-کابل"), (3, "پل سوخته-کابل")]
+class Food(models.Model):
     vendor = models.ForeignKey(
         "vendor.Vendor",
         on_delete=models.CASCADE,
-        related_name="products",
+        related_name="foods",
         db_index=True,
     )
     name = models.CharField(max_length=60, db_index=True)
     price = models.DecimalField(max_digits=6, decimal_places=0, db_index=True)
-    inventory = models.IntegerField(choices=INVENTORY_CHOICES)
     category = models.ForeignKey(
         "marketplace.Category",
         on_delete=models.CASCADE,
-        related_name="products",
+        related_name="foods",
         db_index=True,
     )
     description = models.TextField(max_length=250, blank=True, null=True)
-    image = models.ImageField(upload_to="products/", blank=True, null=True)
-    slug = models.SlugField(
-        max_length=100, unique=True, blank=True, null=True, db_index=True
-    )
+    image = models.ImageField(upload_to="foods/", blank=True, null=True)
     is_available = models.BooleanField(default=True, db_index=True)
     modified = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    existing_amount = models.PositiveSmallIntegerField(default=1)
-    sold_amount = models.PositiveSmallIntegerField(default=0)
     rating = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
-        verbose_name = "product"
-        verbose_name_plural = "products"
+        verbose_name = "food"
+        verbose_name_plural = "foods"
         ordering = ["-modified"]
-
-    def save(self, *args, **kwargs):
-        """overriding for slugifying the name field"""
-        self.slug = slugify_persian(self.name)
-        return super().save()
 
     def rating_form(self):
         html = render_to_string(
             "marketplace/rating_form.html",
-            context={"object_id": self.pk, "type": "product"},
+            context={"object_id": self.pk, "type": "food"},
         )
         return html
 
@@ -89,7 +69,7 @@ class Product(models.Model):
 
 
 class Rating(models.Model):
-    """rating models is used for both product and vendor models for now"""
+    """rating models is used for both food and vendor models for now"""
 
     RATING_CHOICES = ((1, 1), (2, 2), (3, 3), (4, 4), (5, 5))
     user = models.ForeignKey(

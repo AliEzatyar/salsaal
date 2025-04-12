@@ -4,13 +4,13 @@ from rest_framework.response import Response
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.ReadOnlyField(source="product.name")
-    product_price = serializers.ReadOnlyField(source="product.price")
+    food_name = serializers.ReadOnlyField(source="food.name")
+    food_price = serializers.ReadOnlyField(source="food.price")
     subtotal = serializers.SerializerMethodField("get_subtotal")
 
     class Meta:
         model = CartItem
-        fields = ["id","product_name","product_price","subtotal","quantity"]
+        fields = ["id","food_name","food_price","subtotal","quantity"]
         read_only_fields = ["cart"]
 
     def get_subtotal(self, obj):

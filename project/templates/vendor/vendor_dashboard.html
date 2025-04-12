@@ -56,7 +56,7 @@
             </div>
             <h4 class="text-center">لیست فروشات</h4>
             <br />
-            <!-- Table of products -->
+            <!-- Table of foods -->
             <div class="overflow-x-auto bg-white shadow-lg rounded-lg">
               <table class="w-full text-sm text-left border-collapse">
                 <thead class="bg-gray-100 text-gray-700">
@@ -73,20 +73,20 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for product in products %}
+                  {% for food in foods %}
                     <tr class="hover:bg-gray-50">
                       <td class="px-6 py-4 border-b text-center">{{ forloop.counter }}</td>
-                      <td class="px-6 py-4 border-b text-center">{{ product.name }}</td>
-                      <td class="px-6 py-4 border-b text-center">{{ product.price }}</td>
-                      <td class="px-6 py-4 border-b text-center">{{ product.category.name }}</td>
-                      <td class="px-6 py-4 border-b text-center">{{ product.inventory }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ food.name }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ food.price }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ food.category.name }}</td>
+                      <td class="px-6 py-4 border-b text-center">{{ food.inventory }}</td>
                       <td class="px-6 py-4 border-b flex justify-center items-center">
-                        <img class="img-thumbnail" style="width: 50px;height: 50px; padding: 5px 5px;" src="{{ product.image.url }}" alt="" />
+                        <img class="img-thumbnail" style="width: 50px;height: 50px; padding: 5px 5px;" src="{{ food.image.url }}" alt="" />
                       </td>
 
                       <td class="px-6 py-4 border-b text-center">
                         <span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs">
-                          {% if product.is_available %}
+                          {% if food.is_available %}
                             بله
                           {% else %}
                             نخیر
@@ -94,10 +94,10 @@
                         </span>
                       </td>
                       <td class="px-6 py-4 border-b text-center">
-                        <a href="{% url 'vendor:edit_product' product.id %}"><i class="fa fa-pencil bg-primary"></i></a>
+                        <a href="{% url 'vendor:edit_food' food.id %}"><i class="fa fa-pencil bg-primary"></i></a>
                       </td>
                       <td class="px-6 py-4 border-b text-center">
-                        <a href="{% url 'vendor:delete_product' product.id %}" onclick="return confirm('Are you sure you want to delete it?')"><i class="fa fa-trash bg-green w-100"></i></a>
+                        <a href="{% url 'vendor:delete_food' food.id %}" onclick="return confirm('Are you sure you want to delete it?')"><i class="fa fa-trash bg-green w-100"></i></a>
                       </td>
                     </tr>
                   {% endfor %}

@@ -20,6 +20,6 @@ class FavItem(models.Model):
     favlist = models.ForeignKey(
         "main.FavList", on_delete=models.CASCADE, related_name="items"
     )
-    product = models.ForeignKey(
-        "marketplace.Product", on_delete=models.CASCADE, related_name="+"
+    food = models.ForeignKey(
+        "marketplace.Food", on_delete=models.CASCADE, related_name="+"
     )
