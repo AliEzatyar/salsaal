@@ -2,7 +2,7 @@ from vendor.models import Vendor
 from marketplace.models import Category
 
 def categories_context(request):
-    context = {"categories": Category.objects.values("name","slug","id")}
+    context = {"categories": Category.objects.values("name","id")}
     # handling cart and fav list badges
     if request.user.is_authenticated and hasattr(request.user, "cart") and hasattr(request.user,"favlist"):
         """if the user has a cart associated with it, return total cart items"""

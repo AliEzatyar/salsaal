@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
-from vendor.utils import slugify_persian
 from django.template.loader import render_to_string
 
 # Create your models here.

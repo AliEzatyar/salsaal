@@ -175,7 +175,7 @@
             <ul class="scroll-sm p-0 py-8 overflow-y-auto">
               {% for cat in categories %}
                 <li class="has-submenus-submenu">
-                  <a href="{%url 'marketplace:marketplace'%}?category={{cat.slug}}" class="text-gray-500 text-15 py-12 px-16 flex items-center gap-8 rounded-none"><span>{{ cat.name }}</span> <span class="icon text-md flex ms-auto"><i class="ph ph-caret-left"></i></span></a>
+                  <a href="{%url 'marketplace:marketplace'%}?category={{cat.name}}" class="text-gray-500 text-15 py-12 px-16 flex items-center gap-8 rounded-none"><span>{{ cat.name }}</span> <span class="icon text-md flex ms-auto"><i class="ph ph-caret-left"></i></span></a>
                 </li>
               {% endfor %}
             </ul>

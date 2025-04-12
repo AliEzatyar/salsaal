@@ -20,7 +20,7 @@ def marketplace(request):
     foods = all_foods
 
     if request.method == "GET" and "category" in request.GET:
-        foods = foods.filter(category__slug=request.GET["category"])
+        foods = foods.filter(category__name=request.GET["category"])
     
     categories_by_foods_count = Category.objects.annotate(
         foods_count=Count("foods")

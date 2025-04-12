@@ -2,7 +2,6 @@ from django import forms
 from accounts.forms import only_image_validator
 from marketplace.models import Category, Food
 from vendor.models import Vendor
-from vendor.utils import slugify_persian
 from django.core.exceptions import ValidationError
 
 
@@ -45,4 +44,4 @@ class FoodForm(forms.ModelForm):
 
     class Meta:
         model = Food
-        exclude = ["vendor", "slug", "modified", "created_at","sold_amount"]
+        exclude = ["vendor", "modified", "created_at","sold_amount"]

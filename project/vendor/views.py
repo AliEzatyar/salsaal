@@ -9,7 +9,6 @@ from vendor.forms import FoodForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
 from django.contrib import messages
-from django.utils.text import slugify
 from django.urls import reverse
 from .utils import get_vendor, vendor_tester
 from django.db.transaction import atomic
