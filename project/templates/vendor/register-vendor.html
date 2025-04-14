@@ -8,7 +8,7 @@
           <div class="w-full lg:w-3/4 px-4">
             <div class="user-dashboard bg-white shadow-lg p-6 rounded-lg">
               <div class="user-holder">
-                <p class="h3 text-2xl mb-4 text-center">ایجاد پروفایل فروشگاه</p>
+                <p class="h3 text-2xl mb-4 text-center">ایجاد پروفایل رستورانت من</p>
                 <br />
                 <br />
                 <!-- My Restaurants Form Start -->
@@ -20,7 +20,7 @@
                           <div>
                             <div class="restaurant-info">
                               <div class="text-holder">
-                                <label class="block font-medium mb-1">آپلود عکس/لوگو فروشگاه</label>
+                                <label class="block font-medium mb-1">آپلود عکس/لوگو رستورانت من</label>
                                 <div class="upload-gallery">{{ profile_form.picture }}</div>
                                 <p class="text-red-500 text-sm mt-1">{{ profile_form.picture.errors }}</p>
                               </div>
@@ -53,7 +53,7 @@
                           <div>
                             <div>
                               <div class="field-holder">
-                                <label class="block font-medium mb-1">نام فروشگاه *</label>
+                                <label class="block font-medium mb-1">نام رستورانت من *</label>
                                 {{ vendor_form.vendor_name }}
                                 <p class="text-red-500 text-sm mt-1">{{ vendor_form.vendor_name.errors }}</p>
                               </div>
@@ -107,7 +107,7 @@
                   </div>
                   <div>
                     <div class="field-holder">
-                      <button type="submit" class="bg-blue-500 text-white w-full py-2 rounded-lg shadow hover:bg-blue-600">ایجاد فروشگاه</button>
+                      <button type="submit" class="bg-blue-500 text-white w-full py-2 rounded-lg shadow hover:bg-blue-600">ایجاد رستورانت من</button>
                     </div>
                   </div>
                   {% csrf_token %}

@@ -39,9 +39,9 @@ class FoodForm(forms.ModelForm):
         """this clean method enables unique name validation"""
         data = self.cleaned_data["name"]
         if Food.objects.filter(name=data).exclude(pk=self.instance.pk).exists():
-            raise ValidationError("این نام محصول قبلا استفاده شده")
+            raise ValidationError("این نام غذا قبلا استفاده شده")
         return data
 
     class Meta:
         model = Food
-        exclude = ["vendor", "modified", "created_at","sold_amount"]
+        exclude = ["vendor", "modified", "created_at","sold_amount","rating"]

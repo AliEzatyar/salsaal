@@ -17,7 +17,7 @@ from django.core.exceptions import PermissionDenied
 
 #     # Step 5: Remove leading or trailing hyphens
 #     text = text.strip("-")
-
+#
 #     return text
 
 

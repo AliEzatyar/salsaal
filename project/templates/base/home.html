@@ -5,7 +5,7 @@
     <div class="container container-lg">
       <div class="banner-two-wrapper flex items-start">
         <!-- drop down only for home -->
-        <div class="w-265 xl:block hidden flex-shrink-0">
+        {% comment %} <div class="w-265 xl:block hidden flex-shrink-0">
           <div class="responsive-dropdown style-two common-dropdown nav-submenu p-0 submenus-submenu-wrapper shadow-none border border-gray-100 !relative border-t-0">
             <button type="button" class="close-responsive-dropdown rounded-[50%] text-xl absolute right-0 inset-block-start-0 mt-4 me-8 xl:hidden flex"><i class="ph ph-x"></i></button>
             <div class="logo px-16 xl:hidden block">
@@ -20,12 +20,12 @@
               {% endfor %}
             </ul>
           </div>
-        </div>
+        </div> {% endcomment %}
         <div class="banner-item-two-wrapper rounded-12 overflow-hidden relative arrow-center flex-grow mb-0">
-          <img src="{% static 'images/background-home.jpg' %}" alt="Image" class="banner-img absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1] object-fit-cover rounded-12" />
+          <img src="{% static 'images/background.jpg' %}" alt="Image" class="banner-img absolute inset-block-start-0 inset-inline-start-0 w-full h-full z-[-1] object-fit-cover rounded-12" />
           <div class="banner-item-two">
             <div class="text-center">
-              <strong class="text-white mb-8 h4 wow bounceInDown">صلصال استور - بزرگترین مرکز خرید و فروش آنلاین در افغانستان.</strong>
+              <strong class="text-white mb-8 h4 wow bounceInDown">سوشی فود - غذا در هر کجا</strong>
             </div>
           </div>
         </div>
@@ -81,9 +81,9 @@
         <div class="deals-week-slider arrow-style-two">
           {% for food in week_sold_foods %}
             <div data-aos="fade-up" data-aos-duration="200">
-              <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-                <a href="{% url 'marketplace:food_detail' food.id %}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="food-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
-                <div class="food-card__content mt-16">
+              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                <a href="{% url 'marketplace:food_detail' food.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                <div class="product-card__content mt-16">
                   <!-- ranking -->
                   <div class="flex items-center gap-6">
                     <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
@@ -101,12 +101,12 @@
                     </div>
                     <span class="text-gray-900 text-xs font-[500] mt-8">مقدار موجود : {{food.existing_amount}}</span>
                   </div>
-                  <div class="food-card__price my-20">
+                  <div class="product-card__price my-20">
                     <span class="text-gray-400 text-md font-[600] text-decoration-line-through">قیمت: {{ food.price }} افـ</span>
                   </div>
                   <div class="flex felx-between gap-20">
                     <button><span class="ph-fill ph-heart"></span></button>
-                    <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart food-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-10 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+                    <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-10 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
                   </div>
                 </div>
               </div>
@@ -149,9 +149,9 @@
             <div class="top-selling-food-slider arrow-style-two">
               {% for food in top_selling_foods %}
                 <div data-aos="fade-up" data-aos-duration="200">
-                  <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-                    <a href="{% url 'marketplace:food_detail' food.id %}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="food-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
-                    <div class="food-card__content mt-16">
+                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                    <a href="{% url 'marketplace:food_detail' food.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                    <div class="product-card__content mt-16">
                       <div class="flex items-center gap-6">
                         <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
                       </div>
@@ -169,10 +169,10 @@
                       <br>
                       <span class="text-gray-900 text-xs font-[500] mt-8">مقدار موجود : {{food.existing_amount}}</span>
                       <!-- food price -->
-                      <div class="food-card__price my-20">
+                      <div class="product-card__price my-20">
                         <span class="text-gray-400 text-md font-[600] text-decoration-line-through">قیمت: {{ food.price }} افـ</span>
                       </div>
-                      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart food-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+                      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
                     </div>
                   </div>
                 </div>
@@ -237,9 +237,9 @@
               <!--  -->
               {% for food in trending_foods %}
                 <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-                  <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-                    <a href="{% url 'marketplace:food_detail' food.id %}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="food-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
-                    <div class="food-card__content mt-16">
+                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                    <a href="{% url 'marketplace:food_detail' food.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                    <div class="product-card__content mt-16">
                       <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
                       <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:food_detail' food.id %}" class="link text-line-2" tabindex="0">{{ food.name }}</a></h6>
                       <div class="flex items-center gap-6">
@@ -250,11 +250,11 @@
                       <span class="py-2 px-8 text-xs rounded-[50rem] text-main-two-600 bg-main-two-50 mt-16">{{ food.vendor.vendor_name }}</span>
                       <br>
                       <span class="text-gray-900 text-xs font-[500] mt-8">مقدار موجود : {{food.existing_amount}}</span>
-                      <div class="food-card__price mt-16 mb-30">
+                      <div class="product-card__price mt-16 mb-30">
                         <span class="text-gray-400 text-md font-[600] text-decoration-line-through">قیمت: {{ food.price }} افـ</span>
                       </div>
                       
-                      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart food-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+                      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
                     </div>
                   </div>
                 </div>
@@ -268,9 +268,9 @@
           <div class="row g-12">
             {% for food in trending_foods %}
               <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-                <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-                  <a href="{% url 'marketplace:food_detail' food.id %}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="food-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/food-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-                  <div class="food-card__content mt-16">
+                <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                  <a href="{% url 'marketplace:food_detail' food.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/food-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                  <div class="product-card__content mt-16">
                     <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
                     <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:food_detail' food.id %}" class="link text-line-2" tabindex="0">Instax Mini 12 Instant Film Camera - Green</a></h6>
                     <div class="flex items-center gap-6">
@@ -278,11 +278,11 @@
                         <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
                       </div><span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-xs font-[500] text-gray-500">(12K)</span>
                     </div><span class="py-2 px-8 text-xs rounded-[50rem] text-main-two-600 bg-main-two-50 mt-16">Fulfilled by Marketpro</span>
-                    <div class="food-card__price mt-16 mb-30">
+                    <div class="product-card__price mt-16 mb-30">
                       <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                       <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
                     </div>
-                    <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart food-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+                    <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
 
                     <span class="text-neutral-600">Delivered by <span class="text-main-two-600">Aug 02</span></span>
                   </div>
@@ -296,9 +296,9 @@
           <div class="row g-12">
             {% for food in trending_foods %}
               <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-                <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-                  <a href="{% url 'marketplace:food_detail' food.id %}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="food-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/food-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
-                  <div class="food-card__content mt-16">
+                <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                  <a href="{% url 'marketplace:food_detail' food.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="images/food-two-img1.png" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                  <div class="product-card__content mt-16">
                     <span class="text-success-600 bg-success-50 text-sm font-[500] py-4 px-8">19%OFF</span>
                     <h6 class="title text-lg font-[600] my-16"><a href="food{% url 'marketplace:food_detail' food.id %}" class="link text-line-2" tabindex="0">Instax Mini 12 Instant Film Camera - Green</a></h6>
                     <div class="flex items-center gap-6">
@@ -306,7 +306,7 @@
                         <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
                       </div><span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-xs font-[500] text-gray-500">(12K)</span>
                     </div><span class="py-2 px-8 text-xs rounded-[50rem] text-main-two-600 bg-main-two-50 mt-16">Fulfilled by Marketpro</span>
-                    <div class="food-card__price mt-16 mb-30">
+                    <div class="product-card__price mt-16 mb-30">
                       <span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                       <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span>
                     </div>
@@ -382,9 +382,9 @@
             <div class="top-selling-food-slider arrow-style-two">
               {% for food in top_selling_foods %}
                 <div data-aos="fade-up" data-aos-duration="200">
-                  <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-                    <a href="{% url 'marketplace:food_detail' food.id %}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="food-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
-                    <div class="food-card__content mt-16">
+                  <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                    <a href="{% url 'marketplace:food_detail' food.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-main-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروخته شد</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                    <div class="product-card__content mt-16">
                       <div class="flex items-center gap-6">
                         <span class="text-xs font-[500] text-gray-500">4.8</span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[500] text-gray-500">(17k)</span>
                       </div>
@@ -404,10 +404,10 @@
                       <span class="text-gray-900 text-xs font-[500] mt-8">مقدار موجود : {{food.existing_amount}}</span>
                       <!-- food price -->
 
-                      <div class="food-card__price my-20">
+                      <div class="product-card__price my-20">
                         <span class="text-gray-400 text-md font-[600] text-decoration-line-through">قیمت: {{ food.price }} افـ</span>
                       </div>
-                      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart food-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+                      <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
                     </div>
                   </div>
                 </div>
@@ -434,9 +434,9 @@
         <div class="row g-12">
           {% for food in recently_viewed %}
             <div class="custom-2xl:w-2/12 flex-grow-0 flex-shrink-0 basis-auto 2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto xl:w-4/12 flex-grow-0 flex-shrink-0 basis-auto md:w-6/12 flex-grow-0 flex-shrink-0 basis-auto" data-aos="fade-up" data-aos-duration="200">
-              <div class="food-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-                <a href="{% url 'marketplace:food_detail' food.id %}" class="food-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="food-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
-                <div class="food-card__content mt-16">
+              <div class="product-card h-full p-16 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+                <a href="{% url 'marketplace:food_detail' food.id %}" class="product-card__thumb flex items-center justify-center rounded-8 bg-gray-50 relative"><span class="product-card__badge bg-tertiary-600 px-8 py-4 text-sm text-white absolute inset-inline-start-0 inset-block-start-0">فروشنده تاپ</span><img src="{{ food.image.url }}" alt="Image" class="!w-auto max-w-[unset]" /></a>
+                <div class="product-card__content mt-16">
                   <h6 class="title text-lg font-[600] my-16"><a href="{% url 'marketplace:food_detail' food.id %}" class="link text-line-2" tabindex="0">{{ food.name }}</a></h6>
                   <div class="flex items-center gap-6">
                     <div class="flex items-center gap-8">
@@ -447,10 +447,10 @@
                   <span class="py-2 px-8 text-xs rounded-[50rem] text-main-two-600 bg-main-two-50 mt-16">{{ food.vendor.vendor_name }}</span>
                   <br>
                   <span class="text-gray-900 text-xs font-[500] mt-8">مقدار موجود : {{food.existing_amount}}</span>
-                  <div class="food-card__price mt-16 mb-30">
+                  <div class="product-card__price mt-16 mb-30">
                     <span class="text-gray-400 text-md font-[600] text-decoration-line-through">قیمت: {{ food.price }} افـ</span>
                   </div>
-                  <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart food-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
+                  <button type="button" data-addtocarturl="{% url 'cart:add_to_cart' food.id %}" data-food-id="{{ food.id }}" class="add-to-cart product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex items-center justify-center gap-8 font-[500]" tabindex="0"><i class="ph ph-shopping-cart"></i> افزودن به سبد خرید</button>
                 </div>
               </div>
             </div>

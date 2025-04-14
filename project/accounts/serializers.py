@@ -56,8 +56,6 @@ class VendorCreateSerializer(ModelSerializer):
         model = Vendor
         fields = ["vendor_name"]
 
-    def save(self, **kwargs):
-        return super().save(**kwargs)
 
 
 class VendorManageSerializer(ModelSerializer):

@@ -24,11 +24,11 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("marketplace/", include("marketplace.urls", namespace="marketplace")),
     path("order/", include("order.urls", namespace="order")),
-    path("", include("main.urls", namespace="home")),
-    path("account/", include("accounts.urls", namespace="accounts")),
     path("vendor/", include("vendor.urls", namespace="vendor")),
+    path("account/", include("accounts.urls", namespace="accounts")),
     path("shopping-cart/", include("cart.urls", namespace="cart")),
     path("api/", include("api.urls", namespace="api")),
+    path("", include("main.urls", namespace="home")),
     path("__debug__/", include(debug_toolbar.urls)),
 ]
 # in foodion, NGINX does it, but in debug mode, django should do

@@ -19,6 +19,7 @@ def marketplace(request):
     all_foods = Food.objects.filter(is_available=True)
     foods = all_foods
 
+    # filter by category
     if request.method == "GET" and "category" in request.GET:
         foods = foods.filter(category__name=request.GET["category"])
     
@@ -31,6 +32,7 @@ def marketplace(request):
         # search handling
         if "query" in request.POST:
             foods = foods.filter(name__icontains=request.POST["query"])
+            
             paginated = Paginator(foods, 6)
             total_pages = [i + 1 for i in range(paginated.num_pages)]
             total_found = foods.count()

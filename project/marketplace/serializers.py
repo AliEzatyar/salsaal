@@ -6,10 +6,17 @@ from marketplace.models import Food, Rating
 
 class FoodSerializer(serializers.ModelSerializer):
     vendor= serializers.PrimaryKeyRelatedField(read_only=True)
+    vendor_name = serializers.SerializerMethodField('get_vendor_name')
+    
+    
     
     class Meta:
         model = Food
         fields = "__all__"
+
+
+    def get_vendor_name(self,obj):
+        return obj.vendor.vendor_name
 
 
     def create(self, validated_data):

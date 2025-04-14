@@ -9,7 +9,7 @@
           <h4 class="text-center">مدیریت اجناس شما</h4>
           <!-- CRUD Buttons -->
           <div class="flex justify-between mb-6">
-            <a href="{% url 'vendor:add_food' %}" class="bg-green-600 text-white px-5 py-2 rounded-lg shadow hover:bg-green-700">افزودن محصول</a>
+            <a href="{% url 'vendor:add_food' %}" class="bg-green-600 text-white px-5 py-2 rounded-lg shadow hover:bg-green-700">افزودن غذا</a>
           </div>
 
           <!-- Table of foods -->
@@ -18,12 +18,10 @@
               <thead class="bg-gray-100 text-gray-700">
                 <tr>
                   <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">#</th>
-                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">نام محصول</th>
+                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">نام غذا</th>
                   <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">قیمت</th>
                   <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">کتگوری</th>
-                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">گدام نمبر</th>
                   <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">عکس</th>
-                  <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">مقدار موجود</th>
                   <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">قابل دسترس</th>
                   <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">ویرایش کردن</th>
                   <th class="px-6 py-3 text-gray-600 font-semibold border-b text-center">حذف کردن</th>
@@ -39,11 +37,9 @@
                     <td class="px-6 py-4 border-b text-center">{{ food.price }}</td>
                     <td class="px-6 py-4 border-b text-center">{{ food.category.name }}</td>
 
-                    <td class="px-6 py-4 border-b text-center">{{ food.inventory }}</td>
                     <td class="px-6 py-4 border-b flex justify-center items-center">
                       <img class="img-thumbnail" style="width: 50px;height: 50px; padding: 5px 5px;" src="{{ food.image.url }}" alt="" />
                     </td>
-                    <td class="px-6 py-4 border-b text-center">{{ food.existing_amount }}</td>
                     
                     <td class="px-6 py-4 border-b text-center">
                       <span class="text-lg text-green-600 px-3 py-1 rounded-full text-xs">

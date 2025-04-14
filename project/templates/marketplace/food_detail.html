@@ -14,50 +14,50 @@
             <a href="{% url 'main:home' %}" class="text-gray-900 flex items-center gap-8 hover-text-main-two-600"><i class="ph ph-house"></i> صفحه اصلی</a>
           </li>
           <i class="ph ph-caret-left"></i> <!-- Maintained correct arrow direction -->
-          <li class="text-sm text-main-two-600">جزییات کالا</li>
+          <li class="text-sm text-main-two-600">جزییات غذا</li>
           <li class="flex items-center"></li>
         </ul>
         <h6 class="mb-0">{{ food.name }}</h6>
       </div>
     </div>
   </div>
-  <section class="food-details py-80">
+  <section class="product-details py-80">
     <div class="container container-lg">
       <div class="row g-4">
         <div class="2xl:w-9/12 flex-grow-0 flex-shrink-0 basis-auto">
           <div class="row g-4">
             <div class="2xl:w-6/12 flex-grow-0 flex-shrink-0 basis-auto">
-              <div class="food-details__left">
+              <div class="product-details__left">
                 <!-- food images slider -->
-                <div class="food-details__thumb-slider border border-gray-100 rounded-16">
+                <div class="product-details__thumb-slider border border-gray-100 rounded-16">
                   <div class="">
-                    <div class="food-details__thumb flex items-center justify-center h-full">
+                    <div class="product-details__thumb flex items-center justify-center h-full">
                       <img src="{{ food.image.url }}" alt="Image" />
                     </div>
                   </div>
                   <div class="">
-                    <div class="food-details__thumb flex items-center justify-center h-full">
+                    <div class="product-details__thumb flex items-center justify-center h-full">
                       <img src="{{ food.image.url }}" alt="Image" />
                     </div>
                   </div>
                   <div class="">
-                    <div class="food-details__thumb flex items-center justify-center h-full">
+                    <div class="product-details__thumb flex items-center justify-center h-full">
                       <img src="{{ food.image.url }}" alt="Image" />
                     </div>
                   </div>
                   <div class="">
-                    <div class="food-details__thumb flex items-center justify-center h-full">
+                    <div class="product-details__thumb flex items-center justify-center h-full">
                       <img src="{{ food.image.url }}" alt="Image" />
                     </div>
                   </div>
                   <div class="">
-                    <div class="food-details__thumb flex items-center justify-center h-full">
+                    <div class="product-details__thumb flex items-center justify-center h-full">
                       <img src="{{ food.image.url }}" alt="Image" />
                     </div>
                   </div>
                 </div>
                 <div class="mt-24">
-                  <div class="food-details__images-slider">
+                  <div class="product-details__images-slider">
                     <div>
                       <div class="max-w-120 max-h-120 h-full flex items-center justify-center border border-gray-100 rounded-16 p-8">
                         <img src="{{ food.image.url }}" alt="Image" />
@@ -88,7 +88,7 @@
               </div>
             </div>
             <div class="2xl:w-6/12 flex-grow-0 flex-shrink-0 basis-auto">
-              <div class="food-details__content">
+              <div class="product-details__content">
                 <p class="mb-12 text-lg">{{ food.name }}</p>
                 <div class="flex items-center flex-wrap gap-12">
                   <div class="flex items-center gap-12 flex-wrap">
@@ -138,7 +138,7 @@
           </div>
         </div>
         <div class="2xl:w-3/12 flex-grow-0 flex-shrink-0 basis-auto">
-          <div class="food-details__sidebar py-40 px-32 border border-gray-100 rounded-16">
+          <div class="product-details__sidebar py-40 px-32 border border-gray-100 rounded-16">
             <div class="mb-32">
               <label for="delivery" class="h6 activePage mb-8 text-heading font-[600] block">شهر تحویل</label>
               <div class="flex items-center border border-gray-100 rounded-4 px-16">
@@ -172,7 +172,7 @@
 
             <div class="mt-32">
               <div class="px-8 py-8 bg-main-two-50 rounded-8 flex gap-12 mb-14">
-                <span class="w-32 h-32 bg-white text-main-two-600 rounded-[50%] flex items-center justify-center text-lg flex-shrink-0"><i class="ph-fill ph-truck"></i></span><span class="text-sm text-neutral-600">تحویل کننده: <span class="font-[600]">صلصال استور</span></span>
+                <span class="w-32 h-32 bg-white text-main-two-600 rounded-[50%] flex items-center justify-center text-lg flex-shrink-0"><i class="ph-fill ph-truck"></i></span><span class="text-sm text-neutral-600">تحویل کننده: <span class="font-[600]">سوشی فود</span></span>
               </div>
               <div class="px-8 py-8 bg-main-two-50 rounded-8 flex gap-12 mb-0">
                 <span class="w-32 h-32 bg-white text-main-two-600 rounded-[50%] flex items-center justify-center text-lg flex-shrink-0"><i class="ph-fill ph-storefront"></i></span><span class="text-sm text-neutral-600">فروشنده : <span class="font-[600]">{{ food.vendor.vendor_name }}</span></span>
@@ -206,8 +206,8 @@
         </div>
       </div>
       <div class="pt-80">
-        <div class="food-dContent border rounded-24">
-          <div class="food-dContent__header border-b border-gray-100 flex-between flex-wrap gap-16">
+        <div class="product-dContent border rounded-24">
+          <div class="product-dContent__header border-b border-gray-100 flex-between flex-wrap gap-16">
             <ul class="nav common-tab nav-pills mb-3" id="pills-tab" role="tablist">
               <li class="nav-item" role="presentation">
                 <button class="nav-link bt-tb-btn active" data-target="#pills-description" id="pills-description-tab" data-bs-toggle="pill" data-bs-target="#pills-description" type="button" role="tab" aria-controls="pills-description" aria-selected="true">جزییات</button>
@@ -218,18 +218,18 @@
             </ul><a href="index.html" class="btn bg-color-two rounded-16 flex items-center gap-8 text-main-two-600 hover-bg-main-two-two-600 hover-text-white"><img src="images/satisfaction-icon.png" alt="Image" /> 100% Satisfaction Guaranteed</a>
           </div>
           <!-- description tab -->
-          <div class="food-dContent__box">
+          <div class="product-dContent__box">
             <div class="tab-content" id="pills-tabContent">
               <div class="tab-pane bt-tab-pane fade show active" id="pills-description" role="tabpanel" aria-labelledby="pills-description-tab" tabindex="0">
                 <div class="mb-40">
-                  <h6 class="mb-24">جزییات کالا</h6>
+                  <h6 class="mb-24">جزییات غذا</h6>
                   {{ food.description }}
                   <ul class="mt-32">
                     <li class="text-gray-400 mb-4">ساخت چین</li>
                   </ul>
                 </div>
                 <div class="mb-40">
-                  <h6 class="mb-24">ویژه گی های کالا</h6>
+                  <h6 class="mb-24">ویژه گی های غذا</h6>
                   <ul class="mt-32">
                     <li class="text-gray-400 mb-14 flex items-center gap-14">
                       <span class="w-20 h-20 bg-main-two-50 text-main-two-600 text-xs flex items-center justify-center rounded-[50%]"><i class="ph ph-check"></i></span><span class="text-heading font-[500]">کتگوری: <span class="text-gray-500">{{ food.category }}</span></span>
@@ -278,7 +278,7 @@
                     {% endfor %}
                     <div class="mt-56">
                       <div class="">
-                        <h6 class="mb-24">نظر شما</h6><span class="text-heading mb-8">این محصول چگونه است؟</span>
+                        <h6 class="mb-24">نظر شما</h6><span class="text-heading mb-8">این غذا چگونه است؟</span>
                         <div class="flex items-center gap-8">
                           <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-15 font-[500] text-warning-600 flex"><i class="ph-fill ph-star"></i></span>
                         </div>
@@ -379,134 +379,134 @@
       </div>
       <div class="new-arrival__slider arrow-style-two">
         <div>
-          <div class="food-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-            <a href="food-details.html" class="food-card__thumb flex items-center justify-center"><img src="images/food-img7.png" alt="Image" /></a>
-            <div class="food-card__content p-sm-2 w-full">
+          <div class="product-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+            <a href="food-details.html" class="product-card__thumb flex items-center justify-center"><img src="images/food-img7.png" alt="Image" /></a>
+            <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2">C-500 Antioxidant Protect Dietary Supplement</a></h6>
               <div class="flex items-center gap-4">
                 <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
-              <div class="food-card__content mt-12">
-                <div class="food-card__price mb-8">
+              <div class="product-card__content mt-12">
+                <div class="product-card__price mb-8">
                   <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span><span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="food-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
         </div>
         <div>
-          <div class="food-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-            <span class="food-card__badge bg-danger-600 px-8 py-4 text-sm text-white">Sale 50%</span><a href="food-details.html" class="food-card__thumb flex items-center justify-center"><img src="images/food-img8.png" alt="Image" /></a>
-            <div class="food-card__content p-sm-2 w-full">
+          <div class="product-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+            <span class="product-card__badge bg-danger-600 px-8 py-4 text-sm text-white">Sale 50%</span><a href="food-details.html" class="product-card__thumb flex items-center justify-center"><img src="images/food-img8.png" alt="Image" /></a>
+            <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2">Marcel's Modern Pantry Almond Unsweetened</a></h6>
               <div class="flex items-center gap-4">
                 <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
-              <div class="food-card__content mt-12">
-                <div class="food-card__price mb-8">
+              <div class="product-card__content mt-12">
+                <div class="product-card__price mb-8">
                   <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span><span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="food-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
         </div>
         <div>
-          <div class="food-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-            <span class="food-card__badge bg-danger-600 px-8 py-4 text-sm text-white">Sale 50%</span><a href="food-details.html" class="food-card__thumb flex items-center justify-center"><img src="images/food-img9.png" alt="Image" /></a>
-            <div class="food-card__content p-sm-2 w-full">
+          <div class="product-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+            <span class="product-card__badge bg-danger-600 px-8 py-4 text-sm text-white">Sale 50%</span><a href="food-details.html" class="product-card__thumb flex items-center justify-center"><img src="images/food-img9.png" alt="Image" /></a>
+            <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2">O Organics Milk, Whole, Vitamin D</a></h6>
               <div class="flex items-center gap-4">
                 <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
-              <div class="food-card__content mt-12">
-                <div class="food-card__price mb-8">
+              <div class="product-card__content mt-12">
+                <div class="product-card__price mb-8">
                   <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span><span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="food-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
         </div>
         <div>
-          <div class="food-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-            <span class="food-card__badge bg-info-600 px-8 py-4 text-sm text-white">Best Sale</span><a href="food-details.html" class="food-card__thumb flex items-center justify-center"><img src="images/food-img10.png" alt="Image" /></a>
-            <div class="food-card__content p-sm-2 w-full">
+          <div class="product-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+            <span class="product-card__badge bg-info-600 px-8 py-4 text-sm text-white">Best Sale</span><a href="food-details.html" class="product-card__thumb flex items-center justify-center"><img src="images/food-img10.png" alt="Image" /></a>
+            <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2">Whole Grains and Seeds Organic Bread</a></h6>
               <div class="flex items-center gap-4">
                 <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
-              <div class="food-card__content mt-12">
-                <div class="food-card__price mb-8">
+              <div class="product-card__content mt-12">
+                <div class="product-card__price mb-8">
                   <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span><span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="food-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
         </div>
         <div>
-          <div class="food-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-            <a href="food-details.html" class="food-card__thumb flex items-center justify-center"><img src="images/food-img11.png" alt="Image" /></a>
-            <div class="food-card__content p-sm-2 w-full">
+          <div class="product-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+            <a href="food-details.html" class="product-card__thumb flex items-center justify-center"><img src="images/food-img11.png" alt="Image" /></a>
+            <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2">Lucerne Yogurt, Lowfat, Strawberry</a></h6>
               <div class="flex items-center gap-4">
                 <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
-              <div class="food-card__content mt-12">
-                <div class="food-card__price mb-8">
+              <div class="product-card__content mt-12">
+                <div class="product-card__price mb-8">
                   <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span><span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="food-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
         </div>
         <div>
-          <div class="food-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-            <span class="food-card__badge bg-danger-600 px-8 py-4 text-sm text-white">Sale 50%</span><a href="food-details.html" class="food-card__thumb flex items-center justify-center"><img src="images/food-img12.png" alt="Image" /></a>
-            <div class="food-card__content p-sm-2 w-full">
+          <div class="product-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+            <span class="product-card__badge bg-danger-600 px-8 py-4 text-sm text-white">Sale 50%</span><a href="food-details.html" class="product-card__thumb flex items-center justify-center"><img src="images/food-img12.png" alt="Image" /></a>
+            <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2">Nature Valley Whole Grain Oats and Honey Protein</a></h6>
               <div class="flex items-center gap-4">
                 <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
-              <div class="food-card__content mt-12">
-                <div class="food-card__price mb-8">
+              <div class="product-card__content mt-12">
+                <div class="product-card__price mb-8">
                   <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span><span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="food-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>
         </div>
         <div>
-          <div class="food-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
-            <span class="food-card__badge bg-info-600 px-8 py-4 text-sm text-white">Best Sale</span><a href="food-details.html" class="food-card__thumb flex items-center justify-center"><img src="images/food-img10.png" alt="Image" /></a>
-            <div class="food-card__content p-sm-2 w-full">
+          <div class="product-card h-full p-8 border border-gray-100 hover-border-main-two-600 rounded-16 relative transition-2">
+            <span class="product-card__badge bg-info-600 px-8 py-4 text-sm text-white">Best Sale</span><a href="food-details.html" class="product-card__thumb flex items-center justify-center"><img src="images/food-img10.png" alt="Image" /></a>
+            <div class="product-card__content p-sm-2 w-full">
               <h6 class="title text-lg font-[600] mt-12 mb-8"><a href="food-details.html" class="link text-line-2">Whole Grains and Seeds Organic Bread</a></h6>
               <div class="flex items-center gap-4">
                 <span class="text-main-two-600 text-md flex"><i class="ph-fill ph-storefront"></i></span> <span class="text-gray-500 text-xs">By Lucky Supermarket</span>
               </div>
-              <div class="food-card__content mt-12">
-                <div class="food-card__price mb-8">
+              <div class="product-card__content mt-12">
+                <div class="product-card__price mb-8">
                   <span class="text-heading text-md font-[600]">$14.99 <span class="text-gray-500 font-normal">/Qty</span></span><span class="text-gray-400 text-md font-[600] text-decoration-line-through">$28.99</span>
                 </div>
                 <div class="flex items-center gap-6">
                   <span class="text-xs font-[700] text-gray-600">4.8</span> <span class="text-15 font-[700] text-warning-600 flex"><i class="ph-fill ph-star"></i></span> <span class="text-xs font-[700] text-gray-600">(17k)</span>
-                </div><a href="cart.html" class="food-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
+                </div><a href="cart.html" class="product-card__cart btn bg-main-two-50 text-main-two-600 hover-bg-main-two-600 hover-text-white py-11 px-24 rounded-[50rem] flex items-center gap-8 mt-24 w-full justify-center">Add To Cart <i class="ph ph-shopping-cart"></i></a>
               </div>
             </div>
           </div>

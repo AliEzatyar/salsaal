@@ -248,9 +248,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             order=order
         ).delete()  # flush previous items and recreate new items
         # creating order item objects
-        for item in CartItem.objects.filter(cart=cart).select_related(
-            "food__vendor"
-        ):
+        for item in CartItem.objects.filter(cart=cart).select_related("food__vendor"):
             order_item = OrderItem.objects.get_or_create(
                 order=order,
                 food=item.food,
@@ -273,17 +271,18 @@ class OrderViewSet(viewsets.ModelViewSet):
         response = FileResponse(
             buffer,
             as_attachment=True,
-                                                                                                                                                                                                                                      )
-        response["Content-Disposition"] = "attachment;"+f" filename=order_{order.user.first_name}_{order.id}.pdf"
-        
+        )
+        response["Content-Disposition"] = (
+            "attachment;" + f" filename=order_{order.user.first_name}_{order.id}.pdf"
+        )
 
         return response
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['user'] = self.request.user.id
+        context["user"] = self.request.user.id
         return context
- 
+
 
 class OrderItemListAPIView(views.APIView):
 
@@ -324,7 +323,7 @@ class FoodReadViewSet(viewsets.ReadOnlyModelViewSet):
     # filering
     filterset_class = FoodFilterSet
     # searching
-    search_fields = ["name", "category__name", "description"]
+    search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
 
 
 class RatingViewSet(viewsets.ModelViewSet):
@@ -406,7 +405,7 @@ class CartApiView(views.APIView):
         items = data["items"]
         for item_id, quantity in items:
             item = CartItem.objects.filter(id=item_id).first()
-            if item and item.food.is_available :
+            if item and item.food.is_available:
                 item.quantity = quantity
                 item.save()
             else:
@@ -428,7 +427,7 @@ class CartApiView(views.APIView):
         cart = self.request.user.cart
         food_id = self.request.data["food-id"]
         food = Food.objects.filter(pk=food_id).first()
-        if food and food.is_available :
+        if food and food.is_available:
             state = CartItem.objects.get_or_create(cart=cart, food=food)
             if state[1]:
                 # if item is created now and added
@@ -536,3 +535,39 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context["vendor"] = self.request.user.vendor.id
         return context
+
+
+"""Advanced search"""
+
+
+class SearchApiView(views.APIView):
+    """This api view handles searching for both food and vendor objects"""
+
+    def get(self, *args, **kwargs):
+        query = self.request.query_params.get("query", None)
+        
+        # handling empty query
+        if not query or query in ('',' '):
+            return Response(
+                {"error": "query is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # search
+        foods = Food.objects.filter(name__icontains=query, is_available=True)
+        foods_serializer = FoodSerializer(foods, many=True)
+
+        # preparing results
+        vendors = Vendor.objects.filter(
+            vendor_name__icontains=query, is_approved=True, user__is_active=True
+        )
+        vendors_serializer = VendorSerializer(vendors, many=True)
+        total_found = vendors.count() + foods.count()
+        # success
+        return Response(
+            {
+                "total": total_found,
+                "foods": foods_serializer.data,
+                "vendors": vendors_serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )

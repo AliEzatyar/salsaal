@@ -168,13 +168,14 @@ def add_food(request):
                 food.vendor = request.user.vendor
                 food.save()
                 # successfull
-                messages.success(request, "محصول موفقانه ثبت شد")
+                messages.success(request, "غذا موفقانه ثبت شد")
                 return redirect("vendor:vendor_foods")
             except Exception as e:
-                messages.error(request, "خطا در ثبت محصول!")
+                messages.error(request, "خطا در ثبت غذا!")
+                
                 return render(request, "vendor/add_food.html", context=locals())
         # there are form errors
-        messages.error(request, "خطا در ثبت محصول!")
+        messages.error(request, "خطا در ثبت غذا!")
         return render(request, "vendor/add_food.html", context=locals())
     # GET
     form = FoodForm()
@@ -188,7 +189,7 @@ def edit_food(request, id):
     food = Food.objects.filter(id=id, vendor=request.user.vendor).first()
     if not food:
         # redirect the vendor back to catalog builder if no such food
-        messages.error(request, "چنین محصولی وجود ندارد!")
+        messages.error(request, "چنین غذای وجود ندارد!")
         return redirect("vendor:vendor_foods")
 
     # POST
@@ -197,7 +198,7 @@ def edit_food(request, id):
         if form.is_valid():
             form.save()
             # successful
-            messages.success(request, "جزییات محصول تغییر یافت")
+            messages.success(request, "جزییات غذا تغییر یافت")
             return redirect("vendor:vendor_foods")
 
         # there are form errors
@@ -216,10 +217,10 @@ def delete_food(request, id):
     food = Food.objects.filter(id=id, vendor=request.user.vendor).first()
     if food:
         food.delete()
-        messages.success(request, "محصول موفقانه حذف گردید.")
+        messages.success(request, "غذا موفقانه حذف گردید.")
         return redirect("vendor:vendor_foods")
     else:
-        messages.error(request, "چنین محصولی وجود ندارد!")
+        messages.error(request, "چنین غذای وجود ندارد!")
     return redirect("vendor:vendor_foods")
 
 

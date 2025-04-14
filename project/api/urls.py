@@ -11,6 +11,7 @@ from .views import (
     CartApiView,
     VendorAPIView,
     VendorFoodsManageViewSet,
+    SearchApiView,
 )
 
 
@@ -66,5 +67,6 @@ urlpatterns = [
         VendorAPIView.as_view(),
         name="vendor",
     ),
+    # full search
+    path("search/", SearchApiView.as_view(),name='full_search'),
 ]
-
