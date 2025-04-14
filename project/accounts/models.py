@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from django.contrib.gis.db import models as g_models
+from django.contrib.gis.geos import Point
 
 SHOP = 1
 CUSTOMER = 2
@@ -95,7 +97,7 @@ class User(AbstractBaseUser):
         return role
 
 
-class UserProfile(models.Model):
+class UserProfile(g_models.Model):
     user = models.OneToOneField(
         "accounts.User",
         on_delete=models.CASCADE,
@@ -112,8 +114,15 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     phone = models.CharField(max_length=12,null=True,blank=True)
+    location = g_models.PointField(null=True, blank=True, srid=4326)
+
     def __str__(self):
         return str(self.user)
 
+    def save(self,*args, **kwargs):
+        if self.lattitude and self.longtitiude:
+            self.location = Point(float(self.longtitiude),float(self.lattitude))
+        return super().save(*args, **kwargs)
+    
     def get_full_address(self):
         return self.address + ", " + self.city

@@ -6,7 +6,8 @@ from accounts.serializers import UserProfileSerializer
 class VendorSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField("get_rating")
     user_profile = UserProfileSerializer()
-
+    distance = serializers.SerializerMethodField("get_distance")
+    
     class Meta:
         model = Vendor
         fields = [
@@ -25,6 +26,10 @@ class VendorSerializer(serializers.ModelSerializer):
     def get_rating(self, obj):
         """returns total rating of the vendor"""
         return obj.overall_rating()
+
+    def get_distance(self, obj):
+        # obj.distance is a Distance object; convert to km/miles/etc.
+        return obj.distance.km if hasattr(obj, "distance") else None
 
     def update(self, instance, validated_data):
         """overriding to apply user profile update together with vendor"""

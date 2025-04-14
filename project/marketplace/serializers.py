@@ -7,8 +7,7 @@ from marketplace.models import Food, Rating
 class FoodSerializer(serializers.ModelSerializer):
     vendor= serializers.PrimaryKeyRelatedField(read_only=True)
     vendor_name = serializers.SerializerMethodField('get_vendor_name')
-    
-    
+    distance = serializers.SerializerMethodField('get_distance')
     
     class Meta:
         model = Food
@@ -18,6 +17,9 @@ class FoodSerializer(serializers.ModelSerializer):
     def get_vendor_name(self,obj):
         return obj.vendor.vendor_name
 
+    def get_distance(self, obj):
+        # obj.distance is a Distance object; convert to km/miles/etc.
+        return obj.distance.km if hasattr(obj, "distance") else None
 
     def create(self, validated_data):
         validated_data['vendor'] = Vendor.objects.get(id=self.context['vendor'])

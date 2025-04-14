@@ -42,6 +42,10 @@ from vendor.serializers import VendorSerializer
 from marketplace.serializers import FoodSerializer, RatingSerializer
 from api.backends import FoodFilterSet
 from api.permissions import IsVendorOfFood
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
+
 
 """Account API Views"""
 
@@ -541,27 +545,54 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
 
 
 class SearchApiView(views.APIView):
-    """This api view handles searching for both food and vendor objects"""
+    """This api view handles searching for both food and vendor objects considering distance"""
 
     def get(self, *args, **kwargs):
         query = self.request.query_params.get("query", None)
-        
+        log = self.request.query_params.get("long", None)
+        lat = self.request.query_params.get("lat", None)
+        max_distance = self.request.query_params.get("max_distance", 5)
+
+        # determinig user location
+        try:
+            if lat and log:
+                user_location = Point(float(log), float(lat), srid=4326)
+            else:
+                user_location = self.request.user.profile.location
+        except:
+            Response(
+                {"error": "invalid location data"}, status=status.HTTP_400_BAD_REQUEST
+            )
+            
         # handling empty query
-        if not query or query in ('',' '):
+        if not query or not query.strip():
             return Response(
                 {"error": "query is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # search
-        foods = Food.objects.filter(name__icontains=query, is_available=True)
+        # search for foods
+        foods = Food.objects.filter(
+            name__icontains=query, is_available=True
+        ).select_related("vendor__user_profile")
+
+        foods = foods.annotate(
+            distance=Distance("vendor__user_profile__location", user_location)
+        )
+        # limiting distance
+        foods = foods.filter(distance__lte=D(km=max_distance))
         foods_serializer = FoodSerializer(foods, many=True)
 
-        # preparing results
-        vendors = Vendor.objects.filter(
-            vendor_name__icontains=query, is_approved=True, user__is_active=True
+        # vendors found by query and limiting distance
+        vendors = (
+            Vendor.objects.filter(
+                vendor_name__icontains=query, is_approved=True, user__is_active=True
+            )
+            .annotate(distance=Distance("user_profile__location", user_location))
+            .filter(distance__lte=D(km=max_distance))
         )
+        # preparing as json
         vendors_serializer = VendorSerializer(vendors, many=True)
-        total_found = vendors.count() + foods.count()
+        total_found = len(vendors) + len(foods)
         # success
         return Response(
             {

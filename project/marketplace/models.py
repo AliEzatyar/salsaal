@@ -63,6 +63,7 @@ class Food(models.Model):
         self.save()
         return sum(ratings)/len(ratings)
 
+
     def __str__(self):
         return self.name
 
