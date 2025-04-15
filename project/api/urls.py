@@ -13,7 +13,7 @@ from .views import (
     VendorFoodsManageViewSet,
     SearchApiView,
 )
-
+from carrier.views import CarrierOrdersApiView, CarrierViewSet
 
 # Router Setup for
 router = DefaultRouter()
@@ -22,11 +22,13 @@ router.register(r"orders", OrderViewSet)
 # rating viewset routing
 router.register(r"ratings", RatingViewSet)
 # food managemet routing
-router.register(
-    r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods"
-)
+router.register(r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods")
+# managing carriers as vendor
+router.register(r"carriers", CarrierViewSet)
+# router seeing order
+router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
 # food retrive  routing
-router.register(r"foods",FoodReadViewSet)
+router.register(r"foods", FoodReadViewSet)
 
 app_name = "api"
 
@@ -68,5 +70,5 @@ urlpatterns = [
         name="vendor",
     ),
     # full search
-    path("search/", SearchApiView.as_view(),name='full_search'),
+    path("search/", SearchApiView.as_view(), name="full_search"),
 ]

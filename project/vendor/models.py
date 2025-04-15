@@ -29,6 +29,7 @@ class Vendor(models.Model):
     )
     city = models.CharField(default="کابل", db_index=True)
     is_approved = models.BooleanField(default=False, db_index=True)
+    active_hours = models.CharField(max_length=255,default="11:00-2:00 PM,5:00-9:00 PM")  # comma seperated
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
@@ -68,5 +69,4 @@ class Vendor(models.Model):
                     # approved notification email sending
                     title = "We Are Sorry, Your Shop Is Not Approved!"
                     send_notification(self.user.email, title, template, context)
-
         return super(Vendor, self).save(*args, **kwargs)

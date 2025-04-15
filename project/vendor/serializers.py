@@ -20,6 +20,7 @@ class VendorSerializer(serializers.ModelSerializer):
             "is_approved",
             "created_at",
             "rating",
+            "distance"
         ]
         read_only_fields = ['user','is_approved','created_at','rating']
 
@@ -29,6 +30,7 @@ class VendorSerializer(serializers.ModelSerializer):
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
+        # distance attribute comes from annotate
         return obj.distance.km if hasattr(obj, "distance") else None
 
     def update(self, instance, validated_data):

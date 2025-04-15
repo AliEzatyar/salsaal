@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "vendor.apps.VendorConfig",
     "order.apps.OrderConfig",
     "api.apps.ApiConfig",
+    "carrier.apps.CarrierConfig",
 ]
 
 MIDDLEWARE = [

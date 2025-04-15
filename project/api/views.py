@@ -20,7 +20,6 @@ from rest_framework import viewsets, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-
 from django_filters.rest_framework import DjangoFilterBackend
 
 from accounts.serializers import (
@@ -224,6 +223,7 @@ def validate_token(request):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
+    """this view enables order create/edit/del by customer"""
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
 

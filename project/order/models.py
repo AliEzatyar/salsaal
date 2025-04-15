@@ -10,11 +10,11 @@ from django_jalali.db.models import jDateTimeField
 User = get_user_model()
 
 ORDER_STATUS_CHOICES = [
-    ("لغو", "لغو"),
-    ("انتظار", "انتظار"),
-    ("در حال اجرا", "در حال اجرا"),
-    ("در حال انتقال", "در حال انتقال"),
-    ("تحویل شد", "تحویل شد"),
+    ("cancelled", "cancelled"),
+    ("waiting", "waiting"),
+    ("processing", "processing"),
+    ("carrying", "carrying"),
+    ("submitted", "submitted"),
 ]
 PAYMENT_STATUS_CHOICES = [
     ("بدون پرداخت", "بدون پرداخت"),
@@ -41,7 +41,15 @@ class Order(models.Model):
     created = jDateTimeField(auto_now_add=True)
     updated = jDateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=2)
+    carrier = models.OneToOneField(
+        "carrier.Carrier",null=True, on_delete=models.SET_NULL, related_name="orders"
+    )
+    vendor = models.ForeignKey('vendor.Vendor',
+                               default=0,
+                               on_delete=models.CASCADE,
+                               related_name="orders")
     
+
     class Meta:
         indexes = [models.Index(fields=["-created"])]
 
@@ -51,9 +59,9 @@ class Order(models.Model):
 
     def set_total_items(self):
         """returns total items amount in order"""
-        self.total_items =  sum([item.quantity for item in self.items.all()])
+        self.total_items = sum([item.quantity for item in self.items.all()])
         self.save()
-        
+
     def get_vendors(self):
         """returns an string containing vendor names spillited by comma"""
         vendors = [
@@ -69,7 +77,7 @@ class Order(models.Model):
         return vendors
 
     def cancel_order(self):
-        """reseting food order """
+        """reseting food order"""
         self.status = ORDER_STATUS_CHOICES[0][0]  # cancelled
         self.save()
 
