@@ -45,7 +45,6 @@ class Order(models.Model):
         "carrier.Carrier",null=True, on_delete=models.SET_NULL, related_name="orders"
     )
     vendor = models.ForeignKey('vendor.Vendor',
-                               default=0,
                                on_delete=models.CASCADE,
                                related_name="orders")
     

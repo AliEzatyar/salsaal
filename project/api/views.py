@@ -224,6 +224,7 @@ def validate_token(request):
 
 class OrderViewSet(viewsets.ModelViewSet):
     """this view enables order create/edit/del by customer"""
+
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
 
@@ -242,11 +243,18 @@ class OrderViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """overriding this method to create order items from cart and calc totals"""
         data = request.data  # auto json to dict since restframework request object
+        cart = request.user.cart
+        # setting vendor id
+        if cart.calculate_total_items() <1:
+            return Response(
+                {"error": "no item in cart"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        data["vendor"] = CartItem.objects.filter(cart=cart).first().food.vendor.id
+        # creating the serializer
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)  # validating data
         self.perform_create(serializer)  # creating the order
         order = serializer.instance  # getting newly created order object by serializer
-        cart = request.user.cart
         order_items = []
         OrderItem.objects.filter(
             order=order
@@ -563,7 +571,7 @@ class SearchApiView(views.APIView):
             Response(
                 {"error": "invalid location data"}, status=status.HTTP_400_BAD_REQUEST
             )
-            
+
         # handling empty query
         if not query or not query.strip():
             return Response(
