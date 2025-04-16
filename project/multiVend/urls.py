@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -28,9 +29,15 @@ urlpatterns = [
     path("account/", include("accounts.urls", namespace="accounts")),
     path("shopping-cart/", include("cart.urls", namespace="cart")),
     path("api/", include("api.urls", namespace="api")),
+    # OpenAPI schema (raw)
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    # Swagger UI for easy interactive documentation
+    path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("", include("main.urls", namespace="home")),
     path("__debug__/", include(debug_toolbar.urls)),
 ]
+
+
 # in foodion, NGINX does it, but in debug mode, django should do
 if settings.DEBUG and settings.LOCAL:
     print("it is local settings")
