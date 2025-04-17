@@ -14,7 +14,116 @@ from .utils import get_vendor, vendor_tester
 from django.db.transaction import atomic
 from django.db.models.aggregates import Count
 from collections import Counter
+from accounts.models import CUSTOMER
+from .serializers import VendorSerializer
+from marketplace.serializers import FoodSerializer
+from api.permissions import IsVendorOfFood
+from rest_framework.decorators import action
+from rest_framework import permissions
+from rest_framework import viewsets
+from rest_framework import views
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
+from api.backends import FoodFilterSet
 # Create your views here.
+
+
+"""Vendor API Views"""
+
+
+class VendorAPIView(views.APIView):
+
+    def get(self, *args, **kwargs):
+        """returns all vendor details"""
+        role = self.request.user.role
+        if role == 2 or not hasattr(self.request.user, "vendor"):
+            # a normal user is not allowed
+            return Response(
+                {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        vendor = self.request.user.vendor
+        serializer = VendorSerializer(vendor)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, *args, **kwargs):
+        """enables vendor and related userprofile update"""
+        role = self.request.user.role
+        if role == 2:
+            # a normal user is not allowed
+            return Response(
+                {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        data = self.request.data
+        vendor = self.request.user.vendor
+        vendor_serializer = VendorSerializer(vendor, data=data, partial=True)
+
+        # validation
+        try:
+            vendor_serializer.is_valid(raise_exception=True)
+        except:
+            return Response(
+                {"errors": vendor_serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        vendor_serializer.save()
+        # success
+        return Response(vendor_serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, *args, **kwargs):
+        """overriden for converting to vendor"""
+        data = self.request.data
+        user = self.request.user
+        profile = user.profile
+        vendor = Vendor(user=user, user_profile=profile)
+        vendor.vendor_name = data["vendor_name"]
+        vendor.save()
+        user.role = SHOP
+        user.save()
+        return Response(status=status.HTTP_201_CREATED)
+
+    def delete(self, *args, **kwargs):
+        """overriden to cancel vendor account"""
+        user = self.request.user
+        vendor = user.vendor
+        user.role = CUSTOMER
+        vendor.delete()
+        user.save()
+        return Response(status=status.HTTP_200_OK)
+
+
+"""Food Management API Views"""
+
+
+class VendorFoodsManageViewSet(viewsets.ModelViewSet):
+    """this class enables CRUD operations on foods of a vendor"""
+
+    queryset = Food.objects.all()
+    serializer_class = FoodSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfFood]
+    # ordering
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["name", "price", "created_at"]
+    ordering = ["-created_at"]
+    # filering
+    filterset_class = FoodFilterSet
+    # searching
+    search_fields = ["name", "category__name", "description"]
+
+    def get_queryset(self):
+        """any queryset should be of the requesting vendor"""
+        query_set = self.queryset.filter(vendor__user__id=self.request.user.id)
+        return query_set
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["vendor"] = self.request.user.vendor.id
+        return context
 
 
 def become_seller(request):
@@ -222,6 +331,3 @@ def delete_food(request, id):
     else:
         messages.error(request, "چنین غذای وجود ندارد!")
     return redirect("vendor:vendor_foods")
-
-
-

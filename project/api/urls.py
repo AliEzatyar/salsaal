@@ -2,18 +2,20 @@ from django.urls import include, path
 from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
-from .views import (
-    OrderItemDetailAPIView,
-    OrderItemListAPIView,
-    OrderViewSet,
-    FoodReadViewSet,
-    RatingViewSet,
-    CartApiView,
-    VendorAPIView,
-    VendorFoodsManageViewSet,
-    SearchApiView,
-)
+from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
+from marketplace.views import RatingViewSet, FoodReadViewSet, SearchApiView
+from vendor.views import VendorFoodsManageViewSet, VendorAPIView
 from carrier.views import CarrierOrdersApiView, CarrierViewSet
+from cart.views import CartApiView
+from accounts.views import (
+    ForgotPassword,
+    RegisterUser,
+    ResendActivationOTP,
+    UpdateDeleteRetriveUser,
+    ResetPassword,
+    VerifyActivateAccountOTP,
+    VerifyForgotPasswordOTP,
+)
 
 # Router Setup for
 router = DefaultRouter()
@@ -36,25 +38,25 @@ urlpatterns = [
     # Account App
     path("account/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("account/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("account/register/", views.RegisterUser.as_view(), name="reg_user_api"),
+    path("account/register/", RegisterUser.as_view(), name="reg_user_api"),
     path(
         "account/activate-account/",
-        views.VerifyActivateAccountOTP.as_view(),
+        VerifyActivateAccountOTP.as_view(),
     ),
     path(
         "account/resend-activate-otp/",
-        views.ResendActivationOTP.as_view(),
+        ResendActivationOTP.as_view(),
     ),
     # path("account/register/vendor/", views.register_vendor, name="reg_vend_api"),
-    path("account/forgot-password/", views.ForgotPassword.as_view()),  # send otp
+    path("account/forgot-password/", ForgotPassword.as_view()),  # send otp
     path(
-        "account/forgot-password-verify-otp/", views.VerifyForgotPasswordOTP.as_view()
+        "account/forgot-password-verify-otp/", VerifyForgotPasswordOTP.as_view()
     ),  # check otp
-    path("account/reset-password/", views.ResetPassword.as_view()),  # reset password
+    path("account/reset-password/", ResetPassword.as_view()),  # reset password
     # path("account/manage-vendor/", views.manage_vendor, name="manage_vendor"),
     path(
         "account/user-detail/",
-        views.UpdateDeleteRetriveUser.as_view(),
+        UpdateDeleteRetriveUser.as_view(),
         name="user_detail",
     ),
     # Order and Food

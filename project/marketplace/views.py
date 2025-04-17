@@ -5,13 +5,174 @@ from django.core.paginator import Paginator
 from marketplace.models import Category, Food, Rating
 from main.utils import query_execution_time
 from accounts.utils import user_test
-from vendor.models import Vendor
 from django.db.models.aggregates import Count
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .forms import RatingForm
 from django.contrib.contenttypes.models import ContentType
+from .serializers import FoodSerializer
+from rest_framework import filters
+from rest_framework import permissions
+from rest_framework import status
+from rest_framework.response import Response
+from api.backends import FoodFilterSet
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets, views
+from vendor.models import Vendor
+from vendor.serializers import VendorSerializer
+from marketplace.serializers import FoodSerializer, RatingSerializer
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
+
+
+"""Marketplace API Views"""
+
+
+class FoodReadViewSet(viewsets.ReadOnlyModelViewSet):
+    """this view only handles representation of foods to normal users"""
+
+    queryset = Food.objects.filter(is_available=True)
+    serializer_class = FoodSerializer
+    permission_classes = [permissions.AllowAny]
+    # ordering
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["name", "price"]
+    ordering = ["price"]
+    # filering
+    filterset_class = FoodFilterSet
+    # searching
+    search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
+
+
+class RatingViewSet(viewsets.ModelViewSet):
+    queryset = Rating.objects.filter(enabled=True)
+    serializer_class = RatingSerializer
+    # ordering
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["created_at", "rating"]
+    ordering = ["created_at"]
+
+    def get_queryset(self):
+        """overriding in order to distinguish by vendor or food"""
+        object_id = self.request.query_params.get("obj_id", None)
+        query_set = self.queryset
+        if object_id:
+            query_set = self.queryset.filter(object_id=int(object_id))
+        return query_set
+
+    def create(self, request, *args, **kwargs):
+        rating_type = request.query_params.get("type")
+        obj_id = request.query_params.get("obj_id")
+        if not rating_type or not obj_id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        previous = Rating.objects.filter(
+            object_id=int(obj_id), user=request.user
+        ).first()
+        # handling indirect update
+        if previous:
+            # prviously exists, performing update
+            previous.comment = data["comment"]
+            previous.rating = data["rating"]
+            previous.enabled = True
+            previous.save()
+            return Response({"updated": True}, status=status.HTTP_200_OK)
+
+        else:
+            # performing new rating creation
+            serializer = self.get_serializer(data=data)
+            try:
+                serializer.is_valid(raise_exception=True)
+            except:
+                return Response(
+                    {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                )
+            self.perform_create(
+                serializer
+            )  # sets instance to serializer after creation
+            instance = serializer.instance
+            if rating_type == "vendor":
+                instance.content_type = ContentType.objects.get_for_model(Vendor)
+            elif rating_type == "food":
+                instance.content_type = ContentType.objects.get_for_model(Food)
+            instance.object_id = int(obj_id)
+            instance.enabled = True
+            instance.save()
+            # successfull creation
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+"""Advanced search"""
+
+
+class SearchApiView(views.APIView):
+    """This api view handles searching for both food and vendor objects considering distance"""
+
+    def get(self, *args, **kwargs):
+        query = self.request.query_params.get("query", None)
+        log = self.request.query_params.get("long", None)
+        lat = self.request.query_params.get("lat", None)
+        max_distance = self.request.query_params.get("max_distance", 5)
+
+        # determinig user location
+        try:
+            if lat and log:
+                user_location = Point(float(log), float(lat), srid=4326)
+            else:
+                user_location = self.request.user.profile.location
+        except:
+            Response(
+                {"error": "invalid location data"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # handling empty query
+        if not query or not query.strip():
+            return Response(
+                {"error": "query is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # search for foods
+        foods = Food.objects.filter(
+            name__icontains=query, is_available=True
+        ).select_related("vendor__user_profile")
+
+        foods = foods.annotate(
+            distance=Distance("vendor__user_profile__location", user_location)
+        )
+        # limiting distance
+        foods = foods.filter(distance__lte=D(km=max_distance))
+        foods_serializer = FoodSerializer(foods, many=True)
+
+        # vendors found by query and limiting distance
+        vendors = (
+            Vendor.objects.filter(
+                vendor_name__icontains=query, is_approved=True, user__is_active=True
+            )
+            .annotate(distance=Distance("user_profile__location", user_location))
+            .filter(distance__lte=D(km=max_distance))
+        )
+        # preparing as json
+        vendors_serializer = VendorSerializer(vendors, many=True)
+        total_found = len(vendors) + len(foods)
+        # success
+        return Response(
+            {
+                "total": total_found,
+                "foods": foods_serializer.data,
+                "vendors": vendors_serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 def marketplace(request):

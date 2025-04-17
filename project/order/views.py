@@ -10,6 +10,108 @@ import weasyprint
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from .serializers import OrderSerializer, OrderItemSerializer, Order
+from rest_framework.decorators import action
+from rest_framework import viewsets
+from rest_framework import views
+from rest_framework import status
+from rest_framework.response import Response
+
+
+"""Order API Views"""
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    """this view enables order create/edit/del by customer"""
+
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    @action(detail=True, methods=["patch"])
+    def cancel(self, request, pk=None):
+        order = self.get_object()
+        order.cancel_order()
+        return Response({"saved": True}, status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        """overrding it to get orders of specific user"""
+        user_id = self.request.user.id
+        new_queryset = self.queryset.filter(user_id=int(user_id))
+        return new_queryset
+
+    def create(self, request, *args, **kwargs):
+        """overriding this method to create order items from cart and calc totals"""
+        data = request.data  # auto json to dict since restframework request object
+        cart = request.user.cart
+        # setting vendor id
+        if cart.calculate_total_items() < 1:
+            return Response(
+                {"error": "no item in cart"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        data["vendor"] = CartItem.objects.filter(cart=cart).first().food.vendor.id
+        # creating the serializer
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)  # validating data
+        self.perform_create(serializer)  # creating the order
+        order = serializer.instance  # getting newly created order object by serializer
+        order_items = []
+        OrderItem.objects.filter(
+            order=order
+        ).delete()  # flush previous items and recreate new items
+        # creating order item objects
+        for item in CartItem.objects.filter(cart=cart).select_related("food__vendor"):
+            order_item = OrderItem.objects.get_or_create(
+                order=order,
+                food=item.food,
+                vendor=item.food.vendor,
+                quantity=item.quantity,
+                price=item.food.price,
+            )[0]
+            order_items.append(order_item)
+        order.calculate_total_price()  # setting total price field value
+        order.set_total_items()  # setting total items amount field value
+        # sending pdf file
+        buffer = BytesIO()
+        html = render_to_string("order/payment.html", {"order": order})
+        weasyprint.HTML(string=html).write_pdf(
+            buffer,
+            stylesheets=[
+                weasyprint.CSS(settings.STATICFILES_DIRS[0] + "css/payment.css")
+            ],
+        )
+        response = FileResponse(
+            buffer,
+            as_attachment=True,
+        )
+        response["Content-Disposition"] = (
+            "attachment;" + f" filename=order_{order.user.first_name}_{order.id}.pdf"
+        )
+
+        return response
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["user"] = self.request.user.id
+        return context
+
+
+class OrderItemListAPIView(views.APIView):
+
+    def get(self, request, order_id):
+        items = OrderItem.objects.filter(order_id=order_id)
+        serializer = OrderItemSerializer(items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OrderItemDetailAPIView(views.APIView):
+    def get(self, request, item_id):
+        item = OrderItem.objects.filter(id=item_id).first()
+        if item:
+            serializer = OrderItemSerializer(item)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "no_object_found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 @login_required

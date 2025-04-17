@@ -1,14 +1,71 @@
 import json
 from django.shortcuts import render
-from django.http.response import HttpResponse, JsonResponse
+from django.http.response import JsonResponse
 from marketplace.models import Food
 from .models import Cart, CartItem
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import redirect
+from .serializers import CartSerializer
+from rest_framework import views
+from rest_framework import status
+from rest_framework.response import Response
 
 
 # Create your views here.
+
+
+"""Cart API Views"""
+
+
+class CartApiView(views.APIView):
+
+    def get(self, *args, **kwargs):
+        """showing cart detail with items"""
+        cart = self.request.user.cart
+        serializer = CartSerializer(cart)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, *args, **kwargs):
+        """partial update for cart-items amount change"""
+        data = self.request.data
+        items = data["items"]
+        for item_id, quantity in items:
+            item = CartItem.objects.filter(id=item_id).first()
+            if item and item.food.is_available:
+                item.quantity = quantity
+                item.save()
+            else:
+                continue
+        # successful edit
+        cart = self.request.user.cart
+        serializer = CartSerializer(cart)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, *args, **kwargs):
+        """deleting a cart item"""
+        item = self.request.data["item-id"]
+        item = CartItem.objects.filter(id=item).first()
+        item.delete()
+        return Response(status=status.HTTP_200_OK)
+
+    def post(self, *args, **kwargs):
+        """overriding for adding new item to cart"""
+        cart = self.request.user.cart
+        food_id = self.request.data["food-id"]
+        food = Food.objects.filter(pk=food_id).first()
+        if food and food.is_available:
+            state = CartItem.objects.get_or_create(cart=cart, food=food)
+            if state[1]:
+                # if item is created now and added
+                cart_item = state[0]
+                # cart_item.save()
+                cart.items.add(cart_item)
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"error": "not_existing"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 @login_required
@@ -63,4 +120,3 @@ def edit_cart(request):
             continue
     cart = request.user.cart
     return JsonResponse({"saved": True, "foods_total_price": cart.calculate_total()})
-
