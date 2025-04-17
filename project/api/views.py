@@ -29,7 +29,7 @@ from accounts.serializers import (
     VendorManageSerializer,
     UserProfileSerializer,
 )
-from accounts.models import CUSTOMER, SHOP, User
+from accounts.models import CUSTOMER, SHOP, User, UserOtp
 from accounts.utils import send_email, send_forgot_email
 from order.models import Order, OrderItem
 from order.serializers import OrderItemSerializer, OrderSerializer
@@ -56,7 +56,7 @@ class RegisterUser(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        # sending the email
+        # sending the otp by email
         send_email(self.request, user)
 
 
@@ -76,6 +76,36 @@ class UpdateDeleteRetriveUser(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         """this ensures that only the user itself works on its account"""
         return self.request.user
+
+
+class VerifyOTP(views.APIView):
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        username = request.data.get("email")
+        otp_input = request.data.get("otp")
+        try:
+            user = User.objects.get(email=username)
+            user_otp = UserOtp.objects.get(user=user)
+
+            if user_otp.is_expired():
+                user_otp.delete()  # Optional: cleanup expired OTP
+                return Response({"error": "OTP has expired"}, status=400)
+            if user_otp.otp == str(otp_input):
+                user.is_active = True
+                user.save()
+                user_otp.delete()
+                return Response(
+                    {"message": "Account activated successfully"}, status=200
+                )
+            else:
+                return Response({"error": "Invalid OTP"}, status=400)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        except UserOtp.DoesNotExist:
+            return Response({"error": "OTP not found"}, status=404)
 
 
 @api_view(["POST"])
@@ -245,7 +275,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         data = request.data  # auto json to dict since restframework request object
         cart = request.user.cart
         # setting vendor id
-        if cart.calculate_total_items() <1:
+        if cart.calculate_total_items() < 1:
             return Response(
                 {"error": "no item in cart"}, status=status.HTTP_400_BAD_REQUEST
             )

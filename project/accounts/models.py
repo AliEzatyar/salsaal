@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
+from django.utils import timezone
 
 SHOP = 1
 CUSTOMER = 2
@@ -113,16 +114,31 @@ class UserProfile(g_models.Model):
     longtitiude = models.FloatField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    phone = models.CharField(max_length=12,null=True,blank=True)
+    phone = models.CharField(max_length=12, null=True, blank=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
 
     def __str__(self):
         return str(self.user)
 
-    def save(self,*args, **kwargs):
+    def save(self, *args, **kwargs):
         if self.lattitude and self.longtitiude:
-            self.location = Point(float(self.longtitiude),float(self.lattitude))
+            self.location = Point(float(self.longtitiude), float(self.lattitude))
         return super().save(*args, **kwargs)
-    
+
     def get_full_address(self):
         return self.address + ", " + self.city
+
+
+class UserOtp(models.Model):
+    user = models.OneToOneField(
+        "accounts.User",
+        on_delete=models.CASCADE,
+    )
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        expiration_minutes = 10
+        return timezone.now() > self.created_at + timezone.timedelta(
+            minutes=expiration_minutes
+        )

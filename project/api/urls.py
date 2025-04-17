@@ -37,6 +37,7 @@ urlpatterns = [
     path("account/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("account/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
     path("account/register/", views.RegisterUser.as_view(), name="reg_user_api"),
+    path("account/activate-account/", views.VerifyOTP.as_view(), name="activate_account"),
     path("account/register/vendor/", views.register_vendor, name="reg_vend_api"),
     path("account/forgot-password/", views.forgot_password),
     path("account/manage-vendor/", views.manage_vendor, name="manage_vendor"),

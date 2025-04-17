@@ -5,30 +5,41 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.core.exceptions import PermissionDenied
-from .models import CUSTOMER
+from .models import CUSTOMER, UserOtp
+import random
 
-def send_log_email(amount,type_=None):
+
+def send_log_email(amount, type_=None):
     if type_ == "db":
-        mail = EmailMessage(subject="Time token for db..", to=["aliahmadyar10@gmail.com"], body=amount)
+        mail = EmailMessage(
+            subject="Time token for db..", to=["aliahmadyar10@gmail.com"], body=amount
+        )
     else:
-        mail = EmailMessage(subject="total server Time token..", to=["aliahmadyar10@gmail.com"], body=amount)
+        mail = EmailMessage(
+            subject="total server Time token..",
+            to=["aliahmadyar10@gmail.com"],
+            body=amount,
+        )
     mail.send()
-    
+
+def generate_otp():
+    return random.randint(100000, 999999)
+
+
 def send_email(request, user):
     """
     sends an email to verify the new registered user
     """
-    current_site = get_current_site(request)
+    otp = generate_otp()
     mail_title = "Verify You Email"
     mail_body = render_to_string(
         "accounts/emails/account_verification.html",
         {
             "user": user,
-            "domain": current_site,
-            "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-            "token": default_token_generator.make_token(user),
+            "otp": otp,
         },
     )
+    UserOtp.objects.create(user=user,otp=otp)
     mail_to = user.email
     mail = EmailMessage(subject=mail_title, to=[mail_to], body=mail_body)
     mail.send()

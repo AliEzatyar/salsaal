@@ -1,5 +1,5 @@
 {% autoescape off %}
 Hi {{user.username}},
-Please click on the link bellow to confirm your email address.
-Link: http://{{domain}}{%url 'accounts:activate' uidb64=uid token=token  %}
+Please use the following OTP to activate your account:
+Your OTP: {{otp}}
 {% endautoescape %}
