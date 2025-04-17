@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
-from accounts.utils import send_email, user_test
+from accounts.utils import send_otp, user_test
 from marketplace.models import Category, Food, Rating
 from vendor.forms import FoodForm, VendorForm
 from vendor.models import Vendor

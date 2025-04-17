@@ -30,7 +30,7 @@ from accounts.serializers import (
     UserProfileSerializer,
 )
 from accounts.models import CUSTOMER, SHOP, User, UserOtp
-from accounts.utils import send_email, send_forgot_email
+from accounts.utils import send_otp, send_forgot_email
 from order.models import Order, OrderItem
 from order.serializers import OrderItemSerializer, OrderSerializer
 from cart.models import CartItem
@@ -57,7 +57,7 @@ class RegisterUser(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
         # sending the otp by email
-        send_email(self.request, user, typ=1)
+        send_otp(self.request, user, typ=1)
 
 
 class UpdateDeleteRetriveUser(generics.RetrieveUpdateDestroyAPIView):
@@ -108,6 +108,28 @@ class VerifyActivateAccountOTP(views.APIView):
             return Response({"error": "OTP not found"}, status=404)
 
 
+class ResendActivationOTP(views.APIView):
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, *args, **kwargs):
+        email = self.request.data.get("email", None)
+        if not email:
+            return Response(
+                {"error": "no email address"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        
+            
+        send_email(self.request, user)
+        return Response({"message":"OTP sent"}, status=status.HTTP_200_OK)
+
+
 class ForgotPassword(views.APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -119,7 +141,8 @@ class ForgotPassword(views.APIView):
                 {"error": "no_account_registered_with_this_email"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        send_email(self.request, user, typ=2)
+        
+        send_otp(self.request, user, typ=2)
         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
 
@@ -164,7 +187,7 @@ class ResetPassword(views.APIView):
                 return Response({"error": "OTP has expired"}, status=400)
 
             if user_otp.otp == str(otp_input):
-                new_password = self.request.data.get("password",None)
+                new_password = self.request.data.get("password", None)
                 if not new_password:
                     return Response({"error": "no password entered"}, status=400)
                 user_otp.delete()
@@ -180,8 +203,6 @@ class ResetPassword(views.APIView):
             return Response({"error": "User not found"}, status=404)
         except UserOtp.DoesNotExist:
             return Response({"error": "OTP not found"}, status=404)
-
-
 
 
 # not used
@@ -213,7 +234,7 @@ def register_vendor(request):
         vendor.user = user
         vendor.save()
         # sending the email to activate the account
-        send_email(request, user)
+        send_otp(request, user)
         # success
         return Response({"DONE": True}, status=status.HTTP_200_OK)
 
@@ -227,6 +248,7 @@ def register_vendor(request):
         },
         status=status.HTTP_400_BAD_REQUEST,
     )
+
 
 # depricated
 @api_view(["GET", "PUT", "DELETE", "PATCH"])

@@ -22,31 +22,34 @@ def send_log_email(amount, type_=None):
         )
     mail.send()
 
+
 def generate_otp():
     return random.randint(100000, 999999)
 
 
-def send_email(request, user,typ=1):
+def send_otp(request, user, typ=1):
     """
     sends an email to verify the new registered user
     """
     otp = generate_otp()
     mail_title = "Verify You Email"
     do = "activate your account"
-    
+
     if typ == 2:
         # forgot password
         mail_title = "Forgot Password"
         do = "reset your password"
     mail_body = render_to_string(
         "accounts/emails/account_verification.html",
-        {
-            "user": user,
-            "otp": otp,
-            "do": do
-        },
+        {"user": user, "otp": otp, "do": do},
     )
-    UserOtp.objects.create(user=user,otp=otp)
+    # removing previous otp if existing
+    pre_otp = UserOtp.objects.filter(user=user).first()
+    if pre_otp:
+        pre_otp.delete()
+    
+    # creating new otp
+    UserOtp.objects.create(user=user, otp=otp)
     mail_to = user.email
     mail = EmailMessage(subject=mail_title, to=[mail_to], body=mail_body)
     mail.send()

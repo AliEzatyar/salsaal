@@ -8,7 +8,7 @@ from accounts.forms import UserProfileForm, UserRegForm, UserEditForm
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
-from .utils import send_email
+from .utils import send_otp
 from .utils import send_forgot_email
 
 
@@ -30,7 +30,7 @@ def register_user(request):
             user.role = CUSTOMER
             user.set_password(cd["password"])
             user.save()
-            send_email(request, user)
+            send_otp(request, user)
 
             # everything successfull
             messages.success(
