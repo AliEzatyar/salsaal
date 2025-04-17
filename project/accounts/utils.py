@@ -26,17 +26,24 @@ def generate_otp():
     return random.randint(100000, 999999)
 
 
-def send_email(request, user):
+def send_email(request, user,typ=1):
     """
     sends an email to verify the new registered user
     """
     otp = generate_otp()
     mail_title = "Verify You Email"
+    do = "activate your account"
+    
+    if typ == 2:
+        # forgot password
+        mail_title = "Forgot Password"
+        do = "reset your password"
     mail_body = render_to_string(
         "accounts/emails/account_verification.html",
         {
             "user": user,
             "otp": otp,
+            "do": do
         },
     )
     UserOtp.objects.create(user=user,otp=otp)

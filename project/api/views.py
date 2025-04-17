@@ -57,7 +57,7 @@ class RegisterUser(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
         # sending the otp by email
-        send_email(self.request, user)
+        send_email(self.request, user, typ=1)
 
 
 class UpdateDeleteRetriveUser(generics.RetrieveUpdateDestroyAPIView):
@@ -78,15 +78,15 @@ class UpdateDeleteRetriveUser(generics.RetrieveUpdateDestroyAPIView):
         return self.request.user
 
 
-class VerifyOTP(views.APIView):
+class VerifyActivateAccountOTP(views.APIView):
 
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        username = request.data.get("email")
+        email = request.data.get("email")
         otp_input = request.data.get("otp")
         try:
-            user = User.objects.get(email=username)
+            user = User.objects.get(email=email)
             user_otp = UserOtp.objects.get(user=user)
 
             if user_otp.is_expired():
@@ -108,6 +108,83 @@ class VerifyOTP(views.APIView):
             return Response({"error": "OTP not found"}, status=404)
 
 
+class ForgotPassword(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, *args, **kwargs):
+        email = self.request.data.get("email")
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response(
+                {"error": "no_account_registered_with_this_email"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        send_email(self.request, user, typ=2)
+        return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
+
+
+class VerifyForgotPasswordOTP(views.APIView):
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        otp_input = request.data.get("otp")
+        try:
+            user = User.objects.get(email=email)
+            user_otp = UserOtp.objects.get(user=user)
+
+            if user_otp.is_expired():
+                user_otp.delete()  # Optional: cleanup expired OTP
+                return Response({"error": "OTP has expired"}, status=400)
+            if user_otp.otp == str(otp_input):
+                return Response({"message": "Correct Forgot password OTP "}, status=200)
+            else:
+                return Response({"error": "Invalid OTP"}, status=400)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        except UserOtp.DoesNotExist:
+            return Response({"error": "OTP not found"}, status=404)
+
+
+class ResetPassword(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, *args, **kwargs):
+        email = self.request.data.get("email")
+        otp_input = self.request.data.get("otp")
+
+        try:
+            user = User.objects.get(email=email)
+            user_otp = UserOtp.objects.get(user=user)
+
+            if user_otp.is_expired():
+                user_otp.delete()  # Optional: cleanup expired OTP
+                return Response({"error": "OTP has expired"}, status=400)
+
+            if user_otp.otp == str(otp_input):
+                new_password = self.request.data.get("password",None)
+                if not new_password:
+                    return Response({"error": "no password entered"}, status=400)
+                user_otp.delete()
+                user.set_password(new_password)
+                user.save()
+                return Response(
+                    {"message": "password changed successfully"}, status=200
+                )
+            else:
+                return Response({"error": "Invalid OTP"}, status=400)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        except UserOtp.DoesNotExist:
+            return Response({"error": "OTP not found"}, status=404)
+
+
+
+
+# not used
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([permissions.AllowAny])
@@ -151,7 +228,7 @@ def register_vendor(request):
         status=status.HTTP_400_BAD_REQUEST,
     )
 
-
+# depricated
 @api_view(["GET", "PUT", "DELETE", "PATCH"])
 @permission_classes([permissions.IsAuthenticated])
 def manage_vendor(request):

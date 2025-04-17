@@ -138,7 +138,7 @@ class UserOtp(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_expired(self):
-        expiration_minutes = 10
+        expiration_minutes = 20
         return timezone.now() > self.created_at + timezone.timedelta(
             minutes=expiration_minutes
         )
