@@ -35,6 +35,7 @@ LOCAL = True
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     "debug_toolbar",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -191,6 +193,16 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+
+# for react, cross site
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # debug toolbar
