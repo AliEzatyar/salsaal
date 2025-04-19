@@ -18,6 +18,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from accounts.models import UserOtp
 from accounts.utils import generate_otp
+from io import BytesIO
 """Order API Views"""
 
 
@@ -51,6 +52,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         data["vendor"] = CartItem.objects.filter(cart=cart).first().food.vendor.id
         # creating the serializer
         serializer = self.get_serializer(data=data)
+        payment_id = data["payment_id"]
+        # if Order.objects.filter(payment_id=payment_id).exists():
+        #     # prevent duplicate order
+        #     return Response({"error":"order already in process"}, status=status.HTTP_403_FORBIDDEN)
+        
         serializer.is_valid(raise_exception=True)  # validating data
         self.perform_create(serializer)  # creating the order
         order = serializer.instance  # getting newly created order object by serializer
@@ -70,25 +76,24 @@ class OrderViewSet(viewsets.ModelViewSet):
             order_items.append(order_item)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
-        # creating OTP
         
         # sending pdf file
-        buffer = BytesIO()
-        html = render_to_string("order/payment.html", {"order": order})
-        weasyprint.HTML(string=html).write_pdf(
-            buffer,
-            stylesheets=[
-                weasyprint.CSS(settings.STATICFILES_DIRS[0] + "css/payment.css")
-            ],
-        )
-        response = FileResponse(
-            buffer,
-            as_attachment=True,
-        )
-        response["Content-Disposition"] = (
-            "attachment;" + f" filename=order_{order.user.first_name}_{order.id}.pdf"
-        )
-
+        # buffer = BytesIO()
+        # html = render_to_string("order/payment.html", {"order": order})
+        # weasyprint.HTML(string=html).write_pdf(
+        #     buffer,
+        #     stylesheets=[
+        #         weasyprint.CSS(settings.STATICFILES_DIRS[0] + "css/payment.css")
+        #     ],
+        # )
+        # response = FileResponse(
+        #     buffer,
+        #     as_attachment=True,
+        # )
+        # response["Content-Disposition"] = (
+        #     "attachment;" + f" filename=order_{order.user.first_name}_{order.id}.pdf"
+        # )
+        response = Response({"message":"order created successfully","order":serializer.data},status=status.HTTP_201_CREATED)
         return response
 
     def get_serializer_context(self):

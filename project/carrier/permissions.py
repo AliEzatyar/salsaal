@@ -7,6 +7,7 @@ class IsCarrierOfVendor(BasePermission):
 
     def has_permission(self, request, view):
         """first, is it a carrier?"""
+        
         if not hasattr(request.user, "carrier"):
             return False
         return True

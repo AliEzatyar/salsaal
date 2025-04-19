@@ -30,10 +30,14 @@ class CarrierSerializer(serializers.ModelSerializer):
         profile = UserProfile.objects.get(user=account)
         validated_data["user_profile"] = profile
         validated_data["user"] = account
+        if hasattr(account,"carrier") or account.role == CARRIER:
+            # update
+            instance = Carrier.objects.update(**validated_data)
+            return instance
         account.role  = CARRIER
         account.save()
-
-        return super().create(validated_data=validated_data)
+        instance = Carrier.objects.create(**validated_data)
+        return instance
 
 
 class CarrierOrderSerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 from rest_framework import permissions as perm
-from rest_framework import viewsets
+from rest_framework import viewsets, exceptions
 from rest_framework import parsers
 from .models import Carrier
 from rest_framework.response import Response
@@ -59,17 +59,17 @@ class SetOrderStateCarrying(views.APIView):
     def post(self, *args, **kwargs):
         """carrier sets order status -carrying- and generates an OTP"""
         data = self.request.data
-        order_id = data.get("order_d")
+        order_id = data.get("order_id")
         try:
             order = Order.objects.get(id=order_id)
-            if order.payment_status == PAYMENT_STATUS_CHOICES[1][1]:
+            if order.payment_status == PAYMENT_STATUS_CHOICES[1][1] or not order.paid :
                 # not paid
                 return Response({"error": "payment not completed"}, status=400)
             self.check_object_permissions(self.request, order)
             user = order.user
             # creating OTP
             OTP = generate_otp()
-            UserOtp.objects.create(user=user, OTP=OTP)
+            UserOtp.objects.create(user=user, otp=OTP)
             # setting order carrier to requesting carrier
             order.carrier = self.request.user.carrier
             order.carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
@@ -97,14 +97,14 @@ class SetOrderStateSubmitted(views.APIView):
     def post(self, *args, **kwargs):
         """carrier sets order status -submitted-"""
         data = self.request.data
-        order_id = data.get("order_d")
-        input_OTP = str(data.get("OTP"))
+        order_id = data.get("order_id")
+        input_OTP = str(data.get("otp"))
         try:
             order = Order.objects.get(id=order_id)
             # check if the customer owns this order
             self.check_object_permissions(self.request, order)
             user = order.user
-            OTP = UserOtp.objects.get(user=user, OTP=input_OTP)
+            OTP = UserOtp.objects.get(user=user, otp=input_OTP)
             if OTP.is_expired(expire=FOOD_OTP_EXPIRATION):
                 return Response({"error": "Otp Expired"}, status=400)
 
@@ -113,12 +113,14 @@ class SetOrderStateSubmitted(views.APIView):
             order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
             order.carrier.save()
             order.save()
-            return Response(status=status.HTTP_202_ACCEPTED)
+            return Response({"message":"order state changed to submitted"},status=status.HTTP_202_ACCEPTED)
         except Order.DoesNotExist:
             return Response({"error": "No such order"}, status=404)
         except UserOtp.DoesNotExist:
             return Response({"error": "Otp Incorrect"}, status=400)
-        except:
+        except exceptions.PermissionDenied:
+            return Response({"error":"you are not allowed to perform this action"},status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
             return Response(
                 {"error": "uknown error occured"},
                 status=status.HTTP_501_NOT_IMPLEMENTED,
