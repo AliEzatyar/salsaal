@@ -16,8 +16,8 @@ from rest_framework import viewsets
 from rest_framework import views
 from rest_framework import status
 from rest_framework.response import Response
-
-
+from accounts.models import UserOtp
+from accounts.utils import generate_otp
 """Order API Views"""
 
 
@@ -70,6 +70,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             order_items.append(order_item)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
+        # creating OTP
+        
         # sending pdf file
         buffer = BytesIO()
         html = render_to_string("order/payment.html", {"order": order})
@@ -141,7 +143,7 @@ def create_order(request):
         order_items.append(order_item)
     order.calculate_total_price()
     order.set_total_items()
-
+   
     # sending pdf file
     html = render_to_string("order/payment.html", {"order": order})
     response = HttpResponse(content_type="application/pdf")

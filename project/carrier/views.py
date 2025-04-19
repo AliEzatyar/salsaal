@@ -2,31 +2,39 @@ from rest_framework import permissions as perm
 from rest_framework import viewsets
 from rest_framework import parsers
 from .models import Carrier
-
+from rest_framework.response import Response
+from rest_framework import status
 from .serializers import CarrierSerializer, CarrierOrderSerializer
-from .permissions import IsCarrierOfVendor, IsVendor
+from .permissions import IsBuyer, IsCarrierOfVendor, IsVendor
 from order.models import Order
-from order.serializers import OrderSerializer
-from order.models import ORDER_STATUS_CHOICES
+from order.models import ORDER_STATUS_CHOICES, PAYMENT_STATUS_CHOICES
+from rest_framework import views
+from accounts.models import User, UserOtp, FOOD_OTP_EXPIRATION, UserProfile, CARRIER
+from accounts.utils import generate_otp
+
+from carrier.models import CARRIER_STATUS_CHOICES
 
 
 # Create your views here.
 class CarrierViewSet(viewsets.ModelViewSet):
-    """this view is only accessible by a vendor"""
+    """this view is only accessible by a vendor to manage carriers"""
+
     permission_classes = [perm.IsAuthenticated, IsVendor]
     queryset = Carrier.objects.all()
     serializer_class = CarrierSerializer
-    parser_classes = [parsers.JSONParser, parsers.FormParser,parsers.MultiPartParser]
-    
-    def get_serializer_context(self):
-        context =  super().get_serializer_context()
-        context["name"] = self.request.user.first_name + self.request.user.first_name
-        context["vendor"] = self.request.user.vendor.id
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
+    def get_serializer_context(self):
+        context = super(CarrierViewSet,self).get_serializer_context()
+        context["vendor"] = self.request.user.vendor.id
         return context
 
+
 class CarrierOrdersApiView(viewsets.ReadOnlyModelViewSet):
-    """a carrier does custom actions with this view"""
+    """
+        THis view enables a carrier(only) to view list of paid-processing orders
+        A carrier can see detail of each
+    """
 
     queryset = Order.objects.filter(status=ORDER_STATUS_CHOICES[1][1])
     serializer_class = CarrierOrderSerializer
@@ -34,31 +42,84 @@ class CarrierOrdersApiView(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """overriding to only retrive orders of its vendor"""
-        query_set = self.queryset.filter(vendor=self.request.user.carrier.vendor)
+        query_set = self.queryset.filter(
+            vendor=self.request.user.carrier.vendor, paid=True
+        )
         return query_set
 
-    # def get(self, *args, **kwargs):
-    #     """this mehod enables a carrier see orders list/detail of its vendor"""
-    #     obj_id = self.request.query_params.get(["id"], -1)  # order id
-    #     if obj_id:
-    #         # only one order is seen, goto details
-    #         obj = Order.objects.filter(
-    #             id=obj_id, status=ORDER_STATUS_CHOICES[1][1]
-    #         ).first()
-    #         if obj:
-    #             self.check_object_permissions(self.request, obj)
-    #             serializer = CarrierOrderSerializer(obj)
-    #             return Response(serializer.data, status=status.HTTP_200_OK)
-    #         return Response(
-    #             {"error": "no_object_found"}, status=status.HTTP_400_BAD_REQUEST
-    #         )
-    #     else:
-    #         # all waiting orders are presented
-    #         orders = Order.objects.filter(
-    #             vendor=self.request.user.carrier.vendor,
-    #             status=ORDER_STATUS_CHOICES[1][1],
-    #         )  # waiting
-    #         serializer = CarrierOrderSerializer(orders, many=True)
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-    # def get_serializer_context(self):
-    #     return super().get_serializer_context()
+
+class SetOrderStateCarrying(views.APIView):
+    """
+        THis view enables a carrier(only) to choose an order and set it 
+        in carrying state. Besides, this view generates an OTP valid for 1 Day
+    """
+    
+    permission_classes = [perm.IsAuthenticated, IsCarrierOfVendor]
+
+    def post(self, *args, **kwargs):
+        """carrier sets order status -carrying- and generates an OTP"""
+        data = self.request.data
+        order_id = data.get("order_d")
+        try:
+            order = Order.objects.get(id=order_id)
+            if order.payment_status == PAYMENT_STATUS_CHOICES[1][1]:
+                # not paid
+                return Response({"error": "payment not completed"}, status=400)
+            self.check_object_permissions(self.request, order)
+            user = order.user
+            # creating OTP
+            OTP = generate_otp()
+            UserOtp.objects.create(user=user, OTP=OTP)
+            # setting order carrier to requesting carrier
+            order.carrier = self.request.user.carrier
+            order.carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
+            # setting order in carrying state
+            order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
+            order.save()
+            # response
+            return Response(
+                {"message": "order_status_carrying", "OTP": OTP},
+                status=status.HTTP_201_CREATED,
+            )
+
+        except Order.DoesNotExist:
+            return Response({"error": "no such order"}, status=404)
+
+
+class SetOrderStateSubmitted(views.APIView):
+    """
+        This view is only accessible via customer account, it proves whether
+        a customer (indirectly-by-scanning) is the owner of order and valid Food has reached it
+    """
+
+    permission_classes = [perm.IsAuthenticated, IsBuyer]
+
+    def post(self, *args, **kwargs):
+        """carrier sets order status -submitted-"""
+        data = self.request.data
+        order_id = data.get("order_d")
+        input_OTP = str(data.get("OTP"))
+        try:
+            order = Order.objects.get(id=order_id)
+            # check if the customer owns this order
+            self.check_object_permissions(self.request, order)
+            user = order.user
+            OTP = UserOtp.objects.get(user=user, OTP=input_OTP)
+            if OTP.is_expired(expire=FOOD_OTP_EXPIRATION):
+                return Response({"error": "Otp Expired"}, status=400)
+
+            # setting order in submited state and carrier in free state
+            order.status = ORDER_STATUS_CHOICES[4][1]  # submitted
+            order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
+            order.carrier.save()
+            order.save()
+            return Response(status=status.HTTP_202_ACCEPTED)
+        except Order.DoesNotExist:
+            return Response({"error": "No such order"}, status=404)
+        except UserOtp.DoesNotExist:
+            return Response({"error": "Otp Incorrect"}, status=400)
+        except:
+            return Response(
+                {"error": "uknown error occured"},
+                status=status.HTTP_501_NOT_IMPLEMENTED,
+            )

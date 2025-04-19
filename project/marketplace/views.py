@@ -12,9 +12,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .forms import RatingForm
 from django.contrib.contenttypes.models import ContentType
 from .serializers import FoodSerializer
-from rest_framework import filters
-from rest_framework import permissions
-from rest_framework import status
+from rest_framework import filters,permissions, status
 from rest_framework.response import Response
 from api.backends import FoodFilterSet
 from django_filters.rest_framework import DjangoFilterBackend
@@ -29,8 +27,8 @@ from django.contrib.gis.measure import D
 
 """Marketplace API Views"""
 
-
-class FoodReadViewSet(viewsets.ReadOnlyModelViewSet):
+# home page view
+class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     """this view only handles representation of foods to normal users"""
 
     queryset = Food.objects.filter(is_available=True)
@@ -49,68 +47,16 @@ class FoodReadViewSet(viewsets.ReadOnlyModelViewSet):
     # searching
     search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
 
-
-class RatingViewSet(viewsets.ModelViewSet):
-    queryset = Rating.objects.filter(enabled=True)
-    serializer_class = RatingSerializer
-    # ordering
-    filter_backends = [
-        filters.OrderingFilter,
-        filters.SearchFilter,
-        DjangoFilterBackend,
-    ]
-    ordering_fields = ["created_at", "rating"]
-    ordering = ["created_at"]
-
-    def get_queryset(self):
-        """overriding in order to distinguish by vendor or food"""
-        object_id = self.request.query_params.get("obj_id", None)
-        query_set = self.queryset
-        if object_id:
-            query_set = self.queryset.filter(object_id=int(object_id))
-        return query_set
-
-    def create(self, request, *args, **kwargs):
-        rating_type = request.query_params.get("type")
-        obj_id = request.query_params.get("obj_id")
-        if not rating_type or not obj_id:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        data = request.data
-        previous = Rating.objects.filter(
-            object_id=int(obj_id), user=request.user
-        ).first()
-        # handling indirect update
-        if previous:
-            # prviously exists, performing update
-            previous.comment = data["comment"]
-            previous.rating = data["rating"]
-            previous.enabled = True
-            previous.save()
-            return Response({"updated": True}, status=status.HTTP_200_OK)
-
-        else:
-            # performing new rating creation
-            serializer = self.get_serializer(data=data)
-            try:
-                serializer.is_valid(raise_exception=True)
-            except:
-                return Response(
-                    {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-                )
-            self.perform_create(
-                serializer
-            )  # sets instance to serializer after creation
-            instance = serializer.instance
-            if rating_type == "vendor":
-                instance.content_type = ContentType.objects.get_for_model(Vendor)
-            elif rating_type == "food":
-                instance.content_type = ContentType.objects.get_for_model(Food)
-            instance.object_id = int(obj_id)
-            instance.enabled = True
-            instance.save()
-            # successfull creation
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+    def get_object(self):
+        obj = super().get_object()
+        vendor_location = obj.get_location()
+        user_profile = self.request.user.profile
+        distance = None
+        if hasattr(user_profile,"location"):
+            obj = Food.objects.filter(id=obj.id).\
+                annotate(distance=Distance(vendor_location,user_location))
+            
+        return super().get_object()
 
 """Advanced search"""
 
@@ -173,6 +119,68 @@ class SearchApiView(views.APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class RatingViewSet(viewsets.ModelViewSet):
+    queryset = Rating.objects.filter(enabled=True)
+    serializer_class = RatingSerializer
+    # ordering
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["created_at", "rating"]
+    ordering = ["created_at"]
+
+    def get_queryset(self):
+        """overriding in order to distinguish by vendor or food"""
+        object_id = self.request.query_params.get("obj_id", None)
+        query_set = self.queryset
+        if object_id:
+            query_set = self.queryset.filter(object_id=int(object_id))
+        return query_set
+
+    def create(self, request, *args, **kwargs):
+        rating_type = request.query_params.get("type")
+        obj_id = request.query_params.get("obj_id")
+        if not rating_type or not obj_id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        previous = Rating.objects.filter(
+            object_id=int(obj_id), user=request.user
+        ).first()
+        # handling indirect update
+        if previous:
+            # prviously exists, performing update
+            previous.comment = data["comment"]
+            previous.rating = data["rating"]
+            previous.enabled = True
+            previous.save()
+            return Response({"updated": True}, status=status.HTTP_200_OK)
+
+        else:
+            # performing new rating creation
+            serializer = self.get_serializer(data=data)
+            try:
+                serializer.is_valid(raise_exception=True)
+            except:
+                return Response(
+                    {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                )
+            self.perform_create(
+                serializer
+            )  # sets instance to serializer after creation
+            instance = serializer.instance
+            if rating_type == "vendor":
+                instance.content_type = ContentType.objects.get_for_model(Vendor)
+            elif rating_type == "food":
+                instance.content_type = ContentType.objects.get_for_model(Food)
+            instance.object_id = int(obj_id)
+            instance.enabled = True
+            instance.save()
+            # successfull creation
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 def marketplace(request):

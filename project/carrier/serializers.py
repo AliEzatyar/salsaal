@@ -1,31 +1,43 @@
 from rest_framework import serializers
+
+from accounts.models import CARRIER, User, UserProfile
 from .models import Carrier
 from order.models import Order
 from vendor.models import Vendor
 class CarrierSerializer(serializers.ModelSerializer):
     vendor = serializers.PrimaryKeyRelatedField(read_only=True)
+    email = serializers.EmailField(max_length=60, write_only=True, required=False)
+
     class Meta:
         model = Carrier
         fields = [
-            "name",
+            "email",
             "user",
             "user_profile",
             "id_document",
             "vendor",
         ]
-        read_only_fields = ["name"]
-
+        read_only_fields= ["user","user_profile"]
+        
     def create(self, validated_data):
         """overriding to handle automatic vendor and name save"""
         vendor = Vendor.objects.get(id=self.context['vendor'])
-        validated_data["name"] = self.context["name"]
         validated_data["vendor"] = vendor
-        return super().create(validated_data)
+        email = validated_data.pop("email",None)
+        account = User.objects.filter(email=email).first()
+        if not account:
+            raise serializers.ValidationError({"error":"no_account_found_by_that_email"})
+        profile = UserProfile.objects.get(user=account)
+        validated_data["user_profile"] = profile
+        validated_data["user"] = account
+        account.role  = CARRIER
+        account.save()
+
+        return super().create(validated_data=validated_data)
 
 
 class CarrierOrderSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField("get_customer_name")
-
     class Meta:
         model = Order
         fields = [

@@ -3,9 +3,9 @@ from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
-from marketplace.views import RatingViewSet, FoodReadViewSet, SearchApiView
+from marketplace.views import RatingViewSet, MarketplaceViewset, SearchApiView
 from vendor.views import VendorFoodsManageViewSet, VendorAPIView
-from carrier.views import CarrierOrdersApiView, CarrierViewSet
+from carrier.views import CarrierOrdersApiView, CarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
 from accounts.views import (
     ForgotPassword,
@@ -30,7 +30,7 @@ router.register(r"carriers", CarrierViewSet)
 # router seeing order
 router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
 # food retrive  routing
-router.register(r"foods", FoodReadViewSet)
+router.register(r"foods", MarketplaceViewset)
 
 app_name = "api"
 
@@ -47,13 +47,11 @@ urlpatterns = [
         "account/resend-activate-otp/",
         ResendActivationOTP.as_view(),
     ),
-    # path("account/register/vendor/", views.register_vendor, name="reg_vend_api"),
     path("account/forgot-password/", ForgotPassword.as_view()),  # send otp
     path(
         "account/forgot-password-verify-otp/", VerifyForgotPasswordOTP.as_view()
     ),  # check otp
     path("account/reset-password/", ResetPassword.as_view()),  # reset password
-    # path("account/manage-vendor/", views.manage_vendor, name="manage_vendor"),
     path(
         "account/user-detail/",
         UpdateDeleteRetriveUser.as_view(),
@@ -82,6 +80,18 @@ urlpatterns = [
         "vendor/",
         VendorAPIView.as_view(),
         name="vendor",
+    ),
+    # carrier
+    path(
+        "sosc/",
+        SetOrderStateCarrying.as_view(),
+        name="sosc",
+    ),
+    # customer
+    path(
+        "soss/",
+        SetOrderStateSubmitted.as_view(),
+        name="soss",
     ),
     # full search
     path("search/", SearchApiView.as_view(), name="full_search"),

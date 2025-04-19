@@ -6,8 +6,10 @@ from django.utils import timezone
 
 SHOP = 1
 CUSTOMER = 2
+CARRIER = 3
 
-
+DEFAULT_OTP_EXPIRATION = 10 # minutes
+FOOD_OTP_EXPIRATION = 1440 # 1 Day
 # Create your models here.
 class UserManager(BaseUserManager):
     def create_user(
@@ -56,6 +58,7 @@ class User(AbstractBaseUser):
     ROLE_CHOICES = [
         (SHOP, "Shop"),
         (CUSTOMER, "Customer"),
+        (CARRIER, "Carrier"),
     ]
 
     first_name = models.CharField(max_length=60)
@@ -136,9 +139,8 @@ class UserOtp(models.Model):
     )
     otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def is_expired(self):
-        expiration_minutes = 20
+    
+    def is_expired(self,expire=DEFAULT_OTP_EXPIRATION):
         return timezone.now() > self.created_at + timezone.timedelta(
-            minutes=expiration_minutes
+            minutes=expire
         )

@@ -33,6 +33,10 @@ class Vendor(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    def get_location(self):
+        """returns the location of the vendor"""
+        return self.user_profile.location
+
     def __str__(self):
         return self.vendor_name
 

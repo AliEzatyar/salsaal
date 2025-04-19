@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+from accounts.models import SHOP, CUSTOMER, CARRIER
 
 
 class IsCarrierOfVendor(BasePermission):
@@ -21,3 +22,14 @@ class IsVendor(BasePermission):
         if not hasattr(request.user, "vendor"):
             return False
         return True
+
+
+class IsBuyer(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.role != CUSTOMER:
+            return False
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        """checks whether the requesting user owns the order"""
+        return obj.user == request.user
