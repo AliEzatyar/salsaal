@@ -8,23 +8,17 @@ from vendor.views import VendorFoodsManageViewSet, VendorAPIView
 from carrier.views import CarrierOrdersApiView, CarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
 
-from accounts.views import (
-    UserProfileViewset,
-    ForgotPassword,
-    RegisterUser,
-    ResendActivationOTP,
-    UpdateDeleteRetriveUser,
-    ResetPassword,
-    VerifyActivateAccountOTP,
-    VerifyForgotPasswordOTP,
-)
+from accounts import views as ac_views
 
 # Router Setup for
 router = DefaultRouter()
 # order viewset routing
 router.register(r"orders", OrderViewSet)
 # user profile
-router.register(r"user-profile", UserProfileViewset)
+router.register(r"user-profile", ac_views.UserProfileViewset)
+# user detail 
+router.register(r"user-detail", ac_views.UserViewset)
+
 # rating viewset routing
 router.register(r"ratings", RatingViewSet)
 # food managemet routing
@@ -42,27 +36,21 @@ urlpatterns = [
     # Account App
     path("account/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
     path("account/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("account/register/", RegisterUser.as_view(), name="reg_user_api"),
+    path("account/register/", ac_views.RegisterUser.as_view(), name="reg_user_api"),
     path(
         "account/activate-account/",
-        VerifyActivateAccountOTP.as_view(),
+        ac_views.VerifyActivateAccountOTP.as_view(),
     ),
     path(
         "account/resend-activate-otp/",
-        ResendActivationOTP.as_view(),
+        ac_views.ResendActivationOTP.as_view(),
     ),
-    path("account/forgot-password/", ForgotPassword.as_view()),  # send otp
+    path("account/forgot-password/", ac_views.ForgotPassword.as_view()),  # send otp
     path(
-        "account/forgot-password-verify-otp/", VerifyForgotPasswordOTP.as_view()
+        "account/forgot-password-verify-otp/",
+        ac_views.VerifyForgotPasswordOTP.as_view(),
     ),  # check otp
-    path("account/reset-password/", ResetPassword.as_view()),  # reset password
-    path(
-        "account/user-detail/",
-        UpdateDeleteRetriveUser.as_view(),
-        name="user_detail",
-    ),
-    # profile
-    
+    path("account/reset-password/", ac_views.ResetPassword.as_view()),  # reset password
     # Order and Food
     path("", include(router.urls)),
     path(

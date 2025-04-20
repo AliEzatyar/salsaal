@@ -33,7 +33,7 @@ class RegisterUser(generics.CreateAPIView):
         send_otp(self.request, user, typ=1)
 
 
-class UpdateDeleteRetriveUser(generics.RetrieveUpdateDestroyAPIView):
+class UserViewset(viewsets.ModelViewSet):
     """
     it works with 4 methods:
     GET --> retrieve user data
@@ -43,12 +43,18 @@ class UpdateDeleteRetriveUser(generics.RetrieveUpdateDestroyAPIView):
     for every request
     """
 
+    http_method_names = ["get", "delete", "patch", "put"]
     serializer_class = UserDetailSerializer
     queryset = User.objects.all()
 
     def get_object(self):
         """this ensures that only the user itself works on its account"""
         return self.request.user
+
+    def get_queryset(self):
+        """limiting queryset to only  one instance"""
+        new_qs = self.queryset.filter(id=self.request.user.id)
+        return super().get_queryset()
 
 
 class VerifyActivateAccountOTP(views.APIView):
@@ -181,10 +187,10 @@ class UserProfileViewset(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated, IsProfileOwner]
-    # http_method_names = ["patch","get"] 
+    # http_method_names = ["patch","get"]
 
     def destroy(self, request, *args, **kwargs):
-        return Response({"error":"user profile deletion not allowed"})
+        return Response({"error": "user profile deletion not allowed"})
 
     def create(self, request, *args, **kwargs):
         return Response({"error": "user profile creation not allowed"})

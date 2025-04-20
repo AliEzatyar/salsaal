@@ -113,10 +113,9 @@ class UserProfile(g_models.Model):
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15, blank=True, null=True)
     lattitude = models.CharField(max_length=20, blank=True, null=True)
-    longtitiude = models.FloatField(max_length=20, blank=True, null=True)
+    longtitiude = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    phone = models.CharField(max_length=12, null=True, blank=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
 
     def __str__(self):

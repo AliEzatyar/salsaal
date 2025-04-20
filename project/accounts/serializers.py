@@ -1,9 +1,7 @@
-from rest_framework.serializers import ModelSerializer
-
+from rest_framework.serializers import ModelSerializer, ValidationError
 from vendor.models import Vendor
 from .models import User, UserProfile
 from .models import CUSTOMER
-
 
 class UserCreationSerializer(ModelSerializer):
     class Meta:
@@ -27,8 +25,26 @@ class UserCreationSerializer(ModelSerializer):
         return user
 
 
-class UserDetailSerializer(ModelSerializer):
+class UserProfileSerializer(ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ["picture", "city", "address", "lattitude", "longtitiude"]
 
+    def update(self, instance, validated_data):
+        pic = validated_data.get("picture",None)
+        if pic:
+            ext = pic.name.split(".")[-1]
+            valid_extensions = ["jpg", "png", "jpeg"]
+            if ext.lower() not in valid_extensions:
+                raise ValidationError({"error": "file extension must be jpg, png, jpeg"})
+        # re-assigning the valid data
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+class UserDetailSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -43,14 +59,6 @@ class UserDetailSerializer(ModelSerializer):
             "id",
             "email",
         ]  # Prevent updating the email, seperate view is made
-
-
-class UserProfileSerializer(ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ["picture", "city",
-                  "address", "lattitude", "longtitiude",
-                  "phone"]
 
 
 class VendorCreateSerializer(ModelSerializer):
