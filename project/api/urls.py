@@ -7,7 +7,9 @@ from marketplace.views import RatingViewSet, MarketplaceViewset, SearchApiView
 from vendor.views import VendorFoodsManageViewSet, VendorAPIView
 from carrier.views import CarrierOrdersApiView, CarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
+
 from accounts.views import (
+    UserProfileViewset,
     ForgotPassword,
     RegisterUser,
     ResendActivationOTP,
@@ -21,6 +23,8 @@ from accounts.views import (
 router = DefaultRouter()
 # order viewset routing
 router.register(r"orders", OrderViewSet)
+# user profile
+router.register(r"user-profile", UserProfileViewset)
 # rating viewset routing
 router.register(r"ratings", RatingViewSet)
 # food managemet routing
@@ -57,6 +61,8 @@ urlpatterns = [
         UpdateDeleteRetriveUser.as_view(),
         name="user_detail",
     ),
+    # profile
+    
     # Order and Food
     path("", include(router.urls)),
     path(

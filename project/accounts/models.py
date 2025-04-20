@@ -110,7 +110,6 @@ class UserProfile(g_models.Model):
         related_name="profile",
     )
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
-    cover = models.ImageField(upload_to="users/covers/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15, blank=True, null=True)
     lattitude = models.CharField(max_length=20, blank=True, null=True)
@@ -124,6 +123,7 @@ class UserProfile(g_models.Model):
         return str(self.user)
 
     def save(self, *args, **kwargs):
+        """overriding to set location point automatically"""
         if self.lattitude and self.longtitiude:
             self.location = Point(float(self.longtitiude), float(self.lattitude))
         return super().save(*args, **kwargs)

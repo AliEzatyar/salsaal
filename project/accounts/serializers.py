@@ -1,4 +1,4 @@
-from  rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer
 
 from vendor.models import Vendor
 from .models import User, UserProfile
@@ -23,7 +23,7 @@ class UserCreationSerializer(ModelSerializer):
         user.set_password(cd["password"])
         user.role = CUSTOMER
         user.save()
-        
+
         return user
 
 
@@ -48,7 +48,9 @@ class UserDetailSerializer(ModelSerializer):
 class UserProfileSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ["picture","cover","city"]
+        fields = ["picture", "city",
+                  "address", "lattitude", "longtitiude",
+                  "phone"]
 
 
 class VendorCreateSerializer(ModelSerializer):
@@ -57,12 +59,18 @@ class VendorCreateSerializer(ModelSerializer):
         fields = ["vendor_name"]
 
 
-
 class VendorManageSerializer(ModelSerializer):
     user = UserDetailSerializer()
     user_profile = UserProfileSerializer()
 
     class Meta:
         model = Vendor
-        fields = ["id","vendor_name", "vendor_license", "user", "user_profile","created_at"]
+        fields = [
+            "id",
+            "vendor_name",
+            "vendor_license",
+            "user",
+            "user_profile",
+            "created_at",
+        ]
         read_only_fields = ["id"]

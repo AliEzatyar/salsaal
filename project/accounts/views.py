@@ -2,14 +2,19 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
-from accounts.models import User, UserOtp
+from accounts.models import User, UserOtp, UserProfile
 from accounts.forms import UserProfileForm, UserEditForm
-from accounts.serializers import UserCreationSerializer, UserDetailSerializer
+from accounts.serializers import (
+    UserCreationSerializer,
+    UserDetailSerializer,
+    UserProfileSerializer,
+)
+from accounts.permissions import IsProfileOwner
 from .utils import send_otp
 
 from rest_framework import permissions
 from rest_framework import generics
-from rest_framework import views
+from rest_framework import views, viewsets
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -172,6 +177,32 @@ class ResetPassword(views.APIView):
             return Response({"error": "OTP not found"}, status=404)
 
 
+class UserProfileViewset(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProfileOwner]
+    # http_method_names = ["patch","get"] 
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({"error":"user profile deletion not allowed"})
+
+    def create(self, request, *args, **kwargs):
+        return Response({"error": "user profile creation not allowed"})
+
+    def get_object(self):
+        """only user's profile"""
+        if hasattr(self.request.user, "profile"):
+            return self.request.user.profile
+        return super().get_object()
+
+    def get_queryset(self):
+        """overriding to prevent others from accessing another profile"""
+        return self.queryset.filter(user=self.request.user)
+
+
+# depricated
+
+
 # utility funciton
 def customer_tester(user):
     if user.role != 2:
@@ -199,7 +230,7 @@ def account_settings(request):
             form.save()
             messages.success(request, "تغییرات ثبت شد.")
         else:
-            messages.error(request,"مشکلی رخ داد!")
+            messages.error(request, "مشکلی رخ داد!")
     return render(request, "accounts/account_settings.html", context=locals())
 
 

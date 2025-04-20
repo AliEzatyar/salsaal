@@ -76,10 +76,6 @@ class UserProfileForm(forms.ModelForm):
         widget=forms.FileInput(attrs={"class": "btn-primary"}),
         validators=[only_image_validator],
     )
-    cover = forms.FileField(
-        widget=forms.FileInput(attrs={"class": "btn-primary"}),
-        validators=[only_image_validator],
-    )
     lattitude = forms.CharField(
         widget=forms.TextInput(attrs={"readonly": "readonly", "value": "0"})
     )
@@ -105,4 +101,4 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["picture", "cover", "address", "city", "lattitude", "longtitiude"]
+        fields = ["picture", "address", "city", "lattitude", "longtitiude"]

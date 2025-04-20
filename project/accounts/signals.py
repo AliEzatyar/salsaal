@@ -32,15 +32,3 @@ def delete_cart(sender, instance, created: bool, **kwargs):
             instance.cart.delete()
             
 
-
-@receiver(post_save, sender=UserProfile)
-def set_default_photos(sender, instance, created, **kwargs):
-    """this signal sets default profile photo when new acc. is created"""
-    if created:
-        prof = instance
-        with open(
-            os.path.join(settings.BASE_DIR, "static_/images/defaultProfilePicture.jpg"),
-            "rb",
-        ) as pic:
-            prof.cover.save("cover_" + prof.user.username + ".jpg", pic, save=True)
-            prof.picture.save("picture_" + prof.user.username + ".jpg", pic, save=True)
