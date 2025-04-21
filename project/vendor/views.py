@@ -15,8 +15,8 @@ from django.db.transaction import atomic
 from django.db.models.aggregates import Count
 from collections import Counter
 from accounts.models import CUSTOMER
-from .serializers import VendorSerializerDetailed
-from marketplace.serializers import FoodSerializer
+from .serializers import VendorSerializerDetail
+from marketplace.serializers import FoodSerializerDetail
 from api.permissions import IsVendorOfFood
 from rest_framework.decorators import action
 from rest_framework import permissions
@@ -44,7 +44,7 @@ class VendorAPIView(views.APIView):
                 {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
             )
         vendor = self.request.user.vendor
-        serializer = VendorSerializerDetailed(vendor)
+        serializer = VendorSerializerDetail(vendor)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, *args, **kwargs):
@@ -57,7 +57,7 @@ class VendorAPIView(views.APIView):
             )
         data = self.request.data
         vendor = self.request.user.vendor
-        vendor_serializer = VendorSerializerDetailed(vendor, data=data, partial=True)
+        vendor_serializer = VendorSerializerDetail(vendor, data=data, partial=True)
 
         # validation
         try:
@@ -100,7 +100,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on foods of a vendor"""
 
     queryset = Food.objects.all()
-    serializer_class = FoodSerializer
+    serializer_class = FoodSerializerDetail
     permission_classes = [permissions.IsAuthenticated, IsVendorOfFood]
     # ordering
     filter_backends = [

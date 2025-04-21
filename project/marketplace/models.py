@@ -19,6 +19,7 @@ class Category(models.Model):
         return self.name
 
 
+
 class Food(models.Model):
     vendor = models.ForeignKey(
         "vendor.Vendor",
@@ -62,7 +63,6 @@ class Food(models.Model):
         self.rating = sum(ratings) / len(ratings)
         self.save()
         return sum(ratings)/len(ratings)
-
 
     def __str__(self):
         return self.name

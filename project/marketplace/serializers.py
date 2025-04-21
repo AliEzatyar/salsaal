@@ -11,7 +11,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ["name"]
 
 
-class FoodSerializer(serializers.ModelSerializer):
+class FoodSerializerDetail(serializers.ModelSerializer):
     vendor = serializers.PrimaryKeyRelatedField(read_only=True)
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     distance = serializers.SerializerMethodField("get_distance")
@@ -30,6 +30,19 @@ class FoodSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
         return super().create(validated_data)
+
+
+class FoodSerializerMany(serializers.ModelSerializer):
+    vendor_name = serializers.SerializerMethodField("get_vendor_name")
+
+    class Meta:
+        model = Food
+        fields = ["name","price","image","rating","vendor_name"]
+
+    def get_vendor_name(self, obj):
+        return obj.vendor.vendor_name
+
+
 
 
 class RatingSerializer(serializers.ModelSerializer):

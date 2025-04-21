@@ -13,7 +13,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from order.models import Order, OrderItem
 from .forms import RatingForm
 from django.contrib.contenttypes.models import ContentType
-from .serializers import CategorySerializer, FoodSerializer
 from rest_framework import filters, permissions, status
 from rest_framework.response import Response
 from api.backends import FoodFilterSet
@@ -21,7 +20,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, views
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
-from marketplace.serializers import FoodSerializer, RatingSerializer
+from marketplace.serializers import FoodSerializerMany, RatingSerializer, CategorySerializer
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
@@ -40,7 +39,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     """
 
     queryset = Food.objects.filter(is_available=True)
-    serializer_class = FoodSerializer
+    serializer_class = FoodSerializerMany
     permission_classes = [permissions.AllowAny]
     # ordering
     filter_backends = [
@@ -92,12 +91,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         region = request.data.get("region", None)
         lat = request.data.get("lat", None)
         lng = request.data.get("lng", None)
-        max_distance = request.data.get("max_distance",10) # km
+        max_distance = request.data.get("max_distance", 10)  # km
         try:
             max_distance = float(max_distance)
         except:
             max_distance = 10
-            
+
         if request.user.is_authenticated:
             region = request.user.region
             user_location = request.user.profile.location
@@ -114,19 +113,23 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 return Response({"detail": "Invalid coordinates."}, status=400)
             user_location = Point(float(lng), float(lat), srid=4326)
 
-
         vendors = (
             Vendor.objects.filter(is_approved=True, user__region=region)
             .annotate(distance=Distance("user_profile__location", user_location))
             .filter(distance__lte=D(km=max_distance))
             .order_by("distance")[:5]
         )
-        ser = VendorSerializerMany(vendors, many=True,context={"request":request})
+        ser = VendorSerializerMany(vendors, many=True, context={"request": request})
         return Response(ser.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["post"])
     def week_trending(self, request):
-        region = request.GET.get("region", "AF")
+        region = request.data.get("region", None)
+        if request.user.is_authenticated:
+            region = request.user.region
+        if not region:
+            return Response({"detail": "Please send region as 'XY'."}, status=400)
+
         week_ago = timezone.now() - timezone.timedelta(weeks=1)
         orders = Order.objects.filter(
             user__region=region, created__gte=week_ago
@@ -140,7 +143,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         )
         foods_ids = [item["food"] for item in top_week_foods]
         foods = Food.objects.filter(id__in=foods_ids)
-        ser = FoodSerializer(foods, many=True)
+        ser = FoodSerializerMany(foods, many=True)
         return Response(ser.data)
 
 
@@ -183,7 +186,7 @@ class SearchApiView(views.APIView):
         )
         # limiting distance
         foods = foods.filter(distance__lte=D(km=max_distance))
-        foods_serializer = FoodSerializer(foods, many=True)
+        foods_serializer = FoodSerializerMany(foods, many=True)
 
         # vendors found by query and limiting distance
         vendors = (
