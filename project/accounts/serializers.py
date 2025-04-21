@@ -28,7 +28,7 @@ class UserCreationSerializer(ModelSerializer):
 class UserProfileSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ["picture", "city", "address", "lattitude", "longtitiude"]
+        fields = ["picture", "city", "address", "lattitude", "longitude"]
 
     def update(self, instance, validated_data):
         pic = validated_data.get("picture",None)

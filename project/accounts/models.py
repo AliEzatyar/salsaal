@@ -125,8 +125,8 @@ class UserProfile(g_models.Model):
 
     def save(self, *args, **kwargs):
         """overriding to set location point automatically"""
-        if self.lattitude and self.longtitiude:
-            self.location = Point(float(self.longtitiude), float(self.lattitude),srid=4326)
+        if self.lattitude and self.longitude:
+            self.location = Point(float(self.longitude), float(self.lattitude),srid=4326)
         return super().save(*args, **kwargs)
 
     def get_full_address(self):

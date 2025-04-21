@@ -101,4 +101,4 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["picture", "address", "city", "lattitude", "longtitiude"]
+        fields = ["picture", "address", "city", "lattitude", "logitude"]
