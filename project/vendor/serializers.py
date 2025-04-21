@@ -3,11 +3,42 @@ from .models import Vendor
 from accounts.serializers import UserProfileSerializer
 
 
-class VendorSerializer(serializers.ModelSerializer):
+class VendorSerializerMany(serializers.ModelSerializer):
+    rating = serializers.SerializerMethodField("get_rating")
+    distance = serializers.SerializerMethodField("get_distance")
+    image_url = serializers.SerializerMethodField("get_image_url")
+    
+    class Meta:
+        model = Vendor
+        fields = [
+            "id",
+            "vendor_name",
+            "rating",
+            "distance",
+            "image_url"
+        ]
+
+    def get_rating(self, obj):
+        """returns total rating of the vendor"""
+        return obj.overall_rating()
+
+    def get_distance(self, obj):
+        # obj.distance is a Distance object; convert to km/miles/etc.
+        # distance attribute comes from annotate
+        return round(obj.distance.km,1) if hasattr(obj, "distance") else None
+
+    def get_image_url(self,obj):
+        request = self.context.get("request")
+        image = getattr(obj.user_profile, 'picture', None)
+        if image and hasattr(image, 'url'):
+            return request.build_absolute_uri(image.url)
+        return None
+
+class VendorSerializerDetailed(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField("get_rating")
     user_profile = UserProfileSerializer()
     distance = serializers.SerializerMethodField("get_distance")
-    
+
     class Meta:
         model = Vendor
         fields = [
@@ -20,9 +51,9 @@ class VendorSerializer(serializers.ModelSerializer):
             "is_approved",
             "created_at",
             "rating",
-            "distance"
+            "distance",
         ]
-        read_only_fields = ['user','is_approved','created_at','rating']
+        read_only_fields = ["user", "is_approved", "created_at", "rating"]
 
     def get_rating(self, obj):
         """returns total rating of the vendor"""
@@ -31,7 +62,7 @@ class VendorSerializer(serializers.ModelSerializer):
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
         # distance attribute comes from annotate
-        return obj.distance.km if hasattr(obj, "distance") else None
+        return round(obj.distance.km, 1) if hasattr(obj, "distance") else None
 
     def update(self, instance, validated_data):
         """overriding to apply user profile update together with vendor"""

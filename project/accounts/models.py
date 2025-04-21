@@ -80,6 +80,7 @@ class User(AbstractBaseUser):
     is_staff = models.BooleanField(default=False)
     is_superadmin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
+    region = models.CharField(blank=True, null=True, default="AF")
 
     USERNAME_FIELD = "email"
 
@@ -109,11 +110,12 @@ class UserProfile(g_models.Model):
         null=True,
         related_name="profile",
     )
+    
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15, blank=True, null=True)
     lattitude = models.CharField(max_length=20, blank=True, null=True)
-    longtitiude = models.CharField(max_length=20, blank=True, null=True)
+    longitude = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
@@ -124,7 +126,7 @@ class UserProfile(g_models.Model):
     def save(self, *args, **kwargs):
         """overriding to set location point automatically"""
         if self.lattitude and self.longtitiude:
-            self.location = Point(float(self.longtitiude), float(self.lattitude))
+            self.location = Point(float(self.longtitiude), float(self.lattitude),srid=4326)
         return super().save(*args, **kwargs)
 
     def get_full_address(self):

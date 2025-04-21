@@ -52,11 +52,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         data["vendor"] = CartItem.objects.filter(cart=cart).first().food.vendor.id
         # creating the serializer
         serializer = self.get_serializer(data=data)
-        payment_id = data["payment_id"]
+        # payment_id = data["payment_id"]
         # if Order.objects.filter(payment_id=payment_id).exists():
         #     # prevent duplicate order
         #     return Response({"error":"order already in process"}, status=status.HTTP_403_FORBIDDEN)
-        
+        if Order.objects.filter(user=request.user,status=ORDER_STATUS_CHOICES[1][1]).exists():
+            # prevent duplicate order
+            return Response({"error":"order already in process"}, status=status.HTTP_403_FORBIDDEN)
+
         serializer.is_valid(raise_exception=True)  # validating data
         self.perform_create(serializer)  # creating the order
         order = serializer.instance  # getting newly created order object by serializer
@@ -76,7 +79,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             order_items.append(order_item)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
-        
+
         # sending pdf file
         # buffer = BytesIO()
         # html = render_to_string("order/payment.html", {"order": order})

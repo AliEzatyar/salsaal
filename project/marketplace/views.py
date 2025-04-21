@@ -9,27 +9,35 @@ from django.db.models.aggregates import Count
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required, user_passes_test
+
+from order.models import Order, OrderItem
 from .forms import RatingForm
 from django.contrib.contenttypes.models import ContentType
-from .serializers import FoodSerializer
-from rest_framework import filters,permissions, status
+from .serializers import CategorySerializer, FoodSerializer
+from rest_framework import filters, permissions, status
 from rest_framework.response import Response
 from api.backends import FoodFilterSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, views
 from vendor.models import Vendor
-from vendor.serializers import VendorSerializer
+from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import FoodSerializer, RatingSerializer
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
-
+from rest_framework.decorators import action
+from django.utils import timezone
 
 """Marketplace API Views"""
 
+
 # home page view
 class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
-    """this view only handles representation of foods to normal users"""
+    """
+    This view only handles representation of foods to normal users.
+    For food detail, his view requires user location saved on profile instance. if user is not
+    auhtenticated, query params 'lat' and 'log' should be sent.
+    """
 
     queryset = Food.objects.filter(is_available=True)
     serializer_class = FoodSerializer
@@ -48,15 +56,93 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
 
     def get_object(self):
+        """showing vendor distance in food detail"""
         obj = super().get_object()
-        vendor_location = obj.get_location()
-        user_profile = self.request.user.profile
-        distance = None
-        if hasattr(user_profile,"location"):
-            obj = Food.objects.filter(id=obj.id).\
-                annotate(distance=Distance(vendor_location,user_location))
+        vendor_location = obj.vendor.get_location()
+        if self.request.user.is_authenticated:
+            user_profile = self.request.user.profile
+            if hasattr(user_profile, "location"):
+                obj = Food.objects.filter(id=obj.id).annotate(
+                    distance=Distance(vendor_location, user_profile.location)
+                )
+                return obj[0]
+            return obj
+        else:
+            try:
+                lat = self.request.query_params.get("lat", None)
+                lng = self.request.query_params.get("lng", None)
+                user_location = Point(float(log), float(lat), srid=4326)
+                obj = Food.objects.filter(id=obj.id).annotate(
+                    distance=Distance(vendor_location, user_location)
+                )
+            except:
+                pass
+            return obj[0]
+
+    @action(detail=False, methods=["get"])
+    def categories(self, request):
+        """this endpoint returns available categories"""
+        categories = Category.objects.filter(show_on_home=True).values("name", "id")
+        ser = CategorySerializer(categories, many=True)
+        return Response(ser.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"])
+    def nearby_resturants(self, request):
+        """this endpoint returns nearby_vendors"""
+        region = request.data.get("region", None)
+        lat = request.data.get("lat", None)
+        lng = request.data.get("lng", None)
+        max_distance = request.data.get("max_distance",10) # km
+        try:
+            max_distance = float(max_distance)
+        except:
+            max_distance = 10
             
-        return super().get_object()
+        if request.user.is_authenticated:
+            region = request.user.region
+            user_location = request.user.profile.location
+        else:
+            if not region:
+                return Response({"detail": "Please send region as 'XY'."}, status=400)
+            if not lat or not lng:
+                return Response(
+                    {"detail": "Latitude and longitude are required."}, status=400
+                )
+            try:
+                user_location = Point(float(lng), float(lat), srid=4326)
+            except (TypeError, ValueError):
+                return Response({"detail": "Invalid coordinates."}, status=400)
+            user_location = Point(float(lng), float(lat), srid=4326)
+
+
+        vendors = (
+            Vendor.objects.filter(is_approved=True, user__region=region)
+            .annotate(distance=Distance("user_profile__location", user_location))
+            .filter(distance__lte=D(km=max_distance))
+            .order_by("distance")[:5]
+        )
+        ser = VendorSerializerMany(vendors, many=True,context={"request":request})
+        return Response(ser.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"])
+    def week_trending(self, request):
+        region = request.GET.get("region", "AF")
+        week_ago = timezone.now() - timezone.timedelta(weeks=1)
+        orders = Order.objects.filter(
+            user__region=region, created__gte=week_ago
+        ).values("id")
+
+        top_week_foods = (
+            OrderItem.objects.filter(order_id__in=orders)
+            .values("food")
+            .annotate(item_count=Count("id"))
+            .order_by("-item_count")[:5]
+        )
+        foods_ids = [item["food"] for item in top_week_foods]
+        foods = Food.objects.filter(id__in=foods_ids)
+        ser = FoodSerializer(foods, many=True)
+        return Response(ser.data)
+
 
 """Advanced search"""
 
@@ -66,14 +152,14 @@ class SearchApiView(views.APIView):
 
     def get(self, *args, **kwargs):
         query = self.request.query_params.get("query", None)
-        log = self.request.query_params.get("long", None)
+        lng = self.request.query_params.get("lnng", None)
         lat = self.request.query_params.get("lat", None)
         max_distance = self.request.query_params.get("max_distance", 5)
 
         # determinig user location
         try:
-            if lat and log:
-                user_location = Point(float(log), float(lat), srid=4326)
+            if lat and lng:
+                user_location = Point(float(lng), float(lat), srid=4326)
             else:
                 user_location = self.request.user.profile.location
         except:
@@ -108,7 +194,7 @@ class SearchApiView(views.APIView):
             .filter(distance__lte=D(km=max_distance))
         )
         # preparing as json
-        vendors_serializer = VendorSerializer(vendors, many=True)
+        vendors_serializer = VendorSerializerMany(vendors, many=True)
         total_found = len(vendors) + len(foods)
         # success
         return Response(
@@ -191,17 +277,15 @@ def marketplace(request):
     # filter by category
     if request.method == "GET" and "category" in request.GET:
         foods = foods.filter(category__name=request.GET["category"])
-    
-    categories_by_foods_count = Category.objects.annotate(
-        foods_count=Count("foods")
-    )
+
+    categories_by_foods_count = Category.objects.annotate(foods_count=Count("foods"))
     paginated = Paginator(foods, 6)
     if request.method == "POST":
         """handling filter, sort and search"""
         # search handling
         if "query" in request.POST:
             foods = foods.filter(name__icontains=request.POST["query"])
-            
+
             paginated = Paginator(foods, 6)
             total_pages = [i + 1 for i in range(paginated.num_pages)]
             total_found = foods.count()
@@ -220,8 +304,14 @@ def marketplace(request):
                 price__range=[int(data["price"][0]), int(data["price"][1])]
             )
         if "rating" in data:
-            foods = foods.filter(id__in=[p.id for p in foods if round(p.overall_rating())==int(data['rating'])])    
-        
+            foods = foods.filter(
+                id__in=[
+                    p.id
+                    for p in foods
+                    if round(p.overall_rating()) == int(data["rating"])
+                ]
+            )
+
         # sorting
         if "sort" in data:
             sort_type = data["sort"]
@@ -306,8 +396,14 @@ def vendors(request, page=None):
         if "category" in data:
             vendors = vendors.filter(categories__in=[int(data["category"])]).distinct()
         if "rating" in data:
-            vendors = vendors.filter(id__in=[v.id for v in vendors if round(v.overall_rating())==int(data['rating'])])    
-        
+            vendors = vendors.filter(
+                id__in=[
+                    v.id
+                    for v in vendors
+                    if round(v.overall_rating()) == int(data["rating"])
+                ]
+            )
+
         # applying all filters according to parameters
         vendors = vendors.select_related("user_profile", "user")  # for time optimizing
         total_found = vendors.count()  # number of vendors found after all filterings
@@ -372,8 +468,8 @@ def rate(request):
     # handling indirect update
     if previous:
         # prviously exists, performing update
-        previous.comment = data['comment']
-        previous.rating = data['rating']
+        previous.comment = data["comment"]
+        previous.rating = data["rating"]
         previous.save()
         return JsonResponse({"OK": True})
 

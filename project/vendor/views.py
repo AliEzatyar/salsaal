@@ -15,7 +15,7 @@ from django.db.transaction import atomic
 from django.db.models.aggregates import Count
 from collections import Counter
 from accounts.models import CUSTOMER
-from .serializers import VendorSerializer
+from .serializers import VendorSerializerDetailed
 from marketplace.serializers import FoodSerializer
 from api.permissions import IsVendorOfFood
 from rest_framework.decorators import action
@@ -44,7 +44,7 @@ class VendorAPIView(views.APIView):
                 {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
             )
         vendor = self.request.user.vendor
-        serializer = VendorSerializer(vendor)
+        serializer = VendorSerializerDetailed(vendor)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, *args, **kwargs):
@@ -57,7 +57,7 @@ class VendorAPIView(views.APIView):
             )
         data = self.request.data
         vendor = self.request.user.vendor
-        vendor_serializer = VendorSerializer(vendor, data=data, partial=True)
+        vendor_serializer = VendorSerializerDetailed(vendor, data=data, partial=True)
 
         # validation
         try:

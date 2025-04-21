@@ -61,7 +61,9 @@ class CartApiView(views.APIView):
                 cart_item = state[0]
                 # cart_item.save()
                 cart.items.add(cart_item)
-            return Response(status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_200_OK)
+            return Response({"message":"already exists"},status=status.HTTP_200_OK)
+
         else:
             return Response(
                 {"error": "not_existing"}, status=status.HTTP_400_BAD_REQUEST

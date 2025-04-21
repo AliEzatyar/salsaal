@@ -28,7 +28,7 @@ router.register(r"carriers", CarrierViewSet)
 # router seeing order
 router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
 # food retrive  routing
-router.register(r"foods", MarketplaceViewset)
+router.register(r"home", MarketplaceViewset)
 
 app_name = "api"
 
