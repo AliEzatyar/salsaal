@@ -15,7 +15,7 @@ from django.db.transaction import atomic
 from django.db.models.aggregates import Count
 from collections import Counter
 from accounts.models import CUSTOMER
-from .serializers import VendorSerializerDetail
+from .serializers import VendorSerializerDetailed
 from marketplace.serializers import FoodSerializerDetail
 from api.permissions import IsVendorOfFood
 from rest_framework.decorators import action
