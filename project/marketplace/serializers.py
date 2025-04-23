@@ -12,20 +12,15 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class FoodSerializerDetail(serializers.ModelSerializer):
-    vendor = serializers.PrimaryKeyRelatedField(read_only=True)
-    vendor_name = serializers.SerializerMethodField("get_vendor_name")
-    distance = serializers.SerializerMethodField("get_distance")
-
+    category_name = serializers.SerializerMethodField("get_category_name")
+    
     class Meta:
         model = Food
-        fields = "__all__"
+        fields = ["name","price","category","category_name","description","image","is_available","rating","created_at","modified"]
+        read_only_fields = ["rating","created_at","modified"]
 
-    def get_vendor_name(self, obj):
-        return obj.vendor.vendor_name
-
-    def get_distance(self, obj):
-        # obj.distance is a Distance object; convert to km/miles/etc.
-        return obj.distance.km if hasattr(obj, "distance") else None
+    def get_category_name(self,obj):
+        return obj.category.name
 
     def create(self, validated_data):
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])

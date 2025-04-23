@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
 from accounts.utils import send_otp, user_test
 from marketplace.models import Category, Food, Rating
+from carrier.permissions import IsVendor
 from vendor.forms import FoodForm, VendorForm
 from vendor.models import Vendor
 from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
@@ -27,6 +28,7 @@ from rest_framework.response import Response
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from api.backends import FoodFilterSet
+
 # Create your views here.
 
 
@@ -34,54 +36,23 @@ from api.backends import FoodFilterSet
 
 
 class VendorAPIView(views.APIView):
-
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+    http_method_names = ["get","patch","delete"]
     def get(self, *args, **kwargs):
         """returns all vendor details"""
-        role = self.request.user.role
-        if role == 2 or not hasattr(self.request.user, "vendor"):
-            # a normal user is not allowed
-            return Response(
-                {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
-            )
         vendor = self.request.user.vendor
-        serializer = VendorSerializerDetail(vendor)
+        serializer = VendorSerializerDetailed(vendor)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, *args, **kwargs):
         """enables vendor and related userprofile update"""
-        role = self.request.user.role
-        if role == 2:
-            # a normal user is not allowed
-            return Response(
-                {"error": "user_not_a_vendor"}, status=status.HTTP_400_BAD_REQUEST
-            )
         data = self.request.data
         vendor = self.request.user.vendor
-        vendor_serializer = VendorSerializerDetail(vendor, data=data, partial=True)
-
-        # validation
-        try:
-            vendor_serializer.is_valid(raise_exception=True)
-        except:
-            return Response(
-                {"errors": vendor_serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
-
+        vendor_serializer = VendorSerializerDetailed(vendor, data=data, partial=True)
+        vendor_serializer.is_valid(raise_exception=True)
         vendor_serializer.save()
         # success
         return Response(vendor_serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, *args, **kwargs):
-        """overriden for converting to vendor"""
-        data = self.request.data
-        user = self.request.user
-        profile = user.profile
-        vendor = Vendor(user=user, user_profile=profile)
-        vendor.vendor_name = data["vendor_name"]
-        vendor.save()
-        user.role = SHOP
-        user.save()
-        return Response(status=status.HTTP_201_CREATED)
 
     def delete(self, *args, **kwargs):
         """overriden to cancel vendor account"""
@@ -91,6 +62,27 @@ class VendorAPIView(views.APIView):
         vendor.delete()
         user.save()
         return Response(status=status.HTTP_200_OK)
+
+
+class ConvertToVendorAPIView(views.APIView):
+    http_method_names = ["post"]
+
+    def post(self, *args, **kwargs):
+        """
+        THis method converts a user to a vendor account
+        body: vendor_name
+        """
+        # if user is already a vendor
+        if self.request.user.role == SHOP or hasattr(self.request.user, "vendor"):
+            return Response(
+                {"error": "user already a vendor"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        data = self.request.data
+        ser = VendorSerializerDetailed(data=data, context={"request": self.request})
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
 """Food Management API Views"""
@@ -244,7 +236,7 @@ def vendor_details(request, vendor_name):
     ratings = Rating.objects.filter(object_id=vendor.id)
     cat_count_pro = Counter(categories).items()
     foods_count = vendor_foods.count()
-    
+
     return render(request, "vendor/vendor_details.html", context=locals())
 
 
@@ -281,7 +273,7 @@ def add_food(request):
                 return redirect("vendor:vendor_foods")
             except Exception as e:
                 messages.error(request, "خطا در ثبت غذا!")
-                
+
                 return render(request, "vendor/add_food.html", context=locals())
         # there are form errors
         messages.error(request, "خطا در ثبت غذا!")

@@ -28,15 +28,16 @@ class Food(models.Model):
         db_index=True,
     )
     name = models.CharField(max_length=60, db_index=True)
-    price = models.DecimalField(max_digits=6, decimal_places=0, db_index=True)
+    prices = models.JSONField(default=list)
     category = models.ForeignKey(
         "marketplace.Category",
         on_delete=models.CASCADE,
         related_name="foods",
         db_index=True,
     )
-    description = models.TextField(max_length=250, blank=True, null=True)
-    image = models.ImageField(upload_to="foods/", blank=True, null=True)
+    # price options ???????
+    description = models.TextField(max_length=250)
+    image = models.ImageField(upload_to="foods/")
     is_available = models.BooleanField(default=True, db_index=True)
     modified = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

@@ -20,7 +20,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, views
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
-from marketplace.serializers import FoodSerializerMany, RatingSerializer, CategorySerializer
+from marketplace.serializers import (
+    FoodSerializerMany,
+    RatingSerializer,
+    CategorySerializer,
+)
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
@@ -270,6 +274,18 @@ class RatingViewSet(viewsets.ModelViewSet):
             instance.save()
             # successfull creation
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class CategoriesReadAPIView(views.APIView):
+    http_method_names = ["get"]
+    def get(self, *args, **kwargs):
+        return Response(
+            {
+                "categories": [
+                    (cat.id,cat.name) for cat in Category.objects.filter(show_on_home=True)
+                ]
+            }
+        )
 
 
 def marketplace(request):

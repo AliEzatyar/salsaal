@@ -9,25 +9,19 @@ from django.template.loader import render_to_string
 
 class Vendor(models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="vendor", db_index=True
+        User, on_delete=models.CASCADE, related_name="vendor", db_index=True,unique=True
     )
     user_profile = models.OneToOneField(
         UserProfile,
         on_delete=models.CASCADE,
         related_name="vendor",
-        blank=True,
-        null=True,
         db_index=True,
+        unique=True
     )
-
     vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
     vendor_license = models.ImageField(
-        upload_to="vendor/license/", blank=True, null=True
+        upload_to="vendor/license/"
     )
-    categories = models.ManyToManyField(
-        "marketplace.Category", through=Food, db_index=True
-    )
-    city = models.CharField(default="کابل", db_index=True)
     is_approved = models.BooleanField(default=False, db_index=True)
     active_hours = models.CharField(max_length=255,default="11:00-2:00 PM,5:00-9:00 PM")  # comma seperated
     created_at = models.DateTimeField(auto_now_add=True)

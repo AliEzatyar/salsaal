@@ -4,10 +4,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
 from marketplace.views import RatingViewSet, MarketplaceViewset, SearchApiView
-from vendor.views import VendorFoodsManageViewSet, VendorAPIView
+from vendor.views import ConvertToVendorAPIView, VendorFoodsManageViewSet, VendorAPIView
 from carrier.views import CarrierOrdersApiView, CarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
-
+from marketplace.views import CategoriesReadAPIView
 from accounts import views as ac_views
 
 # Router Setup for
@@ -16,7 +16,7 @@ router = DefaultRouter()
 router.register(r"orders", OrderViewSet)
 # user profile
 router.register(r"user-profile", ac_views.UserProfileViewset)
-# user detail 
+# user detail
 router.register(r"user-detail", ac_views.UserViewset)
 
 # rating viewset routing
@@ -73,19 +73,23 @@ urlpatterns = [
     path(
         "vendor/",
         VendorAPIView.as_view(),
-        name="vendor",
     ),
+    path(
+        "convert-to-vendor/",
+        ConvertToVendorAPIView.as_view(),
+    ),
+    # get categories
+    path("get-category-names/", CategoriesReadAPIView.as_view()),
+    
     # carrier
     path(
         "sosc/",
         SetOrderStateCarrying.as_view(),
-        name="sosc",
     ),
     # customer
     path(
         "soss/",
         SetOrderStateSubmitted.as_view(),
-        name="soss",
     ),
     # full search
     path("search/", SearchApiView.as_view(), name="full_search"),

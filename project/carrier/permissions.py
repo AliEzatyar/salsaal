@@ -20,7 +20,7 @@ class IsCarrierOfVendor(BasePermission):
 
 class IsVendor(BasePermission):
     def has_permission(self, request, view):
-        if not hasattr(request.user, "vendor"):
+        if not hasattr(request.user, "vendor") or request.user.role !=SHOP:
             return False
         return True
 
