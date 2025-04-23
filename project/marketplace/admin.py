@@ -6,7 +6,7 @@ from .models import Category, Food, Rating
 
 class FoodAdmin(admin.ModelAdmin):
     model = Food
-    list_display = ["name", "vendor", "is_available", "price"]
+    list_display = ["name", "vendor", "is_available", "min_price","prices"]
     list_editable = ["is_available"]
     list_filter = ["is_available", "vendor"]
     search_fields = ["category__name", "vendor__vendor_name"]

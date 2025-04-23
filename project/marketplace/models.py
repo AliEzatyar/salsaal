@@ -10,6 +10,7 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     show_on_home = models.BooleanField(default=True)
+
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
@@ -19,8 +20,8 @@ class Category(models.Model):
         return self.name
 
 
-
 class Food(models.Model):
+    """please consider using decimal price value"""
     vendor = models.ForeignKey(
         "vendor.Vendor",
         on_delete=models.CASCADE,
@@ -28,6 +29,7 @@ class Food(models.Model):
         db_index=True,
     )
     name = models.CharField(max_length=60, db_index=True)
+    min_price = models.DecimalField(max_digits=6,decimal_places=2)
     prices = models.JSONField(default=list)
     category = models.ForeignKey(
         "marketplace.Category",
@@ -46,7 +48,7 @@ class Food(models.Model):
     class Meta:
         verbose_name = "food"
         verbose_name_plural = "foods"
-        ordering = ["-modified"]
+        ordering = ["-modified"] # newest
 
     def rating_form(self):
         html = render_to_string(
@@ -57,14 +59,16 @@ class Food(models.Model):
 
     def overall_rating(self):
         """this utility method returns the rating average"""
-        ratings = Rating.objects.filter(object_id=self.pk).values_list('rating')
+        ratings = Rating.objects.filter(object_id=self.pk).values_list("rating")
         ratings = [r[0] for r in ratings]
         if len(ratings) == 0:
             return 0
         self.rating = sum(ratings) / len(ratings)
         self.save()
-        return sum(ratings)/len(ratings)
+        return sum(ratings) / len(ratings)
 
+        
+        
     def __str__(self):
         return self.name
 
@@ -80,12 +84,12 @@ class Rating(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     rating = models.PositiveSmallIntegerField(default=0, choices=RATING_CHOICES)
     content_type = models.ForeignKey(
-        "contenttypes.ContentType", on_delete=models.CASCADE,null=True
+        "contenttypes.ContentType", on_delete=models.CASCADE, null=True
     )
     object_id = models.IntegerField(null=True)
     related_obj = GenericForeignKey("content_type", "object_id")
-    enabled= models.BooleanField(default=True)
-    
+    enabled = models.BooleanField(default=True)
+
     @property
     def get_rating(self):
         return [i for i in range(self.rating)]
