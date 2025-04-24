@@ -10,6 +10,9 @@ class IsCarrierOfVendor(BasePermission):
         
         if not hasattr(request.user, "carrier"):
             return False
+        if not request.user.carrier.is_active:
+            """only active carriers can see available orders"""
+            return False
         return True
 
     def has_object_permission(self, request, view, order_obj):
@@ -23,7 +26,13 @@ class IsVendor(BasePermission):
         if not hasattr(request.user, "vendor") or request.user.role !=SHOP:
             return False
         return True
-
+    
+class IsVendorOfCarrier(BasePermission):
+    
+    def has_object_permission(self, request, view, obj):
+        if not request.user.role == SHOP:
+            return False
+        return request.user.vendor == obj.vendor
 
 class IsBuyer(BasePermission):
     def has_permission(self, request, view):

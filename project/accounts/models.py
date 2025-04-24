@@ -4,12 +4,15 @@ from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
 from django.utils import timezone
 
+ADMIN = 0
 SHOP = 1
 CUSTOMER = 2
 CARRIER = 3
 
 DEFAULT_OTP_EXPIRATION = 10 # minutes
-FOOD_OTP_EXPIRATION = 1440 # 1 Day
+FOOD_DELIVERY_OTP_EXPIRATION = 1440 # 1 Day
+CARRIER_ADD_OTP_EXPIRATION = 1440
+
 # Create your models here.
 class UserManager(BaseUserManager):
     def create_user(
@@ -101,6 +104,8 @@ class User(AbstractBaseUser):
             role = "Shop"
         return role
 
+    def get_full_name(self):
+        return self.first_name + " "+ self.last_name
 
 class UserProfile(g_models.Model):
     user = models.OneToOneField(

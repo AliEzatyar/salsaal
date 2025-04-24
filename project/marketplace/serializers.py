@@ -58,6 +58,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     class Meta:
         model = Food
         fields = [
+            "id",
             "name",
             "category",
             "prices",
@@ -70,7 +71,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "created_at",
             "modified",
         ]
-        read_only_fields = ["rating", "created_at", "modified","min_price"]
+        read_only_fields = ["rating", "created_at", "modified","min_price","id"]
 
     def get_category_name(self, obj):
         return obj.category.name

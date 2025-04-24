@@ -5,7 +5,7 @@ from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
 from marketplace.views import RatingViewSet, MarketplaceViewset, SearchApiView
 from vendor.views import ConvertToVendorAPIView, VendorFoodsManageViewSet, VendorAPIView
-from carrier.views import CarrierOrdersApiView, CarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
+from carrier.views import AddCarrierAPIView, CarrierOrdersApiView, ManageCarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
 from marketplace.views import CategoriesReadAPIView
 from accounts import views as ac_views
@@ -24,7 +24,7 @@ router.register(r"ratings", RatingViewSet)
 # food managemet routing
 router.register(r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods")
 # managing carriers as vendor
-router.register(r"carriers", CarrierViewSet)
+router.register(r"manage-carriers", ManageCarrierViewSet,basename="manage-carriers")
 # router seeing order
 router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
 # food retrive  routing
@@ -78,9 +78,12 @@ urlpatterns = [
         "convert-to-vendor/",
         ConvertToVendorAPIView.as_view(),
     ),
+    path(
+        "add-carrier/",
+        AddCarrierAPIView.as_view(),
+    ),
     # get categories
     path("get-category-names/", CategoriesReadAPIView.as_view()),
-    
     # carrier
     path(
         "sosc/",
