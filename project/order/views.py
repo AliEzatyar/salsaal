@@ -25,7 +25,6 @@ from io import BytesIO
 class OrderViewSet(viewsets.ModelViewSet):
     """this view enables order create/edit/del by customer"""
 
-    queryset = Order.objects.all()
     serializer_class = OrderSerializer
 
     @action(detail=True, methods=["patch"])
@@ -37,7 +36,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """overrding it to get orders of specific user"""
         user_id = self.request.user.id
-        new_queryset = self.queryset.filter(user_id=int(user_id))
+        new_queryset = Order.objects.filter(user_id=int(user_id))
         return new_queryset
 
     def create(self, request, *args, **kwargs):

@@ -16,11 +16,6 @@ ORDER_STATUS_CHOICES = [
     ("carrying", "carrying"),
     ("submitted", "submitted"),
 ]
-PAYMENT_STATUS_CHOICES = [
-    ("بدون پرداخت", "بدون پرداخت"),
-    ("پرداخت تکمیل", "پرداخت تکمیل"),
-    ("مسترد", "مسترد"),
-]
 
 
 class Order(models.Model):
@@ -29,17 +24,12 @@ class Order(models.Model):
         max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
     )
     total_price = models.PositiveIntegerField(default=0)
-    payment_status = models.CharField(
-        max_length=30,
-        default=PAYMENT_STATUS_CHOICES[0][0],
-        choices=PAYMENT_STATUS_CHOICES,
-    )
     paid = models.BooleanField(default=False)
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
     )
-    created = jDateTimeField(auto_now_add=True)
-    updated = jDateTimeField(auto_now=True)
+    created_at = jDateTimeField(auto_now_add=True)
+    modified_at = jDateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=2)
     carrier = models.OneToOneField(
         "carrier.Carrier",null=True, on_delete=models.SET_NULL, related_name="orders"
@@ -50,7 +40,7 @@ class Order(models.Model):
     
 
     class Meta:
-        indexes = [models.Index(fields=["-created"])]
+        indexes = [models.Index(fields=["-created_at"])]
 
     def calculate_total_price(self):
         self.total_price = sum(item.total_price for item in self.items.all())
@@ -99,3 +89,7 @@ class OrderItem(models.Model):
     @property
     def total_price(self):
         return self.quantity * self.price
+
+    @property
+    def food_name(self):
+        return self.food.name

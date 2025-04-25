@@ -9,7 +9,7 @@ class Cart(models.Model):
         "accounts.User", on_delete=models.CASCADE, related_name="cart"
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+    modified_at = models.DateTimeField(auto_now=True)
 
     def calculate_total_items(self):
         if hasattr(self, "items"):

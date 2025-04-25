@@ -7,7 +7,7 @@ class FavList(models.Model):
         "accounts.User", on_delete=models.CASCADE, related_name="favlist"
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+    modified_at = models.DateTimeField(auto_now=True)
 
     def total_items(self):
         return self.items.count()

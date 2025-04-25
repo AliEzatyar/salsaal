@@ -1,25 +1,17 @@
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core.exceptions import PermissionDenied
 from accounts.models import SHOP, UserProfile
-from accounts.utils import send_otp, user_test
 from marketplace.models import Category, Food, Rating
-from carrier.permissions import IsVendor
-from vendor.forms import FoodForm, VendorForm
+from carrier.permissions import IsVendor, IsVendorOfOrder
+from order.serializers import  VOrderSerializer
+from order.models import Order
 from vendor.models import Vendor
-from accounts.forms import UserProfileForm, UserRegForm, VendorRegForm
-from django.contrib import messages
-from django.urls import reverse
 from .utils import get_vendor, vendor_tester
-from django.db.transaction import atomic
-from django.db.models.aggregates import Count
 from collections import Counter
 from accounts.models import CUSTOMER
 from .serializers import VendorSerializerDetailed
 from marketplace.serializers import FoodSerializerDetail
 from api.permissions import IsVendorOfFood
-from rest_framework.decorators import action
 from rest_framework import permissions
 from rest_framework import viewsets
 from rest_framework import views
@@ -27,7 +19,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
-from api.backends import FoodFilterSet
+from api.backends import FoodFilterSet, VOrderFilterSet
 
 # Create your views here.
 
@@ -92,7 +84,6 @@ class ConvertToVendorAPIView(views.APIView):
 class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on foods of a vendor"""
 
-    queryset = Food.objects.all()
     serializer_class = FoodSerializerDetail
     permission_classes = [permissions.IsAuthenticated, IsVendorOfFood]
     # ordering
@@ -110,7 +101,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """any queryset should be of the requesting vendor"""
-        query_set = self.queryset.filter(vendor__user__id=self.request.user.id)
+        query_set = Food.objects.filter(vendor__user__id=self.request.user.id)
         return query_set
 
     def get_serializer_context(self):
@@ -119,6 +110,26 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
         return context
 
 
+class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
+    serializer_class = VOrderSerializer
+    permission_classes = [permissions.IsAuthenticated,IsVendorOfOrder]
+    # ordering
+    filter_backends = [
+        filters.OrderingFilter,
+        filters.SearchFilter,
+        DjangoFilterBackend,
+    ]
+
+    ordering_fields = ["total_price", "created_at"]
+    ordering = ["-created_at"]
+    # filering
+    filterset_class = VOrderFilterSet
+    # searching
+    # search_fields = ["customer_name"] not possible since customer name is not a real field of order model
+    
+    def get_queryset(self):
+        queryset = Order.objects.filter(vendor=self.request.user.vendor)
+        return queryset
 
 
 def vendor_details(request, vendor_name):

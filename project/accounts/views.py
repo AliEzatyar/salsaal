@@ -45,7 +45,6 @@ class UserViewset(viewsets.ModelViewSet):
 
     http_method_names = ["get", "delete", "patch", "put"]
     serializer_class = UserDetailSerializer
-    queryset = User.objects.all()
 
     def get_object(self):
         """this ensures that only the user itself works on its account"""
@@ -53,8 +52,8 @@ class UserViewset(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """limiting queryset to only  one instance"""
-        new_qs = self.queryset.filter(id=self.request.user.id)
-        return super().get_queryset()
+        new_qs = User.objects.filter(id=self.request.user.id)
+        return new_qs
 
 
 class VerifyActivateAccountOTP(views.APIView):
@@ -184,7 +183,6 @@ class ResetPassword(views.APIView):
 
 
 class UserProfileViewset(viewsets.ModelViewSet):
-    queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated, IsProfileOwner]
     # http_method_names = ["patch","get"]
@@ -203,7 +201,7 @@ class UserProfileViewset(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """overriding to prevent others from accessing another profile"""
-        return self.queryset.filter(user=self.request.user)
+        return UserProfile.objects.filter(user=self.request.user)
 
 
 # depricated

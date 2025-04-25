@@ -31,19 +31,3 @@ class CarrierSerializer(serializers.ModelSerializer):
     def get_carrier_name(self,obj):
         return obj.user.get_full_name()
     
-
-class CarrierOrderSerializer(serializers.ModelSerializer):
-    customer_name = serializers.SerializerMethodField("get_customer_name")
-    class Meta:
-        model = Order
-        fields = [
-            "customer_name",
-            "total_items",
-            "total_price",
-            "status",
-            "paid",
-            "created",
-        ]
-
-    def get_customer_name(self, obj):
-        return obj.user.first_name + obj.user.last_name

@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
 from marketplace.views import RatingViewSet, MarketplaceViewset, SearchApiView
-from vendor.views import ConvertToVendorAPIView, VendorFoodsManageViewSet, VendorAPIView
+from vendor.views import ConvertToVendorAPIView, ListVendorOrders, VendorFoodsManageViewSet, VendorAPIView
 from carrier.views import AddCarrierAPIView, CarrierOrdersApiView, ManageCarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
 from marketplace.views import CategoriesReadAPIView
@@ -13,22 +13,24 @@ from accounts import views as ac_views
 # Router Setup for
 router = DefaultRouter()
 # order viewset routing
-router.register(r"orders", OrderViewSet)
+router.register(r"orders", OrderViewSet,basename="orders")
 # user profile
-router.register(r"user-profile", ac_views.UserProfileViewset)
+router.register(r"user-profile", ac_views.UserProfileViewset,basename="user-profile")
 # user detail
-router.register(r"user-detail", ac_views.UserViewset)
+router.register(r"user-detail", ac_views.UserViewset,basename="user-detail")
 
 # rating viewset routing
-router.register(r"ratings", RatingViewSet)
+router.register(r"ratings", RatingViewSet,basename="rating")
 # food managemet routing
 router.register(r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods")
 # managing carriers as vendor
 router.register(r"manage-carriers", ManageCarrierViewSet,basename="manage-carriers")
+# see orders as vendor
+router.register(r"vendor-orders", ListVendorOrders, basename="vendor-orders")
 # router seeing order
 router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
 # food retrive  routing
-router.register(r"home", MarketplaceViewset)
+router.register(r"home", MarketplaceViewset,basename="home")
 
 app_name = "api"
 

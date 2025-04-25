@@ -69,9 +69,9 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "is_available",
             "rating",
             "created_at",
-            "modified",
+            "modified_at",
         ]
-        read_only_fields = ["rating", "created_at", "modified","min_price","id"]
+        read_only_fields = ["rating", "created_at", "modified_at","min_price","id"]
 
     def get_category_name(self, obj):
         return obj.category.name

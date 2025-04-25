@@ -4,10 +4,11 @@ from rest_framework import parsers, serializers
 from .models import Carrier
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import CarrierSerializer, CarrierOrderSerializer
+from .serializers import CarrierSerializer
+from order.serializers import CarrierOrderSerializer
 from .permissions import IsBuyer, IsCarrierOfVendor, IsVendor, IsVendorOfCarrier
 from order.models import Order
-from order.models import ORDER_STATUS_CHOICES, PAYMENT_STATUS_CHOICES
+from order.models import ORDER_STATUS_CHOICES
 from rest_framework import views
 
 from accounts.models import (
@@ -29,20 +30,19 @@ from carrier.models import CARRIER_STATUS_CHOICES
 # Create your views here.
 class ManageCarrierViewSet(viewsets.ModelViewSet):
     """
-        this view is only accessible by a vendor to manage carriers
-        GET, PATCH, DELETE
-        UPDATEable: is_active, id_document
+    this view is only accessible by a vendor to manage carriers
+    GET, PATCH, DELETE
+    UPDATEable: is_active, id_document
     """
-    permission_classes = [perm.IsAuthenticated, IsVendor,IsVendorOfCarrier]
-    queryset = Carrier.objects.all()
+
+    permission_classes = [perm.IsAuthenticated, IsVendor, IsVendorOfCarrier]
     serializer_class = CarrierSerializer
     parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
-    http_method_names = ["delete","get","patch"]
-                
-    
+    http_method_names = ["delete", "get", "patch"]
+
     def get_queryset(self):
         """only this vendor carriers be listed"""
-        queryset = self.queryset.filter(vendor = self.request.user.vendor)
+        queryset = Carrier.objects.filter(vendor=self.request.user.vendor)
         return queryset
 
     def get_serializer_context(self):
@@ -67,7 +67,12 @@ class AddCarrierAPIView(views.APIView):
             raise serializers.ValidationError({"erroor": "You are not allowed"})
 
         # sending otp
-        send_otp(self.request, account, OTP_VERIFY_CARRIER,vendor_name=self.request.user.vendor.vendor_name)
+        send_otp(
+            self.request,
+            account,
+            OTP_VERIFY_CARRIER,
+            vendor_name=self.request.user.vendor.vendor_name,
+        )
         return Response({"message": "otp sent"}, status=status.HTTP_200_OK)
 
     def patch(self, *args, **kwargs):
@@ -110,14 +115,15 @@ class CarrierOrdersApiView(viewsets.ReadOnlyModelViewSet):
     A carrier can see detail of each
     """
 
-    queryset = Order.objects.filter(status=ORDER_STATUS_CHOICES[1][1])
     serializer_class = CarrierOrderSerializer
     permission_classes = [perm.IsAuthenticated, IsCarrierOfVendor]
 
     def get_queryset(self):
         """overriding to only retrive orders of its vendor"""
-        query_set = self.queryset.filter(
-            vendor=self.request.user.carrier.vendor, paid=True
+        query_set = Order.objects.filter(
+            status=ORDER_STATUS_CHOICES[1][1],
+            vendor=self.request.user.carrier.vendor,
+            paid=True,
         )
         return query_set
 
@@ -136,7 +142,7 @@ class SetOrderStateCarrying(views.APIView):
         order_id = data.get("order_id")
         try:
             order = Order.objects.get(id=order_id)
-            if order.payment_status == PAYMENT_STATUS_CHOICES[1][1] or not order.paid:
+            if not order.paid:
                 # not paid
                 return Response({"error": "payment not completed"}, status=400)
             self.check_object_permissions(self.request, order)

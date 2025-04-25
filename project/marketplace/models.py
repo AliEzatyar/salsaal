@@ -23,6 +23,7 @@ class Category(models.Model):
 
 class Food(models.Model):
     """please consider using decimal price value"""
+
     vendor = models.ForeignKey(
         "vendor.Vendor",
         on_delete=models.CASCADE,
@@ -30,7 +31,7 @@ class Food(models.Model):
         db_index=True,
     )
     name = models.CharField(max_length=60, db_index=True)
-    min_price = models.DecimalField(max_digits=6,decimal_places=2)
+    min_price = models.DecimalField(max_digits=6, decimal_places=2)
     prices = models.JSONField(default=list)
     category = models.ForeignKey(
         "marketplace.Category",
@@ -42,14 +43,14 @@ class Food(models.Model):
     description = models.TextField(max_length=250)
     image = models.ImageField(upload_to="foods/")
     is_available = models.BooleanField(default=True, db_index=True)
-    modified = models.DateTimeField(auto_now=True)
+    modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     rating = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         verbose_name = "food"
         verbose_name_plural = "foods"
-        ordering = ["-modified"] # newest
+        ordering = ["-modified_at"]  # newest
 
     def rating_form(self):
         html = render_to_string(
@@ -68,12 +69,12 @@ class Food(models.Model):
         self.save()
         return sum(ratings) / len(ratings)
 
-    def save(self,*args, **kwargs):
+    def save(self, *args, **kwargs):
         if self.pk:
             # updated
             self.min_price = Decimal(min([float(x) for x in self.prices]))
         return super().save(*args, **kwargs)
-          
+
     def __str__(self):
         return self.name
 

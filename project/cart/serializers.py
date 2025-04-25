@@ -24,7 +24,7 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ["created_at",'modified',"items",'total_price','total_items']
+        fields = ["created_at",'modified_at',"items",'total_price','total_items']
 
     def calculate_total(self,obj):
         return obj.calculate_total()

@@ -87,3 +87,5 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         validated_data["user_profile"] = user_profile
 
         return super().create(validated_data)
+
+

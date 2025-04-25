@@ -224,7 +224,7 @@ class RatingViewSet(viewsets.ModelViewSet):
         DjangoFilterBackend,
     ]
     ordering_fields = ["created_at", "rating"]
-    ordering = ["created_at"]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         """overriding in order to distinguish by vendor or food"""
