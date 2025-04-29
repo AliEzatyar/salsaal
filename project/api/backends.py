@@ -56,7 +56,7 @@ class VOrderFilterSet(django_filters.FilterSet):
         if value == "carrying": 
             return queryset.filter(status=ORDER_STATUS_CHOICES[3][0])
 
-        if value == "submitted": 
+        if value == "delivered": 
             return queryset.filter(status=ORDER_STATUS_CHOICES[4][0])
 
     def filter_by_date_range(self, queryset, name, value):

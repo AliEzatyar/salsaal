@@ -2,14 +2,14 @@ from decimal import Decimal, InvalidOperation
 import json
 from rest_framework import serializers
 from vendor.models import Vendor
-
 from marketplace.models import Category, Food, Rating
-
 from rest_framework import serializers
 from decimal import Decimal, InvalidOperation
 import json
-
+from django.contrib.gis.db.models.fields import PointField
 """custom fields"""
+
+
 class ListOfDecimalsField(serializers.Field):
     # input
     def to_internal_value(self, data):
@@ -37,11 +37,14 @@ class ListOfDecimalsField(serializers.Field):
     def to_representation(self, value):
         return [d for d in value]
 
+
 class MyDecimalField(serializers.Field):
     def to_representation(self, value):
-        return round(float(value),2)
+        return round(float(value), 2)
+
 
 """serializers"""
+
 
 class CategorySerializer(serializers.ModelSerializer):
 
@@ -52,9 +55,11 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class FoodSerializerDetail(serializers.ModelSerializer):
     """this serializer is used for vendor-only CRUD"""
+
     category_name = serializers.SerializerMethodField("get_category_name")
-    prices = ListOfDecimalsField() # custom field to parse form-data prices values
+    prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
+
     class Meta:
         model = Food
         fields = [
@@ -71,14 +76,13 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "created_at",
             "modified_at",
         ]
-        read_only_fields = ["rating", "created_at", "modified_at","min_price","id"]
+        read_only_fields = ["rating", "created_at", "modified_at", "min_price", "id"]
 
     def get_category_name(self, obj):
         return obj.category.name
 
-
     def create(self, validated_data):
-        """setting the vendor and min price for the food"""        
+        """setting the vendor and min price for the food"""
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
         validated_data["min_price"] = min([x for x in validated_data["prices"]])
         return super().create(validated_data)
@@ -86,12 +90,13 @@ class FoodSerializerDetail(serializers.ModelSerializer):
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
+
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     min_price = MyDecimalField()
 
     class Meta:
         model = Food
-        fields = ["name","min_price", "prices", "image", "rating", "vendor_name"]
+        fields = ["name", "min_price", "prices", "image", "rating", "vendor_name"]
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
@@ -101,3 +106,23 @@ class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
         exclude = ["object_id", "content_type"]
+
+
+class PublicVendorSerializer(serializers.ModelSerializer):
+    """public vendor object details"""
+    foods = FoodSerializerMany(many=True,read_only=True)
+    location = serializers.SerializerMethodField("get_location")
+    rating = serializers.SerializerMethodField("get_overall_rating")
+    
+    class Meta:
+        model = Vendor
+        fields = ["vendor_name","active_hours","location","rating","foods"]
+    
+    def get_location(self,obj):
+        return obj.get_location().tuple # json does not support point object
+        
+    def get_overall_rating(self,obj):
+        return obj.overall_rating()
+    
+    
+        

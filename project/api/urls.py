@@ -3,7 +3,7 @@ from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
-from marketplace.views import RatingViewSet, MarketplaceViewset, SearchApiView
+from marketplace.views import PublicVendorDetail, RatingViewSet, MarketplaceViewset, SearchApiView
 from vendor.views import ConvertToVendorAPIView, ListVendorOrders, VendorFoodsManageViewSet, VendorAPIView
 from carrier.views import AddCarrierAPIView, CarrierOrdersApiView, ManageCarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
@@ -16,8 +16,10 @@ router = DefaultRouter()
 router.register(r"orders", OrderViewSet,basename="orders")
 # user profile
 router.register(r"user-profile", ac_views.UserProfileViewset,basename="user-profile")
-# user detail
+# private user detail
 router.register(r"user-detail", ac_views.UserViewset,basename="user-detail")
+# public vendor detail
+router.register(r"public-vendor-detail", PublicVendorDetail, basename="public-vendor-detail")
 
 # rating viewset routing
 router.register(r"ratings", RatingViewSet,basename="rating")

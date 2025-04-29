@@ -22,6 +22,7 @@ from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
     FoodSerializerMany,
+    PublicVendorSerializer,
     RatingSerializer,
     CategorySerializer,
 )
@@ -30,6 +31,9 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from rest_framework.decorators import action
 from django.utils import timezone
+from rest_framework.mixins import RetrieveModelMixin
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import AllowAny
 
 """Marketplace API Views"""
 
@@ -278,14 +282,27 @@ class RatingViewSet(viewsets.ModelViewSet):
 
 class CategoriesReadAPIView(views.APIView):
     http_method_names = ["get"]
+
     def get(self, *args, **kwargs):
         return Response(
             {
                 "categories": [
-                    (cat.id,cat.name) for cat in Category.objects.filter(show_on_home=True)
+                    (cat.id, cat.name)
+                    for cat in Category.objects.filter(show_on_home=True)
                 ]
             }
         )
+
+
+class PublicVendorDetail(RetrieveModelMixin, GenericViewSet):
+    """this view enables a normal user see a vendor detail with its menue"""
+
+    serializer_class = PublicVendorSerializer
+    permission_classes = [AllowAny]
+    queryset = Vendor.objects.all()
+    
+    def get_object(self):
+        return super().get_object()
 
 
 def marketplace(request):

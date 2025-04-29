@@ -17,7 +17,9 @@ class Cart(models.Model):
         return 0
 
     def calculate_total(self):
-        return sum([item.quantity * item.food.price for item in self.items.all()])
+        items = self.items.select_related("food").only("quantity", "food__price")
+
+        return sum(item.quantity * item.food.price for item in items)
 
     def __str__(self):
         return f"Cart <{self.user.username}>"

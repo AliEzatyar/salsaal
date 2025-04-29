@@ -3,8 +3,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from accounts.models import SHOP, UserProfile
 from marketplace.models import Category, Food, Rating
 from carrier.permissions import IsVendor, IsVendorOfOrder
-from order.serializers import  VOrderSerializer
+from order.serializers import VOrderSerializer
 from order.models import Order
+from multiVend.settings.base import PUBLIC_PLATFORM_COMMISSION_FEE
 from vendor.models import Vendor
 from .utils import get_vendor, vendor_tester
 from collections import Counter
@@ -20,6 +21,7 @@ from rest_framework.response import Response
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from api.backends import FoodFilterSet, VOrderFilterSet
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 
 # Create your views here.
 
@@ -112,7 +114,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
 
 class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     serializer_class = VOrderSerializer
-    permission_classes = [permissions.IsAuthenticated,IsVendorOfOrder]
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
     # ordering
     filter_backends = [
         filters.OrderingFilter,
@@ -126,10 +128,31 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     filterset_class = VOrderFilterSet
     # searching
     # search_fields = ["customer_name"] not possible since customer name is not a real field of order model
-    
+
     def get_queryset(self):
         queryset = Order.objects.filter(vendor=self.request.user.vendor)
         return queryset
+
+
+class VendorRevenue(views.APIView):
+    permission_classes = [IsVendor, permissions.IsAuthenticated]
+
+    def get(self, *args, **kwargs):
+        """THis view returns vendor revenue"""
+        vendor = self.request.user.vendor
+        revenue = (
+            Order.objects.filter(vendor=vendor, status="delivered")
+            .annotate(
+                vendor_earning=ExpressionWrapper(
+                    F("total_price")
+                    - (F("total_price") * PUBLIC_PLATFORM_COMMISSION_FEE / 100),
+                    output_field=DecimalField(),
+                )
+            )
+            .aggregate(total_vendor_revenue=Sum("vendor_earning"))
+        )
+
+        return Response
 
 
 def vendor_details(request, vendor_name):
@@ -142,8 +165,6 @@ def vendor_details(request, vendor_name):
     ratings = Rating.objects.filter(object_id=vendor.id)
     cat_count_pro = Counter(categories).items()
     foods_count = vendor_foods.count()
-
-    return render(request, "vendor/vendor_details.html", context=locals())
 
 
 @login_required

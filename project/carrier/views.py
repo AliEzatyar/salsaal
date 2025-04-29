@@ -175,7 +175,7 @@ class SetOrderStateSubmitted(views.APIView):
     permission_classes = [perm.IsAuthenticated, IsBuyer]
 
     def post(self, *args, **kwargs):
-        """carrier sets order status -submitted-"""
+        """carrier sets order status -delivered-"""
         data = self.request.data
         order_id = data.get("order_id")
         input_OTP = str(data.get("otp"))
@@ -189,12 +189,12 @@ class SetOrderStateSubmitted(views.APIView):
                 return Response({"error": "Otp Expired"}, status=400)
 
             # setting order in submited state and carrier in free state
-            order.status = ORDER_STATUS_CHOICES[4][1]  # submitted
+            order.status = ORDER_STATUS_CHOICES[4][1]  # delivered
             order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
             order.carrier.save()
             order.save()
             return Response(
-                {"message": "order state changed to submitted"},
+                {"message": "order state changed to delivered"},
                 status=status.HTTP_202_ACCEPTED,
             )
         except Order.DoesNotExist:

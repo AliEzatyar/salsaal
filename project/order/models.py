@@ -14,7 +14,7 @@ ORDER_STATUS_CHOICES = [
     ("waiting", "waiting"),
     ("processing", "processing"),
     ("carrying", "carrying"),
-    ("submitted", "submitted"),
+    ("delivered", "delivered"),
 ]
 
 
