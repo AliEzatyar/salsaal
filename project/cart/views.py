@@ -29,15 +29,24 @@ class CartApiView(views.APIView):
     def patch(self, *args, **kwargs):
         """partial update for cart-items amount change"""
         data = self.request.data
-        items = data["items"]
-        for item_id, quantity in items:
-            item = CartItem.objects.filter(id=item_id).first()
-            if item and item.food.is_available:
+        items_data = data["items"]
+        item_ids = [item[0] for item in items_data]  # ids
+        available_items = CartItem.objects.filter(
+            id__in=item_ids, food__is_available=True
+        )
+        items_dict = {item.id: item for item in available_items}
+        updated_items = []
+
+        for item_id, quantity in items_data:
+            item = items_dict.get(item_id, None)
+            if item:
                 item.quantity = quantity
-                item.save()
-            else:
-                continue
-        # successful edit
+                updated_items.append(item)
+
+        if updated_items:
+            CartItem.objects.bulk_update(updated_items, ["quantity"])
+        
+        # successful items quantity update
         cart = self.request.user.cart
         serializer = CartSerializer(cart)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -62,7 +71,7 @@ class CartApiView(views.APIView):
                 # cart_item.save()
                 cart.items.add(cart_item)
                 return Response(status=status.HTTP_200_OK)
-            return Response({"message":"already exists"},status=status.HTTP_200_OK)
+            return Response({"message": "already exists"}, status=status.HTTP_200_OK)
 
         else:
             return Response(
@@ -80,7 +89,7 @@ def show_cart(request):
 @login_required
 def add_to_cart(request, food_id):
     food = Food.objects.filter(pk=food_id).first()
-    if food and food.is_available :
+    if food and food.is_available:
         cart = Cart.objects.get_or_create(user=request.user)[0]
         state = CartItem.objects.get_or_create(cart=cart, food=food)
         if state[1]:
@@ -91,7 +100,7 @@ def add_to_cart(request, food_id):
             return JsonResponse({"saved": True})
         else:
             # if item was added before
-            return JsonResponse({"saved":False,"error": "exists_before"})
+            return JsonResponse({"saved": False, "error": "exists_before"})
     else:
         return JsonResponse({"saved": False, "error": "no_existing"})
 

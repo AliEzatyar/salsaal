@@ -140,7 +140,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
         week_ago = timezone.now() - timezone.timedelta(weeks=1)
         orders = Order.objects.filter(
-            user__region=region, created__gte=week_ago
+            user__region=region, created_at__gte=week_ago
         ).values("id")
 
         top_week_foods = (

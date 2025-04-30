@@ -22,6 +22,8 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from api.backends import FoodFilterSet, VOrderFilterSet
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+from django.utils import timezone as tz
+from dateutil.parser import parser as date_parser
 
 # Create your views here.
 
@@ -140,20 +142,76 @@ class VendorRevenue(views.APIView):
     def get(self, *args, **kwargs):
         """THis view returns vendor revenue"""
         vendor = self.request.user.vendor
-        revenue = (
-            Order.objects.filter(vendor=vendor, status="delivered")
-            .annotate(
-                vendor_earning=ExpressionWrapper(
-                    F("total_price")
-                    - (F("total_price") * PUBLIC_PLATFORM_COMMISSION_FEE / 100),
-                    output_field=DecimalField(),
-                )
+        orders = Order.objects.filter(status="delivered", vendor=vendor)
+        one_month_ago = tz.now() - tz.timedelta(days=30)
+        one_week_ago = tz.now() - tz.timedelta(days=7)
+        # --------------- this month revenue
+        month_orders = orders.filter(
+              created_at__gte=one_month_ago
+        )
+        monthly_revenue = month_orders.annotate(
+            vendor_revenue=ExpressionWrapper(
+                F("total_price") - PUBLIC_PLATFORM_COMMISSION_FEE,
+                output_field=DecimalField()
             )
-            .aggregate(total_vendor_revenue=Sum("vendor_earning"))
+        ).aggregate(total=Sum("vendor_revenue"))
+
+        # ---------------- this week revenue
+        week_orders = orders.filter(
+             created_at__gte=one_week_ago
+        )
+        weekly_revenue = week_orders.annotate(
+            vendor_revenue=ExpressionWrapper(
+                F("total_price") - PUBLIC_PLATFORM_COMMISSION_FEE,
+                output_field=DecimalField(),
+            )
+        ).aggregate(total=Sum("vendor_revenue"))
+
+        # ---------------- today revenue
+        today_orders = orders.filter(
+             created_at__date=tz.now().date()
+        )
+        totay_revenue = today_orders.annotate(
+            vendor_revenue=ExpressionWrapper(
+                F("total_price") - PUBLIC_PLATFORM_COMMISSION_FEE,
+                output_field=DecimalField(),
+            )
+        ).aggregate(total=Sum("vendor_revenue"))
+
+        return Response(
+            {
+                "monthly_revenue": monthly_revenue["total"] or 0,
+                "weekly_revenue": weekly_revenue["total"] or 0,
+                "today_revenue": totay_revenue["total"] or 0,
+            }
         )
 
-        return Response
+    def post(self,*args, **kwargs):
+        """this method returns vendor revenue in custom range"""
+        data = self.request.data
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        if not start_date or not end_date:
+            return Response({"detail":"please provide start date and end date in AD"},status=status.HTTP_400_BAD_REQUEST)
 
+        start_date = tz.make_aware(date_parser(start_date))
+        end_date = tz.make_aware(date_parser(end_date))
+
+        vendor = self.request.user.vendor
+        # --------------- this month revenue
+        orders = Order.objects.filter(
+            vendor=vendor, status="delivered", created_at__gte=start_date,created_at__lte=end_date
+        )
+        total_revenue = orders.annotate(
+            vendor_earning=ExpressionWrapper(
+                F('total_price') - PUBLIC_PLATFORM_COMMISSION_FEE,
+                output_field=DecimalField()
+            )
+        ).aggregate(Sum("vendor_earning"))
+
+        return Response({"total-revenue": total_revenue})
+    
+    
 
 def vendor_details(request, vendor_name):
     """public accessible view to show details of a vendor"""
@@ -172,7 +230,7 @@ def vendor_details(request, vendor_name):
 def vendor_dashboard(request):
     """this view represents sales page for a vendor"""
     vendor = Vendor.objects.get(user=request.user)
-    return render(request, "vendor/vendor_dashboard.html", context=locals())
+    # return render(request, "vendor/vendor_dashboard.html", context=locals())
 
 
 @login_required
@@ -180,4 +238,4 @@ def vendor_dashboard(request):
 def vendor_foods(request):
     """this view presents vendor's foods with details enables CRUD for foods"""
     foods = Food.objects.filter(vendor=get_vendor(request))
-    return render(request, "vendor/vendor_foods.html", context=locals())
+    # return render(request, "vendor/vendor_foods.html", context=locals())
