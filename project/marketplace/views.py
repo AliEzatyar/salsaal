@@ -55,8 +55,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         filters.SearchFilter,
         DjangoFilterBackend,
     ]
-    ordering_fields = ["name", "price"]
-    ordering = ["price"]
+    ordering_fields = ["name", "min_price"]
+    ordering = ["min_price"]
     # filering
     filterset_class = FoodFilterSet
     # searching
@@ -160,7 +160,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
 class SearchApiView(views.APIView):
     """This api view handles searching for both food and vendor objects considering distance"""
-
+    permission_classes =[permissions.AllowAny]
+    
     def get(self, *args, **kwargs):
         query = self.request.query_params.get("query", None)
         lng = self.request.query_params.get("lnng", None)

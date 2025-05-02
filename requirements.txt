@@ -13,6 +13,6 @@ django-debug-toolbar
 django-filter
 weasyprint
 django-jalali
-
+python-dateutil
 django-cors-headers # for react
 drf-spectacular # for generating urls of DRF
