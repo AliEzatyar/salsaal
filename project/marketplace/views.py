@@ -164,7 +164,7 @@ class SearchApiView(views.APIView):
     
     def get(self, *args, **kwargs):
         query = self.request.query_params.get("query", None)
-        lng = self.request.query_params.get("lnng", None)
+        lng = self.request.query_params.get("long", None)
         lat = self.request.query_params.get("lat", None)
         max_distance = self.request.query_params.get("max_distance", 5)
 
