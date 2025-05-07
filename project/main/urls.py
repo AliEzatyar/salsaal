@@ -14,6 +14,4 @@ urlpatterns = [
         views.delete_from_favlist,
         name="delete_fav_item",
     ),
-    path("", views.home, name="home"),
-    path("<str:cat>/", views.home, name="home_category"),
 ]

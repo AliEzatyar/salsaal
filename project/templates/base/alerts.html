@@ -1,9 +1,0 @@
-{% if messages %}
-  <div class="container container-lg show-notification ">
-    {% for m in messages %}
-      <div class="p-20 mb-4 text-sm text-white rounded-lg bg-{{m.tags}}-400 dark:bg-gray-800 dark:text-red-400" role="alert">
-        <span class="font-bold"></span> {{ m|safe }}
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}

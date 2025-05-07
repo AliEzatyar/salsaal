@@ -6,8 +6,5 @@ app_name = "accounts"
 
 urlpatterns = [
     # accounts
-    path("dashboard/", views.dashboard, name="dashboard"),
-    path("account-settings/", views.account_settings, name="account_settings"),
-    path("profile/", views.profile, name="profile"),
    
 ]

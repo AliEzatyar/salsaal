@@ -13,3 +13,4 @@ docker-**
 local.tar
 uwsgi_app.sock
 command**
+**aws**

@@ -12,20 +12,6 @@ from .utils import query_execution_time
 # Create your views here.
 
 
-def home(request, cat=None):
-    # listing top 5 vendors
-    foods = Food.objects.filter(is_available=True).select_related("vendor")
-    if cat:
-        temp = foods.filter(category__name=cat).exists()
-        if temp:
-            foods = foods.filter(category__name=cat)
-
-    week_sold_foods = foods
-    top_selling_foods = foods
-    trending_foods = foods
-    recently_viewed = foods
-    return render(request, "base/home.html", context=locals())
-
 
 @login_required
 def favlist(request):
