@@ -1,4 +1,2 @@
 docker-compose-server.yml
-salsaal.crt
-salsaal.key
-.env --> project/.env
+uwsgi.ini

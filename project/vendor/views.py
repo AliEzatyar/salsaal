@@ -5,7 +5,7 @@ from marketplace.models import Category, Food, Rating
 from carrier.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import Order
-from multiVend.settings.base import PUBLIC_PLATFORM_COMMISSION_FEE
+from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
 from vendor.models import Vendor
 from .utils import get_vendor, vendor_tester
 from collections import Counter
@@ -82,9 +82,6 @@ class ConvertToVendorAPIView(views.APIView):
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
-"""Food Management API Views"""
-
-
 class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on foods of a vendor"""
 
@@ -114,6 +111,93 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
         return context
 
 
+class VendorRevenueView(views.APIView):
+    permission_classes = [IsVendor, permissions.IsAuthenticated]
+
+    def get(self, *args, **kwargs):
+        """THis view returns vendor revenue"""
+        vendor = self.request.user.vendor
+        orders = Order.objects.filter(status="delivered", vendor=vendor)
+        one_month_ago = tz.now() - tz.timedelta(days=30)
+        one_week_ago = tz.now() - tz.timedelta(days=7)
+        # --------------- this month revenue
+        month_orders = orders.filter(created_at__gte=one_month_ago)
+        monthly_revenue = month_orders.annotate(
+            vendor_revenue=ExpressionWrapper(
+                F("total_price")
+                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
+                output_field=DecimalField(),
+            )
+        ).aggregate(total=Sum("vendor_revenue"))
+
+        # ---------------- this week revenue
+        week_orders = orders.filter(created_at__gte=one_week_ago)
+        weekly_revenue = week_orders.annotate(
+            vendor_revenue=ExpressionWrapper(
+                F("total_price")
+                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
+                output_field=DecimalField(),
+            )
+        ).aggregate(total=Sum("vendor_revenue"))
+
+        # ---------------- today revenue
+        today_orders = orders.filter(created_at__date=tz.now().date())
+        totay_revenue = today_orders.annotate(
+            vendor_revenue=ExpressionWrapper(
+                F("total_price")
+                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
+                output_field=DecimalField(),
+            )
+        ).aggregate(total=Sum("vendor_revenue"))
+
+        return Response(
+            {
+                "monthly_revenue": monthly_revenue["total"] or 0,
+                "weekly_revenue": weekly_revenue["total"] or 0,
+                "today_revenue": totay_revenue["total"] or 0,
+            }
+        )
+
+    def post(self, *args, **kwargs):
+        """
+        this method returns vendor revenue in custom range
+        date format:
+            "YYYY-MM-DDTHH:MM:SSZ" --- utc
+             //     //  /   //  +4:30 AF
+        """
+        data = self.request.data
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        if not start_date or not end_date:
+            return Response(
+                {"detail": "please provide start date and end date in AD"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        start_date = date_parser(start_date)
+        end_date = date_parser(end_date)
+        if tz.is_naive(start_date):
+            start_date = tz.make_aware(date_parser(start_date))  #
+        if tz.is_naive(start_date):
+            end_date = tz.make_aware(date_parser(end_date))
+
+        vendor = self.request.user.vendor
+        # --------------- this month revenue
+        orders = Order.objects.filter(
+            vendor=vendor,
+            status="delivered",
+            created_at__gte=start_date,
+            created_at__lte=end_date,
+        )
+        total_revenue = orders.annotate(
+            vendor_earning=ExpressionWrapper(
+                F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
+                output_field=DecimalField(),
+            )
+        ).aggregate(Sum("vendor_earning"))
+
+        return Response({"total-revenue": total_revenue})
+
+
 class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     serializer_class = VOrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
@@ -128,114 +212,7 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     ordering = ["-created_at"]
     # filering
     filterset_class = VOrderFilterSet
-    # searching
-    # search_fields = ["customer_name"] not possible since customer name is not a real field of order model
 
     def get_queryset(self):
         queryset = Order.objects.filter(vendor=self.request.user.vendor)
         return queryset
-
-
-class VendorRevenue(views.APIView):
-    permission_classes = [IsVendor, permissions.IsAuthenticated]
-
-    def get(self, *args, **kwargs):
-        """THis view returns vendor revenue"""
-        vendor = self.request.user.vendor
-        orders = Order.objects.filter(status="delivered", vendor=vendor)
-        one_month_ago = tz.now() - tz.timedelta(days=30)
-        one_week_ago = tz.now() - tz.timedelta(days=7)
-        # --------------- this month revenue
-        month_orders = orders.filter(
-              created_at__gte=one_month_ago
-        )
-        monthly_revenue = month_orders.annotate(
-            vendor_revenue=ExpressionWrapper(
-                F("total_price") - PUBLIC_PLATFORM_COMMISSION_FEE,
-                output_field=DecimalField()
-            )
-        ).aggregate(total=Sum("vendor_revenue"))
-
-        # ---------------- this week revenue
-        week_orders = orders.filter(
-             created_at__gte=one_week_ago
-        )
-        weekly_revenue = week_orders.annotate(
-            vendor_revenue=ExpressionWrapper(
-                F("total_price") - PUBLIC_PLATFORM_COMMISSION_FEE,
-                output_field=DecimalField(),
-            )
-        ).aggregate(total=Sum("vendor_revenue"))
-
-        # ---------------- today revenue
-        today_orders = orders.filter(
-             created_at__date=tz.now().date()
-        )
-        totay_revenue = today_orders.annotate(
-            vendor_revenue=ExpressionWrapper(
-                F("total_price") - PUBLIC_PLATFORM_COMMISSION_FEE,
-                output_field=DecimalField(),
-            )
-        ).aggregate(total=Sum("vendor_revenue"))
-
-        return Response(
-            {
-                "monthly_revenue": monthly_revenue["total"] or 0,
-                "weekly_revenue": weekly_revenue["total"] or 0,
-                "today_revenue": totay_revenue["total"] or 0,
-            }
-        )
-
-    def post(self,*args, **kwargs):
-        """this method returns vendor revenue in custom range"""
-        data = self.request.data
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
-        if not start_date or not end_date:
-            return Response({"detail":"please provide start date and end date in AD"},status=status.HTTP_400_BAD_REQUEST)
-
-        start_date = tz.make_aware(date_parser(start_date))
-        end_date = tz.make_aware(date_parser(end_date))
-
-        vendor = self.request.user.vendor
-        # --------------- this month revenue
-        orders = Order.objects.filter(
-            vendor=vendor, status="delivered", created_at__gte=start_date,created_at__lte=end_date
-        )
-        total_revenue = orders.annotate(
-            vendor_earning=ExpressionWrapper(
-                F('total_price') - PUBLIC_PLATFORM_COMMISSION_FEE,
-                output_field=DecimalField()
-            )
-        ).aggregate(Sum("vendor_earning"))
-
-        return Response({"total-revenue": total_revenue})
-    
-    
-
-def vendor_details(request, vendor_name):
-    """public accessible view to show details of a vendor"""
-    vendor = Vendor.objects.filter(vendor_name=vendor_name).first()
-    if not vendor:
-        return HttpResponse("حساب فروشنده با این نام موجود نیست!")
-    vendor_foods = Food.objects.filter(vendor=vendor)
-    categories = [pro.category.name for pro in vendor_foods]
-    ratings = Rating.objects.filter(object_id=vendor.id)
-    cat_count_pro = Counter(categories).items()
-    foods_count = vendor_foods.count()
-
-
-@login_required
-@user_passes_test(vendor_tester)
-def vendor_dashboard(request):
-    """this view represents sales page for a vendor"""
-    vendor = Vendor.objects.get(user=request.user)
-    # return render(request, "vendor/vendor_dashboard.html", context=locals())
-
-
-@login_required
-@user_passes_test(vendor_tester)
-def vendor_foods(request):
-    """this view presents vendor's foods with details enables CRUD for foods"""
-    foods = Food.objects.filter(vendor=get_vendor(request))
-    # return render(request, "vendor/vendor_foods.html", context=locals())

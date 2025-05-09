@@ -16,9 +16,7 @@ from rest_framework import viewsets
 from rest_framework import views
 from rest_framework import status
 from rest_framework.response import Response
-from accounts.models import UserOtp
-from accounts.utils import generate_otp
-from io import BytesIO
+
 """Order API Views"""
 
 
@@ -41,23 +39,27 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """overriding this method to create order items from cart and calc totals"""
-        data = request.data  # auto json to dict since restframework request object
+        data = dict(
+            request.data
+        )  # auto json to dict since restframework request object
         cart = request.user.cart
         # setting vendor id
         if cart.calculate_total_items() < 1:
             return Response(
                 {"error": "no item in cart"}, status=status.HTTP_400_BAD_REQUEST
             )
-        data["vendor"] = CartItem.objects.filter(cart=cart).first().food.vendor.id
+        vendor_id = CartItem.objects.filter(cart=cart).first().food.vendor.id
+        data["vendor"] = vendor_id
+
         # creating the serializer
         serializer = self.get_serializer(data=data)
-        # payment_id = data["payment_id"]
-        # if Order.objects.filter(payment_id=payment_id).exists():
-        #     # prevent duplicate order
-        #     return Response({"error":"order already in process"}, status=status.HTTP_403_FORBIDDEN)
-        if Order.objects.filter(user=request.user,status=ORDER_STATUS_CHOICES[1][1]).exists():
+        if Order.objects.filter(
+            user=request.user, status=ORDER_STATUS_CHOICES[1][1]
+        ).exists():
             # prevent duplicate order
-            return Response({"error":"order already in process"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "order already in process"}, status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer.is_valid(raise_exception=True)  # validating data
         self.perform_create(serializer)  # creating the order
@@ -66,6 +68,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         OrderItem.objects.filter(
             order=order
         ).delete()  # flush previous items and recreate new items
+
         # creating order item objects
         for item in CartItem.objects.filter(cart=cart).select_related("food__vendor"):
             order_item = OrderItem.objects.get_or_create(
@@ -73,29 +76,19 @@ class OrderViewSet(viewsets.ModelViewSet):
                 food=item.food,
                 vendor=item.food.vendor,
                 quantity=item.quantity,
-                price=item.food.price,
+                price=item.food.min_price,
             )[0]
             order_items.append(order_item)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
 
-        # sending pdf file
-        # buffer = BytesIO()
-        # html = render_to_string("order/payment.html", {"order": order})
-        # weasyprint.HTML(string=html).write_pdf(
-        #     buffer,
-        #     stylesheets=[
-        #         weasyprint.CSS(settings.STATICFILES_DIRS[0] + "css/payment.css")
-        #     ],
-        # )
-        # response = FileResponse(
-        #     buffer,
-        #     as_attachment=True,
-        # )
-        # response["Content-Disposition"] = (
-        #     "attachment;" + f" filename=order_{order.user.first_name}_{order.id}.pdf"
-        # )
-        response = Response({"message":"order created successfully","order":serializer.data},status=status.HTTP_201_CREATED)
+        # flushing the cart
+        cart.items.all().delete()
+        
+        response = Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+        )
         return response
 
     def get_serializer_context(self):
@@ -145,12 +138,12 @@ def create_order(request):
             food=item.food,
             vendor=item.food.vendor,
             quantity=item.quantity,
-            price=item.food.price,
+            price=item.food.min_price,
         )[0]
         order_items.append(order_item)
     order.calculate_total_price()
     order.set_total_items()
-   
+
     # sending pdf file
     html = render_to_string("order/payment.html", {"order": order})
     response = HttpResponse(content_type="application/pdf")

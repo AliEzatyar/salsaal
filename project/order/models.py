@@ -31,7 +31,7 @@ class Order(models.Model):
     created_at = jDateTimeField(auto_now_add=True)
     modified_at = jDateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=2)
-    carrier = models.OneToOneField(
+    carrier = models.ForeignKey(
         "carrier.Carrier",null=True, on_delete=models.SET_NULL, related_name="orders"
     )
     vendor = models.ForeignKey('vendor.Vendor',
@@ -69,6 +69,8 @@ class Order(models.Model):
         """reseting food order"""
         self.status = ORDER_STATUS_CHOICES[0][0]  # cancelled
         self.save()
+
+                
 
     def __str__(self):
         return f"Order {self.id} - {self.user.username}"

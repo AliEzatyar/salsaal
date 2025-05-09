@@ -51,7 +51,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         return context
 
 
-class AddCarrierAPIView(views.APIView):
+class AddCarrierAPIView(views.APIView): 
     permission_classes = [perm.IsAuthenticated, IsVendor]
     http_method_names = ["post", "patch"]
 
@@ -63,8 +63,10 @@ class AddCarrierAPIView(views.APIView):
             raise serializers.ValidationError(
                 {"error": "no_account_found_by_that_email"}
             )
-        if account.role in (CARRIER, SHOP, ADMIN):
-            raise serializers.ValidationError({"erroor": "You are not allowed"})
+        if account.role in (SHOP, ADMIN) or account.is_admin:
+            raise serializers.ValidationError({"error": "You are not allowed"})
+        elif account.role == CARRIER:
+            raise serializers.ValidationError({"error": "This carrier is already added"})
 
         # sending otp
         send_otp(

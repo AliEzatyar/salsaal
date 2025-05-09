@@ -17,6 +17,7 @@ class OrderSerializer(ModelSerializer):
 
     def create(self, validated_data):
         validated_data["user"] = User.objects.get(id=self.context["user"])
+        
         return super().create(validated_data)
 
 

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 class CartItemSerializer(serializers.ModelSerializer):
     food_name = serializers.ReadOnlyField(source="food.name")
-    food_price = serializers.ReadOnlyField(source="food.price")
+    food_price = serializers.ReadOnlyField(source="food.min_price")
     subtotal = serializers.SerializerMethodField("get_subtotal")
 
     class Meta:

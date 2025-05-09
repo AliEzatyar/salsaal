@@ -12,3 +12,9 @@ class IsVendorOfFood(BasePermission):
         return obj.vendor == request.user.vendor
     
 
+class IsHavingCart(BasePermission):
+    """only customers have cart"""
+    def has_permission(self, request, view):
+        if not hasattr(request.user,"cart"):
+            return False
+        return True

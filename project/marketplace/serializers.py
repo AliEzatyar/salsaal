@@ -59,7 +59,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField("get_category_name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
-
+    is_available = serializers.BooleanField(default=True)
     class Meta:
         model = Food
         fields = [
@@ -82,11 +82,34 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         return obj.category.name
 
     def create(self, validated_data):
-        """setting the vendor and min price for the food"""
+        """setting the vendor and min price for the food + preventing duplicates"""
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
         validated_data["min_price"] = min([x for x in validated_data["prices"]])
+
+        # -------------- preventing duplicate name for the same vendor fooditem
+        name = validated_data.get("name")
+        vendor = validated_data.get("vendor")
+
+        if self.instance:
+            # For update: exclude self
+            if (
+                Food.objects.filter(vendor=vendor, name__iexact=name)
+                .exclude(pk=self.instance.pk)
+                .exists()
+            ):
+                raise serializers.ValidationError(
+                    "This food name already exists for this vendor."
+                )
+        else:
+            # For create
+            if Food.objects.filter(vendor=vendor, name__iexact=name).exists():
+                raise serializers.ValidationError(
+                    "This food name already exists for this vendor."
+                )
+
         return super().create(validated_data)
 
+    
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
@@ -101,6 +124,28 @@ class FoodSerializerMany(serializers.ModelSerializer):
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
 
+    def validate(self, attrs):
+        vendor = attrs.get("vendor")
+        name = attrs.get("name")
+
+        if self.instance:
+            # For update: exclude self
+            if (
+                Food.objects.filter(vendor=vendor, name__iexact=name)
+                .exclude(pk=self.instance.pk)
+                .exists()
+            ):
+                raise serializers.ValidationError(
+                    "This food name already exists for this vendor."
+                )
+        else:
+            # For create
+            if Food.objects.filter(vendor=vendor, name__iexact=name).exists():
+                raise serializers.ValidationError(
+                    "This food name already exists for this vendor."
+                )
+
+        return attrs
 
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
@@ -123,6 +168,3 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         
     def get_overall_rating(self,obj):
         return obj.overall_rating()
-    
-    
-        

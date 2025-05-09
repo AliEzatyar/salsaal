@@ -51,7 +51,8 @@ class Food(models.Model):
         verbose_name = "food"
         verbose_name_plural = "foods"
         ordering = ["-modified_at"]  # newest
-
+        unique_together = ['name',"vendor"]
+        
     def rating_form(self):
         html = render_to_string(
             "marketplace/rating_form.html",
