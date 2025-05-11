@@ -29,7 +29,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     def cancel(self, request, pk=None):
         order = self.get_object()
         order.cancel_order()
-        return Response({"saved": True}, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
 
     def get_queryset(self):
         """overrding it to get orders of specific user"""
@@ -53,10 +53,11 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         # creating the serializer
         serializer = self.get_serializer(data=data)
+        
         if Order.objects.filter(
             user=request.user, status=ORDER_STATUS_CHOICES[1][1]
         ).exists():
-            # prevent duplicate order
+            # prevent duplicate order if user has one 'waiting' order already
             return Response(
                 {"error": "order already in process"}, status=status.HTTP_403_FORBIDDEN
             )

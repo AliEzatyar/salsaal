@@ -12,6 +12,7 @@ DATABASES = {
         "PASSWORD": config("DB_PASSWORD"),
         "PORT": config("DB_PORT", cast=int),
         "HOST": config("DB_HOST"),
+        "CONN_MAX_AGE": config("CONN_MAX_AGE",cast=int), # pgbouncer
     }
 }
 

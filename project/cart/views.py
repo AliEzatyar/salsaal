@@ -81,7 +81,6 @@ class CartApiView(views.APIView):
             )
         try:
             food = Food.objects.get(pk=food_id)
-            print(food)
             if food and food.is_available:
                 exists = CartItem.objects.filter(cart=cart, food=food).exists()
                 if not exists:
@@ -90,8 +89,8 @@ class CartApiView(views.APIView):
                         cart=cart, food=food, quantity=quantity
                     )
                     # cart_item.save()
-                    cart.items.add(cart_item)
-                    return Response(status=status.HTTP_200_OK)
+                    serializer = CartSerializer(cart)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
                 return Response(
                     {"message": "already exists"}, status=status.HTTP_200_OK
                 )
