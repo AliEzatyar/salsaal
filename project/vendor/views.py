@@ -1,29 +1,24 @@
-from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required, user_passes_test
-from accounts.models import SHOP, UserProfile
-from marketplace.models import Category, Food, Rating
+from marketplace.models import Food
 from carrier.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
-from order.models import Order
+from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
-from vendor.models import Vendor
-from .utils import get_vendor, vendor_tester
-from collections import Counter
-from accounts.models import CUSTOMER
+from accounts.models import CUSTOMER, SHOP
 from .serializers import VendorSerializerDetailed
+from api.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
 from api.permissions import IsVendorOfFood
+
 from rest_framework import permissions
 from rest_framework import viewsets
 from rest_framework import views
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework import filters
-from django_filters.rest_framework import DjangoFilterBackend
-from api.backends import FoodFilterSet, VOrderFilterSet
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from django.utils import timezone as tz
 from dateutil.parser import parser as date_parser
+from django_filters.rest_framework import DjangoFilterBackend
 
 # Create your views here.
 
@@ -216,3 +211,42 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         queryset = Order.objects.filter(vendor=self.request.user.vendor)
         return queryset
+
+
+class AcceptRejectOrderView(views.APIView):
+    """
+    input: [id:int, accepted:bool]
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
+
+    def post(self, *args, **kwargs):
+        data = self.request.data
+        order_id = data["id"]
+        accepted = data["accepted"]
+
+        try:
+            order = Order.objects.get(id=order_id)
+            # check if this vendor owns the order
+            self.check_object_permissions(self.request, order)
+            # only 'waiting' order can be set to preparing
+            if not order.status == ORDER_STATUS_CHOICES[1][1]:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            # accepted
+            if accepted == True:
+                order.status = ORDER_STATUS_CHOICES[2][1]
+                order.save()
+                return Response(
+                    {"message": "order_accepted"}, status=status.HTTP_200_OK
+                )
+
+            # rejected
+            # deleting the order
+            order.objects.delete()
+            # sending notification to customer ....
+            return Response({"message": "order_rejected"}, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except Exception:
+            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

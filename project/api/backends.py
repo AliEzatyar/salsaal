@@ -3,7 +3,7 @@
 import django_filters
 from order.models import ORDER_STATUS_CHOICES, Order
 from marketplace.models import Food
-from django.utils.timezone import is_aware, now, timedelta, datetime
+from django.utils.timezone import now, timedelta, datetime
 
 
 class FoodFilterSet(django_filters.FilterSet):

@@ -1,15 +1,18 @@
-from rest_framework import permissions as perm
-from rest_framework import viewsets, exceptions
-from rest_framework import parsers, serializers
+from rest_framework import (
+    permissions as perm,
+    viewsets,
+    exceptions,
+    parsers,
+    serializers,
+    views,
+    status,
+)
 from .models import Carrier
 from rest_framework.response import Response
-from rest_framework import status
 from .serializers import CarrierSerializer
 from order.serializers import CarrierOrderSerializer
 from .permissions import IsBuyer, IsCarrierOfVendor, IsVendor, IsVendorOfCarrier
-from order.models import Order
-from order.models import ORDER_STATUS_CHOICES
-from rest_framework import views
+from order.models import Order, ORDER_STATUS_CHOICES
 
 from accounts.models import (
     ADMIN,
@@ -18,7 +21,6 @@ from accounts.models import (
     User,
     UserOtp,
     FOOD_DELIVERY_OTP_EXPIRATION,
-    UserProfile,
     CARRIER,
 )
 from accounts.utils import OTP_VERIFY_CARRIER, generate_otp
@@ -51,11 +53,12 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         return context
 
 
-class AddCarrierAPIView(views.APIView): 
+class AddCarrierAPIView(views.APIView):
     permission_classes = [perm.IsAuthenticated, IsVendor]
     http_method_names = ["post", "patch"]
 
     def post(self, *args, **kwargs):
+        """this method verifies the email entered and sends OTP"""
         data = self.request.data
         email = data.get("email")
         account = User.objects.filter(email=email).first()
@@ -66,7 +69,9 @@ class AddCarrierAPIView(views.APIView):
         if account.role in (SHOP, ADMIN) or account.is_admin:
             raise serializers.ValidationError({"error": "You are not allowed"})
         elif account.role == CARRIER:
-            raise serializers.ValidationError({"error": "This carrier is already added"})
+            raise serializers.ValidationError(
+                {"error": "This carrier is already added"}
+            )
 
         # sending otp
         send_otp(
@@ -78,7 +83,7 @@ class AddCarrierAPIView(views.APIView):
         return Response({"message": "otp sent"}, status=status.HTTP_200_OK)
 
     def patch(self, *args, **kwargs):
-        """verifies the otp and creates carrier account"""
+        """verifies the otp and converts the email-account to carrier account"""
         data = self.request.data
         email = data.get("email")
         otp = data.get("otp")
@@ -123,9 +128,9 @@ class CarrierOrdersApiView(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """overriding to only retrive orders of its vendor"""
         query_set = Order.objects.filter(
-            status=ORDER_STATUS_CHOICES[1][1],
+            status=ORDER_STATUS_CHOICES[2][1], # preparing
             vendor=self.request.user.carrier.vendor,
-            paid=True,
+            # paid=True,
         )
         return query_set
 
@@ -144,9 +149,11 @@ class SetOrderStateCarrying(views.APIView):
         order_id = data.get("order_id")
         try:
             order = Order.objects.get(id=order_id)
-            if not order.paid:
-                # not paid
-                return Response({"error": "payment not completed"}, status=400)
+            # if payment is online and not paid, not allowed           
+            if order.is_credit:
+                if not order.paid:
+                    return Response({"error": "payment not completed"}, status=400)
+
             self.check_object_permissions(self.request, order)
             user = order.user
             # creating OTP
@@ -171,7 +178,7 @@ class SetOrderStateCarrying(views.APIView):
 class SetOrderStateSubmitted(views.APIView):
     """
     This view is only accessible via customer account, it proves whether
-    a customer (indirectly-by-scanning) is the owner of order and valid Food has reached it
+    a customer (indirectly-by-scanning) is the owner of order and valid Food has reached it.
     """
 
     permission_classes = [perm.IsAuthenticated, IsBuyer]
@@ -185,8 +192,12 @@ class SetOrderStateSubmitted(views.APIView):
             order = Order.objects.get(id=order_id)
             # check if the customer owns this order
             self.check_object_permissions(self.request, order)
+
+            # check if otp is correct
             user = order.user
-            OTP = UserOtp.objects.get(user=user, otp=input_OTP)
+            OTP = UserOtp.objects.filter(user=user, otp=input_OTP).first()
+            if not OTP:
+                return Response({"error": "Otp Incorrect"}, status=400)
             if OTP.is_expired(expire=FOOD_DELIVERY_OTP_EXPIRATION):
                 return Response({"error": "Otp Expired"}, status=400)
 
@@ -194,6 +205,7 @@ class SetOrderStateSubmitted(views.APIView):
             order.status = ORDER_STATUS_CHOICES[4][1]  # delivered
             order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
             order.carrier.save()
+            order.paid = True
             order.save()
             return Response(
                 {"message": "order state changed to delivered"},

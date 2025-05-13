@@ -1,23 +1,10 @@
 import json
-from django.http.response import JsonResponse
-from django.shortcuts import redirect, render
-from django.core.paginator import Paginator
 from marketplace.models import Category, Food, Rating
-from main.utils import query_execution_time
-from accounts.utils import user_test
-from django.db.models.aggregates import Count
-from django.core.paginator import Paginator
-from django.template.loader import render_to_string
-from django.contrib.auth.decorators import login_required, user_passes_test
-
 from order.models import Order, OrderItem
 from .forms import RatingForm
-from django.contrib.contenttypes.models import ContentType
-from rest_framework import filters, permissions, status
-from rest_framework.response import Response
+from accounts.utils import user_test
 from api.backends import FoodFilterSet
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, views
+from main.utils import query_execution_time
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
@@ -26,15 +13,26 @@ from marketplace.serializers import (
     RatingSerializer,
     CategorySerializer,
 )
+
+from django.http.response import JsonResponse
+from django.shortcuts import redirect, render
+from django.core.paginator import Paginator
+from django.db.models.aggregates import Count
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.contenttypes.models import ContentType
+from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
-from rest_framework.decorators import action
 from django.utils import timezone
+from rest_framework import filters, permissions, status, views, viewsets
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
-from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import AllowAny
-
+from rest_framework.serializers import ValidationError
 """Marketplace API Views"""
 
 
@@ -62,29 +60,40 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     # searching
     search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
 
-    def get_object(self):
+    def get(self,*args, **kwargs):
         """showing vendor distance in food detail"""
         obj = super().get_object()
+        print(obj)
         vendor_location = obj.vendor.get_location()
-        if self.request.user.is_authenticated:
-            user_profile = self.request.user.profile
-            if hasattr(user_profile, "location"):
-                obj = Food.objects.filter(id=obj.id).annotate(
-                    distance=Distance(vendor_location, user_profile.location)
-                )
-                return obj[0]
-            return obj
+        lat = self.request.query_params.get("lat", None)
+        lng = self.request.query_params.get("lng", None)
+        if not (lat and lng):
+            # if authenticated, get location data from profile
+            if self.request.user.is_authenticated:
+                user_profile = self.request.user.profile
+                if hasattr(user_profile, "location"):
+                    obj = Food.objects.filter(id=obj.id).annotate(
+                        distance=Distance(vendor_location, user_profile.location)
+                    )
+                    FoodSerializerMany()
+                    return obj[0]
+            
+            raise ValidationError({"error":"no_lat_lng_info"})
+        # client app should have provided lat and lng
         else:
             try:
                 lat = self.request.query_params.get("lat", None)
                 lng = self.request.query_params.get("lng", None)
-                user_location = Point(float(log), float(lat), srid=4326)
-                obj = Food.objects.filter(id=obj.id).annotate(
-                    distance=Distance(vendor_location, user_location)
-                )
-            except:
-                pass
-            return obj[0]
+                if lat and lng:
+                    user_location = Point(float(lng), float(lat), srid=4326)
+                    obj = Food.objects.filter(id=obj.id).annotate(
+                        distance=Distance(vendor_location, user_location)
+                    )
+                    
+                    return obj[0]
+                raise ValidationError({"error":"no_lat_lng_info"})
+            except Exception:
+                return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     @action(detail=False, methods=["get"])
     def categories(self, request):
@@ -295,7 +304,7 @@ class CategoriesReadAPIView(views.APIView):
         )
 
 
-class PublicVendorDetail(RetrieveModelMixin, GenericViewSet):
+class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
     """this view enables a normal user see a vendor detail with its menue"""
 
     serializer_class = PublicVendorSerializer

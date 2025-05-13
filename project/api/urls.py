@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
 from marketplace.views import PublicVendorDetail, RatingViewSet, MarketplaceViewset, SearchApiView
-from vendor.views import ConvertToVendorAPIView, ListVendorOrders,VendorRevenueView, VendorFoodsManageViewSet, VendorAPIView
+from vendor.views import AcceptRejectOrderView, ConvertToVendorAPIView, ListVendorOrders,VendorRevenueView, VendorFoodsManageViewSet, VendorAPIView
 from carrier.views import AddCarrierAPIView, CarrierOrdersApiView, ManageCarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
 from cart.views import CartApiView
 from marketplace.views import CategoriesReadAPIView
@@ -28,11 +28,9 @@ router.register(r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-food
 # managing carriers as vendor
 router.register(r"manage-carriers", ManageCarrierViewSet,basename="manage-carriers")
 # see orders as vendor
-router.register(r"vendor-orders", ListVendorOrders, basename="vendor-orders")
-
-# router seeing order
-
 router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
+
+router.register(r"vendor-orders", ListVendorOrders, basename="vendor-orders")
 # food retrive  routing
 router.register(r"home", MarketplaceViewset,basename="home")
 
@@ -79,6 +77,10 @@ urlpatterns = [
     path(
         "vendor/",
         VendorAPIView.as_view(),
+    ),
+    path(
+        "vendor/ar-order/",
+        AcceptRejectOrderView.as_view(),
     ),
     path(
         "convert-to-vendor/",

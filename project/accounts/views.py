@@ -1,9 +1,4 @@
-from django.shortcuts import redirect, render
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core.exceptions import PermissionDenied
 from accounts.models import User, UserOtp, UserProfile
-from accounts.forms import UserProfileForm, UserEditForm
 from accounts.serializers import (
     UserCreationSerializer,
     UserDetailSerializer,
@@ -202,4 +197,3 @@ class UserProfileViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         """overriding to prevent others from accessing another profile"""
         return UserProfile.objects.filter(user=self.request.user)
-

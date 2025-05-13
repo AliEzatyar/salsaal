@@ -119,7 +119,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
     class Meta:
         model = Food
-        fields = ["name", "min_price", "prices", "image", "rating", "vendor_name"]
+        fields = ["id","name", "min_price", "prices", "image", "rating", "vendor_name"]
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name

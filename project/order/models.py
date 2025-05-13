@@ -11,10 +11,11 @@ User = get_user_model()
 ORDER_STATUS_CHOICES = [
     ("cancelled", "cancelled"),
     ("waiting", "waiting"),
-    ("processing", "processing"),
+    ("preparing", "preparing"),
     ("carrying", "carrying"),
     ("delivered", "delivered"),
 ]
+
 
 
 class Order(models.Model):
@@ -27,6 +28,7 @@ class Order(models.Model):
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
     )
+    is_credit = models.CharField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=2)

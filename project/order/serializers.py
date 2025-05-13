@@ -76,6 +76,7 @@ class CarrierOrderSerializer(ModelSerializer):
             "total_price",
             "status",
             "paid",
+            "is_credit",
             "created_at",
         ]
 

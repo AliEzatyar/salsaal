@@ -1,15 +1,8 @@
-import json
-from django.shortcuts import render
-from django.http.response import JsonResponse
 from marketplace.models import Food
 from api.permissions import IsHavingCart
-from .models import Cart, CartItem
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.shortcuts import redirect
+from .models import CartItem
 from .serializers import CartSerializer
-from rest_framework import views
-from rest_framework import status
+from rest_framework import views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 

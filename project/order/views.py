@@ -1,21 +1,18 @@
-import json
-from django.http import JsonResponse
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required, user_passes_test
+from accounts.utils import user_test
+from .serializers import OrderSerializer, OrderItemSerializer, Order
+from cart.models import CartItem
 from .models import Order, OrderItem, ORDER_STATUS_CHOICES
 from django.shortcuts import redirect
-from cart.models import CartItem
-from accounts.utils import user_test
-import weasyprint
 from django.conf import settings
-from django.http import HttpResponse
 from django.template.loader import render_to_string
-from .serializers import OrderSerializer, OrderItemSerializer, Order
+from django.shortcuts import render
+from django.http import JsonResponse ,HttpResponse
+from django.contrib.auth.decorators import login_required, user_passes_test
 from rest_framework.decorators import action
-from rest_framework import viewsets
-from rest_framework import views
-from rest_framework import status
+from rest_framework import viewsets, views, status
 from rest_framework.response import Response
+import weasyprint
+import json
 
 """Order API Views"""
 

@@ -1,9 +1,5 @@
 from rest_framework import serializers
-
-from accounts.models import CARRIER, SHOP, User, UserProfile
 from .models import Carrier
-from order.models import Order
-from vendor.models import Vendor
 
 class CarrierSerializer(serializers.ModelSerializer):
     
