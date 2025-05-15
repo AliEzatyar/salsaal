@@ -109,7 +109,29 @@ class FoodSerializerDetail(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
-    
+class CFoodSerializerDetail(serializers.ModelSerializer):
+    category_name = serializers.SerializerMethodField("get_category_name")
+    prices = ListOfDecimalsField()  # custom field to parse form-data prices values
+    min_price = MyDecimalField(read_only=True)
+
+    class Meta:
+        model = Food
+        fields = [
+            "id",
+            "name",
+            "prices",
+            "min_price",
+            "category_name",
+            "description",
+            "image",
+            "is_available",
+            "rating",
+        ]
+        read_only_fields = ["__all__"]
+
+    def get_category_name(self, obj):
+        return obj.category.name
+
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""

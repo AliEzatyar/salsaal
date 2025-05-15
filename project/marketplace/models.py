@@ -77,6 +77,7 @@ class Food(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
+        print(self.prices)
         return self.name
 
 

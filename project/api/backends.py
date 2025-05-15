@@ -54,7 +54,7 @@ class VOrderFilterSet(django_filters.FilterSet):
         if value == "waiting":
             return queryset.filter(status=ORDER_STATUS_CHOICES[1][0])
 
-        if value == "processing":
+        if value == "preparing":
             return queryset.filter(status=ORDER_STATUS_CHOICES[2][0])
 
         if value == "carrying":

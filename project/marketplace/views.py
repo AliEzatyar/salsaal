@@ -2,12 +2,14 @@ import json
 from marketplace.models import Category, Food, Rating
 from order.models import Order, OrderItem
 from .forms import RatingForm
+from .utils import haversine_distance as distance_calculator
 from accounts.utils import user_test
 from api.backends import FoodFilterSet
 from main.utils import query_execution_time
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
+    CFoodSerializerDetail,
     FoodSerializerMany,
     PublicVendorSerializer,
     RatingSerializer,
@@ -33,6 +35,7 @@ from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.permissions import AllowAny
 from rest_framework.serializers import ValidationError
+
 """Marketplace API Views"""
 
 
@@ -60,39 +63,50 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     # searching
     search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
 
-    def get(self,*args, **kwargs):
-        """showing vendor distance in food detail"""
-        obj = super().get_object()
-        print(obj)
-        vendor_location = obj.vendor.get_location()
-        lat = self.request.query_params.get("lat", None)
-        lng = self.request.query_params.get("lng", None)
-        if not (lat and lng):
+    @action(detail=True, methods=["get"], url_path="food-item-detail")
+    def item_detail(self, request, pk):
+        """provides fooditem detail with distance"""
+        obj = self.get_object()
+        data = request.query_params
+        lat = data.get("lat", None)
+        lon = data.get("lon", None)
+        vendor_profile = obj.vendor.user_profile
+
+        if not (lat and lon):
             # if authenticated, get location data from profile
             if self.request.user.is_authenticated:
                 user_profile = self.request.user.profile
-                if hasattr(user_profile, "location"):
-                    obj = Food.objects.filter(id=obj.id).annotate(
-                        distance=Distance(vendor_location, user_profile.location)
+                if user_profile.lattitude and user_profile.longitude:
+                    distance = distance_calculator(
+                        float(vendor_profile.lattitude),
+                        float(vendor_profile.longitude),
+                        float(user_profile.lattitude),
+                        float(user_profile.longitude),
                     )
-                    FoodSerializerMany()
-                    return obj[0]
-            
-            raise ValidationError({"error":"no_lat_lng_info"})
-        # client app should have provided lat and lng
+                    serializer = CFoodSerializerDetail(instance=obj)
+                    return Response({"item": serializer.data, "distance": distance})
+                # re-send the request either with lat,lon or updated profile prompt
+                return Response(
+                    {"detail": "user_has_not_set_location"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            return Response(
+                {"detail": "no_location_provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # client app have provided lat and lon
         else:
             try:
-                lat = self.request.query_params.get("lat", None)
-                lng = self.request.query_params.get("lng", None)
-                if lat and lng:
-                    user_location = Point(float(lng), float(lat), srid=4326)
-                    obj = Food.objects.filter(id=obj.id).annotate(
-                        distance=Distance(vendor_location, user_location)
-                    )
-                    
-                    return obj[0]
-                raise ValidationError({"error":"no_lat_lng_info"})
-            except Exception:
+                distance = distance_calculator(
+                    float(vendor_profile.lattitude), 
+                    float(vendor_profile.longitude),
+                    float(lat),
+                    float(lon)
+                )
+                serializer = CFoodSerializerDetail(instance=obj)
+                return Response({"item": serializer.data, "distance": distance})
+            except Exception as e:
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     @action(detail=False, methods=["get"])
@@ -107,7 +121,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """this endpoint returns nearby_vendors"""
         region = request.data.get("region", None)
         lat = request.data.get("lat", None)
-        lng = request.data.get("lng", None)
+        lon = request.data.get("lon", None)
         max_distance = request.data.get("max_distance", 10)  # km
         try:
             max_distance = float(max_distance)
@@ -120,15 +134,15 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         else:
             if not region:
                 return Response({"detail": "Please send region as 'XY'."}, status=400)
-            if not lat or not lng:
+            if not lat or not lon:
                 return Response(
                     {"detail": "Latitude and longitude are required."}, status=400
                 )
             try:
-                user_location = Point(float(lng), float(lat), srid=4326)
+                user_location = Point(float(lon), float(lat), srid=4326)
             except (TypeError, ValueError):
                 return Response({"detail": "Invalid coordinates."}, status=400)
-            user_location = Point(float(lng), float(lat), srid=4326)
+            user_location = Point(float(lon), float(lat), srid=4326)
 
         vendors = (
             Vendor.objects.filter(is_approved=True, user__region=region)
@@ -169,18 +183,19 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
 class SearchApiView(views.APIView):
     """This api view handles searching for both food and vendor objects considering distance"""
-    permission_classes =[permissions.AllowAny]
-    
+
+    permission_classes = [permissions.AllowAny]
+
     def get(self, *args, **kwargs):
         query = self.request.query_params.get("query", None)
-        lng = self.request.query_params.get("long", None)
+        lon = self.request.query_params.get("long", None)
         lat = self.request.query_params.get("lat", None)
         max_distance = self.request.query_params.get("max_distance", 5)
 
         # determinig user location
         try:
-            if lat and lng:
-                user_location = Point(float(lng), float(lat), srid=4326)
+            if lat and lon:
+                user_location = Point(float(lon), float(lat), srid=4326)
             else:
                 user_location = self.request.user.profile.location
         except:
@@ -310,7 +325,7 @@ class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = PublicVendorSerializer
     permission_classes = [AllowAny]
     queryset = Vendor.objects.all()
-    
+
     def get_object(self):
         return super().get_object()
 
@@ -500,32 +515,3 @@ def vendors(request, page=None):
 
     return render(request, "marketplace/vendors_list.html", context=locals())
 
-
-@login_required
-@user_passes_test(user_test)
-def rate(request):
-    """this view handles rating a food or a vendor"""
-    data = json.loads(request.body)["options"]
-    form = RatingForm(data)
-    type_ = data["type"]
-    previous = Rating.objects.filter(
-        object_id=int(data["object_id"]), user=request.user
-    ).first()
-    # handling indirect update
-    if previous:
-        # prviously exists, performing update
-        previous.comment = data["comment"]
-        previous.rating = data["rating"]
-        previous.save()
-        return JsonResponse({"OK": True})
-
-    if form.is_valid():
-        rating = form.save(commit=False)
-        if type_ == "food":
-            rating.content_type = ContentType.objects.get_for_model(Food)
-        elif type_ == "vendor":
-            rating.content_type = ContentType.objects.get_for_model(Vendor)
-        rating.object_id = data["object_id"]
-        rating.user = request.user
-        rating.save()
-        return JsonResponse({"OK": True})
