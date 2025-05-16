@@ -59,9 +59,11 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     ROLE_CHOICES = [
+        (ADMIN,"admin"),
         (SHOP, "Shop"),
         (CUSTOMER, "Customer"),
         (CARRIER, "Carrier"),
+        
     ]
 
     first_name = models.CharField(max_length=60)
@@ -145,8 +147,10 @@ class UserOtp(models.Model):
     )
     otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def is_expired(self,expire=DEFAULT_OTP_EXPIRATION):
         return timezone.now() > self.created_at + timezone.timedelta(
             minutes=expire
         )
+
+

@@ -1,7 +1,12 @@
 from rest_framework.serializers import ModelSerializer, ValidationError
 from vendor.models import Vendor
-from .models import User, UserProfile
-from .models import CUSTOMER
+from .models import User, UserProfile, CUSTOMER
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenRefreshSerializer,
+)
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
 
 class UserCreationSerializer(ModelSerializer):
     class Meta:
@@ -31,12 +36,14 @@ class UserProfileSerializer(ModelSerializer):
         fields = ["picture", "city", "address", "lattitude", "longitude"]
 
     def update(self, instance, validated_data):
-        pic = validated_data.get("picture",None)
+        pic = validated_data.get("picture", None)
         if pic:
             ext = pic.name.split(".")[-1]
             valid_extensions = ["jpg", "png", "jpeg"]
             if ext.lower() not in valid_extensions:
-                raise ValidationError({"error": "file extension must be jpg, png, jpeg"})
+                raise ValidationError(
+                    {"error": "file extension must be jpg, png, jpeg"}
+                )
         # re-assigning the valid data
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -54,6 +61,7 @@ class UserDetailSerializer(ModelSerializer):
             "first_name",
             "last_name",
             "phone_number",
+            
         ]
         read_only_fields = [
             "id",
@@ -82,3 +90,33 @@ class VendorManageSerializer(ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id"]
+
+
+class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # adding role
+        token["role"] = user.role
+        return token
+
+
+class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
+
+    def validate(self, attrs):
+        # validates whether the refresh tokem is correct
+        data = super().validate(attrs)
+
+        # create refresh object using the entered refresh token
+        refresh = RefreshToken(attrs["refresh"])
+
+        # create new access object, add user_id and role to it assign it instead of older one in data
+        access = AccessToken()
+        access["user_id"] = refresh["user_id"]
+        access["role"] = refresh.get("role", CUSTOMER)  # fallback
+        # re-assiging the access token which contains role
+        data["access"] = str(access)
+
+        return data

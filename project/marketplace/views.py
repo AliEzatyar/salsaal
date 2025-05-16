@@ -5,7 +5,6 @@ from .forms import RatingForm
 from .utils import haversine_distance as distance_calculator
 from accounts.utils import user_test
 from api.backends import FoodFilterSet
-from main.utils import query_execution_time
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
@@ -431,7 +430,6 @@ def food_detail(request, food_id):
     return redirect("main:home")
 
 
-@query_execution_time
 def vendors(request, page=None):
     """this view presents all available vendors by either category, city or rating"""
     all_vendors = Vendor.objects.filter(is_approved=True)

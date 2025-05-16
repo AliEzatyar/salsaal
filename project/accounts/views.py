@@ -6,13 +6,13 @@ from accounts.serializers import (
 )
 from accounts.permissions import IsProfileOwner
 from .utils import send_otp
-
+from .serializers import RoleTokenObtainPairSerializer, RoleTokenRefreshSeriaizer
 from rest_framework import permissions
 from rest_framework import generics
 from rest_framework import views, viewsets
 from rest_framework import status
 from rest_framework.response import Response
-
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 """Account API Views"""
 
@@ -197,3 +197,11 @@ class UserProfileViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         """overriding to prevent others from accessing another profile"""
         return UserProfile.objects.filter(user=self.request.user)
+
+
+class RoleTokenObtainView(TokenObtainPairView):
+    serializer_class = RoleTokenObtainPairSerializer
+
+
+class RoleTokenRefreshView(TokenRefreshView):
+    serializer_class = RoleTokenRefreshSeriaizer

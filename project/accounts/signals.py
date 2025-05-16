@@ -2,7 +2,7 @@ import os
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from main.models import FavList
+from marketplace.models import FavList
 from cart.models import Cart
 from carrier.models import Carrier
 from .models import UserProfile, User

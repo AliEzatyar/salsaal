@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "marketplace.apps.MarketplaceConfig",
     "cart.apps.CartConfig",
-    "main.apps.MainConfig",
     "accounts.apps.AccountsConfig",
     "rest_framework",
     "vendor.apps.VendorConfig",
@@ -65,7 +64,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "main.middleware.RequestTimingMiddleware",
 ]
 
 ROOT_URLCONF = "multiVend.urls"
@@ -82,7 +80,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "vendor.context_processors.vendor_context",
-                "main.context_processors.categories_context",
             ],
         },
     },

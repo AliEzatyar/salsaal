@@ -1,11 +1,28 @@
 from django.urls import include, path
 from . import views
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
-from marketplace.views import PublicVendorDetail, RatingViewSet, MarketplaceViewset, SearchApiView
-from vendor.views import AcceptRejectOrderView, ConvertToVendorAPIView, ListVendorOrders,VendorRevenueView, VendorFoodsManageViewSet, VendorAPIView
-from carrier.views import AddCarrierAPIView, CarrierOrdersApiView, ManageCarrierViewSet, SetOrderStateCarrying, SetOrderStateSubmitted
+from marketplace.views import (
+    PublicVendorDetail,
+    RatingViewSet,
+    MarketplaceViewset,
+    SearchApiView,
+)
+from vendor.views import (
+    AcceptRejectOrderView,
+    ConvertToVendorAPIView,
+    ListVendorOrders,
+    VendorRevenueView,
+    VendorFoodsManageViewSet,
+    VendorAPIView,
+)
+from carrier.views import (
+    AddCarrierAPIView,
+    CarrierOrdersApiView,
+    ManageCarrierViewSet,
+    SetOrderStateCarrying,
+    SetOrderStateSubmitted,
+)
 from cart.views import CartApiView
 from marketplace.views import CategoriesReadAPIView
 from accounts import views as ac_views
@@ -13,42 +30,41 @@ from accounts import views as ac_views
 # Router Setup for
 router = DefaultRouter()
 # order viewset routing
-router.register(r"orders", OrderViewSet,basename="orders")
+router.register(r"orders", OrderViewSet, basename="orders")
 # user profile
-router.register(r"user-profile", ac_views.UserProfileViewset,basename="user-profile")
+router.register(r"user-profile", ac_views.UserProfileViewset, basename="user-profile")
 # private user detail
-router.register(r"user-detail", ac_views.UserViewset,basename="user-detail")
+router.register(r"user-detail", ac_views.UserViewset, basename="user-detail")
 # public vendor detail
-router.register(r"public-vendor-detail", PublicVendorDetail, basename="public-vendor-detail")
+router.register(
+    r"public-vendor-detail", PublicVendorDetail, basename="public-vendor-detail"
+)
 
 # rating viewset routing
-router.register(r"ratings", RatingViewSet,basename="rating")
+router.register(r"ratings", RatingViewSet, basename="rating")
 # food managemet routing
 router.register(r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods")
 # managing carriers as vendor
-router.register(r"manage-carriers", ManageCarrierViewSet,basename="manage-carriers")
+router.register(r"manage-carriers", ManageCarrierViewSet, basename="manage-carriers")
 # see orders as vendor
 router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
 
 router.register(r"vendor-orders", ListVendorOrders, basename="vendor-orders")
 # food retrive  routing
-router.register(r"home", MarketplaceViewset,basename="home")
+router.register(r"home", MarketplaceViewset, basename="home")
 
 app_name = "api"
 
 urlpatterns = [
     # Account App
-    path("account/generate-token/", TokenObtainPairView.as_view(), name="token_obtain"),
-    path("account/refresh-token/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("account/register/", ac_views.RegisterUser.as_view(), name="reg_user_api"),
+    path("account/register/", ac_views.RegisterUser.as_view()),
     path(
-        "account/activate-account/",
-        ac_views.VerifyActivateAccountOTP.as_view(),
+        "account/generate-token/",
+        ac_views.RoleTokenObtainView.as_view(),
     ),
-    path(
-        "account/resend-activate-otp/",
-        ac_views.ResendActivationOTP.as_view(),
-    ),
+    path("account/refresh-token/", ac_views.RoleTokenRefreshView.as_view()),
+    path("account/activate-account/", ac_views.VerifyActivateAccountOTP.as_view()),
+    path("account/resend-activate-otp/", ac_views.ResendActivationOTP.as_view()),
     path("account/forgot-password/", ac_views.ForgotPassword.as_view()),  # send otp
     path(
         "account/forgot-password-verify-otp/",
