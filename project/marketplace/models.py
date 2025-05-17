@@ -2,8 +2,7 @@ from decimal import Decimal
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
-from django.template.loader import render_to_string
-
+from django.contrib.contenttypes.models import ContentType
 # Create your models here.
 
 
@@ -45,35 +44,30 @@ class Food(models.Model):
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    rating = models.PositiveSmallIntegerField(default=0)
+    avg_rating = models.PositiveSmallIntegerField(default=0)
+    rating_count = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         verbose_name = "food"
         verbose_name_plural = "foods"
         ordering = ["-modified_at"]  # newest
         unique_together = ['name',"vendor"]
-        
-    def rating_form(self):
-        html = render_to_string(
-            "marketplace/rating_form.html",
-            context={"object_id": self.pk, "type": "food"},
-        )
-        return html
 
-    def overall_rating(self):
-        """this utility method returns the rating average"""
-        ratings = Rating.objects.filter(object_id=self.pk).values_list("rating")
-        ratings = [r[0] for r in ratings]
-        if len(ratings) == 0:
-            return 0
-        self.rating = sum(ratings) / len(ratings)
+    def update_avg_rating(self, *args, **kwargs):
+        ct = ContentType.objects.get_for_model(Food)
+        avg_and_count = Rating.objects.filter(
+            object_id=self.pk,
+            content_type=ct,
+        ).aggregate(avg=models.Avg("rating"), count=models.Count("rating"))
+        self.avg_rating = avg_and_count["avg"] or 0.0
+        self.rating_count = avg_and_count["count"] or 0
         self.save()
-        return sum(ratings) / len(ratings)
 
     def save(self, *args, **kwargs):
         if self.pk:
             # updated
             self.min_price = Decimal(min([float(x) for x in self.prices]))
+
         return super().save(*args, **kwargs)
 
     def __str__(self):

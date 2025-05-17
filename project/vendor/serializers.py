@@ -5,17 +5,19 @@ from accounts.models import SHOP, User
 
 
 class VendorSerializerMany(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField("get_rating")
     distance = serializers.SerializerMethodField("get_distance")
     image_url = serializers.SerializerMethodField("get_image_url")
 
     class Meta:
         model = Vendor
-        fields = ["id", "vendor_name", "rating", "distance", "image_url"]
-
-    def get_rating(self, obj):
-        """returns total rating of the vendor"""
-        return obj.overall_rating()
+        fields = [
+            "id",
+            "vendor_name",
+            "avg_rating",
+            "rating_count",
+            "distance",
+            "image_url",
+        ]
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
@@ -31,8 +33,6 @@ class VendorSerializerMany(serializers.ModelSerializer):
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField("get_rating")
-
     class Meta:
         model = Vendor
         fields = [
@@ -42,7 +42,8 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "user",
             "user_profile",
             "created_at",
-            "rating",
+            "avg_rating",
+            "rating_count",
         ]
         read_only_fields = [
             "user",
@@ -52,9 +53,6 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "rating",
         ]
 
-    def get_rating(self, obj):
-        """returns total rating of the vendor"""
-        return obj.overall_rating()
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
@@ -87,5 +85,3 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         validated_data["user_profile"] = user_profile
 
         return super().create(validated_data)
-
-

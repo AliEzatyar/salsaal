@@ -7,6 +7,7 @@ from rest_framework import serializers
 from decimal import Decimal, InvalidOperation
 import json
 from django.contrib.gis.db.models.fields import PointField
+
 """custom fields"""
 
 
@@ -60,6 +61,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
     is_available = serializers.BooleanField(default=True)
+
     class Meta:
         model = Food
         fields = [
@@ -109,6 +111,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
+
 class CFoodSerializerDetail(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField("get_category_name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
@@ -141,7 +144,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
     class Meta:
         model = Food
-        fields = ["id","name", "min_price", "prices", "image", "rating", "vendor_name"]
+        fields = ["id", "name", "min_price", "prices", "image", "rating", "vendor_name"]
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
@@ -169,24 +172,30 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
         return attrs
 
+
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        exclude = ["object_id", "content_type"]
+        fields = ["id","user", "comment", "created_at", "rating"]
+        read_only_fields = ["id","user", "created_at"]
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor object details"""
-    foods = FoodSerializerMany(many=True,read_only=True)
+
+    foods = FoodSerializerMany(many=True, read_only=True)
     location = serializers.SerializerMethodField("get_location")
-    rating = serializers.SerializerMethodField("get_overall_rating")
-    
+
     class Meta:
         model = Vendor
-        fields = ["vendor_name","active_hours","location","rating","foods"]
-    
-    def get_location(self,obj):
-        return obj.get_location().tuple # json does not support point object
-        
-    def get_overall_rating(self,obj):
-        return obj.overall_rating()
+        fields = [
+            "vendor_name",
+            "active_hours",
+            "location",
+            "avg_rating",
+            "rating_count",
+            "foods",
+        ]
+
+    def get_location(self, obj):
+        return obj.get_location().tuple  # json does not support point object

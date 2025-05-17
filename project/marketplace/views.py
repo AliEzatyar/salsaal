@@ -1,9 +1,6 @@
-import json
 from marketplace.models import Category, Food, Rating
 from order.models import Order, OrderItem
-from .forms import RatingForm
 from .utils import haversine_distance as distance_calculator
-from accounts.utils import user_test
 from api.backends import FoodFilterSet
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
@@ -14,14 +11,9 @@ from marketplace.serializers import (
     RatingSerializer,
     CategorySerializer,
 )
+from carrier.models import Carrier
 
-from django.http.response import JsonResponse
-from django.shortcuts import redirect, render
-from django.core.paginator import Paginator
-from django.db.models.aggregates import Count
-from django.core.paginator import Paginator
-from django.template.loader import render_to_string
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models.aggregates import Count, Avg, Sum
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.gis.db.models.functions import Distance
@@ -33,7 +25,6 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.permissions import AllowAny
-from rest_framework.serializers import ValidationError
 
 """Marketplace API Views"""
 
@@ -41,22 +32,23 @@ from rest_framework.serializers import ValidationError
 # home page view
 class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     """
-    This view only handles representation of foods to normal users.
-    For food detail, his view requires user location saved on profile instance. if user is not
-    auhtenticated, query params 'lat' and 'log' should be sent.
+    This view  handles representation of foods to normal users.
+    For food detail, this view requires user location saved on profile instance. if user is not
+    auhtenticated, query params 'lat' and 'lon' must be sent.
     """
 
     queryset = Food.objects.filter(is_available=True)
     serializer_class = FoodSerializerMany
     permission_classes = [permissions.AllowAny]
+
     # ordering
     filter_backends = [
         filters.OrderingFilter,
         filters.SearchFilter,
         DjangoFilterBackend,
     ]
-    ordering_fields = ["name", "min_price"]
-    ordering = ["min_price"]
+    ordering_fields = ["name", "min_price", "avg_rating"]
+    ordering = ["-avg_rating"]
     # filering
     filterset_class = FoodFilterSet
     # searching
@@ -98,10 +90,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         else:
             try:
                 distance = distance_calculator(
-                    float(vendor_profile.lattitude), 
+                    float(vendor_profile.lattitude),
                     float(vendor_profile.longitude),
                     float(lat),
-                    float(lon)
+                    float(lon),
                 )
                 serializer = CFoodSerializerDetail(instance=obj)
                 return Response({"item": serializer.data, "distance": distance})
@@ -177,9 +169,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         return Response(ser.data)
 
 
-"""Advanced search"""
-
-
+# search
 class SearchApiView(views.APIView):
     """This api view handles searching for both food and vendor objects considering distance"""
 
@@ -242,8 +232,10 @@ class SearchApiView(views.APIView):
         )
 
 
+# rating
 class RatingViewSet(viewsets.ModelViewSet):
-    queryset = Rating.objects.filter(enabled=True)
+    permission_classes = [permissions.AllowAny]
+    http_method_names = ["get", "post", "delete"]
     serializer_class = RatingSerializer
     # ordering
     filter_backends = [
@@ -255,55 +247,89 @@ class RatingViewSet(viewsets.ModelViewSet):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """overriding in order to distinguish by vendor or food"""
+        """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
-        query_set = self.queryset
-        if object_id:
-            query_set = self.queryset.filter(object_id=int(object_id))
-        return query_set
+        if not object_id:
+            return Rating.objects.none()
+        try:
+            query_set = Rating.objects.filter(object_id=int(object_id), enabled=True)
+            return query_set
+        except:
+            # if any problem, no rating is returned
+            return Rating.objects.none()
 
     def create(self, request, *args, **kwargs):
-        rating_type = request.query_params.get("type")
-        obj_id = request.query_params.get("obj_id")
-        if not rating_type or not obj_id:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        """overriden, obj_id, type,"""
+        if not self.request.user.is_authenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         data = request.data
+        rating_type = data.get("type")
+        obj_id = data.get("obj_id")
+        rating_data = data.get("rating")
+        if not rating_type or not obj_id or not type(obj_id) == int:
+            return Response(
+                {"error": "rating type must be sent"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         previous = Rating.objects.filter(
             object_id=int(obj_id), user=request.user
         ).first()
         # handling indirect update
         if previous:
             # prviously exists, performing update
-            previous.comment = data["comment"]
-            previous.rating = data["rating"]
+            previous.comment = rating_data["comment"]
             previous.enabled = True
             previous.save()
             return Response({"updated": True}, status=status.HTTP_200_OK)
-
         else:
             # performing new rating creation
-            serializer = self.get_serializer(data=data)
-            try:
-                serializer.is_valid(raise_exception=True)
-            except:
-                return Response(
-                    {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-                )
+            serializer = self.get_serializer(data=rating_data)
+            serializer.is_valid(raise_exception=True)
             self.perform_create(
                 serializer
             )  # sets instance to serializer after creation
             instance = serializer.instance
+            #
+            related_obj = None
+
             if rating_type == "vendor":
-                instance.content_type = ContentType.objects.get_for_model(Vendor)
+                ct = ContentType.objects.get_for_model(Vendor)
+                instance.content_type = ct
+                related_obj = Vendor.objects.filter(id=obj_id).first()
             elif rating_type == "food":
-                instance.content_type = ContentType.objects.get_for_model(Food)
+                ct = ContentType.objects.get_for_model(Food)
+                instance.content_type = ct
+                related_obj = Food.objects.filter(id=obj_id).first()
+            elif rating_type == "carrier":
+                ct = ContentType.objects.get_for_model(Carrier)
+                instance.content_type = ct
+                related_obj = Carrier.objects.filter(id=obj_id).first()
+
+            if not related_obj:
+                return Response({"error":"no such object"},status=status.HTTP_400_BAD_REQUEST)
+
             instance.object_id = int(obj_id)
-            instance.enabled = True
             instance.save()
+            related_obj.update_avg_rating()
             # successfull creation
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def perform_create(self, serializer):
+        """setting user manually from request context"""
+        serializer.save(user=self.request.user)
 
+    def destroy(self, request, *args, **kwargs):
+        """updating obj rating avg and count if one of its ratings is deleted"""
+        if not self.request.user.is_authenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        rating = self.get_object()
+        obj = rating.related_obj
+        obj.update_avg_rating()
+        return res
+
+
+# categories
 class CategoriesReadAPIView(views.APIView):
     http_method_names = ["get"]
 
@@ -318,6 +344,7 @@ class CategoriesReadAPIView(views.APIView):
         )
 
 
+# vendor detail for public users
 class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
     """this view enables a normal user see a vendor detail with its menue"""
 
@@ -327,189 +354,3 @@ class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
 
     def get_object(self):
         return super().get_object()
-
-
-def marketplace(request):
-    """this view presents markeplace page. It also hanldes search, sort and filter of foods"""
-    all_foods = Food.objects.filter(is_available=True)
-    foods = all_foods
-
-    # filter by category
-    if request.method == "GET" and "category" in request.GET:
-        foods = foods.filter(category__name=request.GET["category"])
-
-    categories_by_foods_count = Category.objects.annotate(foods_count=Count("foods"))
-    paginated = Paginator(foods, 6)
-    if request.method == "POST":
-        """handling filter, sort and search"""
-        # search handling
-        if "query" in request.POST:
-            foods = foods.filter(name__icontains=request.POST["query"])
-
-            paginated = Paginator(foods, 6)
-            total_pages = [i + 1 for i in range(paginated.num_pages)]
-            total_found = foods.count()
-            # first page by default
-            foods = paginated.get_page(1)
-            return render(request, "marketplace/marketplace.html", context=locals())
-
-        # the option attribute contains all filtering and sorting
-        data = json.loads(request.body)["options"]
-
-        # filtering
-        if "category" in data:
-            foods = foods.filter(category__id=int(data["category"]))
-        if "price" in data:
-            foods = foods.filter(
-                price__range=[int(data["price"][0]), int(data["price"][1])]
-            )
-        if "rating" in data:
-            foods = foods.filter(
-                id__in=[
-                    p.id
-                    for p in foods
-                    if round(p.overall_rating()) == int(data["rating"])
-                ]
-            )
-
-        # sorting
-        if "sort" in data:
-            sort_type = data["sort"]
-            if sort_type == "newest":
-                foods = foods.order_by("-created_at")
-            elif sort_type == "cheapest":
-                foods = foods.order_by("price")
-            elif sort_type == "costly":
-                foods = foods.order_by("-price")
-
-        # paginating the results finally
-        paginated = Paginator(foods, 6)
-        total_pages = paginated.num_pages
-        total_found = foods.count()
-
-        # first page by default
-        foods = paginated.get_page(1)
-        if "page" in data:
-            foods = paginated.get_page(int(data["page"]))
-        str_html = render_to_string(
-            "marketplace/portional_list.html",
-            {"foods": foods},
-        )
-        return JsonResponse(
-            {"html": str_html, "total_pages": total_pages, "total_found": total_found}
-        )
-
-    # initial marketplace page
-    total_found = foods.count()
-    total_pages = [i + 1 for i in range(paginated.num_pages)]
-    foods = paginated.get_page(1)
-    one_star_count = len(
-        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 1]
-    )
-    two_star_count = len(
-        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 2]
-    )
-    three_star_count = len(
-        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 3]
-    )
-    four_star_count = len(
-        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 4]
-    )
-    five_star_count = len(
-        [p.overall_rating for p in all_foods if round(p.overall_rating()) == 5]
-    )
-
-    return render(request, "marketplace/marketplace.html", context=locals())
-
-
-def food_detail(request, food_id):
-    food = Food.objects.filter(id=food_id).first()
-    ratings = Rating.objects.filter(object_id=food.id).select_related("user")
-    if food:
-        return render(request, "marketplace/food_detail.html", context=locals())
-    return redirect("main:home")
-
-
-def vendors(request, page=None):
-    """this view presents all available vendors by either category, city or rating"""
-    all_vendors = Vendor.objects.filter(is_approved=True)
-    vendors = all_vendors
-    paginated = Paginator(vendors, per_page=6)
-    if request.method == "POST":
-        # handling search NOT AJAX
-        if "query" in request.POST:
-            vendors = vendors.filter(vendor_name__icontains=request.POST["query"])
-            cities = {
-                vendor.user_profile.city for vendor in vendors
-            }  # needed in template
-            paginated = Paginator(vendors, per_page=6)
-            total_found = vendors.count()
-            total_pages = [i + 1 for i in range(paginated.num_pages)]
-            vendors = paginated.get_page(1)
-            return render(request, "marketplace/vendors_list.html", context=locals())
-
-        data = json.loads(request.body)["options"]
-        # filtering
-        if "city" in data:
-            vendors = vendors.filter(user_profile__city=data["city"])
-        if "category" in data:
-            vendors = vendors.filter(categories__in=[int(data["category"])]).distinct()
-        if "rating" in data:
-            vendors = vendors.filter(
-                id__in=[
-                    v.id
-                    for v in vendors
-                    if round(v.overall_rating()) == int(data["rating"])
-                ]
-            )
-
-        # applying all filters according to parameters
-        vendors = vendors.select_related("user_profile", "user")  # for time optimizing
-        total_found = vendors.count()  # number of vendors found after all filterings
-
-        # paginating the results
-        paginated = Paginator(vendors, per_page=6)
-        total_pages = [i for i in range(1, paginated.num_pages + 1)]
-        cities = {vendor.user_profile.city for vendor in vendors}  # needed in template
-
-        # default is the first page
-        vendors = paginated.get_page(1)
-        # case sepecific page requested
-        if "page" in data:
-            try:
-                page = int(data["page"])
-                vendors = paginated.get_page(page)
-            except:
-                pass
-        str_html = render_to_string(
-            "marketplace/vendors_portional_list.html", context=locals()
-        )
-        return JsonResponse(
-            {"html": str_html, "total_pages": total_pages, "total_found": total_found}
-        )
-    # GET
-
-    cities = {vendor.user_profile.city for vendor in vendors}  # needed in template
-    paginated = Paginator(vendors, per_page=6)
-    total_found = vendors.count()
-    total_pages = [i + 1 for i in range(paginated.num_pages)]
-    vendors = paginated.get_page(1)
-    # rating counts
-    one_star_count = len(
-        [p.overall_rating for p in all_vendors if int(p.overall_rating()) == 1]
-    )
-    two_star_count = len(
-        [p.overall_rating for p in all_vendors if int(p.overall_rating()) == 2]
-    )
-    three_star_count = len(
-        [p.overall_rating for p in all_vendors if int(p.overall_rating()) == 3]
-    )
-    four_star_count = len(
-        [p.overall_rating for p in all_vendors if int(p.overall_rating()) == 4]
-    )
-    five_star_count = len(
-        [p.overall_rating for p in all_vendors if int(p.overall_rating()) == 5]
-    )
-
-    return render(request, "marketplace/vendors_list.html", context=locals())
-

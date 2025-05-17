@@ -9,7 +9,7 @@ from django.utils.timezone import now, timedelta, datetime
 class FoodFilterSet(django_filters.FilterSet):
     """this class customizes filtering of foods"""
 
-    is_expensive = django_filters.BooleanFilter(method="filter_expensive")
+    # is_expensive = django_filters.BooleanFilter(method="filter_expensive")
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
     category = django_filters.CharFilter(
@@ -21,13 +21,13 @@ class FoodFilterSet(django_filters.FilterSet):
         model = Food
         fields = ["min_price", "max_price", "category", "min_rating"]
 
-    def filter_expensive(self, queryset, name, value):
-        """making more advanced filtering logic here"""
-        if value:  # if expensive=True -> return expensive ones only
-            return queryset.filter(price__gte=8000)
+    # def filter_expensive(self, queryset, name, value):
+    #     """making more advanced filtering logic here"""
+    #     if value:  # if expensive=True -> return expensive ones only
+    #         return queryset.filter(price__gte=8000)
 
         # expensive=False -> return cheap foods
-        return queryset.filter(price__lte=1000)
+        # return queryset.filter(price__lte=1000)
 
 
 class VOrderFilterSet(django_filters.FilterSet):
