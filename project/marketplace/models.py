@@ -20,6 +20,8 @@ class Category(models.Model):
         return self.name
 
 
+
+
 class Food(models.Model):
     """please consider using decimal price value"""
 
@@ -38,9 +40,8 @@ class Food(models.Model):
         related_name="foods",
         db_index=True,
     )
-    # price options ???????
+    default_image = models.ForeignKey("marketplace.FoodImage",on_delete=models.SET_NULL,null=True,related_name="defualt_for")
     description = models.TextField(max_length=250)
-    image = models.ImageField(upload_to="foods/")
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -73,6 +74,9 @@ class Food(models.Model):
     def __str__(self):
         return self.name
 
+class FoodImage(models.Model):
+    food = models.ForeignKey(Food, on_delete=models.CASCADE,related_name="images")
+    image = models.ImageField(upload_to="foods/")
 
 class Rating(models.Model):
     """rating models is used for both food and vendor models for now"""

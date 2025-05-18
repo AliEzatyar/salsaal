@@ -2,7 +2,7 @@ from decimal import Decimal, InvalidOperation
 import json
 from rest_framework import serializers
 from vendor.models import Vendor
-from marketplace.models import Category, Food, Rating
+from marketplace.models import Category, Food, FoodImage, Rating
 from rest_framework import serializers
 from decimal import Decimal, InvalidOperation
 import json
@@ -54,6 +54,12 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ["name"]
 
 
+class FoodImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FoodImage
+        fields = ["__all__"]
+
+
 class FoodSerializerDetail(serializers.ModelSerializer):
     """this serializer is used for vendor-only CRUD"""
 
@@ -61,6 +67,10 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
     is_available = serializers.BooleanField(default=True)
+    images = FoodImageSerializer(many=True, read_only=True)
+    uploaded_images = serializers.ListField(
+        child=serializers.ImageField(), write_only=True, required=False
+    )
 
     class Meta:
         model = Food
@@ -72,26 +82,33 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "min_price",
             "category_name",
             "description",
-            "image",
             "is_available",
+            "images",
+            "uploaded_images",
             "rating",
             "created_at",
             "modified_at",
         ]
-        read_only_fields = ["rating", "created_at", "modified_at", "min_price", "id"]
+        read_only_fields = [
+            "rating",
+            "created_at",
+            "modified_at",
+            "min_price",
+            "id",
+            "images",
+        ]
 
     def get_category_name(self, obj):
         return obj.category.name
 
     def create(self, validated_data):
-        """setting the vendor and min price for the food + preventing duplicates"""
+        """setting the vendor and min price for the food + preventing duplicates+ handling multiple images"""
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
         validated_data["min_price"] = min([x for x in validated_data["prices"]])
-
-        # -------------- preventing duplicate name for the same vendor fooditem
         name = validated_data.get("name")
         vendor = validated_data.get("vendor")
 
+        # preventing duplicate fooditem
         if self.instance:
             # For update: exclude self
             if (
@@ -109,13 +126,44 @@ class FoodSerializerDetail(serializers.ModelSerializer):
                     "This food name already exists for this vendor."
                 )
 
-        return super().create(validated_data)
+        # handling multiple images
+        images = validated_data.pop("uploaded_images", [])
+        food = Food.objects.create(**validated_data)
+        for i,image in enumerate(images):
+            img_obj = FoodImage.objects.create(image=image, food=food)
+            # selecting first image as default
+            if i==0:
+
+                food.default_image = img_obj
+        food.save()
+        return food
+
+    def update(self, instance, validated_data):
+        images = validated_data.pop("uploaded_images", [])
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        # deleting all previous images
+        for image in instance.images.all():
+            image.delete()
+        # creating images
+        for i, image in enumerate(images):
+            img_obj = FoodImage.objects.create(image=image, food=instance)
+            # selecting first image as default
+
+            if i == 0:
+                instance.default_image = img_obj
+        instance.save()
+        return instance
 
 
 class CFoodSerializerDetail(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField("get_category_name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
+    images = FoodImageSerializer(many=True,read_only=True)
+    default_image = FoodImageSerializer(read_only=True)
 
     class Meta:
         model = Food
@@ -126,7 +174,8 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "min_price",
             "category_name",
             "description",
-            "image",
+            "images",
+            "default_image",
             "is_available",
             "rating",
         ]
@@ -141,43 +190,30 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     min_price = MyDecimalField()
+    default_image = FoodImageSerializer(read_only=True)
 
     class Meta:
         model = Food
-        fields = ["id", "name", "min_price", "prices", "image", "avg_rating","rating_count", "vendor_name"]
+        fields = [
+            "id",
+            "name",
+            "min_price",
+            "prices",
+            "default_image",
+            "avg_rating",
+            "rating_count",
+            "vendor_name",
+        ]
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
-
-    def validate(self, attrs):
-        vendor = attrs.get("vendor")
-        name = attrs.get("name")
-
-        if self.instance:
-            # For update: exclude self
-            if (
-                Food.objects.filter(vendor=vendor, name__iexact=name)
-                .exclude(pk=self.instance.pk)
-                .exists()
-            ):
-                raise serializers.ValidationError(
-                    "This food name already exists for this vendor."
-                )
-        else:
-            # For create
-            if Food.objects.filter(vendor=vendor, name__iexact=name).exists():
-                raise serializers.ValidationError(
-                    "This food name already exists for this vendor."
-                )
-
-        return attrs
 
 
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = ["id","user", "comment", "created_at", "rating"]
-        read_only_fields = ["id","user", "created_at"]
+        fields = ["id", "user", "comment", "created_at", "rating"]
+        read_only_fields = ["id", "user", "created_at"]
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):
