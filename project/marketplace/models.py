@@ -44,7 +44,7 @@ class Food(models.Model):
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    avg_rating = models.PositiveSmallIntegerField(default=0)
+    avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
@@ -71,7 +71,6 @@ class Food(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        print(self.prices)
         return self.name
 
 

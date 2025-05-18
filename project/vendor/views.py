@@ -3,7 +3,7 @@ from carrier.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
-from accounts.models import CUSTOMER, SHOP
+from accounts.models import ADMIN, CARRIER, CUSTOMER, SHOP
 from .serializers import VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
@@ -50,9 +50,8 @@ class VendorAPIView(views.APIView):
         """overriden to cancel vendor account"""
         user = self.request.user
         vendor = user.vendor
-        user.role = CUSTOMER
         vendor.delete()
-        user.save()
+        user.delete()
         return Response(status=status.HTTP_200_OK)
 
 
@@ -65,9 +64,9 @@ class ConvertToVendorAPIView(views.APIView):
         body: vendor_name
         """
         # if user is already a vendor
-        if self.request.user.role == SHOP or hasattr(self.request.user, "vendor"):
+        if self.request.user.role in (SHOP  ,CARRIER, ADMIN):
             return Response(
-                {"error": "user already a vendor"}, status=status.HTTP_403_FORBIDDEN
+                {"error": "user is not allowed to convert to vendor"}, status=status.HTTP_403_FORBIDDEN
             )
 
         data = self.request.data

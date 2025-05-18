@@ -25,6 +25,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.permissions import AllowAny
+from api.permissions import NotAdmin
 
 """Marketplace API Views"""
 
@@ -39,7 +40,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     queryset = Food.objects.filter(is_available=True)
     serializer_class = FoodSerializerMany
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [NotAdmin]
 
     # ordering
     filter_backends = [
@@ -234,7 +235,7 @@ class SearchApiView(views.APIView):
 
 # rating
 class RatingViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [NotAdmin]
     http_method_names = ["get", "post", "delete"]
     serializer_class = RatingSerializer
     # ordering
@@ -249,14 +250,19 @@ class RatingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
+        if self.request.method == "DELETE":
+            return Rating.objects.filter(user=self.request.user)
+        
         if not object_id:
             return Rating.objects.none()
+        
         try:
             query_set = Rating.objects.filter(object_id=int(object_id), enabled=True)
             return query_set
         except:
             # if any problem, no rating is returned
             return Rating.objects.none()
+
 
     def create(self, request, *args, **kwargs):
         """overriden, obj_id, type,"""
@@ -325,8 +331,9 @@ class RatingViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
         rating = self.get_object()
         obj = rating.related_obj
+        rating.delete()
         obj.update_avg_rating()
-        return res
+        return super().destroy(request,*args, **kwargs)
 
 
 # categories
@@ -352,5 +359,3 @@ class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
     permission_classes = [AllowAny]
     queryset = Vendor.objects.all()
 
-    def get_object(self):
-        return super().get_object()

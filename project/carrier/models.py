@@ -21,7 +21,7 @@ class Carrier(models.Model):
     vendor = models.ForeignKey('vendor.Vendor',on_delete=models.CASCADE,related_name="carriers")
     status = models.CharField(choices=CARRIER_STATUS_CHOICES,default=CARRIER_STATUS_CHOICES[0][0])
     is_active  = models.BooleanField(default=False)
-    avg_rating = models.PositiveSmallIntegerField(default=0)
+    avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
 
     class Meta:

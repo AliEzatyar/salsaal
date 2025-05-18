@@ -26,8 +26,12 @@ class Vendor(models.Model):
     active_hours = models.CharField(max_length=255,default="11:00-2:00 PM,5:00-9:00 PM")  # comma seperated
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
-    avg_rating = models.PositiveSmallIntegerField(default=0)
+    avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
+    
+    class Meta:
+        
+        ordering = ['-avg_rating']
     
     def get_location(self):
         """returns the location of the vendor"""
