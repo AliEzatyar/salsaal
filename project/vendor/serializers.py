@@ -36,6 +36,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     class Meta:
         model = Vendor
         fields = [
+            "id",
             "vendor_name",
             "vendor_license",
             "is_approved",
@@ -46,6 +47,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "rating_count",
         ]
         read_only_fields = [
+            "id",
             "user",
             "user_profile",
             "is_approved",

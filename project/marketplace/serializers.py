@@ -57,7 +57,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class FoodImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodImage
-        fields = ["__all__"]
+        fields = ["food","image"]
 
 
 class FoodSerializerDetail(serializers.ModelSerializer):
@@ -71,6 +71,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(), write_only=True, required=False
     )
+    default_image = serializers.SerializerMethodField("get_image_url")
 
     class Meta:
         model = Food
@@ -84,19 +85,24 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "description",
             "is_available",
             "images",
+            "default_image",
             "uploaded_images",
-            "rating",
+            "avg_rating",
             "created_at",
             "modified_at",
         ]
         read_only_fields = [
-            "rating",
+            "avg_rating",
             "created_at",
             "modified_at",
             "min_price",
             "id",
             "images",
+            "default_image"
         ]
+
+    def get_image_url(self,obj):
+        return obj.default_image.image.url
 
     def get_category_name(self, obj):
         return obj.category.name
@@ -147,6 +153,8 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         # deleting all previous images
         for image in instance.images.all():
             image.delete()
+        if instance.default_image:
+            instance.default_image.delete()
         # creating images
         for i, image in enumerate(images):
             img_obj = FoodImage.objects.create(image=image, food=instance)
@@ -163,7 +171,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
     images = FoodImageSerializer(many=True,read_only=True)
-    default_image = FoodImageSerializer(read_only=True)
+    default_image = serializers.SerializerMethodField("get_image_url")
 
     class Meta:
         model = Food
@@ -185,12 +193,16 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
         return obj.category.name
 
 
+    def get_image_url(self, obj):
+        return obj.default_image.image.url
+
+
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
 
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     min_price = MyDecimalField()
-    default_image = FoodImageSerializer(read_only=True)
+    default_image = serializers.SerializerMethodField("get_photo_url")
 
     class Meta:
         model = Food
@@ -207,6 +219,9 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
+
+    def get_photo_url(self,obj):
+        return obj.default_image.image.url
 
 
 class RatingSerializer(serializers.ModelSerializer):
@@ -225,13 +240,16 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vendor
         fields = [
+            "id",
             "vendor_name",
             "active_hours",
             "location",
+            "is_approved",
             "avg_rating",
             "rating_count",
             "foods",
         ]
 
     def get_location(self, obj):
-        return obj.get_location().tuple  # json does not support point object
+        if obj.get_location():
+            return obj.get_location().tuple  # json does not support point object

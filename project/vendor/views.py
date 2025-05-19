@@ -7,7 +7,7 @@ from accounts.models import ADMIN, CARRIER, CUSTOMER, SHOP
 from .serializers import VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
-from api.permissions import IsVendorOfFood
+from api.permissions import IsVendorApproved, IsVendorOfFood
 
 from rest_framework import permissions
 from rest_framework import viewsets
@@ -80,7 +80,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on foods of a vendor"""
 
     serializer_class = FoodSerializerDetail
-    permission_classes = [permissions.IsAuthenticated, IsVendorOfFood]
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfFood, IsVendorApproved]
     # ordering
     filter_backends = [
         filters.OrderingFilter,

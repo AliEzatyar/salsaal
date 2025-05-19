@@ -55,6 +55,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     # searching
     search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
 
+    def get_object(self):
+        obj = super().get_object()
+        if not obj.vendor.is_approved:
+            return None
+        return obj
+
     @action(detail=True, methods=["get"], url_path="food-item-detail")
     def item_detail(self, request, pk):
         """provides fooditem detail with distance"""
@@ -98,17 +104,17 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 )
                 serializer = CFoodSerializerDetail(instance=obj)
                 return Response({"item": serializer.data, "distance": distance})
-            except Exception as e:
-                return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+            except:
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"],url_path="all-categories")
     def categories(self, request):
         """this endpoint returns available categories"""
         categories = Category.objects.filter(show_on_home=True).values("name", "id")
         ser = CategorySerializer(categories, many=True)
         return Response(ser.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"],url_path="nearby-resturants")
     def nearby_resturants(self, request):
         """this endpoint returns nearby_vendors"""
         region = request.data.get("region", None)
@@ -145,7 +151,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ser = VendorSerializerMany(vendors, many=True, context={"request": request})
         return Response(ser.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"],url_path="week-trending")
     def week_trending(self, request):
         region = request.data.get("region", None)
         if request.user.is_authenticated:
@@ -178,10 +184,10 @@ class SearchApiView(views.APIView):
 
     def get(self, *args, **kwargs):
         query = self.request.query_params.get("query", None)
-        lon = self.request.query_params.get("long", None)
+        lon = self.request.query_params.get("lon", None)
         lat = self.request.query_params.get("lat", None)
         max_distance = self.request.query_params.get("max_distance", 5)
-
+        user_location = None
         # determinig user location
         try:
             if lat and lon:
@@ -198,12 +204,13 @@ class SearchApiView(views.APIView):
             return Response(
                 {"error": "query is required"}, status=status.HTTP_400_BAD_REQUEST
             )
+        if not user_location:
+            return Response({"error":"no_user_location"},status=status.HTTP_400_BAD_REQUEST)
 
         # search for foods
         foods = Food.objects.filter(
             name__icontains=query, is_available=True
         ).select_related("vendor__user_profile")
-
         foods = foods.annotate(
             distance=Distance("vendor__user_profile__location", user_location)
         )
@@ -252,17 +259,16 @@ class RatingViewSet(viewsets.ModelViewSet):
         object_id = self.request.query_params.get("obj_id", None)
         if self.request.method == "DELETE":
             return Rating.objects.filter(user=self.request.user)
-        
+
         if not object_id:
             return Rating.objects.none()
-        
+
         try:
             query_set = Rating.objects.filter(object_id=int(object_id), enabled=True)
             return query_set
         except:
             # if any problem, no rating is returned
             return Rating.objects.none()
-
 
     def create(self, request, *args, **kwargs):
         """overriden, obj_id, type,"""
@@ -313,7 +319,9 @@ class RatingViewSet(viewsets.ModelViewSet):
                 related_obj = Carrier.objects.filter(id=obj_id).first()
 
             if not related_obj:
-                return Response({"error":"no such object"},status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "no such object"}, status=status.HTTP_400_BAD_REQUEST
+                )
 
             instance.object_id = int(obj_id)
             instance.save()
@@ -333,7 +341,7 @@ class RatingViewSet(viewsets.ModelViewSet):
         obj = rating.related_obj
         rating.delete()
         obj.update_avg_rating()
-        return super().destroy(request,*args, **kwargs)
+        return super().destroy(request, *args, **kwargs)
 
 
 # categories
@@ -357,5 +365,4 @@ class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
 
     serializer_class = PublicVendorSerializer
     permission_classes = [AllowAny]
-    queryset = Vendor.objects.all()
-
+    queryset = Vendor.objects.filter(is_approved=True)

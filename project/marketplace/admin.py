@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import Category, Food, Rating
-from .models import FavItem, FavList
+from .models import Category, Food, Rating ,FavItem, FavList, FoodImage
 # Register your models here.
 
 
@@ -32,9 +31,14 @@ class FavlistItemAdmin(admin.ModelAdmin):
     model = FavItem
     list_display = ["favlist", "food"]
 
+class FoodImageAdmin(admin.ModelAdmin):
+    model = FoodImage
+    list_display = ['id','image','food']
+
 
 admin.site.register(FavList, FavlistAdmin)
 admin.site.register(FavItem, FavlistItemAdmin)
+admin.site.register(FoodImage,FoodImageAdmin)
 
 
 admin.site.register(Rating, RatingAdmin)
