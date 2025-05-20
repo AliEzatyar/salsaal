@@ -13,15 +13,15 @@ class CarrierSerializer(serializers.ModelSerializer):
         model = Carrier
         fields = [
             "id",
-            "email",
             "is_active",
             "id_document",
+            "email",
             "vendor",
             "user",
             "user_profile",
             "name"
         ]
-        read_only_fields= ["user","user_profile","email"]
+        read_only_fields= ["id","user","user_profile","email","vendor","name"]
         
 
     def get_carrier_name(self,obj):

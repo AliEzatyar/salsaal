@@ -35,6 +35,7 @@ LOCAL = True
 # Application definition
 
 INSTALLED_APPS = [
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "debug_toolbar",
     "django.contrib.admin",

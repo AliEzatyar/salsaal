@@ -24,7 +24,7 @@ class RatingAdmin(admin.ModelAdmin):
 
 class FavlistAdmin(admin.ModelAdmin):
     model = FavList
-    list_display = ["user", "created_at"]
+    list_display = ["user"]
 
 
 class FavlistItemAdmin(admin.ModelAdmin):

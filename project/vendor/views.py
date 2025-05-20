@@ -1,9 +1,9 @@
 from marketplace.models import Food
-from carrier.permissions import IsVendor, IsVendorOfOrder
+from api.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
-from accounts.models import ADMIN, CARRIER, CUSTOMER, SHOP
+from accounts.models import ADMIN, CARRIER, CUSTOMER, REST
 from .serializers import VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
@@ -64,7 +64,7 @@ class ConvertToVendorAPIView(views.APIView):
         body: vendor_name
         """
         # if user is already a vendor
-        if self.request.user.role in (SHOP  ,CARRIER, ADMIN):
+        if self.request.user.role in (REST  ,CARRIER, ADMIN):
             return Response(
                 {"error": "user is not allowed to convert to vendor"}, status=status.HTTP_403_FORBIDDEN
             )

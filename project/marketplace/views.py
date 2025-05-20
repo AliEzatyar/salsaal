@@ -1,11 +1,13 @@
 from marketplace.models import Category, Food, Rating
 from order.models import Order, OrderItem
+from accounts.models import CUSTOMER
 from .utils import haversine_distance as distance_calculator
 from api.backends import FoodFilterSet
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
     CFoodSerializerDetail,
+    FavItemSerializer,
     FoodSerializerMany,
     PublicVendorSerializer,
     RatingSerializer,
@@ -25,7 +27,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.permissions import AllowAny
-from api.permissions import NotAdmin
+from api.permissions import IsHavingFavlist, NotAdmin
 
 """Marketplace API Views"""
 
@@ -104,7 +106,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 )
                 serializer = CFoodSerializerDetail(instance=obj)
                 return Response({"item": serializer.data, "distance": distance})
-            except:
+            except Exception as e :
                 return Response(status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=["get"],url_path="all-categories")
@@ -221,7 +223,7 @@ class SearchApiView(views.APIView):
         # vendors found by query and limiting distance
         vendors = (
             Vendor.objects.filter(
-                vendor_name__icontains=query, is_approved=True, user__is_active=True
+                vendor_name__icontains=query, is_approved=True
             )
             .annotate(distance=Distance("user_profile__location", user_location))
             .filter(distance__lte=D(km=max_distance))
@@ -240,10 +242,9 @@ class SearchApiView(views.APIView):
         )
 
 
-# rating
 class RatingViewSet(viewsets.ModelViewSet):
     permission_classes = [NotAdmin]
-    http_method_names = ["get", "post", "delete"]
+    http_method_names = ["get", "post", "delete","patch"]
     serializer_class = RatingSerializer
     # ordering
     filter_backends = [
@@ -251,20 +252,39 @@ class RatingViewSet(viewsets.ModelViewSet):
         filters.SearchFilter,
         DjangoFilterBackend,
     ]
-    ordering_fields = ["created_at", "rating"]
-    ordering = ["-created_at"]
 
     def get_queryset(self):
         """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
-        if self.request.method == "DELETE":
+        rating_type = self.request.query_params.get("type",None)
+        rating_limit = self.request.query_params.get("rating_limit",None)
+        # user should be logged in and own the rating object
+        if self.request.method in ("DELETE","PATCH") :
+            if (
+                not self.request.user.is_authenticated
+                or self.request.user.role != CUSTOMER
+            ):
+                return Rating.objects.none()
             return Rating.objects.filter(user=self.request.user)
-
-        if not object_id:
+        # for GET
+        if not object_id or not rating_type:
             return Rating.objects.none()
-
         try:
-            query_set = Rating.objects.filter(object_id=int(object_id), enabled=True)
+            if rating_type == "vendor":
+                ct = ContentType.objects.get_for_model(Vendor)
+            elif rating_type == "food":
+                ct = ContentType.objects.get_for_model(Food)
+            elif rating_type == "carrier":
+                ct = ContentType.objects.get_for_model(Carrier)
+            else:
+                return Rating.objects.none()
+            rating_limit = int(rating_limit)
+            if rating_limit  and rating_limit > 0:
+                query_set = Rating.objects.filter(content_type=ct,object_id=int(object_id),enabled=True).order_by("-rating")[:rating_limit]
+            else:
+                query_set = Rating.objects.filter(
+                    content_type=ct, object_id=int(object_id), enabled=True
+                ).order_by('-rating')
             return query_set
         except:
             # if any problem, no rating is returned
@@ -272,9 +292,8 @@ class RatingViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """overriden, obj_id, type,"""
-        if not self.request.user.is_authenticated:
+        if not self.request.user.is_authenticated or self.request.user.role !=CUSTOMER:
             return Response(status=status.HTTP_403_FORBIDDEN)
-
         data = request.data
         rating_type = data.get("type")
         obj_id = data.get("obj_id")
@@ -335,13 +354,11 @@ class RatingViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """updating obj rating avg and count if one of its ratings is deleted"""
-        if not self.request.user.is_authenticated:
-            return Response(status=status.HTTP_403_FORBIDDEN)
         rating = self.get_object()
         obj = rating.related_obj
         rating.delete()
         obj.update_avg_rating()
-        return super().destroy(request, *args, **kwargs)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # categories
@@ -366,3 +383,13 @@ class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = PublicVendorSerializer
     permission_classes = [AllowAny]
     queryset = Vendor.objects.filter(is_approved=True)
+
+
+class FavListViewset(viewsets.ModelViewSet):
+    serializer_class = FavItemSerializer
+    permission_classes = [permissions.IsAuthenticated,IsHavingFavlist]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['favlist'] = self.request.user.favlist.id
+        return context

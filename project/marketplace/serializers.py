@@ -2,7 +2,7 @@ from decimal import Decimal, InvalidOperation
 import json
 from rest_framework import serializers
 from vendor.models import Vendor
-from marketplace.models import Category, Food, FoodImage, Rating
+from marketplace.models import Category, FavItem, FavList, Food, FoodImage, Rating
 from rest_framework import serializers
 from decimal import Decimal, InvalidOperation
 import json
@@ -57,7 +57,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class FoodImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodImage
-        fields = ["food","image"]
+        fields = ["food", "image"]
 
 
 class FoodSerializerDetail(serializers.ModelSerializer):
@@ -72,6 +72,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         child=serializers.ImageField(), write_only=True, required=False
     )
     default_image = serializers.SerializerMethodField("get_image_url")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
 
     class Meta:
         model = Food
@@ -98,10 +99,10 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "min_price",
             "id",
             "images",
-            "default_image"
+            "default_image",
         ]
 
-    def get_image_url(self,obj):
+    def get_image_url(self, obj):
         return obj.default_image.image.url
 
     def get_category_name(self, obj):
@@ -135,10 +136,10 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         # handling multiple images
         images = validated_data.pop("uploaded_images", [])
         food = Food.objects.create(**validated_data)
-        for i,image in enumerate(images):
+        for i, image in enumerate(images):
             img_obj = FoodImage.objects.create(image=image, food=food)
             # selecting first image as default
-            if i==0:
+            if i == 0:
 
                 food.default_image = img_obj
         food.save()
@@ -170,7 +171,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField("get_category_name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
-    images = FoodImageSerializer(many=True,read_only=True)
+    images = FoodImageSerializer(many=True, read_only=True)
     default_image = serializers.SerializerMethodField("get_image_url")
 
     class Meta:
@@ -185,13 +186,12 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "images",
             "default_image",
             "is_available",
-            "rating",
+            "avg_rating",
         ]
         read_only_fields = ["__all__"]
 
     def get_category_name(self, obj):
         return obj.category.name
-
 
     def get_image_url(self, obj):
         return obj.default_image.image.url
@@ -213,26 +213,31 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "prices",
             "default_image",
             "avg_rating",
-            "rating_count",
             "vendor_name",
         ]
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
 
-    def get_photo_url(self,obj):
+    def get_photo_url(self, obj):
         return obj.default_image.image.url
 
 
 class RatingSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField("get_user_name")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+
     class Meta:
         model = Rating
-        fields = ["id", "user", "comment", "created_at", "rating"]
-        read_only_fields = ["id", "user", "created_at"]
+        fields = ["id", "user", "user_name", "comment", "created_at", "rating"]
+        read_only_fields = ["id", "created_at", "user"]
+
+    def get_user_name(self, obj):
+        return obj.user.get_full_name()
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):
-    """public vendor object details"""
+    """public vendor details"""
 
     foods = FoodSerializerMany(many=True, read_only=True)
     location = serializers.SerializerMethodField("get_location")
@@ -253,3 +258,34 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     def get_location(self, obj):
         if obj.get_location():
             return obj.get_location().tuple  # json does not support point object
+
+
+class FavItemSerializer(serializers.ModelSerializer):
+    food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
+
+    class Meta:
+        model = FavItem
+        fields = ["favlist","food", "food_name"]
+
+    def create(self, validated_data):
+        favlist = FavList.objects.filter(self.context['favlist']).first()
+        if not favlist:
+            return serializers.ValidationError(detail="no_fav_list")
+        validated_data["favlist"] = favlist
+        return super().create(validated_data)
+
+    def get_food_name(self, obj):
+        return obj.food.name
+
+
+class FavListSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField("get_user_name", read_only=True)
+
+    class Meta:
+        model = FavList
+        fields = ["user", "user_name"]
+        read_only_fields = ["user_name"]
+
+    
+    def get_user_name(self, obj):
+        return obj.user.get_full_name()

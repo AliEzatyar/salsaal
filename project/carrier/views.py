@@ -11,13 +11,13 @@ from .models import Carrier
 from rest_framework.response import Response
 from .serializers import CarrierSerializer
 from order.serializers import CarrierOrderSerializer
-from .permissions import IsBuyer, IsCarrierOfVendor, IsVendor, IsVendorOfCarrier
+from api.permissions import IsBuyer, IsCarrierOfVendor, IsVendor, IsVendorOfCarrier
 from order.models import Order, ORDER_STATUS_CHOICES
 
 from accounts.models import (
     ADMIN,
     CARRIER_ADD_OTP_EXPIRATION,
-    SHOP,
+    REST,
     User,
     UserOtp,
     FOOD_DELIVERY_OTP_EXPIRATION,
@@ -66,7 +66,7 @@ class AddCarrierAPIView(views.APIView):
             raise serializers.ValidationError(
                 {"error": "no_account_found_by_that_email"}
             )
-        if account.role in (SHOP, ADMIN) or account.is_admin:
+        if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
             raise serializers.ValidationError({"error": "You are not allowed"})
         elif account.role == CARRIER:
             raise serializers.ValidationError(

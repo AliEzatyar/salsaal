@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Vendor
 from accounts.serializers import UserProfileSerializer
-from accounts.models import SHOP, User
+from accounts.models import REST, User
 
 
 class VendorSerializerMany(serializers.ModelSerializer):
@@ -25,14 +25,15 @@ class VendorSerializerMany(serializers.ModelSerializer):
         return round(obj.distance.km, 1) if hasattr(obj, "distance") else None
 
     def get_image_url(self, obj):
-        request = self.context.get("request")
         image = getattr(obj.user_profile, "picture", None)
         if image and hasattr(image, "url"):
-            return request.build_absolute_uri(image.url)
+            return image.url
         return None
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:")
+
     class Meta:
         model = Vendor
         fields = [
@@ -54,7 +55,6 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "created_at",
             "rating",
         ]
-
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
@@ -81,7 +81,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context.get("request").user
         user_profile = user.profile
-        user.role = SHOP
+        user.role = REST
         user.save()
         validated_data["user"] = user
         validated_data["user_profile"] = user_profile

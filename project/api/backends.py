@@ -15,7 +15,7 @@ class FoodFilterSet(django_filters.FilterSet):
     category = django_filters.CharFilter(
         field_name="category__name", lookup_expr="iexact"
     )
-    min_rating = django_filters.NumberFilter(field_name="rating", lookup_expr="gte")
+    min_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
 
     class Meta:
         model = Food

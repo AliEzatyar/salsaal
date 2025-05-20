@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+
 # Create your models here.
 
 
@@ -18,8 +19,6 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-
-
 
 
 class Food(models.Model):
@@ -40,7 +39,12 @@ class Food(models.Model):
         related_name="foods",
         db_index=True,
     )
-    default_image = models.ForeignKey("marketplace.FoodImage",on_delete=models.SET_NULL,null=True,related_name="defualt_for")
+    default_image = models.ForeignKey(
+        "marketplace.FoodImage",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="defualt_for",
+    )
     description = models.TextField(max_length=250)
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -52,7 +56,7 @@ class Food(models.Model):
         verbose_name = "food"
         verbose_name_plural = "foods"
         ordering = ["-modified_at"]  # newest
-        unique_together = ['name',"vendor"]
+        unique_together = ["name", "vendor"]
 
     def update_avg_rating(self, *args, **kwargs):
         ct = ContentType.objects.get_for_model(Food)
@@ -74,9 +78,11 @@ class Food(models.Model):
     def __str__(self):
         return self.name
 
+
 class FoodImage(models.Model):
-    food = models.ForeignKey(Food, on_delete=models.CASCADE,related_name="images")
+    food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="foods/")
+
 
 class Rating(models.Model):
     """rating models is used for both food and vendor models for now"""
@@ -104,8 +110,6 @@ class FavList(models.Model):
     user = models.OneToOneField(
         "accounts.User", on_delete=models.CASCADE, related_name="favlist"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
 
     def total_items(self):
         return self.items.count()
@@ -121,3 +125,4 @@ class FavItem(models.Model):
     food = models.ForeignKey(
         "marketplace.Food", on_delete=models.CASCADE, related_name="+"
     )
+    created_at = models.DateTimeField(auto_now_add=True)

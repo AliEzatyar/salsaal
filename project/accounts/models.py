@@ -5,7 +5,7 @@ from django.contrib.gis.geos import Point
 from django.utils import timezone
 
 ADMIN = 0
-SHOP = 1
+REST = 1
 CUSTOMER = 2
 CARRIER = 3
 
@@ -60,7 +60,7 @@ class User(AbstractBaseUser):
 
     ROLE_CHOICES = [
         (ADMIN,"admin"),
-        (SHOP, "Shop"),
+        (REST, "Shop"),
         (CUSTOMER, "Customer"),
         (CARRIER, "Carrier"),
         

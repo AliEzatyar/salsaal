@@ -45,6 +45,7 @@ class VOrderItemSerializer(ModelSerializer):
 class VOrderSerializer(ModelSerializer):
     customer_name = SerializerMethodField("get_customer_name")
     items = VOrderItemSerializer(read_only=True,many=True)
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:")
 
     class Meta:
         model = Order
@@ -60,6 +61,7 @@ class VOrderSerializer(ModelSerializer):
             "carrier",
             "items"
         ]
+        read_only_fields = ["id","created_at"]
 
     def get_customer_name(self, obj):
         return obj.user.first_name + obj.user.last_name
@@ -67,6 +69,7 @@ class VOrderSerializer(ModelSerializer):
 
 class CarrierOrderSerializer(ModelSerializer):
     customer_name = SerializerMethodField("get_customer_name")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
 
     class Meta:
         model = Order
@@ -79,6 +82,7 @@ class CarrierOrderSerializer(ModelSerializer):
             "is_credit",
             "created_at",
         ]
-
+        read_only_fields = ['created_at']
+        
     def get_customer_name(self, obj):
         return obj.user.first_name + obj.user.last_name

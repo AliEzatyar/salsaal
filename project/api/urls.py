@@ -3,6 +3,7 @@ from . import views
 from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
 from marketplace.views import (
+    FavListViewset,
     PublicVendorDetail,
     RatingViewSet,
     MarketplaceViewset,
@@ -39,7 +40,7 @@ router.register(r"user-detail", ac_views.UserViewset, basename="user-detail")
 router.register(
     r"public-vendor-detail", PublicVendorDetail, basename="public-vendor-detail"
 )
-
+router.register(r"fav-list", FavListViewset, basename="fav-list")
 # rating viewset routing
 router.register(r"ratings", RatingViewSet, basename="rating")
 # food managemet routing

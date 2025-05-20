@@ -20,11 +20,12 @@ class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField("calculate_total")
     total_items = serializers.SerializerMethodField("calculate_total_items")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
 
     class Meta:
         model = Cart
         fields = ["created_at",'modified_at',"items",'total_price','total_items']
-
+        read_only_fields = ["created_at"]
     def calculate_total(self,obj):
         return obj.calculate_total()
 

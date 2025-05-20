@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer, ValidationError
+from rest_framework.serializers import ModelSerializer, ValidationError, DateTimeField
 from vendor.models import Vendor
 from .models import User, UserProfile, CUSTOMER
 from rest_framework_simplejwt.serializers import (
@@ -6,7 +6,6 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-
 
 class UserCreationSerializer(ModelSerializer):
     class Meta:
@@ -75,21 +74,6 @@ class VendorCreateSerializer(ModelSerializer):
         fields = ["vendor_name"]
 
 
-class VendorManageSerializer(ModelSerializer):
-    user = UserDetailSerializer()
-    user_profile = UserProfileSerializer()
-
-    class Meta:
-        model = Vendor
-        fields = [
-            "id",
-            "vendor_name",
-            "vendor_license",
-            "user",
-            "user_profile",
-            "created_at",
-        ]
-        read_only_fields = ["id"]
 
 
 class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
