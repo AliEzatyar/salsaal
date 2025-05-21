@@ -97,9 +97,9 @@ class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
         # create new access object, add user_id and role to it assign it instead of older one in data
         access = AccessToken()
         access["user_id"] = refresh["user_id"]
-        role = User.objects.get(id=access["user_id"])
+        role = User.objects.get(id=access["user_id"]).role
         print(role,"before ")
-        access["role"] = refresh.get("role", role)  # fallback
+        access["role"] = role  # fallback
         # re-assiging the access token which contains role
         print(access['role'],"after")
         data["access"] = str(access)

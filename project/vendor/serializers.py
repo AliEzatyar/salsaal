@@ -81,6 +81,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context.get("request").user
         user_profile = user.profile
+        print(user)
         user.role = REST
         user.save()
         validated_data["user"] = user
