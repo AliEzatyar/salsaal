@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-
+import jwt
 class UserCreationSerializer(ModelSerializer):
     class Meta:
         model = User
@@ -74,8 +74,6 @@ class VendorCreateSerializer(ModelSerializer):
         fields = ["vendor_name"]
 
 
-
-
 class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     @classmethod
@@ -99,8 +97,13 @@ class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
         # create new access object, add user_id and role to it assign it instead of older one in data
         access = AccessToken()
         access["user_id"] = refresh["user_id"]
-        access["role"] = refresh.get("role", CUSTOMER)  # fallback
+        role = User.objects.get(id=access["user_id"])
+        print(role,"before ")
+        access["role"] = refresh.get("role", role)  # fallback
         # re-assiging the access token which contains role
+        print(access['role'],"after")
         data["access"] = str(access)
-
+        data["refresh"] =str(refresh)
+        decoded = jwt.decode(data['access'], options={"verify_signature": False})
+        print(decoded['role'])
         return data

@@ -73,6 +73,7 @@ class ConvertToVendorAPIView(views.APIView):
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         ser.is_valid(raise_exception=True)
         ser.save()
+        
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
