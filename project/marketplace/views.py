@@ -1,4 +1,4 @@
-from marketplace.models import Category, Food, Rating
+from marketplace.models import Category, FavItem, FavList, Food, Rating
 from order.models import Order, OrderItem
 from accounts.models import CUSTOMER
 from .utils import haversine_distance as distance_calculator
@@ -393,3 +393,6 @@ class FavListViewset(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context['favlist'] = self.request.user.favlist.id
         return context
+    
+    def get_queryset(self):
+        return FavItem.objects.filter(favlist=self.request.user.favlist)

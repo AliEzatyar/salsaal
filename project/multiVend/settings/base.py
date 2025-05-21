@@ -206,6 +206,7 @@ from decimal import Decimal
 PUBLIC_PLATFORM_ITEM_COMMISSION_FEE = Decimal(20) # af
 PUBLIC_PLATFORM_COMMISSION_CURRENCY = "AFS"
 
+APPEND_SLASH = False
 # debug toolbar
 # INTERNAL_IPS = [
 #     "109.199.99.8",

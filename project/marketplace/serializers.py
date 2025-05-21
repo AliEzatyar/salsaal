@@ -262,13 +262,12 @@ class PublicVendorSerializer(serializers.ModelSerializer):
 
 class FavItemSerializer(serializers.ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
-
     class Meta:
         model = FavItem
-        fields = ["favlist","food", "food_name"]
-
+        fields = ["id","favlist","food", "food_name"]
+        read_only_fields = ['favlist',"id"]
     def create(self, validated_data):
-        favlist = FavList.objects.filter(self.context['favlist']).first()
+        favlist = FavList.objects.filter(id=self.context['favlist']).first()
         if not favlist:
             return serializers.ValidationError(detail="no_fav_list")
         validated_data["favlist"] = favlist

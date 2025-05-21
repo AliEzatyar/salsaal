@@ -94,7 +94,7 @@ class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
         data = super().validate(attrs)
 
         # create refresh object using the entered refresh token
-        refresh = RefreshToken(attrs["refresh"])
+        refresh = RefreshToken(data["refresh"])
 
         # create new access object, add user_id and role to it assign it instead of older one in data
         access = AccessToken()

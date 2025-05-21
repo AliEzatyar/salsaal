@@ -32,7 +32,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:",read_only=True)
 
     class Meta:
         model = Vendor
