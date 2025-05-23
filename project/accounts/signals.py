@@ -31,7 +31,7 @@ def delete_cart_vendor(sender, instance, created: bool, **kwargs):
     """this signal remove cart from user object when converted to vendor"""
     if created:
         if hasattr(instance,'cart'):
-            instance.cart.delete()
+            instance.user.cart.delete()
 
 
 @receiver(post_save, sender=Carrier)
@@ -40,4 +40,4 @@ def delete_cart_carrier(sender, instance, created: bool, **kwargs):
     if created:
         user = instance.user
         if hasattr(user, "cart"):
-            instance.cart.delete()
+            user.cart.delete()

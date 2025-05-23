@@ -3,22 +3,19 @@ from api.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
-from accounts.models import ADMIN, CARRIER, CUSTOMER, REST
-from .serializers import VendorSerializerDetailed
+from accounts.models import ADMIN, CARRIER, REST
+from vendor.models import OpeningHour
+from .serializers import OpeningHourSerializer, VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
 from api.permissions import IsVendorApproved, IsVendorOfFood
-
-from rest_framework import permissions
-from rest_framework import viewsets
-from rest_framework import views
-from rest_framework import status
+from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
-from rest_framework import filters
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from django.utils import timezone as tz
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import NotAcceptable
 
 # Create your views here.
 
@@ -64,16 +61,17 @@ class ConvertToVendorAPIView(views.APIView):
         body: vendor_name
         """
         # if user is already a vendor
-        if self.request.user.role in (REST  ,CARRIER, ADMIN):
+        if self.request.user.role in (REST, CARRIER, ADMIN):
             return Response(
-                {"error": "user is not allowed to convert to vendor"}, status=status.HTTP_403_FORBIDDEN
+                {"error": "user is not allowed to convert to vendor"},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         data = self.request.data
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         ser.is_valid(raise_exception=True)
         ser.save()
-        
+
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
@@ -104,6 +102,55 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context["vendor"] = self.request.user.vendor.id
         return context
+
+
+class ManageOpeningHours(viewsets.ModelViewSet):
+    serializer_class = OpeningHourSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get_queryset(self):
+        return OpeningHour.objects.filter(vendors__in=[self.request.user.vendor])
+
+    def perform_create(self, serializer):
+        data = serializer.validated_data
+        weekday = data.get("weekday",None)
+        start_hour = data.get("start_hour",None)
+        end_hour = data.get("end_hour", None)
+        is_holiday = data.get("is_holiday",None)
+
+        qs = self.get_queryset()
+        # preventing repetition
+        if weekday and qs.filter(weekday=weekday):
+            raise NotAcceptable(detail="already_exists", code=403)
+        if not is_holiday and (not start_hour or not end_hour):
+            raise NotAcceptable(detail="no_hours_mentioned", code=403)
+        if start_hour and end_hour:
+            if start_hour > end_hour:
+                raise NotAcceptable(detail="incorrect_hour_set", code=403)
+
+        instance = serializer.save()
+        vendor = self.request.user.vendor
+        vendor.opening_hours.add(instance)
+        return instance
+
+    def perform_update(self, serializer):
+        data = serializer.validated_data
+        weekday = data.get("weekday",None)
+        start_hour = data.get("start_hour",None)
+        end_hour = data.get("end_hour", None)
+        is_holiday = data.get("is_holiday",None)
+
+        qs = self.get_queryset().exclude(id=serializer.instance.id)
+        # preventing repetition
+        if weekday and qs.filter(weekday=weekday):
+            raise NotAcceptable(detail="already_exists", code=403)
+        if not is_holiday and (not start_hour or not end_hour):
+            raise NotAcceptable(detail="no_hours_mentioned", code=403)
+        if start_hour and end_hour:
+            if start_hour > end_hour:
+                raise NotAcceptable(detail="incorrect_hour_set", code=403)
+
+        return serializer.save()
 
 
 class VendorRevenueView(views.APIView):

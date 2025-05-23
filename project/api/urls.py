@@ -4,15 +4,18 @@ from rest_framework.routers import DefaultRouter
 from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
 from marketplace.views import (
     FavListViewset,
+    FoodSearchViewset,
     PublicVendorDetail,
     RatingViewSet,
     MarketplaceViewset,
     SearchApiView,
+    VendorSearchViewset,
 )
 from vendor.views import (
     AcceptRejectOrderView,
     ConvertToVendorAPIView,
     ListVendorOrders,
+    ManageOpeningHours,
     VendorRevenueView,
     VendorFoodsManageViewSet,
     VendorAPIView,
@@ -45,6 +48,11 @@ router.register(r"fav-list", FavListViewset, basename="fav-list")
 router.register(r"ratings", RatingViewSet, basename="rating")
 # food managemet routing
 router.register(r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods")
+
+router.register(
+    r"manage-opening-hours", ManageOpeningHours, basename="manage-opening-hours"
+)
+
 # managing carriers as vendor
 router.register(r"manage-carriers", ManageCarrierViewSet, basename="manage-carriers")
 # see orders as vendor
@@ -53,6 +61,10 @@ router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-order
 router.register(r"vendor-orders", ListVendorOrders, basename="vendor-orders")
 # food retrive  routing
 router.register(r"home", MarketplaceViewset, basename="home")
+
+router.register(r"f-search", FoodSearchViewset, basename="food-search")
+
+router.register(r"v-search", VendorSearchViewset, basename="vendor-search")
 
 app_name = "api"
 

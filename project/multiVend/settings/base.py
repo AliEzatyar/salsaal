@@ -202,9 +202,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 CORS_ALLOW_ALL_ORIGINS = True
+
+# instance based settings
 from decimal import Decimal
 PUBLIC_PLATFORM_ITEM_COMMISSION_FEE = Decimal(20) # af
 PUBLIC_PLATFORM_COMMISSION_CURRENCY = "AFS"
+DEFAULT_SEARCH_DISTANCE = 10 # km
 
 APPEND_SLASH = False
 # debug toolbar

@@ -1,9 +1,16 @@
+from zoneinfo import ZoneInfo
 from marketplace.models import Category, FavItem, FavList, Food, Rating
 from order.models import Order, OrderItem
 from accounts.models import CUSTOMER
+from vendor.utils import to_af_weekday
 from .utils import haversine_distance as distance_calculator
-from api.backends import FoodFilterSet
-from vendor.models import Vendor
+from api.backends import (
+    CustomFoodSearch,
+    CustomVendorSearch,
+    FoodFilterSet,
+    VendorFilterSet,
+)
+from vendor.models import OpeningHour, Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
     CFoodSerializerDetail,
@@ -22,19 +29,19 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.utils import timezone
-from rest_framework import filters, permissions, status, views, viewsets
+from rest_framework import filters, status, views, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from api.permissions import IsHavingFavlist, NotAdmin
 
 """Marketplace API Views"""
 
 
-# home page view
 class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     """
+                    Home Page
     This view  handles representation of foods to normal users.
     For food detail, this view requires user location saved on profile instance. if user is not
     auhtenticated, query params 'lat' and 'lon' must be sent.
@@ -42,20 +49,17 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     queryset = Food.objects.filter(is_available=True)
     serializer_class = FoodSerializerMany
-    permission_classes = [NotAdmin]
+    permission_classes = [AllowAny]
 
-    # ordering
+    # django-filter
     filter_backends = [
         filters.OrderingFilter,
-        filters.SearchFilter,
         DjangoFilterBackend,
     ]
     ordering_fields = ["name", "min_price", "avg_rating"]
     ordering = ["-avg_rating"]
     # filering
     filterset_class = FoodFilterSet
-    # searching
-    search_fields = ["name", "category__name", "description", "vendor__vendor_name"]
 
     def get_object(self):
         obj = super().get_object()
@@ -106,20 +110,20 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 )
                 serializer = CFoodSerializerDetail(instance=obj)
                 return Response({"item": serializer.data, "distance": distance})
-            except Exception as e :
+            except Exception as e:
                 return Response(status=status.HTTP_404_NOT_FOUND)
 
-    @action(detail=False, methods=["get"],url_path="all-categories")
+    @action(detail=False, methods=["get"], url_path="all-categories")
     def categories(self, request):
         """this endpoint returns available categories"""
         categories = Category.objects.filter(show_on_home=True).values("name", "id")
         ser = CategorySerializer(categories, many=True)
         return Response(ser.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"],url_path="nearby-resturants")
+    @action(detail=False, methods=["post"], url_path="nearby-resturants")
     def nearby_resturants(self, request):
         """this endpoint returns nearby_vendors"""
-        region = request.data.get("region", None)
+        city = request.data.get("city", None)
         lat = request.data.get("lat", None)
         lon = request.data.get("lon", None)
         max_distance = request.data.get("max_distance", 10)  # km
@@ -129,11 +133,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             max_distance = 10
 
         if request.user.is_authenticated:
-            region = request.user.region
+            city = request.user.city
             user_location = request.user.profile.location
         else:
-            if not region:
-                return Response({"detail": "Please send region as 'XY'."}, status=400)
+            if not city:
+                return Response({"detail": "Please send city as 'abcd'."}, status=400)
             if not lat or not lon:
                 return Response(
                     {"detail": "Latitude and longitude are required."}, status=400
@@ -143,9 +147,19 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             except (TypeError, ValueError):
                 return Response({"detail": "Invalid coordinates."}, status=400)
             user_location = Point(float(lon), float(lat), srid=4326)
-
+        now = timezone.now()
+        index = now.weekday()
+        weekday = to_af_weekday(index=index)
+        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour
+        print(now_af)
+        hours = OpeningHour.objects.filter(
+            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
+        )
+        print(hours,"found")
         vendors = (
-            Vendor.objects.filter(is_approved=True, user__region=region)
+            Vendor.objects.filter(
+                is_approved=True, user_profile__city=city, opening_hours__in=hours
+            )
             .annotate(distance=Distance("user_profile__location", user_location))
             .filter(distance__lte=D(km=max_distance))
             .order_by("distance")[:5]
@@ -153,18 +167,18 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ser = VendorSerializerMany(vendors, many=True, context={"request": request})
         return Response(ser.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"],url_path="week-trending")
+    @action(detail=False, methods=["post"], url_path="week-trending")
     def week_trending(self, request):
-        region = request.data.get("region", None)
+        city = request.data.get("city", None)
         if request.user.is_authenticated:
-            region = request.user.region
-        if not region:
-            return Response({"detail": "Please send region as 'XY'."}, status=400)
+            city = request.user.city
+        if not city:
+            return Response({"detail": "Please send city as 'Kabul'."}, status=400)
 
         week_ago = timezone.now() - timezone.timedelta(weeks=1)
-        orders = Order.objects.filter(
-            user__region=region, created_at__gte=week_ago
-        ).values("id")
+        orders = Order.objects.filter(user__profile__city=city, created_at__gte=week_ago).values(
+            "id"
+        )
 
         top_week_foods = (
             OrderItem.objects.filter(order_id__in=orders)
@@ -178,11 +192,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         return Response(ser.data)
 
 
-# search
+# depricated
 class SearchApiView(views.APIView):
     """This api view handles searching for both food and vendor objects considering distance"""
 
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def get(self, *args, **kwargs):
         query = self.request.query_params.get("query", None)
@@ -207,7 +221,9 @@ class SearchApiView(views.APIView):
                 {"error": "query is required"}, status=status.HTTP_400_BAD_REQUEST
             )
         if not user_location:
-            return Response({"error":"no_user_location"},status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "no_user_location"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # search for foods
         foods = Food.objects.filter(
@@ -222,9 +238,7 @@ class SearchApiView(views.APIView):
 
         # vendors found by query and limiting distance
         vendors = (
-            Vendor.objects.filter(
-                vendor_name__icontains=query, is_approved=True
-            )
+            Vendor.objects.filter(vendor_name__icontains=query, is_approved=True)
             .annotate(distance=Distance("user_profile__location", user_location))
             .filter(distance__lte=D(km=max_distance))
         )
@@ -242,9 +256,42 @@ class SearchApiView(views.APIView):
         )
 
 
+class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
+    serializer_class = FoodSerializerMany
+
+    queryset = Food.objects.filter(is_available=True)
+    permission_classes = [AllowAny]
+    # django-filter
+    filter_backends = [
+        filters.OrderingFilter,
+        CustomFoodSearch,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["name", "min_price", "avg_rating"]
+    ordering = ["-avg_rating"]
+    # filering
+    filterset_class = FoodFilterSet
+
+
+class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
+    serializer_class = VendorSerializerMany
+    queryset = Vendor.objects.filter(is_approved=True)
+    permission_classes = [AllowAny]
+    # django-filter
+    filter_backends = [
+        filters.OrderingFilter,
+        CustomVendorSearch,
+        DjangoFilterBackend,
+    ]
+    ordering_fields = ["vendor_name", "avg_rating", "rating_count"]
+    ordering = ["-avg_rating"]
+    # filering
+    filterset_class = VendorFilterSet
+
+
 class RatingViewSet(viewsets.ModelViewSet):
     permission_classes = [NotAdmin]
-    http_method_names = ["get", "post", "delete","patch"]
+    http_method_names = ["get", "post", "delete", "patch"]
     serializer_class = RatingSerializer
     # ordering
     filter_backends = [
@@ -256,10 +303,10 @@ class RatingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
-        rating_type = self.request.query_params.get("type",None)
-        rating_limit = self.request.query_params.get("rating_limit",None)
+        rating_type = self.request.query_params.get("type", None)
+        rating_limit = self.request.query_params.get("rating_limit", None)
         # user should be logged in and own the rating object
-        if self.request.method in ("DELETE","PATCH") :
+        if self.request.method in ("DELETE", "PATCH"):
             if (
                 not self.request.user.is_authenticated
                 or self.request.user.role != CUSTOMER
@@ -279,12 +326,14 @@ class RatingViewSet(viewsets.ModelViewSet):
             else:
                 return Rating.objects.none()
             rating_limit = int(rating_limit)
-            if rating_limit  and rating_limit > 0:
-                query_set = Rating.objects.filter(content_type=ct,object_id=int(object_id),enabled=True).order_by("-rating")[:rating_limit]
+            if rating_limit and rating_limit > 0:
+                query_set = Rating.objects.filter(
+                    content_type=ct, object_id=int(object_id), enabled=True
+                ).order_by("-rating")[:rating_limit]
             else:
                 query_set = Rating.objects.filter(
                     content_type=ct, object_id=int(object_id), enabled=True
-                ).order_by('-rating')
+                ).order_by("-rating")
             return query_set
         except:
             # if any problem, no rating is returned
@@ -292,7 +341,7 @@ class RatingViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """overriden, obj_id, type,"""
-        if not self.request.user.is_authenticated or self.request.user.role !=CUSTOMER:
+        if not self.request.user.is_authenticated or self.request.user.role != CUSTOMER:
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = request.data
         rating_type = data.get("type")
@@ -361,7 +410,7 @@ class RatingViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# categories
+# categories for vendor
 class CategoriesReadAPIView(views.APIView):
     http_method_names = ["get"]
 
@@ -376,7 +425,6 @@ class CategoriesReadAPIView(views.APIView):
         )
 
 
-# vendor detail for public users
 class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
     """this view enables a normal user see a vendor detail with its menue"""
 
@@ -386,13 +434,15 @@ class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
 
 
 class FavListViewset(viewsets.ModelViewSet):
+    """THis viewset handles CRUD of Fav List"""
+
     serializer_class = FavItemSerializer
-    permission_classes = [permissions.IsAuthenticated,IsHavingFavlist]
+    permission_classes = [IsAuthenticated, IsHavingFavlist]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['favlist'] = self.request.user.favlist.id
+        context["favlist"] = self.request.user.favlist.id
         return context
-    
+
     def get_queryset(self):
         return FavItem.objects.filter(favlist=self.request.user.favlist)

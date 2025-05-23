@@ -1,7 +1,9 @@
 from rest_framework import serializers
-from .models import Vendor
-from accounts.serializers import UserProfileSerializer
-from accounts.models import REST, User
+from .models import OpeningHour, Vendor
+from accounts.models import REST
+from django.utils import timezone
+from .utils import to_af_weekday
+from zoneinfo import ZoneInfo 
 
 
 class VendorSerializerMany(serializers.ModelSerializer):
@@ -18,6 +20,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
             "distance",
             "image_url",
         ]
+        
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
@@ -32,7 +35,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:",read_only=True)
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
 
     class Meta:
         model = Vendor
@@ -81,10 +84,19 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context.get("request").user
         user_profile = user.profile
-        print(user)
         user.role = REST
         user.save()
         validated_data["user"] = user
         validated_data["user_profile"] = user_profile
 
         return super().create(validated_data)
+
+
+class OpeningHourSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OpeningHour
+        fields = ["id", "start_hour", "end_hour", "weekday", "is_holiday"]
+        read_only_fields = [
+            "id",
+        ]

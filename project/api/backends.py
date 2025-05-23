@@ -4,30 +4,39 @@ import django_filters
 from order.models import ORDER_STATUS_CHOICES, Order
 from marketplace.models import Food
 from django.utils.timezone import now, timedelta, datetime
+from rest_framework.filters import SearchFilter
+from django.db.models import Q, F
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
+
+from multiVend.settings.base import DEFAULT_SEARCH_DISTANCE
+from vendor.models import Vendor
 
 
 class FoodFilterSet(django_filters.FilterSet):
     """this class customizes filtering of foods"""
 
     # is_expensive = django_filters.BooleanFilter(method="filter_expensive")
-    min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
-    max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
+    min_price = django_filters.NumberFilter(field_name="min_price", lookup_expr="gte")
+    max_price = django_filters.NumberFilter(field_name="min_price", lookup_expr="lte")
     category = django_filters.CharFilter(
         field_name="category__name", lookup_expr="iexact"
     )
-    min_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
+    avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
 
     class Meta:
         model = Food
-        fields = ["min_price", "max_price", "category", "min_rating"]
+        fields = ["min_price", "max_price", "category", "avg_rating"]
 
-    # def filter_expensive(self, queryset, name, value):
-    #     """making more advanced filtering logic here"""
-    #     if value:  # if expensive=True -> return expensive ones only
-    #         return queryset.filter(price__gte=8000)
 
-        # expensive=False -> return cheap foods
-        # return queryset.filter(price__lte=1000)
+class VendorFilterSet(django_filters.FilterSet):
+    avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
+    hours = django_filters.CharFilter(field_name="active_hours")
+
+    class Meta:
+        model = Vendor
+        fields = ["hours", "avg_rating"]
 
 
 class VOrderFilterSet(django_filters.FilterSet):
@@ -91,3 +100,62 @@ class VOrderFilterSet(django_filters.FilterSet):
             return queryset.filter(created_at__date=value)
         except:
             return Order.objects.none()
+
+
+class CustomFoodSearch(SearchFilter):
+    search_param = "q"
+
+    def filter_queryset(self, request, queryset, view):
+        """overriden for custom search"""
+        search_param = request.query_params.get(self.search_param)
+        # if search param value is void
+        if not search_param or not search_param.strip():
+            return queryset.none()
+
+        # searching for foods
+        foods = Food.objects.filter(
+            Q(name__icontains=search_param) | Q(description__icontains=search_param),
+        ).select_related("vendor__user_profile")
+        return foods
+
+
+class CustomVendorSearch(SearchFilter):
+    search_param = "q"
+
+    def filter_queryset(self, request, queryset, view):
+        search_param = request.query_params.get(self.search_param)
+        # if search param value is void
+
+        # getting user location
+        request_data = request.data
+        lon = request_data.get("lon", None)
+        lat = request_data.get("lat", None)
+        max_distance = request_data.get("max_distance", DEFAULT_SEARCH_DISTANCE)
+        user_location = None
+        # determinig user location
+        try:
+            if lat and lon:
+                user_location = Point(float(lon), float(lat), srid=4326)
+            else:
+                user_location = self.request.user.profile.location
+        except:
+            return queryset.none()
+
+        if not user_location:
+            return queryset.none()
+
+        if not search_param or not search_param.strip():
+            vendors = (
+                queryset.annotate(distance=Distance("user_profile__location", user_location))
+                .filter(distance__lte=D(km=max_distance))
+            )
+            return vendors
+
+        # searching for vendors
+        vendors = (
+            Vendor.objects.filter(vendor_name__icontains=search_param)
+            .annotate(distance=Distance("user_profile__location", user_location))
+            .filter(distance__lte=D(km=max_distance))
+        )
+
+        return vendors

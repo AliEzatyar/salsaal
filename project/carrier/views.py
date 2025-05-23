@@ -13,7 +13,7 @@ from .serializers import CarrierSerializer
 from order.serializers import CarrierOrderSerializer
 from api.permissions import IsBuyer, IsCarrierOfVendor, IsVendor, IsVendorOfCarrier
 from order.models import Order, ORDER_STATUS_CHOICES
-
+from rest_framework.exceptions import NotAcceptable
 from accounts.models import (
     ADMIN,
     CARRIER_ADD_OTP_EXPIRATION,
@@ -62,16 +62,17 @@ class AddCarrierAPIView(views.APIView):
         data = self.request.data
         email = data.get("email")
         account = User.objects.filter(email=email).first()
-        if not account:
+        if not account or not account.is_active:
             raise serializers.ValidationError(
                 {"error": "no_account_found_by_that_email"}
             )
         if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
-            raise serializers.ValidationError({"error": "You are not allowed"})
+            raise NotAcceptable(detail="You are not allowed",code=403)
         elif account.role == CARRIER:
             raise serializers.ValidationError(
                 {"error": "This carrier is already added"}
             )
+            
 
         # sending otp
         send_otp(
@@ -101,16 +102,17 @@ class AddCarrierAPIView(views.APIView):
             user.role = CARRIER
             profile = user.profile
             vendor = self.request.user.vendor
+            otp.delete()
             Carrier.objects.create(user=user, user_profile=profile, vendor=vendor)
             user.save()
-            otp.delete()
             return Response(status=status.HTTP_201_CREATED)
 
         except UserOtp.DoesNotExist:
             return Response(
                 {"error": "no such otp"}, status=status.HTTP_400_BAD_REQUEST
             )
-        except:
+        except Exception as e:
+            print(e)
             return Response(
                 {"error": "UKNOWN ERROR"}, status=status.HTTP_400_BAD_REQUEST
             )

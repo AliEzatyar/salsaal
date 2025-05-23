@@ -20,7 +20,7 @@ class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField("calculate_total")
     total_items = serializers.SerializerMethodField("calculate_total_items")
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M",read_only=True)
 
     class Meta:
         model = Cart

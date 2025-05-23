@@ -1,12 +1,14 @@
 from decimal import Decimal, InvalidOperation
 import json
 from rest_framework import serializers
+from vendor.serializers import OpeningHourSerializer
 from vendor.models import Vendor
 from marketplace.models import Category, FavItem, FavList, Food, FoodImage, Rating
 from rest_framework import serializers
 from decimal import Decimal, InvalidOperation
 import json
 from django.contrib.gis.db.models.fields import PointField
+from django.db.utils import IntegrityError
 
 """custom fields"""
 
@@ -72,7 +74,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         child=serializers.ImageField(), write_only=True, required=False
     )
     default_image = serializers.SerializerMethodField("get_image_url")
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
 
     class Meta:
         model = Food
@@ -103,7 +105,8 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         ]
 
     def get_image_url(self, obj):
-        return obj.default_image.image.url
+        if hasattr(obj.default_image, "image"):
+            return obj.default_image.image.url
 
     def get_category_name(self, obj):
         return obj.category.name
@@ -150,17 +153,18 @@ class FoodSerializerDetail(serializers.ModelSerializer):
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.save()
+        # if vendor rename a food which another food has the same name, no update
+        try:
+            instance.save()
+        except IntegrityError:
+            return instance
         # deleting all previous images
         for image in instance.images.all():
             image.delete()
-        if instance.default_image:
-            instance.default_image.delete()
         # creating images
         for i, image in enumerate(images):
             img_obj = FoodImage.objects.create(image=image, food=instance)
             # selecting first image as default
-
             if i == 0:
                 instance.default_image = img_obj
         instance.save()
@@ -187,6 +191,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "default_image",
             "is_available",
             "avg_rating",
+            "rating_count",
         ]
         read_only_fields = ["__all__"]
 
@@ -241,6 +246,7 @@ class PublicVendorSerializer(serializers.ModelSerializer):
 
     foods = FoodSerializerMany(many=True, read_only=True)
     location = serializers.SerializerMethodField("get_location")
+    opening_hours = OpeningHourSerializer(many=True, read_only=True)
 
     class Meta:
         model = Vendor
@@ -253,6 +259,7 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "avg_rating",
             "rating_count",
             "foods",
+            "opening_hours",
         ]
 
     def get_location(self, obj):
@@ -262,12 +269,14 @@ class PublicVendorSerializer(serializers.ModelSerializer):
 
 class FavItemSerializer(serializers.ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
+
     class Meta:
         model = FavItem
-        fields = ["id","favlist","food", "food_name"]
-        read_only_fields = ['favlist',"id"]
+        fields = ["id", "favlist", "food", "food_name"]
+        read_only_fields = ["favlist", "id"]
+
     def create(self, validated_data):
-        favlist = FavList.objects.filter(id=self.context['favlist']).first()
+        favlist = FavList.objects.filter(id=self.context["favlist"]).first()
         if not favlist:
             return serializers.ValidationError(detail="no_fav_list")
         validated_data["favlist"] = favlist
@@ -285,6 +294,5 @@ class FavListSerializer(serializers.ModelSerializer):
         fields = ["user", "user_name"]
         read_only_fields = ["user_name"]
 
-    
     def get_user_name(self, obj):
         return obj.user.get_full_name()

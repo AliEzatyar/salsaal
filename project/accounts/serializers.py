@@ -90,20 +90,20 @@ class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
     def validate(self, attrs):
         # validates whether the refresh tokem is correct
         data = super().validate(attrs)
-
         # create refresh object using the entered refresh token
         refresh = RefreshToken(data["refresh"])
-
         # create new access object, add user_id and role to it assign it instead of older one in data
         access = AccessToken()
         access["user_id"] = refresh["user_id"]
         role = User.objects.get(id=access["user_id"]).role
-        print(role,"before ")
         access["role"] = role  # fallback
         # re-assiging the access token which contains role
-        print(access['role'],"after")
         data["access"] = str(access)
         data["refresh"] =str(refresh)
-        decoded = jwt.decode(data['access'], options={"verify_signature": False})
-        print(decoded['role'])
         return data
+
+
+
+
+
+

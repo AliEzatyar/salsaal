@@ -56,7 +56,6 @@ class Food(models.Model):
         verbose_name = "food"
         verbose_name_plural = "foods"
         ordering = ["-modified_at"]  # newest
-        unique_together = ["name", "vendor"]
 
     def update_avg_rating(self, *args, **kwargs):
         ct = ContentType.objects.get_for_model(Food)

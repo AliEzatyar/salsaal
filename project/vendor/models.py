@@ -9,30 +9,37 @@ from django.contrib.contenttypes.models import ContentType
 
 class Vendor(models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="vendor", db_index=True,unique=True
+        User,
+        on_delete=models.CASCADE,
+        related_name="vendor",
+        db_index=True,
+        unique=True,
     )
     user_profile = models.OneToOneField(
         UserProfile,
         on_delete=models.CASCADE,
         related_name="vendor",
         db_index=True,
-        unique=True
+        unique=True,
     )
     vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
-    vendor_license = models.ImageField(
-        upload_to="vendor/license/"
-    )
+    vendor_license = models.ImageField(upload_to="vendor/license/")
     is_approved = models.BooleanField(default=False, db_index=True)
-    active_hours = models.CharField(max_length=255,default="11:00-2:00 PM,5:00-9:00 PM")  # comma seperated
+    active_hours = models.CharField(
+        max_length=255, default="11:00-2:00 PM,5:00-9:00 PM"
+    )  # comma seperated
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
-    
+    opening_hours = models.ManyToManyField(
+        to="vendor.OpeningHour", related_name="vendors"
+    )
+
     class Meta:
-        
-        ordering = ['-avg_rating']
-    
+
+        ordering = ["-avg_rating"]
+
     def get_location(self):
         """returns the location of the vendor"""
         return self.user_profile.location
@@ -40,7 +47,7 @@ class Vendor(models.Model):
     def __str__(self):
         return self.vendor_name
 
-    def update_avg_rating(self,*args, **kwargs):
+    def update_avg_rating(self, *args, **kwargs):
         ct = ContentType.objects.get_for_model(Vendor)
         avg_and_count = Rating.objects.filter(
             object_id=self.pk,
@@ -68,3 +75,22 @@ class Vendor(models.Model):
                     title = "We Are Sorry, Your Shop Is Not Approved!"
                     send_notification(self.user.email, title, template, context)
         return super(Vendor, self).save(*args, **kwargs)
+
+
+HOURS = [(i + add, i + add) for i in range(24) for add in (0,)]
+WEEKDAYS = [
+    (1, "Saturday"),
+    (2, "Sunday"),
+    (3, "Monday"),
+    (4, "Tuesday"),
+    (5, "Wednesday"),
+    (6, "Thursday"),
+    (7, "Friday"),
+]
+
+
+class OpeningHour(models.Model):
+    start_hour = models.FloatField(choices=HOURS, null=True)
+    end_hour = models.FloatField(choices=HOURS, null=True)
+    weekday = models.CharField(choices=WEEKDAYS)
+    is_holiday = models.BooleanField(default=False)

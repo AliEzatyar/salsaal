@@ -45,7 +45,7 @@ class VOrderItemSerializer(ModelSerializer):
 class VOrderSerializer(ModelSerializer):
     customer_name = SerializerMethodField("get_customer_name")
     items = VOrderItemSerializer(read_only=True,many=True)
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:",read_only=True)
 
     class Meta:
         model = Order
@@ -69,7 +69,7 @@ class VOrderSerializer(ModelSerializer):
 
 class CarrierOrderSerializer(ModelSerializer):
     customer_name = SerializerMethodField("get_customer_name")
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M",read_only=True)
 
     class Meta:
         model = Order
