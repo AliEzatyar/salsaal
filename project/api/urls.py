@@ -40,9 +40,7 @@ router.register(r"user-profile", ac_views.UserProfileViewset, basename="user-pro
 # private user detail
 router.register(r"user-detail", ac_views.UserViewset, basename="user-detail")
 # public vendor detail
-router.register(
-    r"public-vendor-detail", PublicVendorDetail, basename="public-vendor-detail"
-)
+
 router.register(r"fav-list", FavListViewset, basename="fav-list")
 # rating viewset routing
 router.register(r"ratings", RatingViewSet, basename="rating")
@@ -132,6 +130,7 @@ urlpatterns = [
         "soss/",
         SetOrderStateSubmitted.as_view(),
     ),
+    path("public-vendor-detail/", PublicVendorDetail.as_view() ),
     # full search
     path("search/", SearchApiView.as_view(), name="full_search"),
 ]

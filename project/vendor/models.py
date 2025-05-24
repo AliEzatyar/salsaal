@@ -25,9 +25,7 @@ class Vendor(models.Model):
     vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
     vendor_license = models.ImageField(upload_to="vendor/license/")
     is_approved = models.BooleanField(default=False, db_index=True)
-    active_hours = models.CharField(
-        max_length=255, default="11:00-2:00 PM,5:00-9:00 PM"
-    )  # comma seperated
+   
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     avg_rating = models.FloatField(default=0)

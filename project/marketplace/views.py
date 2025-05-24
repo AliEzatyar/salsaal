@@ -147,15 +147,15 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             except (TypeError, ValueError):
                 return Response({"detail": "Invalid coordinates."}, status=400)
             user_location = Point(float(lon), float(lat), srid=4326)
+
+        # filtering by only open now
         now = timezone.now()
         index = now.weekday()
         weekday = to_af_weekday(index=index)
         now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour
-        print(now_af)
         hours = OpeningHour.objects.filter(
             weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
         )
-        print(hours,"found")
         vendors = (
             Vendor.objects.filter(
                 is_approved=True, user_profile__city=city, opening_hours__in=hours
@@ -176,9 +176,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             return Response({"detail": "Please send city as 'Kabul'."}, status=400)
 
         week_ago = timezone.now() - timezone.timedelta(weeks=1)
-        orders = Order.objects.filter(user__profile__city=city, created_at__gte=week_ago).values(
-            "id"
-        )
+        orders = Order.objects.filter(
+            user__profile__city=city, created_at__gte=week_ago
+        ).values("id")
 
         top_week_foods = (
             OrderItem.objects.filter(order_id__in=orders)
@@ -425,13 +425,51 @@ class CategoriesReadAPIView(views.APIView):
         )
 
 
-class PublicVendorDetail(RetrieveModelMixin, viewsets.GenericViewSet):
+class PublicVendorDetail(views.APIView):
     """this view enables a normal user see a vendor detail with its menue"""
 
     serializer_class = PublicVendorSerializer
     permission_classes = [AllowAny]
     queryset = Vendor.objects.filter(is_approved=True)
 
+    def post(self, *args, **kwargs):
+        request = self.request
+        obj_id = request.data.get("id", None)
+        city = request.data.get("city", None)
+        lat = request.data.get("lat", None)
+        lon = request.data.get("lon", None)
+        # take info from user profile if authentication, realtime location prompt should be
+        if request.user.is_authenticated:
+            city = request.user.city
+            lat = request.user.profile.lattitude
+            lon = request.user.profile.longitude
+        else:
+            if not city:
+                return Response({"detail": "Please send city as 'abcd'."}, status=400)
+            if not lat or not lon:
+                return Response(
+                    {"detail": "Latitude and longitude are required."}, status=400
+                )
+        if obj_id:
+            try:
+                obj = Vendor.objects.filter(is_approved=True, id=obj_id).first()
+                ser = PublicVendorSerializer(obj)
+                if obj:
+                    distance = distance_calculator(
+                        lat1=obj.user_profile.lattitude,
+                        lon1=obj.user_profile.longitude,
+                        lat2=lat,
+                        lon2=lon,
+                    )
+                    data = ser.data.copy()
+                    data["distance"] = distance
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+            except:
+                return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+        else:
+            return Response({"detail":"no_id_sent"},status=status.HTTP_400_BAD_REQUEST)
 
 class FavListViewset(viewsets.ModelViewSet):
     """THis viewset handles CRUD of Fav List"""

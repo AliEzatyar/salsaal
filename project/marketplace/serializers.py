@@ -1,7 +1,9 @@
 from decimal import Decimal, InvalidOperation
 import json
+from zoneinfo import ZoneInfo
 from rest_framework import serializers
-from vendor.serializers import OpeningHourSerializer
+from vendor.utils import to_af_weekday
+from vendor.serializers import OpeningHourSerializer, ReadOnlyOpeningHourSerializer
 from vendor.models import Vendor
 from marketplace.models import Category, FavItem, FavList, Food, FoodImage, Rating
 from rest_framework import serializers
@@ -9,6 +11,7 @@ from decimal import Decimal, InvalidOperation
 import json
 from django.contrib.gis.db.models.fields import PointField
 from django.db.utils import IntegrityError
+from django.utils import timezone
 
 """custom fields"""
 
@@ -245,26 +248,40 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details"""
 
     foods = FoodSerializerMany(many=True, read_only=True)
-    location = serializers.SerializerMethodField("get_location")
-    opening_hours = OpeningHourSerializer(many=True, read_only=True)
+    location = serializers.SerializerMethodField("get_location") # read only
+    opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
+    is_open_now = serializers.SerializerMethodField("get_is_open") # read only
 
     class Meta:
         model = Vendor
         fields = [
             "id",
             "vendor_name",
-            "active_hours",
             "location",
             "is_approved",
             "avg_rating",
             "rating_count",
             "foods",
             "opening_hours",
+            "is_open_now",
         ]
+        read_only_fields = ["id", "is_open_now"]
 
     def get_location(self, obj):
+        """adds vendor location """
         if obj.get_location():
             return obj.get_location().tuple  # json does not support point object
+
+    def get_is_open(self, obj):
+        """this checks whether the vendor obj has any opening hour right now"""
+        now = timezone.now()  # utc now
+        index = now.weekday()  # utc weekday
+        weekday = to_af_weekday(index=index)  # afg weekday
+        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
+        is_open = obj.opening_hours.filter(
+            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
+        ).exists()
+        return is_open
 
 
 class FavItemSerializer(serializers.ModelSerializer):

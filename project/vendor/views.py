@@ -108,6 +108,7 @@ class ManageOpeningHours(viewsets.ModelViewSet):
     serializer_class = OpeningHourSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
+
     def get_queryset(self):
         return OpeningHour.objects.filter(vendors__in=[self.request.user.vendor])
 

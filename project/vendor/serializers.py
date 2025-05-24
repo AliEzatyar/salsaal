@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from .models import OpeningHour, Vendor
 from accounts.models import REST
-from django.utils import timezone
-from .utils import to_af_weekday
-from zoneinfo import ZoneInfo 
+from .models import WEEKDAYS
+
+WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 
 
 class VendorSerializerMany(serializers.ModelSerializer):
@@ -20,11 +20,9 @@ class VendorSerializerMany(serializers.ModelSerializer):
             "distance",
             "image_url",
         ]
-        
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
-        # distance attribute comes from annotate
         return round(obj.distance.km, 1) if hasattr(obj, "distance") else None
 
     def get_image_url(self, obj):
@@ -32,6 +30,28 @@ class VendorSerializerMany(serializers.ModelSerializer):
         if image and hasattr(image, "url"):
             return image.url
         return None
+
+
+class OpeningHourSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OpeningHour
+        fields = ["id","start_hour", "end_hour", "weekday", "is_holiday"]
+        read_only_fields = ["id"]
+
+
+class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OpeningHour
+        fields = ["start_hour", "end_hour", "weekday", "is_holiday"]
+        read_only_fields = [
+            "id",
+            "start_hour",
+            "end_hour",
+            "weekday",
+            "is_holdiay"
+        ]
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
@@ -49,6 +69,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "created_at",
             "avg_rating",
             "rating_count",
+            "opening_hours",
         ]
         read_only_fields = [
             "id",
@@ -57,6 +78,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "is_approved",
             "created_at",
             "rating",
+            "opening_hours",
         ]
 
     def get_distance(self, obj):
@@ -90,13 +112,3 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         validated_data["user_profile"] = user_profile
 
         return super().create(validated_data)
-
-
-class OpeningHourSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = OpeningHour
-        fields = ["id", "start_hour", "end_hour", "weekday", "is_holiday"]
-        read_only_fields = [
-            "id",
-        ]

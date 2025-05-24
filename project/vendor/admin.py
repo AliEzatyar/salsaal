@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Vendor
+from .models import Vendor, OpeningHour
 
 
 # Register your models here.
@@ -9,5 +9,5 @@ class VendAdmin(admin.ModelAdmin):
     list_editable = ["is_approved"]
 
 
-
+admin.site.register(OpeningHour)
 admin.site.register(Vendor, VendAdmin)

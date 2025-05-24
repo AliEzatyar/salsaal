@@ -32,11 +32,10 @@ class FoodFilterSet(django_filters.FilterSet):
 
 class VendorFilterSet(django_filters.FilterSet):
     avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
-    hours = django_filters.CharFilter(field_name="active_hours")
 
     class Meta:
         model = Vendor
-        fields = ["hours", "avg_rating"]
+        fields = ["avg_rating"]
 
 
 class VOrderFilterSet(django_filters.FilterSet):
