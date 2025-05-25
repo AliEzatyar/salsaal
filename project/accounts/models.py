@@ -59,8 +59,8 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     ROLE_CHOICES = [
-        (ADMIN,"admin"),
-        (REST, "Shop"),
+        (ADMIN,"Admin"),
+        (REST, "Resturant"),
         (CUSTOMER, "Customer"),
         (CARRIER, "Carrier"),
         
@@ -99,12 +99,6 @@ class User(AbstractBaseUser):
 
     def has_module_perms(self, app_lable: str):
         return True
-
-    def get_role(self):
-        role = "Customer"
-        if self.role == 1:
-            role = "Shop"
-        return role
 
     def get_full_name(self):
         return self.first_name + " "+ self.last_name

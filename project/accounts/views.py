@@ -4,7 +4,7 @@ from accounts.serializers import (
     UserDetailSerializer,
     UserProfileSerializer,
 )
-from accounts.permissions import IsProfileOwner
+from api.permissions import IsProfileOwner
 from .utils import send_otp
 from .serializers import RoleTokenObtainPairSerializer, RoleTokenRefreshSeriaizer
 from rest_framework import permissions

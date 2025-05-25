@@ -177,7 +177,7 @@ class SetOrderStateCarrying(views.APIView):
             return Response({"error": "no such order"}, status=404)
 
 
-class SetOrderStateSubmitted(views.APIView):
+class SetOrderStateDelivered(views.APIView):
     """
     This view is only accessible via customer account, it proves whether
     a customer (indirectly-by-scanning) is the owner of order and valid Food has reached it.

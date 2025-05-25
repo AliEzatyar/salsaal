@@ -1,136 +1,17 @@
 from django.urls import include, path
-from . import views
 from rest_framework.routers import DefaultRouter
-from order.views import OrderViewSet, OrderItemListAPIView, OrderItemDetailAPIView
-from marketplace.views import (
-    FavListViewset,
-    FoodSearchViewset,
-    PublicVendorDetail,
-    RatingViewSet,
-    MarketplaceViewset,
-    SearchApiView,
-    VendorSearchViewset,
-)
-from vendor.views import (
-    AcceptRejectOrderView,
-    ConvertToVendorAPIView,
-    ListVendorOrders,
-    ManageOpeningHours,
-    VendorRevenueView,
-    VendorFoodsManageViewSet,
-    VendorAPIView,
-)
-from carrier.views import (
-    AddCarrierAPIView,
-    CarrierOrdersApiView,
-    ManageCarrierViewSet,
-    SetOrderStateCarrying,
-    SetOrderStateSubmitted,
-)
-from cart.views import CartApiView
-from marketplace.views import CategoriesReadAPIView
-from accounts import views as ac_views
 
+# importing urls
 # Router Setup for
 router = DefaultRouter()
-# order viewset routing
-router.register(r"orders", OrderViewSet, basename="orders")
-# user profile
-router.register(r"user-profile", ac_views.UserProfileViewset, basename="user-profile")
-# private user detail
-router.register(r"user-detail", ac_views.UserViewset, basename="user-detail")
-# public vendor detail
-
-router.register(r"fav-list", FavListViewset, basename="fav-list")
-# rating viewset routing
-router.register(r"ratings", RatingViewSet, basename="rating")
-# food managemet routing
-router.register(r"vendor-foods", VendorFoodsManageViewSet, basename="vendor-foods")
-
-router.register(
-    r"manage-opening-hours", ManageOpeningHours, basename="manage-opening-hours"
-)
-
-# managing carriers as vendor
-router.register(r"manage-carriers", ManageCarrierViewSet, basename="manage-carriers")
-# see orders as vendor
-router.register(r"carrier-orders", CarrierOrdersApiView, basename="carrier-orders")
-
-router.register(r"vendor-orders", ListVendorOrders, basename="vendor-orders")
-# food retrive  routing
-router.register(r"home", MarketplaceViewset, basename="home")
-
-router.register(r"f-search", FoodSearchViewset, basename="food-search")
-
-router.register(r"v-search", VendorSearchViewset, basename="vendor-search")
 
 app_name = "api"
 
 urlpatterns = [
-    # Account App
-    path("account/register/", ac_views.RegisterUser.as_view()),
-    path(
-        "account/generate-token/",
-        ac_views.RoleTokenObtainView.as_view(),
-    ),
-    path("account/refresh-token/", ac_views.RoleTokenRefreshView.as_view()),
-    path("account/activate-account/", ac_views.VerifyActivateAccountOTP.as_view()),
-    path("account/resend-activate-otp/", ac_views.ResendActivationOTP.as_view()),
-    path("account/forgot-password/", ac_views.ForgotPassword.as_view()),  # send otp
-    path(
-        "account/forgot-password-verify-otp/",
-        ac_views.VerifyForgotPasswordOTP.as_view(),
-    ),  # check otp
-    path("account/reset-password/", ac_views.ResetPassword.as_view()),  # reset password
-    # Order and Food
-    path("", include(router.urls)),
-    path(
-        "orders/<int:order_id>/items/",
-        OrderItemListAPIView.as_view(),
-        name="order-item-list",
-    ),
-    path(
-        "orders/item-detail/<int:item_id>/",
-        OrderItemDetailAPIView.as_view(),
-        name="order-item-detail",
-    ),
-    # cart
-    path(
-        "cart/",
-        CartApiView.as_view(),
-        name="cart-detail",
-    ),
-    # vendor
-    path(
-        "vendor/",
-        VendorAPIView.as_view(),
-    ),
-    path(
-        "vendor/ar-order/",
-        AcceptRejectOrderView.as_view(),
-    ),
-    path(
-        "convert-to-vendor/",
-        ConvertToVendorAPIView.as_view(),
-    ),
-    path(
-        "add-carrier/",
-        AddCarrierAPIView.as_view(),
-    ),
-    path("vendor-revenue/", VendorRevenueView.as_view()),
-    # get categories
-    path("get-category-names/", CategoriesReadAPIView.as_view()),
-    # carrier
-    path(
-        "sosc/",
-        SetOrderStateCarrying.as_view(),
-    ),
-    # customer
-    path(
-        "soss/",
-        SetOrderStateSubmitted.as_view(),
-    ),
-    path("public-vendor-detail/", PublicVendorDetail.as_view() ),
-    # full search
-    path("search/", SearchApiView.as_view(), name="full_search"),
+    path("account/", include("accounts.urls", namespace="accounts")),
+    path("carrier/", include("carrier.urls", namespace="carrier")),
+    path("cart/", include("cart.urls", namespace="cart")),
+    path("marketplace/", include("marketplace.urls", namespace="marketplace")),
+    path("order/", include("order.urls", namespace="order")),
+    path("vendor/", include("vendor.urls", namespace="vendor")),
 ]

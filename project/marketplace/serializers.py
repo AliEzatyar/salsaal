@@ -146,7 +146,6 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             img_obj = FoodImage.objects.create(image=image, food=food)
             # selecting first image as default
             if i == 0:
-
                 food.default_image = img_obj
         food.save()
         return food

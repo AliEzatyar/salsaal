@@ -107,3 +107,12 @@ class IsVendorApproved(BasePermission):
         if not hasattr(request.user, "vendor") or not request.user.vendor.is_approved:
             raise PermissionDenied(detail="vendor_not_approved")
         return True
+
+
+class IsProfileOwner(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        # return True for GET, HEAD and OPTIIONS
+        if request.user.profile != obj:
+            return False
+        return True
