@@ -1,9 +1,9 @@
 from zoneinfo import ZoneInfo
-from marketplace.models import Category, FavItem, FavList, Food, Rating
+from marketplace.models import Category, FavItem, Food, Rating
 from order.models import Order, OrderItem
 from accounts.models import CUSTOMER
 from vendor.utils import to_af_weekday
-from .utils import haversine_distance as distance_calculator
+from .utils import BestVendorsCounter, haversine_distance as distance_calculator
 from api.backends import (
     CustomFoodSearch,
     CustomVendorSearch,
@@ -22,7 +22,7 @@ from marketplace.serializers import (
 )
 from carrier.models import Carrier
 
-from django.db.models.aggregates import Count, Avg, Sum
+from django.db.models.aggregates import Count
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.gis.db.models.functions import Distance
@@ -32,10 +32,13 @@ from django.utils import timezone
 from rest_framework import filters, status, views, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from api.permissions import IsHavingFavlist, NotAdmin
-
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from .utils import BoughtTogetherRecommender
+from django.conf import settings
 """Marketplace API Views"""
 
 
@@ -47,7 +50,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     auhtenticated, query params 'lat' and 'lon' must be sent.
     """
 
-    queryset = Food.objects.filter(is_available=True)
     serializer_class = FoodSerializerMany
     permission_classes = [AllowAny]
 
@@ -61,11 +63,18 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     # filering
     filterset_class = FoodFilterSet
 
+    def get_queryset(self):
+        return Food.objects.filter(is_available=True)
+
     def get_object(self):
         obj = super().get_object()
         if not obj.vendor.is_approved:
             return None
         return obj
+
+    @method_decorator(cache_page(5 * 60))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=["get"], url_path="food-item-detail")
     def item_detail(self, request, pk):
@@ -75,53 +84,44 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         lat = data.get("lat", None)
         lon = data.get("lon", None)
         vendor_profile = obj.vendor.user_profile
-
-        if not (lat and lon):
-            # if authenticated, get location data from profile
-            if self.request.user.is_authenticated:
-                user_profile = self.request.user.profile
-                if user_profile.lattitude and user_profile.longitude:
-                    distance = distance_calculator(
-                        float(vendor_profile.lattitude),
-                        float(vendor_profile.longitude),
-                        float(user_profile.lattitude),
-                        float(user_profile.longitude),
-                    )
-                    serializer = CFoodSerializerDetail(instance=obj)
-                    return Response({"item": serializer.data, "distance": distance})
-                # re-send the request either with lat,lon or updated profile prompt
-                return Response(
-                    {"detail": "user_has_not_set_location"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            return Response(
-                {"detail": "no_location_provided"}, status=status.HTTP_400_BAD_REQUEST
+        try:
+            distance = distance_calculator(
+                float(vendor_profile.lattitude),
+                float(vendor_profile.longitude),
+                float(lat),
+                float(lon),
             )
-
-        # client app have provided lat and lon
-        else:
-            try:
-                distance = distance_calculator(
-                    float(vendor_profile.lattitude),
-                    float(vendor_profile.longitude),
-                    float(lat),
-                    float(lon),
-                )
-                serializer = CFoodSerializerDetail(instance=obj)
-                return Response({"item": serializer.data, "distance": distance})
-            except Exception as e:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+            serializer = CFoodSerializerDetail(instance=obj)
+            # recommended foods
+            recommender = BoughtTogetherRecommender()
+            suggestion_ids = recommender.suggest_foods_for([obj.id])
+            suggestion_foods = Food.objects.filter(id__in=suggestion_ids)
+            ser_many = FoodSerializerMany(suggestion_foods, many=True)
+            return Response(
+                {
+                    "item": serializer.data,
+                    "distance": distance,
+                    "suggestions": ser_many.data,
+                }
+            )
+        except Exception as e:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=["get"], url_path="all-categories")
     def categories(self, request):
         """this endpoint returns available categories"""
-        categories = Category.objects.filter(show_on_home=True).values("name", "id")
-        ser = CategorySerializer(categories, many=True)
-        return Response(ser.data, status=status.HTTP_200_OK)
+        cat_key = "home_categories"
+        categories = cache.get(cat_key)
+        if not categories:
+            # cach miss
+            categories = Category.objects.filter(show_on_home=True).values("name", "id")
+            ser = CategorySerializer(categories, many=True)
+            categories = ser.data
+            cache.set(cat_key, categories, timeout=24 * 3600)
+        return Response(categories, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"], url_path="nearby-resturants")
-    def nearby_resturants(self, request):
+    @action(detail=False, methods=["post"], url_path="nearby-vendor")
+    def nearby_vendors(self, request):
         """this endpoint returns nearby_vendors"""
         city = request.data.get("city", None)
         lat = request.data.get("lat", None)
@@ -132,64 +132,148 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         except:
             max_distance = 10
 
-        if request.user.is_authenticated:
-            city = request.user.city
-            user_location = request.user.profile.location
-        else:
-            if not city:
-                return Response({"detail": "Please send city as 'abcd'."}, status=400)
-            if not lat or not lon:
-                return Response(
-                    {"detail": "Latitude and longitude are required."}, status=400
-                )
-            try:
-                user_location = Point(float(lon), float(lat), srid=4326)
-            except (TypeError, ValueError):
-                return Response({"detail": "Invalid coordinates."}, status=400)
+        if not city or not city in settings.CITY_NAMES:
+            return Response({"detail": "provide_a_correct_city"}, status=400)
+        if not lat or not lon:
+            return Response(
+                {"detail": "Latitude and longitude are required."}, status=400
+            )
+        try:
             user_location = Point(float(lon), float(lat), srid=4326)
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid coordinates."}, status=400)
+        user_location = Point(float(lon), float(lat), srid=4326)
 
         # filtering by only open now
         now = timezone.now()
         index = now.weekday()
         weekday = to_af_weekday(index=index)
         now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour
-        hours = OpeningHour.objects.filter(
-            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
-        )
+        # getting opening-hour objects from cache
+        hours_key = f"hours:{now_af}:objects"
+        hours = cache.get(hours_key)
+        if not hours:
+            # cach miss
+            hours_dict = OpeningHour.objects.filter(
+                weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
+            ).values_list("id", flat=True)
+            hours = list(hours_dict)  # [1,2,3,4]
+            cache.set(hours_key, hours, 3600)
+
+        # getting city vendors from cache
+        city_vendors = cache.get(f"city:{city}:vendors")
+        if not city_vendors:
+            # cache miss
+            vendors_dict = Vendor.objects.filter(
+                is_approved=True, user_profile__city=city
+            ).values_list("id", flat=True)
+            city_vendors = list(vendors_dict)
+            cache.set(f"city:{city}:vendors", city_vendors, 3600 * 24)
+
+        # final filter in db
         vendors = (
-            Vendor.objects.filter(
-                is_approved=True, user_profile__city=city, opening_hours__in=hours
-            )
+            Vendor.objects.filter(id__in=city_vendors, opening_hours__in=hours)
             .annotate(distance=Distance("user_profile__location", user_location))
             .filter(distance__lte=D(km=max_distance))
             .order_by("distance")[:5]
         )
+
+        # pagination
+        page = self.paginate_queryset(vendors)
+        if page:
+            ser = VendorSerializerMany(page, many=True, context={"request": request})
+            return self.get_paginated_response(ser.data)
         ser = VendorSerializerMany(vendors, many=True, context={"request": request})
         return Response(ser.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"], url_path="week-trending")
     def week_trending(self, request):
+        """this endpoint returns most ordered foods by last week"""
         city = request.data.get("city", None)
         if request.user.is_authenticated:
             city = request.user.city
-        if not city:
-            return Response({"detail": "Please send city as 'Kabul'."}, status=400)
+        if not city or not city in settings.CITY_NAMES:
+            return Response({"detail": "provide_a_correct_city"}, status=400)
 
         week_ago = timezone.now() - timezone.timedelta(weeks=1)
-        orders = Order.objects.filter(
-            user__profile__city=city, created_at__gte=week_ago
-        ).values("id")
+        week_orders_key = f"orders:{city}:week"
+        # getting last week orders ids from cache
+        order_ids = cache.get(week_orders_key)
+        if not order_ids:
+            # cache miss
+            order_ids = Order.objects.filter(
+                user__profile__city=city, created_at__gte=week_ago
+            ).values_list("id", flat=True)
+            order_ids = [i for i in order_ids]
+            cache.set(week_orders_key, order_ids, timeout=24 * 3600)
 
-        top_week_foods = (
-            OrderItem.objects.filter(order_id__in=orders)
-            .values("food")
-            .annotate(item_count=Count("id"))
-            .order_by("-item_count")[:5]
-        )
-        foods_ids = [item["food"] for item in top_week_foods]
-        foods = Food.objects.filter(id__in=foods_ids)
-        ser = FoodSerializerMany(foods, many=True)
-        return Response(ser.data)
+        top_week_foods_key = "top_week_foods"
+        # getting last week orders ids from cache
+        top_week_foods = cache.get(top_week_foods_key)
+        if not top_week_foods:
+            # cache miss
+            top_week_foods = (
+                OrderItem.objects.filter(order_id__in=order_ids)
+                .values("food")  # 'food':id
+                .annotate(item_count=Count("id"))
+                .order_by("-item_count")[:10]
+            )
+
+            ids = [x["food"] for x in top_week_foods]
+            top_week_foods = Food.objects.filter(id__in=ids)
+            ser = FoodSerializerMany(top_week_foods, many=True)
+            result = ser.data
+            cache.set(top_week_foods_key, result, 24 * 3600)
+
+        return Response(result)
+
+    @action(detail=False, methods=["post"], url_path="top-vendors")
+    def top_vendors(self, request):
+        """this endpoint returns top rating and most viewed vendors in the city"""
+        city = request.data.get("city", None)
+        if not city or not city in settings.CITY_NAMES:
+            return Response(
+                {"detail": "provide_a_correct_city"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        city = str(city).title()
+        key = f"top_vendors:{city}"
+        # getting top ratings from cache
+        top_vendors = cache.get(key, None)
+        if not top_vendors:
+            # cache miss
+            counter = BestVendorsCounter(city)
+            top = counter.read_counts(10)
+            top_vendors = Vendor.objects.filter(
+                is_approved=True,
+                user_profile__city=city,
+                id__in=top
+            ).order_by("-avg_rating")[:10]
+            ser = VendorSerializerMany(top_vendors, many=True)
+            top_vendors = ser.data
+            cache.set(key, top_vendors, 1 * 3600)  # 1 days
+        return Response(top_vendors)
+
+    @action(detail=False, methods=["post"], url_path="top-rating-foods")
+    def top_rating_foods(self, request):
+        """this endpoint returns top rating foods in the city"""
+        city = request.data.get("city", None)
+        if not city or not city in settings.CITY_NAMES:
+            return Response(
+                {"detail": "provide_a_correct_city"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        city = str(city).title()
+        key = f"top_foods:{city}"
+        top_foods = cache.get(key, None)
+        if not top_foods:
+            top_foods = Food.objects.filter(
+                is_available=True,
+                vendor__user_profile__city=city,
+            ).order_by("-avg_rating")[:10]
+            ser = FoodSerializerMany(top_foods, many=True)
+            top_foods = ser.data
+            cache.set(key, top_foods, 1 * 3600 * 24)  # 3 days
+
+        return Response(top_foods)
 
 
 # depricated
@@ -439,20 +523,15 @@ class PublicVendorDetail(views.APIView):
         lat = request.data.get("lat", None)
         lon = request.data.get("lon", None)
         # take info from user profile if authentication, realtime location prompt should be
-        if request.user.is_authenticated:
-            city = request.user.city
-            lat = request.user.profile.lattitude
-            lon = request.user.profile.longitude
-        else:
-            if not city:
-                return Response({"detail": "Please send city as 'abcd'."}, status=400)
-            if not lat or not lon:
-                return Response(
-                    {"detail": "Latitude and longitude are required."}, status=400
-                )
+        if not city or not city in settings.CITY_NAMES:
+            return Response({"detail": "provide_a_correct_city"}, status=400)
+        if not lat or not lon:
+            return Response(
+                {"detail": "Latitude and longitude are required."}, status=400
+            )
         if obj_id:
             try:
-                obj = Vendor.objects.filter(is_approved=True, id=obj_id).first()
+                obj = Vendor.objects.filter(is_approved=True, id=obj_id,user_profile__city=city).first()
                 ser = PublicVendorSerializer(obj)
                 if obj:
                     distance = distance_calculator(
@@ -463,13 +542,21 @@ class PublicVendorDetail(views.APIView):
                     )
                     data = ser.data.copy()
                     data["distance"] = distance
+                    # increasing vendor view count
+                    counter = BestVendorsCounter(str(city).title())
+                    counter.update_counts(obj.id)
+
                     return Response(data, status=status.HTTP_200_OK)
                 else:
                     return Response(status=status.HTTP_404_NOT_FOUND)
-            except:
+            except Exception as e:
+                print(e.args,e)
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
         else:
-            return Response({"detail":"no_id_sent"},status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "no_id_sent"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class FavListViewset(viewsets.ModelViewSet):
     """THis viewset handles CRUD of Fav List"""

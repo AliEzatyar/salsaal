@@ -16,3 +16,5 @@ django-jalali
 python-dateutil
 django-cors-headers # for react
 drf-spectacular # for generating urls of DRF
+redis
+django-redis

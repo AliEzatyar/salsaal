@@ -179,7 +179,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     min_price = MyDecimalField(read_only=True)
     images = FoodImageSerializer(many=True, read_only=True)
     default_image = serializers.SerializerMethodField("get_image_url")
-
+    vendor = serializers.SerializerMethodField("get_vendor_name")
     class Meta:
         model = Food
         fields = [
@@ -194,6 +194,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "is_available",
             "avg_rating",
             "rating_count",
+            "vendor"
         ]
         read_only_fields = ["__all__"]
 
@@ -203,6 +204,8 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     def get_image_url(self, obj):
         return obj.default_image.image.url
 
+    def get_vendor_name(self,obj):
+        return obj.vendor.vendor_name
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""

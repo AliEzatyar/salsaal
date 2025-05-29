@@ -5,7 +5,7 @@ from .models import Category, Food, Rating ,FavItem, FavList, FoodImage
 
 class FoodAdmin(admin.ModelAdmin):
     model = Food
-    list_display = ["name", "vendor", "is_available", "min_price","prices"]
+    list_display = ["name", "vendor", "is_available", "min_price","default_image"]
     list_editable = ["is_available"]
     list_filter = ["is_available", "vendor"]
     search_fields = ["category__name", "vendor__vendor_name"]

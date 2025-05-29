@@ -12,8 +12,25 @@ DATABASES = {
         "PASSWORD": env.get("DB_PASSWORD"),
         "PORT": env.get("DB_PORT"),
         "HOST": env.get("DB_HOST"),
+        "OPTIONS": {"sslcert": "/sxx/.postgresql/postgresql.crt"},
     }
 }
 
 SECRET_KEY = env.get("SECRET_KEY")
 LOCAL = False
+
+# Redis as its own
+REDIS_HOST = env.get("REDIS_HOST")
+REDIS_PORT = env.get("REDIS_PORT")
+REDIS_DB = env.get("REDIS_DB")
+
+# CACHING
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",  #
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}

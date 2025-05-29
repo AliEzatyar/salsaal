@@ -1,10 +1,12 @@
 from marketplace.models import Food
 from api.permissions import IsHavingCart
+from marketplace.serializers import FoodSerializerMany
 from .models import CartItem
 from .serializers import CartSerializer
 from rest_framework import views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from marketplace.utils import BoughtTogetherRecommender
 
 # Create your views here.
 
@@ -21,7 +23,15 @@ class CartApiView(views.APIView):
         """showing cart detail with items"""
         cart = self.request.user.cart
         serializer = CartSerializer(cart)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        food_ids = [i.food.id for i in cart.items.select_related("food")]
+        recommender = BoughtTogetherRecommender()
+        suggestion_ids = recommender.suggest_foods_for(food_ids)
+        suggestion_foods = Food.objects.filter(id__in=suggestion_ids)
+        ser_many = FoodSerializerMany(suggestion_foods, many=True)
+        return Response(
+            {"cart": serializer.data, "suggestions": ser_many.data},
+            status=status.HTTP_200_OK,
+        )
 
     def patch(self, *args, **kwargs):
         """partial update for cart-items amount change"""
@@ -59,7 +69,7 @@ class CartApiView(views.APIView):
             item.delete()
         else:
             Response({"error": "no such item"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def post(self, *args, **kwargs):
         """overriding for adding new item to cart"""
@@ -67,7 +77,7 @@ class CartApiView(views.APIView):
         data = self.request.data
         food_id = data.get("id", None)
         quantity = data.get("quantity", None)
-        if not food_id or not quantity:
+        if not food_id:
             return Response(
                 {"error": "please provide id and quantity"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -78,10 +88,9 @@ class CartApiView(views.APIView):
                 exists = CartItem.objects.filter(cart=cart, food=food).exists()
                 if not exists:
                     # if item is created now and added
-                    cart_item = CartItem.objects.create(
-                        cart=cart, food=food, quantity=quantity
-                    )
-                    # cart_item.save()
+                    if not quantity:
+                        quantity = 1
+                    CartItem.objects.create(cart=cart, food=food, quantity=quantity)
                     serializer = CartSerializer(cart)
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 return Response(
@@ -92,6 +101,10 @@ class CartApiView(views.APIView):
                 return Response(
                     {"error": "food_not_available"}, status=status.HTTP_400_BAD_REQUEST
                 )
+        except Food.DoesNotExist:
+            return Response(
+                {"error": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
+            )
         except:
             return Response(
                 {"error": "unknown_error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -4,6 +4,7 @@ from .models import Order, OrderItem, ORDER_STATUS_CHOICES
 from rest_framework.decorators import action
 from rest_framework import viewsets, views, status
 from rest_framework.response import Response
+from marketplace.utils import BoughtTogetherRecommender
 
 """Order API Views"""
 
@@ -13,10 +14,13 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     serializer_class = OrderSerializer
 
-    @action(detail=True, methods=["patch"])
-    def cancel(self, request, pk=None):
-        order = self.get_object()
-        order.cancel_order()
+    @action(detail=False,methods=["patch"],url_path="cancel")
+    def cancel(self, request):
+        orders = Order.objects.filter(
+            user=request.user, status=ORDER_STATUS_CHOICES[1][1]
+        )
+        for order in orders:
+            order.cancel_order()
         return Response(status=status.HTTP_200_OK)
 
     def get_queryset(self):
@@ -41,13 +45,13 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         # creating the serializer
         serializer = self.get_serializer(data=data)
-        
+
         if Order.objects.filter(
-            user=request.user, status=ORDER_STATUS_CHOICES[1][1]
+            user=request.user, status=ORDER_STATUS_CHOICES[1][1],vendor__id= vendor_id
         ).exists():
             # prevent duplicate order if user has one 'waiting' order already
             return Response(
-                {"error": "order already in process"}, status=status.HTTP_403_FORBIDDEN
+                {"error": "order_already_in_process"}, status=status.HTTP_403_FORBIDDEN
             )
 
         serializer.is_valid(raise_exception=True)  # validating data
@@ -57,7 +61,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         OrderItem.objects.filter(
             order=order
         ).delete()  # flush previous items and recreate new items
-
+        pks = []
         # creating order item objects
         for item in CartItem.objects.filter(cart=cart).select_related("food__vendor"):
             order_item = OrderItem.objects.get_or_create(
@@ -67,13 +71,16 @@ class OrderViewSet(viewsets.ModelViewSet):
                 quantity=item.quantity,
                 price=item.food.min_price,
             )[0]
+            pks.append(item.food.id)
             order_items.append(order_item)
+        recommender  = BoughtTogetherRecommender()
+        recommender.update_together_bought(pks)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
 
         # flushing the cart
         cart.items.all().delete()
-        
+
         response = Response(
             serializer.data,
             status=status.HTTP_201_CREATED,
@@ -103,4 +110,3 @@ class OrderItemDetailAPIView(views.APIView):
         return Response(
             {"message": "no_object_found"}, status=status.HTTP_404_NOT_FOUND
         )
-

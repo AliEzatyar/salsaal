@@ -9,13 +9,13 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+from decimal import Decimal
 from datetime import timedelta
 from decouple import config
 import os
 from pathlib import Path
 from django.contrib.messages import constants as messages
-
+from ..country.info import *
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -168,6 +168,8 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
 }
 
 
@@ -204,17 +206,10 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 # instance based settings
-from decimal import Decimal
 PUBLIC_PLATFORM_ITEM_COMMISSION_FEE = Decimal(20) # af
 PUBLIC_PLATFORM_COMMISSION_CURRENCY = "AFS"
 DEFAULT_SEARCH_DISTANCE = 10 # km
 
 APPEND_SLASH = False
-# debug toolbar
-# INTERNAL_IPS = [
-#     "109.199.99.8",
-#     "127.0.0.1",
-#     "shop.ahmadyar.pro",
-#     "*"
-#     # ...
-# ]
+
+

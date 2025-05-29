@@ -11,7 +11,6 @@ router = DefaultRouter()
 router.register(r"user-orders", views.OrderViewSet, basename="user-orders")
 
 urlpatterns = [
-    path("", include(router.urls)),
     path(
         "user-orders/<int:order_id>/items/",
         views.OrderItemListAPIView.as_view(),
@@ -22,4 +21,5 @@ urlpatterns = [
         views.OrderItemDetailAPIView.as_view(),
         name="order-item-detail",
     ),
+    path("", include(router.urls)),
 ]
