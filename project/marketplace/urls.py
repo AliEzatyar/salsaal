@@ -24,5 +24,4 @@ urlpatterns = [
     path("get-category-names/", views.CategoriesReadAPIView.as_view()),
     path("public-vendor-detail/", views.PublicVendorDetail.as_view()),
     # full search
-    path("search/", views.SearchApiView.as_view(), name="full_search"),
 ]

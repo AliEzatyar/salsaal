@@ -34,3 +34,6 @@ CACHES = {
         },
     }
 }
+
+# current domain name
+CURRENT_DOMAIN_NAME = env.get("CURRENT_DOMAIN_NAME")

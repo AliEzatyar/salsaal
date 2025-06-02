@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import OpeningHour, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS
+from django.conf import settings
 
 WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 
@@ -28,7 +29,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
     def get_image_url(self, obj):
         image = getattr(obj.user_profile, "picture", None)
         if image and hasattr(image, "url"):
-            return image.url
+            return settings.CURRENT_DOMAIN_NAME + image.url
         return None
 
 
@@ -36,7 +37,7 @@ class OpeningHourSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OpeningHour
-        fields = ["id","start_hour", "end_hour", "weekday", "is_holiday"]
+        fields = ["id", "start_hour", "end_hour", "weekday", "is_holiday"]
         read_only_fields = ["id"]
 
 
@@ -45,13 +46,7 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
     class Meta:
         model = OpeningHour
         fields = ["start_hour", "end_hour", "weekday", "is_holiday"]
-        read_only_fields = [
-            "id",
-            "start_hour",
-            "end_hour",
-            "weekday",
-            "is_holdiay"
-        ]
+        read_only_fields = ["id", "start_hour", "end_hour", "weekday", "is_holdiay"]
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):

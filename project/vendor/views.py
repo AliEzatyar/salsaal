@@ -1,3 +1,4 @@
+from django.conf import settings
 from marketplace.models import Food
 from api.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer

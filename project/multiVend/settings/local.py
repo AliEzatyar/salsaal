@@ -20,9 +20,8 @@ SECRET_KEY = config("SECRET_KEY",cast=str)
 
 # Redis as its own
 REDIS_HOST = config("REDIS_HOST")
-REDIS_PORT = config("REDIS_PORT")
+REDIS_PORT = config("REDIS_PORT",cast=int)
 REDIS_DB = config("REDIS_DB")
-
 # CACHING
 CACHES = {
     "default": {
@@ -35,3 +34,4 @@ CACHES = {
 }
 
 
+CURRENT_DOMAIN_NAME = config("CURRENT_DOMAIN_NAME",cast=str)

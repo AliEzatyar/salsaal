@@ -9,9 +9,10 @@ from django.db.models import Q, F
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
-
+import geohash
 from multiVend.settings.base import DEFAULT_SEARCH_DISTANCE
 from vendor.models import Vendor
+from django.conf import settings
 
 
 class FoodFilterSet(django_filters.FilterSet):
@@ -29,6 +30,7 @@ class FoodFilterSet(django_filters.FilterSet):
         model = Food
         fields = ["min_price", "max_price", "category", "avg_rating"]
 
+   
 
 class VendorFilterSet(django_filters.FilterSet):
     avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
@@ -122,35 +124,33 @@ class CustomVendorSearch(SearchFilter):
     search_param = "q"
 
     def filter_queryset(self, request, queryset, view):
-        search_param = request.query_params.get(self.search_param)
         # if search param value is void
-
         # getting user location
-        request_data = request.data
-        lon = request_data.get("lon", None)
-        lat = request_data.get("lat", None)
+        request_data = request.query_params
+        search_param = request_data.get(self.search_param)
+        location = request_data.get("location",None)
         max_distance = request_data.get("max_distance", DEFAULT_SEARCH_DISTANCE)
         user_location = None
         # determinig user location
         try:
-            if lat and lon:
+            if location:
+                # decode location data
+                lat,lon = geohash.decode(location)
                 user_location = Point(float(lon), float(lat), srid=4326)
-            else:
-                user_location = self.request.user.profile.location
         except:
             return queryset.none()
 
+        # if no location provided, no city, incorrect city, then nothing found
         if not user_location:
             return queryset.none()
-
+        # if no search query, return nearby vendors at max distance 
         if not search_param or not search_param.strip():
-            vendors = (
-                queryset.annotate(distance=Distance("user_profile__location", user_location))
-                .filter(distance__lte=D(km=max_distance))
-            )
+            vendors = queryset.annotate(
+                distance=Distance("user_profile__location", user_location)
+            ).filter(distance__lte=D(km=max_distance))
             return vendors
 
-        # searching for vendors
+        # searching for vendors nearby at max distance
         vendors = (
             Vendor.objects.filter(vendor_name__icontains=search_param)
             .annotate(distance=Distance("user_profile__location", user_location))

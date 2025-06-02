@@ -80,7 +80,7 @@ class BoughtTogetherRecommender:
 
 class BestVendorsCounter:
     """THis class save view counts and return most viewd vendor ids"""
-    def __init__(self, city="Kabul"):
+    def __init__(self, city):
         self.redis = r
         self.top_vendors_key = "top_vendors:{city}:city"
 
@@ -92,3 +92,20 @@ class BestVendorsCounter:
         """returns ids of most viewed vendors in the city"""
         top = r.zrange(self.top_vendors_key, 0, -1, desc=True)[:max_results]
         return list(map(int,top))
+
+
+class BestFoodsCounter:
+    """THis class save view counts and return most viewd food ids"""
+
+    def __init__(self,city):
+        self.redis = r
+        self.best_foods_key = "best_foods:{city}:city"
+
+    def update_counts(self, pk):
+        """increases view count of a food in the sorted set"""
+        r.zincrby(self.best_foods_key, 1, pk)
+
+    def read_counts(self, max_results=5):
+        """returns ids of most viewed foods in the city"""
+        best = r.zrange(self.best_foods_key, 0, -1, desc=True)[:max_results]
+        return list(map(int, best))

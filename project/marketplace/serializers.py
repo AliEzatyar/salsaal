@@ -12,7 +12,7 @@ import json
 from django.contrib.gis.db.models.fields import PointField
 from django.db.utils import IntegrityError
 from django.utils import timezone
-
+from django.conf import settings
 """custom fields"""
 
 
@@ -109,7 +109,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         if hasattr(obj.default_image, "image"):
-            return obj.default_image.image.url
+            return settings.CURRENT_DOMAIN_NAME+obj.default_image.image.url
 
     def get_category_name(self, obj):
         return obj.category.name
@@ -161,14 +161,16 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         except IntegrityError:
             return instance
         # deleting all previous images
-        for image in instance.images.all():
-            image.delete()
+        if len(images) > 0:
+            for image in instance.images.all():
+                image.delete()
         # creating images
         for i, image in enumerate(images):
             img_obj = FoodImage.objects.create(image=image, food=instance)
             # selecting first image as default
             if i == 0:
                 instance.default_image = img_obj
+                
         instance.save()
         return instance
 
@@ -202,7 +204,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
         return obj.category.name
 
     def get_image_url(self, obj):
-        return obj.default_image.image.url
+        return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
 
     def get_vendor_name(self,obj):
         return obj.vendor.vendor_name
@@ -230,7 +232,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
         return obj.vendor.vendor_name
 
     def get_photo_url(self, obj):
-        return obj.default_image.image.url
+        return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
 
 
 class RatingSerializer(serializers.ModelSerializer):

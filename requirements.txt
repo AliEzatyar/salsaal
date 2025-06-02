@@ -18,3 +18,4 @@ django-cors-headers # for react
 drf-spectacular # for generating urls of DRF
 redis
 django-redis
+python-geohash # for location info hashing
