@@ -7,10 +7,7 @@ app_name = "carrier"
 # Router Setup for
 router = DefaultRouter()
 
-# managing carriers as vendor
-router.register(
-    r"manage-carriers", views.ManageCarrierViewSet, basename="manage-carriers"
-)
+
 # see orders as vendor
 router.register(
     r"carrier-orders", views.CarrierOrdersApiView, basename="carrier-orders"
@@ -18,10 +15,7 @@ router.register(
 
 
 urlpatterns = [
-    path(
-        "add-carrier/",
-        views.AddCarrierAPIView.as_view(),
-    ),
+   
     path(
         "set-order-state-delivered/",
         views.SetOrderStateDelivered.as_view(),

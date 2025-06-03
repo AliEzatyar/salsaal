@@ -17,13 +17,12 @@ ORDER_STATUS_CHOICES = [
 ]
 
 
-
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
     status = models.CharField(
         max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
     )
-    total_price = models.DecimalField(default=0,max_digits=6,decimal_places=2)
+    total_price = models.DecimalField(default=0,max_digits=6,decimal_places=1)
     paid = models.BooleanField(default=False)
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
@@ -44,7 +43,7 @@ class Order(models.Model):
         indexes = [models.Index(fields=["-created_at"])]
 
     def calculate_total_price(self):
-        self.total_price = sum(item.total_price for item in self.items.all())
+        self.total_price = sum(item.subtotal for item in self.items.all())
         self.save()
 
     def set_total_items(self):
@@ -84,13 +83,13 @@ class OrderItem(models.Model):
         Vendor, on_delete=models.CASCADE, related_name="order_items"
     )
     quantity = models.PositiveIntegerField()
-    price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
+    price = models.DecimalField(default=0, max_digits=6, decimal_places=1)
 
     def __str__(self):
         return f"{self.quantity} x {self.food.name} from {self.vendor.vendor_name}"
 
     @property
-    def total_price(self):
+    def subtotal(self):
         return self.quantity * self.price
 
     @property

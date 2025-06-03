@@ -271,7 +271,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             ).order_by("-avg_rating")[:10]
             ser = VendorSerializerMany(top_vendors, many=True)
             top_vendors = ser.data
-            cache.set(key, top_vendors, 1 * 3600)  # 1 days
+            cache.set(key, top_vendors, 1 * 3600)  # 1 day
         return Response(top_vendors)
 
     @action(detail=False, methods=["get"], url_path="best-foods")

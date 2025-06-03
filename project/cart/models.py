@@ -1,4 +1,5 @@
 from django.db import models
+
 # Create your models here.
 
 
@@ -13,20 +14,25 @@ class Cart(models.Model):
     def calculate_total_items(self):
         if hasattr(self, "items"):
             total = self.items.aggregate(
-                total_items =models.Sum('quantity')
-            ) # if no items, none is assigned to total_items
-            if total['total_items']:
-                return total['total_items']
+                total_items=models.Sum("quantity")
+            )  # if no items, none is assigned to total_items
+            if total["total_items"]:
+                return total["total_items"]
         return 0
 
     def calculate_total(self):
         # items = self.items.select_related("food").only("quantity", "food__min_price")
         # return sum(item.quantity * item.food.min_price for item in items)
-        return self.items.aggregate(
-            total = models.Sum(models.F("quantity") * models.F("food__min_price"))
-        )['total'] or 0
-        
-        
+        return (
+            self.items.aggregate(
+                total=models.Sum(models.F("quantity") * models.F("food__min_price"))
+            )["total"]
+            or 0
+        )
+
+    def clear(self):
+        self.items.all().delete()
+
     def __str__(self):
         return f"Cart <{self.user.username}>"
 
@@ -39,6 +45,7 @@ class CartItem(models.Model):
         "marketplace.Food", on_delete=models.CASCADE, related_name="+"
     )
     quantity = models.PositiveSmallIntegerField(default=1)
-
+    price = models.DecimalField(max_digits=6,decimal_places=1)
+    
     def get_total_price(self):
-        return self.food.min_price * self.quantity
+        return self.price * self.quantity

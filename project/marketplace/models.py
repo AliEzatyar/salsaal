@@ -31,7 +31,7 @@ class Food(models.Model):
         db_index=True,
     )
     name = models.CharField(max_length=60, db_index=True)
-    min_price = models.DecimalField(max_digits=6, decimal_places=2)
+    min_price = models.DecimalField(max_digits=6, decimal_places=1)
     prices = models.JSONField(default=list)
     category = models.ForeignKey(
         "marketplace.Category",

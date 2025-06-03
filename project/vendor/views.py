@@ -4,7 +4,10 @@ from api.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
-from accounts.models import ADMIN, CARRIER, REST
+from accounts.models import ADMIN, CARRIER, CARRIER_ADD_OTP_EXPIRATION, CUSTOMER, REST, User, UserOtp
+from carrier.models import Carrier
+from carrier.serializers import CarrierSerializer
+from accounts.utils import OTP_VERIFY_CARRIER, send_otp
 from vendor.models import OpeningHour
 from .serializers import OpeningHourSerializer, VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
@@ -17,6 +20,8 @@ from django.utils import timezone as tz
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotAcceptable
+from api.permissions import IsVendorOfCarrier
+from rest_framework import parsers, serializers
 
 # Create your views here.
 
@@ -109,7 +114,6 @@ class ManageOpeningHours(viewsets.ModelViewSet):
     serializer_class = OpeningHourSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
-
     def get_queryset(self):
         return OpeningHour.objects.filter(vendors__in=[self.request.user.vendor])
 
@@ -154,6 +158,99 @@ class ManageOpeningHours(viewsets.ModelViewSet):
 
         return serializer.save()
 
+
+class AddCarrierAPIView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+    http_method_names = ["post", "patch"]
+
+    def post(self, *args, **kwargs):
+        """this method verifies the email entered and sends OTP"""
+        data = self.request.data
+        email = data.get("email")
+        account = User.objects.filter(email=email).first()
+        if not account or not account.is_active:
+            raise serializers.ValidationError(
+                {"error": "no_account_found_by_that_email"}
+            )
+        if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
+            raise NotAcceptable(detail="You are not allowed", code=403)
+        elif account.role == CARRIER:
+            raise serializers.ValidationError(
+                {"error": "already_exists"}
+            )
+
+        # sending otp
+        send_otp(
+            self.request,
+            account,
+            OTP_VERIFY_CARRIER,
+            vendor_name=self.request.user.vendor.vendor_name,
+        )
+        return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
+
+    def patch(self, *args, **kwargs):
+        """verifies the otp and converts the email-account to carrier account"""
+        data = self.request.data
+        email = data.get("email")
+        otp = data.get("otp")
+        try:
+            otp = UserOtp.objects.get(otp=otp)
+            if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
+                return Response(
+                    {"error": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            if not otp.user.email == email:
+                return Response(
+                    {"error": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            user = otp.user
+            user.role = CARRIER
+            profile = user.profile
+            vendor = self.request.user.vendor
+            otp.delete()
+            Carrier.objects.create(user=user, user_profile=profile, vendor=vendor)
+            user.save()
+            return Response(status=status.HTTP_201_CREATED)
+
+        except UserOtp.DoesNotExist:
+            return Response(
+                {"error": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            print("error",e)
+            return Response(
+                {"error": "UKNOWN_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ManageCarrierViewSet(viewsets.ModelViewSet):
+    """
+    this view is only accessible by a vendor to manage carriers
+    GET, PATCH, DELETE
+    UPDATEable: is_active, id_document
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsVendor, IsVendorOfCarrier]
+    serializer_class = CarrierSerializer
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
+    http_method_names = ["delete", "get", "patch"]
+
+    def get_queryset(self):
+        """only this vendor carriers be listed"""
+        queryset = Carrier.objects.filter(vendor=self.request.user.vendor)
+        return queryset
+
+    def get_serializer_context(self):
+        context = super(ManageCarrierViewSet, self).get_serializer_context()
+        context["vendor"] = self.request.user.vendor.id
+        return context
+
+    def perform_destroy(self, instance):
+        """converting to a normal user"""
+        user = instance.user
+        instance.delete()
+        user.role = CUSTOMER
+        user.save()
 
 class VendorRevenueView(views.APIView):
     permission_classes = [IsVendor, permissions.IsAuthenticated]

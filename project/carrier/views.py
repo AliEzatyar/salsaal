@@ -11,7 +11,7 @@ from .models import Carrier
 from rest_framework.response import Response
 from .serializers import CarrierSerializer
 from order.serializers import CarrierOrderSerializer
-from api.permissions import IsBuyer, IsCarrierOfVendor, IsVendor, IsVendorOfCarrier
+from api.permissions import IsBuyer, IsCarrierOfVendor, IsVendor
 from order.models import Order, ORDER_STATUS_CHOICES
 from rest_framework.exceptions import NotAcceptable
 from accounts.models import (
@@ -30,92 +30,7 @@ from carrier.models import CARRIER_STATUS_CHOICES
 
 
 # Create your views here.
-class ManageCarrierViewSet(viewsets.ModelViewSet):
-    """
-    this view is only accessible by a vendor to manage carriers
-    GET, PATCH, DELETE
-    UPDATEable: is_active, id_document
-    """
 
-    permission_classes = [perm.IsAuthenticated, IsVendor, IsVendorOfCarrier]
-    serializer_class = CarrierSerializer
-    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
-    http_method_names = ["delete", "get", "patch"]
-
-    def get_queryset(self):
-        """only this vendor carriers be listed"""
-        queryset = Carrier.objects.filter(vendor=self.request.user.vendor)
-        return queryset
-
-    def get_serializer_context(self):
-        context = super(ManageCarrierViewSet, self).get_serializer_context()
-        context["vendor"] = self.request.user.vendor.id
-        return context
-
-
-class AddCarrierAPIView(views.APIView):
-    permission_classes = [perm.IsAuthenticated, IsVendor]
-    http_method_names = ["post", "patch"]
-
-    def post(self, *args, **kwargs):
-        """this method verifies the email entered and sends OTP"""
-        data = self.request.data
-        email = data.get("email")
-        account = User.objects.filter(email=email).first()
-        if not account or not account.is_active:
-            raise serializers.ValidationError(
-                {"error": "no_account_found_by_that_email"}
-            )
-        if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
-            raise NotAcceptable(detail="You are not allowed",code=403)
-        elif account.role == CARRIER:
-            raise serializers.ValidationError(
-                {"error": "This carrier is already added"}
-            )
-            
-
-        # sending otp
-        send_otp(
-            self.request,
-            account,
-            OTP_VERIFY_CARRIER,
-            vendor_name=self.request.user.vendor.vendor_name,
-        )
-        return Response({"message": "otp sent"}, status=status.HTTP_200_OK)
-
-    def patch(self, *args, **kwargs):
-        """verifies the otp and converts the email-account to carrier account"""
-        data = self.request.data
-        email = data.get("email")
-        otp = data.get("otp")
-        try:
-            otp = UserOtp.objects.get(otp=otp)
-            if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
-                return Response(
-                    {"error": "otp expired"}, status=status.HTTP_400_BAD_REQUEST
-                )
-            if not otp.user.email == email:
-                return Response(
-                    {"error": "no such otp to you"}, status=status.HTTP_400_BAD_REQUEST
-                )
-            user = otp.user
-            user.role = CARRIER
-            profile = user.profile
-            vendor = self.request.user.vendor
-            otp.delete()
-            Carrier.objects.create(user=user, user_profile=profile, vendor=vendor)
-            user.save()
-            return Response(status=status.HTTP_201_CREATED)
-
-        except UserOtp.DoesNotExist:
-            return Response(
-                {"error": "no such otp"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            print(e)
-            return Response(
-                {"error": "UKNOWN ERROR"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
 
 class CarrierOrdersApiView(viewsets.ReadOnlyModelViewSet):
@@ -199,9 +114,9 @@ class SetOrderStateDelivered(views.APIView):
             user = order.user
             OTP = UserOtp.objects.filter(user=user, otp=input_OTP).first()
             if not OTP:
-                return Response({"error": "Otp Incorrect"}, status=400)
+                return Response({"error": "otp_incorrect"}, status=400)
             if OTP.is_expired(expire=FOOD_DELIVERY_OTP_EXPIRATION):
-                return Response({"error": "Otp Expired"}, status=400)
+                return Response({"error": "otp_expired"}, status=400)
 
             # setting order in submited state and carrier in free state
             order.status = ORDER_STATUS_CHOICES[4][1]  # delivered
@@ -210,16 +125,16 @@ class SetOrderStateDelivered(views.APIView):
             order.paid = True
             order.save()
             return Response(
-                {"message": "order state changed to delivered"},
+                {"message": "order_state_delivered"},
                 status=status.HTTP_202_ACCEPTED,
             )
         except Order.DoesNotExist:
-            return Response({"error": "No such order"}, status=404)
+            return Response({"error": "no_macthing_order"}, status=404)
         except UserOtp.DoesNotExist:
-            return Response({"error": "Otp Incorrect"}, status=400)
+            return Response({"error": "invalid_otp"}, status=400)
         except exceptions.PermissionDenied:
             return Response(
-                {"error": "you are not allowed to perform this action"},
+                {"error": "not_allowed"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         except Exception as e:

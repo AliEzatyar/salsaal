@@ -8,23 +8,65 @@ from .models import Order, OrderItem
 from accounts.models import User
 
 
-class OrderSerializer(ModelSerializer):
-    user = PrimaryKeyRelatedField(read_only=True)
-
+class OrderItemSerializerMany(ModelSerializer):
+    subtotal = serializers.SerializerMethodField("get_subtotal")
+    food_name = serializers.SerializerMethodField("get_food_name")
     class Meta:
-        model = Order
-        fields = "__all__"
-
-    def create(self, validated_data):
-        validated_data["user"] = User.objects.get(id=self.context["user"])
+        model = OrderItem
+        fields = ["id","food_name", "quantity", "price","subtotal"]
+        read_only_fields = ["__all__"]
         
-        return super().create(validated_data)
+    def get_subtotal(self, obj):
+        return obj.subtotal
+
+    def get_food_name(self, obj):
+        return obj.food_name
 
 
 class OrderItemSerializer(ModelSerializer):
+    subtotal = serializers.SerializerMethodField("get_subtotal")
+    food_name = serializers.SerializerMethodField("get_food_name")
+    image = serializers.SerializerMethodField("get_image_url")
+
     class Meta:
         model = OrderItem
-        fields = "__all__"
+        fields = ["image","food_name", "quantity", "price","subtotal"]
+        read_only_fields = ["__all__"]
+
+    def get_subtotal(self, obj):
+        return obj.subtotal
+
+    def get_food_name(self, obj):
+        return obj.food_name
+
+    def get_image_url(self,obj):
+        return obj.food.default_image.image.url
+
+
+class OrderSerializer(ModelSerializer):
+    user = PrimaryKeyRelatedField(read_only=True)
+    items = OrderItemSerializerMany(many=True,read_only=True)
+    class Meta:
+        model = Order
+        fields = [
+            "user",
+            "status",
+            "total_price",
+            "paid",
+            "payment_id",
+            "is_credit",
+            "created_at",
+            "total_items",
+            "carrier",
+            "vendor",
+            "items"
+        ]
+        # read_only_fields= ["paid","user","total_price","created_at","total_items","carrier","vendor","items","is_credit"]
+        read_only_fields = ["__all__"]
+        
+    def create(self, validated_data):
+        validated_data["user"] = User.objects.get(id=self.context["user"])
+        return super().create(validated_data)
 
 
 class VOrderItemSerializer(ModelSerializer):

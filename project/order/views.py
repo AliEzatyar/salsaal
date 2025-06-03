@@ -1,4 +1,4 @@
-from .serializers import OrderSerializer, OrderItemSerializer, Order
+from .serializers import OrderSerializer, OrderItemSerializerMany,OrderItemSerializer
 from cart.models import CartItem
 from .models import Order, OrderItem, ORDER_STATUS_CHOICES
 from rest_framework.decorators import action
@@ -11,11 +11,12 @@ from marketplace.utils import BoughtTogetherRecommender
 
 class OrderViewSet(viewsets.ModelViewSet):
     """this view enables order create/edit/del by customer"""
-
+    http_method_names = ["delete","post","get"]
     serializer_class = OrderSerializer
 
-    @action(detail=False,methods=["patch"],url_path="cancel")
+    @action(detail=False,methods=["delete"],url_path="cancel")
     def cancel(self, request):
+        """this cancells only waiting orders"""
         orders = Order.objects.filter(
             user=request.user, status=ORDER_STATUS_CHOICES[1][1]
         )
@@ -26,7 +27,14 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """overrding it to get orders of specific user"""
         user_id = self.request.user.id
-        new_queryset = Order.objects.filter(user_id=int(user_id))
+        new_queryset = Order.objects.filter(
+            user_id=int(user_id),
+            status__in=[
+                ORDER_STATUS_CHOICES[1][0], # waiting
+                ORDER_STATUS_CHOICES[2][0], # preparing
+                ORDER_STATUS_CHOICES[3][0], # carrying
+            ],
+        )
         return new_queryset
 
     def create(self, request, *args, **kwargs):
@@ -69,7 +77,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 food=item.food,
                 vendor=item.food.vendor,
                 quantity=item.quantity,
-                price=item.food.min_price,
+                price=item.price,
             )[0]
             pks.append(item.food.id)
             order_items.append(order_item)
@@ -94,10 +102,10 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 
 class OrderItemListAPIView(views.APIView):
-
+    """returns all orders of an"""
     def get(self, request, order_id):
         items = OrderItem.objects.filter(order_id=order_id)
-        serializer = OrderItemSerializer(items, many=True)
+        serializer = OrderItemSerializerMany(items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

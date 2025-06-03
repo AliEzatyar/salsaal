@@ -4,12 +4,11 @@ from .models import Cart, CartItem
 
 class CartItemSerializer(serializers.ModelSerializer):
     food_name = serializers.ReadOnlyField(source="food.name")
-    food_price = serializers.ReadOnlyField(source="food.min_price")
     subtotal = serializers.SerializerMethodField("get_subtotal")
 
     class Meta:
         model = CartItem
-        fields = ["id","food_name","food_price","subtotal","quantity"]
+        fields = ["id","food_name","price","subtotal","quantity"]
         read_only_fields = ["cart"]
 
     def get_subtotal(self, obj):

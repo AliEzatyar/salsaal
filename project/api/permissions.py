@@ -77,9 +77,8 @@ class IsVendorOfFood(BasePermission):
 
 class IsHavingCart(BasePermission):
     """only customers have cart"""
-
     def has_permission(self, request, view):
-        if not hasattr(request.user, "cart") or request.user.role != CUSTOMER:
+        if not (hasattr(request.user, "cart") and request.user.role == CUSTOMER):
             raise PermissionDenied(detail="user_has_no_cart")
         return True
 
@@ -88,7 +87,7 @@ class IsHavingFavlist(BasePermission):
     """only customers have cart"""
 
     def has_permission(self, request, view):
-        if not hasattr(request.user, "favlist") or request.user.role != CUSTOMER:
+        if not (hasattr(request.user, "favlist") and request.user.role == CUSTOMER):
             raise PermissionDenied(detail="user_has_no_favlist")
         return True
 
