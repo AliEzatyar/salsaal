@@ -12,15 +12,15 @@ DATABASES = {
         "PASSWORD": config("DB_PASSWORD"),
         "PORT": config("DB_PORT", cast=int),
         "HOST": config("DB_HOST"),
-        "CONN_MAX_AGE": config("CONN_MAX_AGE",cast=int), # pgbouncer
+        "CONN_MAX_AGE": config("CONN_MAX_AGE", cast=int),  # pgbouncer
     }
 }
 
-SECRET_KEY = config("SECRET_KEY",cast=str)
+SECRET_KEY = config("SECRET_KEY", cast=str)
 
 # Redis as its own
 REDIS_HOST = config("REDIS_HOST")
-REDIS_PORT = config("REDIS_PORT",cast=int)
+REDIS_PORT = config("REDIS_PORT", cast=int)
 REDIS_DB = config("REDIS_DB")
 # CACHING
 CACHES = {
@@ -32,6 +32,15 @@ CACHES = {
         },
     }
 }
+# django channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+        },
+    },
+}
 
 
-CURRENT_DOMAIN_NAME = config("CURRENT_DOMAIN_NAME",cast=str)
+CURRENT_DOMAIN_NAME = config("CURRENT_DOMAIN_NAME", cast=str)

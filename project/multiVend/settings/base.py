@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+
 from decimal import Decimal
 from datetime import timedelta
 from decouple import config
@@ -16,6 +17,7 @@ import os
 from pathlib import Path
 from django.contrib.messages import constants as messages
 from ..country.info import *
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -53,6 +55,8 @@ INSTALLED_APPS = [
     "order.apps.OrderConfig",
     "api.apps.ApiConfig",
     "carrier.apps.CarrierConfig",
+    "channels",
+    "live.apps.LiveConfig",
 ]
 
 MIDDLEWARE = [
@@ -87,8 +91,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "multiVend.wsgi.application"
-
-
+ASGI_APPLICATION = "multiVend.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -132,7 +135,7 @@ PASSWORD_RESET_TIMEOUT_DAYS = 1
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC" # 
+TIME_ZONE = "UTC"  #
 
 USE_I18N = True
 
@@ -207,5 +210,3 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 
 APPEND_SLASH = False
-
-

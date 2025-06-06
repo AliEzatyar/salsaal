@@ -34,6 +34,15 @@ CACHES = {
         },
     }
 }
+# django channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+        },
+    },
+}
 
 # current domain name
 CURRENT_DOMAIN_NAME = env.get("CURRENT_DOMAIN_NAME")
