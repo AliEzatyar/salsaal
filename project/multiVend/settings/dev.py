@@ -46,3 +46,6 @@ CHANNEL_LAYERS = {
 
 # current domain name
 CURRENT_DOMAIN_NAME = env.get("CURRENT_DOMAIN_NAME")
+
+# ssl for uvicorn, for uwsgi, we used include uswgi_params
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
