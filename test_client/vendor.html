@@ -1,0 +1,173 @@
+<head>
+    <meta charset="UTF-8">
+    <title>Popup Input</title>
+    <style>
+        #popup {
+            display: none;
+            position: fixed;
+            top: 30%;
+            left: 40%;
+            padding: 20px;
+            background: white;
+            border: 2px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>vendor page</h1>
+    <!--js -->
+    <script>
+        let reconnectTimeout = null;
+        function showPopup() {
+            document.getElementById('popup').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+
+        // creating vendor channel socket 
+        const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MzEzMTY4LCJpYXQiOjE3NDg5NDUxNjgsImp0aSI6IjZjMGRjYTQyOTljMDQ1OTg4YTU4MDhlMjcyZmVjZTI4IiwidXNlcl9pZCI6NSwicm9sZSI6MX0.DG6Qk9UQEx0yyVtLmdOgHZF4Bst16twc7e0ufLjDHgQ" // take out of localstorage
+        const vendor_token = "Bearer " + token_only
+        const vendor_id = 2 // take out of localstorage
+        const domain = "http://127.0.0.1:8000"
+        const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
+        const url = ws_domain + `/notf/vdor/${vendor_id}/?token=${token_only}`
+        const vendorChannelSocket = new WebSocket(url)
+        // reloading whole page after internet disconnection
+        window.addEventListener("offline", (e) => {
+            console.log("reloading...")
+            window.location.reload()
+        })
+
+        // window.addEventListener("online", (e) => {
+        //     console.log("reloading...")
+        //     window.location.reload()
+        // })
+
+        vendorChannelSocket.onopen = (e) => {
+            console.log("connected vendor socket")
+        }
+        vendorChannelSocket.onmessage = async (e) => {
+            // recieves notification data of new order, customer final answer, order being carried/delivered
+            var data = JSON.parse(e['data'])
+            console.log("recived data", data)
+            if (data["type"] == "recv_notf") {
+                const notf_type = data["notf_type"]
+                if (notf_type == "new_order") {
+                    // creating pop up
+                    const boolValue = document.getElementById('boolInput').value === "true";
+                    const sendBtn = document.getElementById("sendBtn")
+                    const customerId = data['data']['user']
+                    showPopup()
+                    // handling send button on click listener
+                    sendBtn.onclick = (event) => {
+
+                        const minutes = parseInt(document.getElementById('minutesInput').value);
+                        if (isNaN(minutes)) {
+                            alert("Please enter a valid integer.");
+                            return;
+                        }
+                        // console.log("order_id:", data['data']['id'])
+                        data = {
+                            booleanValue: boolValue,
+                            integerValue: minutes,
+                            order_id: data['data']['id']
+                        };
+                        // #2 connecting to customer channel and sending vendor answer 
+                        const customerChannelUrl = ws_domain + `/notf/cstmr/${customerId}/?token=${token_only}`
+                        const customerChannelSocket = new WebSocket(customerChannelUrl)
+                        // console.log(data, "answer of vendor")
+                        customerChannelSocket.onopen = (e) => {
+                            customerChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_type": "vendor_answer", "data": data }))
+                            closePopup();
+
+                        }
+                    }
+                }
+                // #4 final cusotmer answer
+                else if (notf_type == "customer_answer") {
+                    const answer = data['data']['answer']
+                    console.log(data['data']['answer'], ":answer of customer")
+                    // set order as accepted/rejected
+                    const orderId = data['data']['order_id']
+                    let payload = JSON.stringify({
+                        "id": orderId,
+                        "accepted": false
+                    })
+                    if (answer == true) {
+                        payload = JSON.stringify({
+                            "id": orderId,
+                            "accepted": true
+                        })
+                    }
+                    console.log(payload, "payload data being sent")
+                    const acceptOrderHeaders = new Headers()
+                    acceptOrderHeaders.append("Authorization", vendor_token)
+                    acceptOrderHeaders.append("Content-Type", "application/json")
+                    const acceptOrderOptions = {
+                        method: "POST",
+                        headers: acceptOrderHeaders,
+                        body: payload,
+                        redirect: "follow"
+                    };
+                    const acceptOrderUrl = domain + "/api/vendor/ar-order/"
+                    fetch(acceptOrderUrl, acceptOrderOptions)
+                        .then((response) => response.text())
+                        .then((result) => {
+                            console.log(result, "result of add to cart")
+
+                        })
+
+                }
+                else if (notf_type == "order_carrying") {
+                    console.log("carrier is moving food")
+
+                }
+                else if (notf_type == "order_delivered") {
+                    console.log("order delivered successfully")
+                }
+            }
+
+
+        }
+    </script>
+    <!--html-->
+    <div id="overlay"></div>
+
+    <div id="popup">
+        <label>Boolean (true/false):
+            <select id="boolInput">
+                <option value="true">True</option>
+                <option value="false">False</option>
+            </select>
+        </label>
+        <br><br>
+        <label>Integer:
+            <input type="number" id="minutesInput" required>
+        </label>
+        <br><br>
+        <button id="cancelBtn">Cancel</button>
+        <button id="sendBtn">Send</button>
+
+    </div>
+
+
+</body>

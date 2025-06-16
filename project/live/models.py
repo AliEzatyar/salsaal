@@ -15,5 +15,5 @@ class Notification(models.Model):
     related_object = GenericForeignKey(
         "ct", "object_id"
     )  # this dynammically findes the object
-    is_read = models.BooleanField(default=True)
+    is_read = models.BooleanField(default=False)
     to  = models.PositiveIntegerField(default=0)

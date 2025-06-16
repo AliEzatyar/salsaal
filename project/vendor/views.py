@@ -388,11 +388,12 @@ class AcceptRejectOrderView(views.APIView):
 
             # rejected
             # deleting the order
-            order.objects.delete()
+            order.delete()
             # sending notification to customer ....
             return Response({"message": "order_rejected"}, status=status.HTTP_200_OK)
 
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        except Exception:
+        except Exception as e:
+            print("error:",e.args, e)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

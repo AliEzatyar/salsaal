@@ -1,0 +1,119 @@
+<script>
+    // details for connection
+    const domain = "http://127.0.0.1:8000"
+    const wbs_domain = "ws://127.0.0.1:8000/ws"
+    const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUxMDE5Njg1LCJpYXQiOjE3NDg0Mjc2ODUsImp0aSI6IjIzODVhOGUwZjc4ZDRkODE5MDg0OTRjZmFkYmJlY2ZiIiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.zvwsG0ZY5FUwbdC9jsB2GtvbvrDV4jgWYuslMfr9m1U"
+    const client_token = "Bearer " + only_token
+    const client_id = 7
+    // connecting to customer's channel 
+    const url = wbs_domain + `/notf/cstmr/${client_id}/?token=${only_token}`
+    var vendorChannelSocket;
+    const customerChannelSocket = new WebSocket(url)
+    // reloading whole page after internet disconnection
+    window.addEventListener("offline", (e) => {
+        console.log("reloading...")
+        window.location.reload()
+    })
+    customerChannelSocket.onopen = (e) => {
+        console.log("customer  Socket Open")
+        // cancel order
+        const cancelUrl = domain + "/api/order/user-orders/cancel/"
+        const cancelHeaders = new Headers();
+        cancelHeaders.append("Authorization", client_token);
+        cancelHeaders.append("Content-Type", "application/json")
+        const cancelOptions = {
+            method: "DELETE",
+            headers: cancelHeaders,
+            redirect: "follow"
+        };
+
+        fetch(cancelUrl, cancelOptions)
+            .then((response) => response.text())
+            .then((result) => {
+                console.log(result, "result of cancellation")
+                // add to cart
+                const addToCartUrl = domain + "/api/cart/"
+                const addToCartHeaders = new Headers();
+                addToCartHeaders.append("Authorization", client_token)
+                const raw = "{\"id\":7,\"quantity\":4}";
+                addToCartHeaders.append("Content-Type", "application/json")
+
+
+                const addToCartRequestOptions = {
+                    method: "POST",
+                    headers: addToCartHeaders,
+                    body: raw,
+                    redirect: "follow"
+                };
+
+                fetch(addToCartUrl, addToCartRequestOptions)
+                    .then((response) => response.text())
+                    .then((result) => {
+                        console.log(result, "result of add to cart")
+
+                        // creating the order
+                        const createOrderUrl = domain + "/api/manage-order/";
+                        const myHeaders = new Headers();
+                        myHeaders.append("Content-Type", "application/json")
+
+                        myHeaders.append("Authorization", client_token);
+
+
+                        const requestOptions = {
+                            method: "POST",
+                            headers: myHeaders,
+                            // body: formdata,
+                            redirect: "follow"
+                        };
+
+                        fetch("http://127.0.0.1:8000/api/order/user-orders/", requestOptions)
+                            .then((response) => response.json())
+                            .then((result) => {
+
+                                console.log(result, "result of order creation")
+                                // creating the url and connecting
+                                const url = wbs_domain + `/notf/vdor/${result['order']['vendor']}/?token=${only_token}`
+                                console.log(url)
+                                vendorChannelSocket = new WebSocket(url)
+                                // vendorChannelSocket.onclose = (e) => {
+                                //     console.log("socket closed, retring after 1 sec")
+                                //     reconnectTimeout = setTimeout(() => {
+                                //         vendorChannelSocket = connectWebSocket(url);
+                                //     }, 1000);
+                                // }
+                                // vendorChannelSocket.onerror = (e) => {
+                                //     console.log("socket faced error")
+                                //     socket.close()
+                                // }
+                                // 1 sending notification if order has been created
+                                vendorChannelSocket.onopen = (e) => {
+                                    vendorChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_id": result['notf_id'], 'notf_type': "new_order" }))
+                                    console.log("message sent")
+                                }
+                            })
+                            .catch((error) => console.error(error));
+
+                    })
+                    .catch((error) => console.error(error));
+
+
+            }
+            )
+            .catch((error) => console.error(error));
+    }
+
+
+    // 3 sending answer of customer
+    customerChannelSocket.onmessage = async (e) => {
+        const data = JSON.parse(e['data'])
+        console.log(data, "data came to customer")
+        if (data['type'] == "recv_notf") {
+            console.log(data['data'], ":answer of vendor")
+            vendorChannelSocket.send(JSON.stringify({
+                "type": "share_notf", "notf_type": "customer_answer",
+                "data": { "answer": false, "order_id": data['data']['order_id'] }
+            }))
+            console.log("anaswer sent back to vendor", { "answer": false, "order_id": data['data']['order_id'] })
+        }
+    }
+</script>

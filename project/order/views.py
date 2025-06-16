@@ -1,20 +1,25 @@
-from .serializers import OrderSerializer, OrderItemSerializerMany,OrderItemSerializer
+from .serializers import OrderSerializer, OrderItemSerializerMany, OrderItemSerializer
 from cart.models import CartItem
 from .models import Order, OrderItem, ORDER_STATUS_CHOICES
 from rest_framework.decorators import action
 from rest_framework import viewsets, views, status
 from rest_framework.response import Response
 from marketplace.utils import BoughtTogetherRecommender
+from live.models import Notification
+from django.contrib.contenttypes.models import ContentType
+from django.core.serializers.json import DjangoJSONEncoder
+import json
 
 """Order API Views"""
 
 
 class OrderViewSet(viewsets.ModelViewSet):
     """this view enables order create/edit/del by customer"""
-    http_method_names = ["delete","post","get"]
+
+    http_method_names = ["delete", "post", "get"]
     serializer_class = OrderSerializer
 
-    @action(detail=False,methods=["delete"],url_path="cancel")
+    @action(detail=False, methods=["delete"], url_path="cancel")
     def cancel(self, request):
         """this cancells only waiting orders"""
         orders = Order.objects.filter(
@@ -30,9 +35,9 @@ class OrderViewSet(viewsets.ModelViewSet):
         new_queryset = Order.objects.filter(
             user_id=int(user_id),
             status__in=[
-                ORDER_STATUS_CHOICES[1][0], # waiting
-                ORDER_STATUS_CHOICES[2][0], # preparing
-                ORDER_STATUS_CHOICES[3][0], # carrying
+                ORDER_STATUS_CHOICES[1][0],  # waiting
+                ORDER_STATUS_CHOICES[2][0],  # preparing
+                ORDER_STATUS_CHOICES[3][0],  # carrying
             ],
         )
         return new_queryset
@@ -55,7 +60,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=data)
 
         if Order.objects.filter(
-            user=request.user, status=ORDER_STATUS_CHOICES[1][1],vendor__id= vendor_id
+            user=request.user, status=ORDER_STATUS_CHOICES[1][1], vendor__id=vendor_id
         ).exists():
             # prevent duplicate order if user has one 'waiting' order already
             return Response(
@@ -70,7 +75,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             order=order
         ).delete()  # flush previous items and recreate new items
         pks = []
-        # creating order item objects
+        # ----------------------- creating order item objects
         for item in CartItem.objects.filter(cart=cart).select_related("food__vendor"):
             order_item = OrderItem.objects.get_or_create(
                 order=order,
@@ -81,16 +86,32 @@ class OrderViewSet(viewsets.ModelViewSet):
             )[0]
             pks.append(item.food.id)
             order_items.append(order_item)
-        recommender  = BoughtTogetherRecommender()
+        # ------------------------ feeding recommender
+        recommender = BoughtTogetherRecommender()
         recommender.update_together_bought(pks)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
 
         # flushing the cart
         cart.items.all().delete()
-
+        # ------------------------- creating the notification object
+        safe_data = json.loads(
+            json.dumps(
+                serializer.data, cls=DjangoJSONEncoder
+            )  # Converts Decimal -> float
+        )
+        notf = Notification.objects.create(
+            title="Order Created",
+            type="new_order",
+            data=safe_data,
+            object_id=order.id,
+            ct=ContentType.objects.get_for_model(Order),
+            to=order.vendor.id,
+        )   
         response = Response(
-            serializer.data,
+            {"order":serializer.data,
+             "notf_id":notf.id,
+             },
             status=status.HTTP_201_CREATED,
         )
         return response
@@ -103,6 +124,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 class OrderItemListAPIView(views.APIView):
     """returns all orders of an"""
+
     def get(self, request, order_id):
         items = OrderItem.objects.filter(order_id=order_id)
         serializer = OrderItemSerializerMany(items, many=True)

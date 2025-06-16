@@ -17,7 +17,7 @@ django.setup()
 from live import routing as live_routings
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
+from live.middlewares import JWTAuthMiddleware
 from channels.security.websocket import AllowedHostsOriginValidator
 
 
@@ -27,7 +27,7 @@ application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
         "websocket": AllowedHostsOriginValidator(
-            AuthMiddlewareStack(URLRouter(live_routings.websocket_urlpatterns))
+            JWTAuthMiddleware(URLRouter(live_routings.websocket_urlpatterns))
         ),
     }
 )

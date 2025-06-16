@@ -119,7 +119,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             # updating the counter for this food
             counter = BestFoodsCounter(city)
             counter.update_counts(obj.id)
-            print("counter updated",counter.read_counts())
             # sending the response
             return Response(
                 {

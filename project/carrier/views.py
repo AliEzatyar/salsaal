@@ -2,35 +2,24 @@ from rest_framework import (
     permissions as perm,
     viewsets,
     exceptions,
-    parsers,
-    serializers,
     views,
     status,
 )
-from .models import Carrier
+from live.models import Notification
 from rest_framework.response import Response
-from .serializers import CarrierSerializer
 from order.serializers import CarrierOrderSerializer
-from api.permissions import IsBuyer, IsCarrierOfVendor, IsVendor
+from api.permissions import IsBuyer, IsCarrierOfVendor
 from order.models import Order, ORDER_STATUS_CHOICES
-from rest_framework.exceptions import NotAcceptable
 from accounts.models import (
-    ADMIN,
-    CARRIER_ADD_OTP_EXPIRATION,
-    REST,
-    User,
     UserOtp,
     FOOD_DELIVERY_OTP_EXPIRATION,
-    CARRIER,
 )
 from accounts.utils import OTP_VERIFY_CARRIER, generate_otp
-from accounts.utils import send_otp
-
+from django.contrib.contenttypes.models import ContentType
 from carrier.models import CARRIER_STATUS_CHOICES
 
 
 # Create your views here.
-
 
 
 class CarrierOrdersApiView(viewsets.ReadOnlyModelViewSet):
@@ -45,7 +34,7 @@ class CarrierOrdersApiView(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """overriding to only retrive orders of its vendor"""
         query_set = Order.objects.filter(
-            status=ORDER_STATUS_CHOICES[2][1], # preparing
+            status=ORDER_STATUS_CHOICES[2][1],  # preparing
             vendor=self.request.user.carrier.vendor,
             # paid=True,
         )
@@ -66,7 +55,7 @@ class SetOrderStateCarrying(views.APIView):
         order_id = data.get("order_id")
         try:
             order = Order.objects.get(id=order_id)
-            # if payment is online and not paid, not allowed           
+            # if payment is online and not paid, not allowed
             if order.is_credit:
                 if not order.paid:
                     return Response({"error": "payment not completed"}, status=400)
@@ -82,6 +71,15 @@ class SetOrderStateCarrying(views.APIView):
             # setting order in carrying state
             order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
             order.save()
+            # ---------------------- creating notification
+            notf = Notification.objects.create(
+                title="Order set as carrying",
+                type="order_carrying",
+                object_id=order.id,
+                ct=ContentType.objects.get_for_model(Order),
+                to=order.vendor.id,
+            )
+
             # response
             return Response(
                 {"message": "order_status_carrying", "OTP": OTP},
