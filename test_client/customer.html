@@ -108,12 +108,19 @@
         const data = JSON.parse(e['data'])
         console.log(data, "data came to customer")
         if (data['type'] == "recv_notf") {
-            console.log(data['data'], ":answer of vendor")
-            vendorChannelSocket.send(JSON.stringify({
-                "type": "share_notf", "notf_type": "customer_answer",
-                "data": { "answer": false, "order_id": data['data']['order_id'] }
-            }))
-            console.log("anaswer sent back to vendor", { "answer": false, "order_id": data['data']['order_id'] })
+            const notf_type = data["notf_type"]
+            if (notf_type == "order_carrying") {
+                console.log("carrier is moving food")
+            }
+            else if (notf_type == "vendor_answer") {
+                console.log(data['data'], ":intial answer of vendor")
+                vendorChannelSocket.send(JSON.stringify({
+                    "type": "share_notf", "notf_type": "customer_answer",
+                    "data": { "answer": false, "order_id": data['data']['order_id'] }
+                }))
+                console.log("anaswer sent back to vendor", { "answer": false, "order_id": data['data']['order_id'] })
+            }
         }
+
     }
 </script>

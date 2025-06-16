@@ -1,10 +1,69 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8" />
-    <title>title</title>
-</head>
-<body>
-    
-</body>
-</html>
+<script>
+    // creating vendor channel socket 
+    const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwNDQ2MTkxLCJpYXQiOjE3NTAwNzgxOTEsImp0aSI6IjRkMTA5N2I0NmI2ZTQ5MWE4YzA3OWExYzBjMmQ5NjI5IiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.rvo6l4EUX2v_B_PDXir9vad-3vLl2Acp2Ae6TPpYATw" // take out of localstorage
+    const carrier_token = "Bearer " + token_only
+    const vendor_id = 2 // every carrier should have its vendor id
+    const domain = "http://127.0.0.1:8000"
+    const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
+    const ws_url = ws_domain + `/notf/vdor/${vendor_id}/?token=${token_only}`
+
+    const vendorChannelSocket = new WebSocket(ws_url)
+    vendorChannelSocket.onopen = (e) => {
+        console.log("connected to carrier's vendor socket")
+
+        // creating the order
+        const setCarryingUrl = domain + "/api/carrier/set-order-state-carrying/";
+        const myHeaders = new Headers();
+        myHeaders.append("Content-Type", "application/json")
+        myHeaders.append("Authorization", carrier_token);
+
+
+        const requestOptions = {
+            method: "POST",
+            headers: myHeaders,
+            body: JSON.stringify({ "order_id": 100 }),
+            // body: formdata,
+            redirect: "follow"
+        };
+
+        fetch(setCarryingUrl, requestOptions)
+            .then((response) => {
+                console.log("Status code:", response.status); // 👉 Get the status code
+
+                // Optional: if you still want to parse JSON body
+                return response.json().then(data => ({
+                    status: response.status,
+                    body: data
+                }));
+            })
+            .then(({ status, body }) => {
+                if (status == 403) {
+                    console.log("not allowed")
+                }
+
+                else if (status == 201) {
+
+                    console.log(body, "result of set carrying state")
+
+                    // creating the url and connecting
+                    vendorChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_id": body['notf_id'], 'notf_type': "order_carrying", "data": "null" }))
+                    console.log("notification of carrying state sent to vendor")
+                    // connecting to customer websocket
+                    const customer_id = body["customer_id"]
+                    const customer_ws_url = ws_domain + `/notf/cstmr/${customer_id}/?token=${token_only}`
+                    console.log(customer_ws_url, "custmer channel url")
+                    const customerChannelSocket = new WebSocket(customer_ws_url)
+                    customerChannelSocket.onopen = (e) => {
+                        customerChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_id": body['notf_id'], 'notf_type': "order_carrying", "data": "null" }))
+                        console.log("notification of carrying state sent to customer")
+                    }
+                }
+                else {
+                    console.log("unkown server error")
+                }
+            }
+
+            )
+    }
+
+</script>
