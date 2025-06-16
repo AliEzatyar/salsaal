@@ -1,3 +1,4 @@
+import json
 from rest_framework import (
     permissions as perm,
     viewsets,
@@ -8,7 +9,7 @@ from rest_framework import (
 from live.models import Notification
 from rest_framework.response import Response
 from order.serializers import CarrierOrderSerializer
-from api.permissions import IsBuyer, IsCarrierOfVendor
+from api.permissions import IsBuyer, IsCarrierOfVendor, IsOrderWaitingState
 from order.models import Order, ORDER_STATUS_CHOICES
 from accounts.models import (
     UserOtp,
@@ -47,7 +48,7 @@ class SetOrderStateCarrying(views.APIView):
     in carrying state. Besides, this view generates an OTP valid for 1 Day
     """
 
-    permission_classes = [perm.IsAuthenticated, IsCarrierOfVendor]
+    permission_classes = [perm.IsAuthenticated, IsCarrierOfVendor,IsOrderWaitingState]
 
     def post(self, *args, **kwargs):
         """carrier sets order status -carrying- and generates an OTP"""
@@ -56,11 +57,12 @@ class SetOrderStateCarrying(views.APIView):
         try:
             order = Order.objects.get(id=order_id)
             # if payment is online and not paid, not allowed
-            if order.is_credit:
-                if not order.paid:
-                    return Response({"error": "payment not completed"}, status=400)
+            # if order.is_credit:
+            #     if not order.paid:
+            #         return Response({"error": "payment not completed"}, status=400)
 
             self.check_object_permissions(self.request, order)
+            
             user = order.user
             # creating OTP
             OTP = generate_otp()
@@ -77,18 +79,19 @@ class SetOrderStateCarrying(views.APIView):
                 type="order_carrying",
                 object_id=order.id,
                 ct=ContentType.objects.get_for_model(Order),
-                to=order.vendor.id,
+                data = json.dumps({})
             )
 
             # response
             return Response(
-                {"message": "order_status_carrying", "OTP": OTP},
+                {"message": "order_status_carrying", "OTP": OTP, "notf_id": notf.id,"customer_id":order.user.id},
                 status=status.HTTP_201_CREATED,
             )
 
         except Order.DoesNotExist:
             return Response({"error": "no such order"}, status=404)
-
+        except:
+            return Response({"detail","unkown_error"},status=status.HTTP_501_NOT_IMPLEMENTED)
 
 class SetOrderStateDelivered(views.APIView):
     """

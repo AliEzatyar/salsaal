@@ -1,7 +1,6 @@
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
-
-
+from order.models import ORDER_STATUS_CHOICES
 from rest_framework.permissions import BasePermission
 from accounts.models import REST, CUSTOMER
 
@@ -22,6 +21,14 @@ class IsCarrierOfVendor(BasePermission):
         """last, is this carrier allowed to see these items"""
         carrier = request.user.carrier
         return carrier.vendor == order_obj.vendor and carrier.is_active == True
+
+
+class IsOrderWaitingState(BasePermission):
+    """prevents any order if not in 'waiting' status to be marked as carrying"""
+    def has_object_permission(self, request, view, order_obj):
+        if order_obj.status != ORDER_STATUS_CHOICES[1][0]:
+            return False
+        return True
 
 
 class IsVendor(BasePermission):
@@ -77,6 +84,7 @@ class IsVendorOfFood(BasePermission):
 
 class IsHavingCart(BasePermission):
     """only customers have cart"""
+
     def has_permission(self, request, view):
         if not (hasattr(request.user, "cart") and request.user.role == CUSTOMER):
             raise PermissionDenied(detail="user_has_no_cart")

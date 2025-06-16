@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from accounts.models import User, UserProfile
+from accounts.models import User, UserOtp, UserProfile
 # Register your models here.
 
 class UserAd(UserAdmin):
@@ -11,6 +11,6 @@ class UserAd(UserAdmin):
     list_filter = ()
     list_display_links = ['username']
 
-
+admin.site.register(UserOtp)
 admin.site.register(User,UserAd)
 admin.site.register(UserProfile)

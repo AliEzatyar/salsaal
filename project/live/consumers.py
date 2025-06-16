@@ -10,6 +10,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         """performs connection settings"""
         # prevent unauthenticated users
+        print("started")
+
         user = self.scope["user"]
         if not user.is_authenticated:
             await self.close()
@@ -20,6 +22,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         if self.notf_for in ["vdor", "crir", "cstmr"]:
             self.group_name = f"notf_{self.notf_for}_{self.group_id}"  # notf_vendor_5
         await self.channel_layer.group_add(self.group_name, self.channel_name)
+        print("accepted")
         await self.accept()
 
     async def receive(self, text_data=None, bytes_data=None):
@@ -57,7 +60,19 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                         {
                             "type": "share_notf",
                             "notf_type": notf_type,
-                            "data": {"answer":data["data"]['answer'],"order_id":data['data']['order_id']},
+                            "data": {
+                                "answer": data["data"]["answer"],
+                                "order_id": data["data"]["order_id"],
+                            },
+                        },
+                    )
+                elif notf_type == "order_carrying":
+                    await self.channel_layer.group_send(
+                        self.group_name,
+                        {
+                            "type": "share_notf",
+                            "notf_type": notf_type,
+                            "data": data["data"],
                         },
                     )
             except Exception as e:

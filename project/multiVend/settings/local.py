@@ -44,3 +44,11 @@ CHANNEL_LAYERS = {
 
 
 CURRENT_DOMAIN_NAME = config("CURRENT_DOMAIN_NAME", cast=str)
+# for react, cross site
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+CORS_ALLOW_ALL_ORIGINS = True
