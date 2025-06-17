@@ -11,7 +11,7 @@
     vendorChannelSocket.onopen = (e) => {
         console.log("connected to carrier's vendor socket")
 
-        // creating the order
+        // --------------------- set order as carrying state
         const setCarryingUrl = domain + "/api/carrier/set-order-state-carrying/";
         const myHeaders = new Headers();
         myHeaders.append("Content-Type", "application/json")
@@ -21,7 +21,7 @@
         const requestOptions = {
             method: "POST",
             headers: myHeaders,
-            body: JSON.stringify({ "order_id": 100 }),
+            body: JSON.stringify({ "order_id": 118  }),
             // body: formdata,
             redirect: "follow"
         };
@@ -42,9 +42,7 @@
                 }
 
                 else if (status == 201) {
-
                     console.log(body, "result of set carrying state")
-
                     // creating the url and connecting
                     vendorChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_id": body['notf_id'], 'notf_type': "order_carrying", "data": "null" }))
                     console.log("notification of carrying state sent to vendor")

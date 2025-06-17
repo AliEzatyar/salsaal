@@ -109,17 +109,66 @@
         console.log(data, "data came to customer")
         if (data['type'] == "recv_notf") {
             const notf_type = data["notf_type"]
-            if (notf_type == "order_carrying") {
-                console.log("carrier is moving food")
-            }
-            else if (notf_type == "vendor_answer") {
+            if (notf_type == "vendor_answer") {
                 console.log(data['data'], ":intial answer of vendor")
                 vendorChannelSocket.send(JSON.stringify({
                     "type": "share_notf", "notf_type": "customer_answer",
-                    "data": { "answer": false, "order_id": data['data']['order_id'] }
+                    "data": { "answer": true, "order_id": data['data']['order_id'] }
                 }))
-                console.log("anaswer sent back to vendor", { "answer": false, "order_id": data['data']['order_id'] })
+                console.log("anaswer sent back to vendor", { "answer": true, "order_id": data['data']['order_id'] })
             }
+            else if (notf_type == "order_carrying") {
+                console.log("carrier is moving food")
+                const otp = window.prompt("enter the otp")
+                
+                // ------------------------ setting order as delivered
+                const setDeliveredUrl = domain + "/api/carrier/set-order-state-delivered/";
+                const headers = new Headers();
+                headers.append("Content-Type", "application/json")
+                headers.append("Authorization", client_token);
+                const requestOptions = {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify({ "order_id": 118 ,
+                        "otp": otp
+                    }),
+                    redirect: "follow"
+                };
+
+                fetch(setDeliveredUrl, requestOptions)
+                    .then((response) => {
+                        console.log("Status code:", response.status); // 👉 Get the status code
+                        // Optional: if you still want to parse JSON body
+                        return response.json().then(data => ({
+                            status: response.status,
+                            data: data
+                        }));
+                    })
+                    .then(({ status, data }) => {
+                        console.log(data,"data -body")
+                        if (status == 403) {
+                            console.log("not allowed")
+                        }
+
+                        else if (status == 202) {
+                            console.log("order set as delivered",data)
+                            
+                            vendorChannelSocket.send(JSON.stringify({
+                                "type": "share_notf", "notf_type": "order_delivered",
+                                "data": { "customer_name": data['customer_name'] }
+                            }))
+
+                            console.log("Notification of delivered status sent to vendor")
+                        }
+                        else if (status == 400){
+                            console.log("something is missing")
+                        }
+                        else{
+                            console.log("uknown error")
+                        }
+                    })
+            }
+
         }
 
     }

@@ -388,7 +388,7 @@ class AcceptRejectOrderView(views.APIView):
 
             # rejected
             # deleting the order
-            order.delete()
+            order.cancel_order()
             # sending notification to customer ....
             return Response({"message": "order_rejected"}, status=status.HTTP_200_OK)
 

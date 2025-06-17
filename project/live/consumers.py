@@ -75,6 +75,16 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                             "data": data["data"],
                         },
                     )
+                elif notf_type == "order_delivered":
+                    
+                    await self.channel_layer.group_send(
+                        self.group_name,
+                        {
+                            "type": "share_notf",
+                            "notf_type": notf_type,
+                            "data": data["data"],
+                        },
+                    )
             except Exception as e:
                 print("errror in consumer...", e.args, e)
                 pass

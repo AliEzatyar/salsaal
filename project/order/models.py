@@ -22,7 +22,7 @@ class Order(models.Model):
     status = models.CharField(
         max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
     )
-    total_price = models.DecimalField(default=0,max_digits=6,decimal_places=1)
+    total_price = models.DecimalField(default=0, max_digits=6, decimal_places=1)
     paid = models.BooleanField(default=False)
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
@@ -32,12 +32,11 @@ class Order(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=2)
     carrier = models.ForeignKey(
-        "carrier.Carrier",null=True, on_delete=models.SET_NULL, related_name="orders"
+        "carrier.Carrier", null=True, on_delete=models.SET_NULL, related_name="orders"
     )
-    vendor = models.ForeignKey('vendor.Vendor',
-                               on_delete=models.CASCADE,
-                               related_name="orders")
-    
+    vendor = models.ForeignKey(
+        "vendor.Vendor", on_delete=models.CASCADE, related_name="orders"
+    )
 
     class Meta:
         indexes = [models.Index(fields=["-created_at"])]
@@ -67,10 +66,10 @@ class Order(models.Model):
 
     def cancel_order(self):
         """reseting food order"""
-        self.status = ORDER_STATUS_CHOICES[0][0]  # cancelled
-        self.save()
-
-                
+        print("status", self.status)
+        if self.status != ORDER_STATUS_CHOICES[1][0]:  # not waiting
+            return
+        self.delete()
 
     def __str__(self):
         return f"Order {self.id} - {self.user.username}"

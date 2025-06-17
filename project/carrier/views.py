@@ -9,7 +9,12 @@ from rest_framework import (
 from live.models import Notification
 from rest_framework.response import Response
 from order.serializers import CarrierOrderSerializer
-from api.permissions import IsBuyer, IsCarrierOfVendor, IsOrderWaitingState
+from api.permissions import (
+    IsBuyer,
+    IsCarrierOfVendor,
+    IsOrderPreparingState,
+    IsOrderCarryingState,
+)
 from order.models import Order, ORDER_STATUS_CHOICES
 from accounts.models import (
     UserOtp,
@@ -48,7 +53,11 @@ class SetOrderStateCarrying(views.APIView):
     in carrying state. Besides, this view generates an OTP valid for 1 Day
     """
 
-    permission_classes = [perm.IsAuthenticated, IsCarrierOfVendor,IsOrderWaitingState]
+    permission_classes = [
+        perm.IsAuthenticated,
+        IsCarrierOfVendor,
+        IsOrderPreparingState,
+    ]
 
     def post(self, *args, **kwargs):
         """carrier sets order status -carrying- and generates an OTP"""
@@ -62,7 +71,7 @@ class SetOrderStateCarrying(views.APIView):
             #         return Response({"error": "payment not completed"}, status=400)
 
             self.check_object_permissions(self.request, order)
-            
+
             user = order.user
             # creating OTP
             OTP = generate_otp()
@@ -79,19 +88,31 @@ class SetOrderStateCarrying(views.APIView):
                 type="order_carrying",
                 object_id=order.id,
                 ct=ContentType.objects.get_for_model(Order),
-                data = json.dumps({})
+                data=json.dumps({}),
             )
-
             # response
             return Response(
-                {"message": "order_status_carrying", "OTP": OTP, "notf_id": notf.id,"customer_id":order.user.id},
+                {
+                    "message": "order_status_carrying",
+                    "OTP": OTP,
+                    "notf_id": notf.id,
+                    "customer_id": order.user.id,
+                },
                 status=status.HTTP_201_CREATED,
             )
 
         except Order.DoesNotExist:
             return Response({"error": "no such order"}, status=404)
-        except:
-            return Response({"detail","unkown_error"},status=status.HTTP_501_NOT_IMPLEMENTED)
+        except exceptions.PermissionDenied:
+            return Response({"error": "not_allowed"}, status=403)
+
+        except Exception as e:
+            print("error:", e, e.args)
+
+            return Response(
+                {"detail", "unkown_error"}, status=status.HTTP_501_NOT_IMPLEMENTED
+            )
+
 
 class SetOrderStateDelivered(views.APIView):
     """
@@ -99,7 +120,7 @@ class SetOrderStateDelivered(views.APIView):
     a customer (indirectly-by-scanning) is the owner of order and valid Food has reached it.
     """
 
-    permission_classes = [perm.IsAuthenticated, IsBuyer]
+    permission_classes = [perm.IsAuthenticated, IsBuyer, IsOrderCarryingState]
 
     def post(self, *args, **kwargs):
         """carrier sets order status -delivered-"""
@@ -124,9 +145,22 @@ class SetOrderStateDelivered(views.APIView):
             order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
             order.carrier.save()
             order.paid = True
+            OTP.delete()
             order.save()
+            # ---------------------- creating notification
+            # Notification.objects.create(
+            #     title="Order delivered",
+            #     type="order_delivered",
+            #     object_id=order.id,
+            #     ct=ContentType.objects.get_for_model(Order),
+            #     data=json.dumps({}),
+            # )
+            print(order.user.get_full_name())
             return Response(
-                {"message": "order_state_delivered"},
+                {
+                    "message": "order_state_delivered",
+                    "customer_name": order.user.get_full_name(),
+                },
                 status=status.HTTP_202_ACCEPTED,
             )
         except Order.DoesNotExist:
@@ -139,6 +173,7 @@ class SetOrderStateDelivered(views.APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         except Exception as e:
+            print("error:", e, e.args)
             return Response(
                 {"error": "uknown error occured"},
                 status=status.HTTP_501_NOT_IMPLEMENTED,

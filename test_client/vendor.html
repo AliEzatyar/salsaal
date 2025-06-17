@@ -132,7 +132,7 @@
                     fetch(acceptOrderUrl, acceptOrderOptions)
                         .then((response) => response.text())
                         .then((result) => {
-                            console.log(result, "result of add to cart")
+                            console.log(result, "result of order set as a/r")
 
                         })
 
@@ -142,7 +142,9 @@
 
                 }
                 else if (notf_type == "order_delivered") {
-                    console.log("order delivered successfully")
+                    console.log(data)
+                    const customer_name = data['data']['customer_name']
+                    console.log("order delivered successfully to ", customer_name)
                 }
             }
 

@@ -23,10 +23,20 @@ class IsCarrierOfVendor(BasePermission):
         return carrier.vendor == order_obj.vendor and carrier.is_active == True
 
 
-class IsOrderWaitingState(BasePermission):
-    """prevents any order if not in 'waiting' status to be marked as carrying"""
+class IsOrderPreparingState(BasePermission):
+    """prevents any order if not in 'preparing' status to be marked as carrying"""
     def has_object_permission(self, request, view, order_obj):
-        if order_obj.status != ORDER_STATUS_CHOICES[1][0]:
+        if order_obj.status != ORDER_STATUS_CHOICES[2][0]:
+            return False
+        return True
+
+
+class IsOrderCarryingState(BasePermission):
+    """prevents any order if not in 'waiting' status to be marked as carrying"""
+
+    def has_object_permission(self, request, view, order_obj):
+        if order_obj.status != ORDER_STATUS_CHOICES[3][0]:
+            print("not in carrying mode")
             return False
         return True
 
