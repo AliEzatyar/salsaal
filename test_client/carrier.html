@@ -1,10 +1,16 @@
 <script>
     // creating vendor channel socket 
-    const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwNDQ2MTkxLCJpYXQiOjE3NTAwNzgxOTEsImp0aSI6IjRkMTA5N2I0NmI2ZTQ5MWE4YzA3OWExYzBjMmQ5NjI5IiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.rvo6l4EUX2v_B_PDXir9vad-3vLl2Acp2Ae6TPpYATw" // take out of localstorage
+    // const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwNDQ2MTkxLCJpYXQiOjE3NTAwNzgxOTEsImp0aSI6IjRkMTA5N2I0NmI2ZTQ5MWE4YzA3OWExYzBjMmQ5NjI5IiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.rvo6l4EUX2v_B_PDXir9vad-3vLl2Acp2Ae6TPpYATw" // take out of localstorage
+    // rest.ahmadyar.pro
+    const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgxNDUxLCJpYXQiOjE3NTA1MTM0NTEsImp0aSI6ImMyMDY1ZDFhMTQ2NDRkMjZiNzIwMjE5MDcxMGI3MmNhIiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.Ez70NoOjvzBO8Y_TRdZO3XqnEEntZzjfC2HJ0VDqVoU"
+
     const carrier_token = "Bearer " + token_only
     const vendor_id = 2 // every carrier should have its vendor id
-    const domain = "http://127.0.0.1:8000"
-    const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
+    // const domain = "http://127.0.0.1:8000"
+    // const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
+    const domain = "https://rest.ahmadyar.pro"
+    const ws_domain = "wss://rest.ahmadyar.pro/ws" // use general one
+
     const ws_url = ws_domain + `/notf/vdor/${vendor_id}/?token=${token_only}`
 
     const vendorChannelSocket = new WebSocket(ws_url)
@@ -21,8 +27,7 @@
         const requestOptions = {
             method: "POST",
             headers: myHeaders,
-            body: JSON.stringify({ "order_id": 118  }),
-            // body: formdata,
+            body: JSON.stringify({ "order_id": 96  }),
             redirect: "follow"
         };
 

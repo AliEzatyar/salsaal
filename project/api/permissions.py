@@ -9,7 +9,7 @@ class IsCarrierOfVendor(BasePermission):
     """this handle both order permission and carrier permission"""
 
     def has_permission(self, request, view):
-        """first, is it a carrier"""
+        """first, is it a carrier and is it active"""
         if not hasattr(request.user, "carrier"):
             raise PermissionDenied(detail="user_not_carrier")
         if not request.user.carrier.is_active:
