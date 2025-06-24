@@ -4,14 +4,6 @@ from . import views
 
 app_name = "carrier"
 
-# Router Setup for
-router = DefaultRouter()
-
-
-# see orders as vendor
-router.register(
-    r"carrier-orders", views.CarrierOrdersApiView, basename="carrier-orders"
-)
 
 
 urlpatterns = [
@@ -24,5 +16,5 @@ urlpatterns = [
         "set-order-state-carrying/",
         views.SetOrderStateCarrying.as_view(),
     ),
-    path("", include(router.urls)),
+    path("my-order/", views.CarrierOrderApiView.as_view() ),
 ]

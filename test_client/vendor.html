@@ -44,13 +44,13 @@
 
 
         // creating vendor channel socket 
-        // const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MzEzMTY4LCJpYXQiOjE3NDg5NDUxNjgsImp0aSI6IjZjMGRjYTQyOTljMDQ1OTg4YTU4MDhlMjcyZmVjZTI4IiwidXNlcl9pZCI6NSwicm9sZSI6MX0.DG6Qk9UQEx0yyVtLmdOgHZF4Bst16twc7e0ufLjDHgQ" // take out of localstorage
-        // const domain = "http://127.0.0.1:8000"
-        // const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
-        const domain = "https://rest.ahmadyar.pro"
-        const ws_domain = "wss://rest.ahmadyar.pro/ws" // use general one
-        const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgyNzQxLCJpYXQiOjE3NTA1MTQ3NDEsImp0aSI6IjE4YmY3OTg0YTg4YTRmYzRhYThmOWI2M2UzZGYxMWFiIiwidXNlcl9pZCI6NSwicm9sZSI6MX0.mLtnEC3-7_oes5orqMgJw1JoH_U0T7NyFKs2Oiy5dfY" // take out of localstorage
-        
+        const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MzEzMTY4LCJpYXQiOjE3NDg5NDUxNjgsImp0aSI6IjZjMGRjYTQyOTljMDQ1OTg4YTU4MDhlMjcyZmVjZTI4IiwidXNlcl9pZCI6NSwicm9sZSI6MX0.DG6Qk9UQEx0yyVtLmdOgHZF4Bst16twc7e0ufLjDHgQ" // take out of localstorage
+        const domain = "http://127.0.0.1:8000"
+        const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
+        // const domain = "https://rest.ahmadyar.pro"
+        // const ws_domain = "wss://rest.ahmadyar.pro/ws" // use general one
+        // const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgyNzQxLCJpYXQiOjE3NTA1MTQ3NDEsImp0aSI6IjE4YmY3OTg0YTg4YTRmYzRhYThmOWI2M2UzZGYxMWFiIiwidXNlcl9pZCI6NSwicm9sZSI6MX0.mLtnEC3-7_oes5orqMgJw1JoH_U0T7NyFKs2Oiy5dfY" // take out of localstorage
+
         const vendor_token = "Bearer " + token_only
         const vendor_id = 2 // take out of localstorage
         const url = ws_domain + `/notf/vdor/${vendor_id}/?token=${token_only}`
@@ -60,12 +60,6 @@
             console.log("reloading...")
             window.location.reload()
         })
-
-        // window.addEventListener("online", (e) => {
-        //     console.log("reloading...")
-        //     window.location.reload()
-        // })
-
         vendorChannelSocket.onopen = (e) => {
             console.log("connected vendor socket")
         }
@@ -106,11 +100,10 @@
                         }
                     }
                 }
-                // #4 final cusotmer answer
                 else if (notf_type == "customer_answer") {
                     const answer = data['data']['answer']
                     console.log(data['data']['answer'], ":answer of customer")
-                    // set order as accepted/rejected
+                    // ------------------------ setting order as accepted/rejected and preparing
                     const orderId = data['data']['order_id']
                     let payload = JSON.stringify({
                         "id": orderId,
@@ -133,22 +126,67 @@
                         redirect: "follow"
                     };
                     const acceptOrderUrl = domain + "/api/vendor/ar-order/"
+
                     fetch(acceptOrderUrl, acceptOrderOptions)
                         .then((response) => response.text())
                         .then((result) => {
                             console.log(result, "result of order set as a/r")
 
-                        })
 
+                            // -------------------------- setting order as carrying
+                            if (answer == true) {
+                                const setCarryingUrl = domain + "/api/carrier/set-order-state-carrying/";
+                                const carrier_id = 11 // should be choosen by vendor 
+                                let headers = new Headers();
+                                headers.append("Content-Type", "application/json")
+                                headers.append("Authorization", vendor_token);
+                                const requestOptions = {
+                                    method: "POST",
+                                    headers: headers,
+                                    body: JSON.stringify({ "order_id": 146, "carrier_id": carrier_id }),
+                                    redirect: "follow"
+                                };
+                                fetch(setCarryingUrl, requestOptions)
+                                    .then((response) => {
+                                        console.log("Status code:", response.status); // 👉 Get the status code
+                                        return response.json().then(data => ({
+                                            status: response.status,
+                                            body: data
+                                        }));
+                                    })
+                                    .then(({ status, body }) => {
+                                        if (status == 403) {
+                                            console.log("not allowed", body)
+                                        }
+                                        else if (status == 201) {
+                                            const customer_id = 7 // this is set when vendor chooses and order to set as carrying using order.user
+                                            const customer_ws_url = ws_domain + `/notf/cstmr/${customer_id}/?token=${token_only}`
+                                            console.log(customer_ws_url, "custmer channel url")
+                                            const customerChannelSocket = new WebSocket(customer_ws_url)
+                                            customerChannelSocket.onopen = (e) => {
+                                                customerChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_id": body['notf_id'], 'notf_type': "order_carrying", "data": "null" }))
+                                                console.log("notification of carrying state sent to customer")
+                                                console.log(body, "result of set carrying state")
+                                            }
+                                        }
+                                        else {
+                                            console.log("unkown server error")
+                                        }
+                                    }
+                                    )
+                            }
+                        })
                 }
                 else if (notf_type == "order_carrying") {
                     console.log("carrier is moving food")
-
                 }
                 else if (notf_type == "order_delivered") {
                     console.log(data)
                     const customer_name = data['data']['customer_name']
                     console.log("order delivered successfully to ", customer_name)
+                }
+                else if (notf_type == "location_data") {
+                    console.log("location data", data['data'])
                 }
             }
 

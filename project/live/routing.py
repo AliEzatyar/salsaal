@@ -1,7 +1,7 @@
 from django.urls import re_path
-from .consumers import NotificationConsumer
+from .consumers import Consumer
 
 
 websocket_urlpatterns = [
-    re_path(r"ws/notf/(?P<for>[\w-]+)/(?P<id>\d+)/$", NotificationConsumer.as_asgi()),
+    re_path(r"ws/notf/(?P<for>[\w-]+)/(?P<id>\d+)/$", Consumer.as_asgi()),
 ]

@@ -1,17 +1,17 @@
 <script>
     // details for connection
-    // const domain = "http://127.0.0.1:8000"
-    // const wbs_domain = "ws://127.0.0.1:8000/ws"
-    // const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUxMDE5Njg1LCJpYXQiOjE3NDg0Mjc2ODUsImp0aSI6IjIzODVhOGUwZjc4ZDRkODE5MDg0OTRjZmFkYmJlY2ZiIiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.zvwsG0ZY5FUwbdC9jsB2GtvbvrDV4jgWYuslMfr9m1U"
-    const domain = "https://rest.ahmadyar.pro"
-    const wbs_domain = "wss://rest.ahmadyar.pro/ws"
-    const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgyNDM1LCJpYXQiOjE3NTA1MTQ0MzUsImp0aSI6Ijg1ODMxNTliYmExNDQwNWE4NDMwNTllNTc3ODIyZTU0IiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.q70xP4U8XDbGID954TUzGs6uj7B82k44i2aaY_CIMps"
+    const domain = "http://127.0.0.1:8000"
+    const wbs_domain = "ws://127.0.0.1:8000/ws"
+    const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUxMDE5Njg1LCJpYXQiOjE3NDg0Mjc2ODUsImp0aSI6IjIzODVhOGUwZjc4ZDRkODE5MDg0OTRjZmFkYmJlY2ZiIiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.zvwsG0ZY5FUwbdC9jsB2GtvbvrDV4jgWYuslMfr9m1U"
+    // const domain = "https://rest.ahmadyar.pro"
+    // const wbs_domain = "wss://rest.ahmadyar.pro/ws"
+    // const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgyNDM1LCJpYXQiOjE3NTA1MTQ0MzUsImp0aSI6Ijg1ODMxNTliYmExNDQwNWE4NDMwNTllNTc3ODIyZTU0IiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.q70xP4U8XDbGID954TUzGs6uj7B82k44i2aaY_CIMps"
 
 
     const client_token = "Bearer " + only_token
-    const client_id = 7
+    const customer_id = 7
     // connecting to customer's channel 
-    const url = wbs_domain + `/notf/cstmr/${client_id}/?token=${only_token}`
+    const url = wbs_domain + `/notf/cstmr/${customer_id}/?token=${only_token}`
     var vendorChannelSocket;
     const customerChannelSocket = new WebSocket(url)
     // reloading whole page after internet disconnection
@@ -71,7 +71,7 @@
                             redirect: "follow"
                         };
 
-                        fetch(domain+"/api/order/user-orders/", requestOptions)
+                        fetch(domain + "/api/order/user-orders/", requestOptions)
                             .then((response) => response.json())
                             .then((result) => {
 
@@ -80,17 +80,6 @@
                                 const url = wbs_domain + `/notf/vdor/${result['order']['vendor']}/?token=${only_token}`
                                 console.log(url)
                                 vendorChannelSocket = new WebSocket(url)
-                                // vendorChannelSocket.onclose = (e) => {
-                                //     console.log("socket closed, retring after 1 sec")
-                                //     reconnectTimeout = setTimeout(() => {
-                                //         vendorChannelSocket = connectWebSocket(url);
-                                //     }, 1000);
-                                // }
-                                // vendorChannelSocket.onerror = (e) => {
-                                //     console.log("socket faced error")
-                                //     socket.close()
-                                // }
-                                // 1 sending notification if order has been created
                                 vendorChannelSocket.onopen = (e) => {
                                     vendorChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_id": result['notf_id'], 'notf_type': "new_order" }))
                                     console.log("message sent")
@@ -124,8 +113,8 @@
             }
             else if (notf_type == "order_carrying") {
                 console.log("carrier is moving food")
+
                 const otp = window.prompt("enter the otp")
-                
                 // ------------------------ setting order as delivered
                 const setDeliveredUrl = domain + "/api/carrier/set-order-state-delivered/";
                 const headers = new Headers();
@@ -134,7 +123,8 @@
                 const requestOptions = {
                     method: "POST",
                     headers: headers,
-                    body: JSON.stringify({ "order_id": 96 ,
+                    body: JSON.stringify({
+                        "order_id": 146,
                         "otp": otp
                     }),
                     redirect: "follow"
@@ -150,14 +140,14 @@
                         }));
                     })
                     .then(({ status, data }) => {
-                        console.log(data,"data -body")
+                        console.log(data, "data -body")
                         if (status == 403) {
                             console.log("not allowed")
                         }
 
                         else if (status == 202) {
-                            console.log("order set as delivered",data)
-                            
+                            console.log("order set as delivered", data)
+
                             vendorChannelSocket.send(JSON.stringify({
                                 "type": "share_notf", "notf_type": "order_delivered",
                                 "data": { "customer_name": data['customer_name'] }
@@ -165,15 +155,17 @@
 
                             console.log("Notification of delivered status sent to vendor")
                         }
-                        else if (status == 400){
+                        else if (status == 400) {
                             console.log("something is missing")
                         }
-                        else{
+                        else {
                             console.log("uknown error")
                         }
                     })
             }
-
+            else if (notf_type == "location_data") {
+                console.log(data['data'],"location data comming")
+            }
         }
 
     }

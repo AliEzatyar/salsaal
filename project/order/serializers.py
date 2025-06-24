@@ -124,8 +124,10 @@ class CarrierOrderSerializer(ModelSerializer):
             "paid",
             "is_credit",
             "created_at",
+            "user",
+            "vendor"
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at',"user"]
         
     def get_customer_name(self, obj):
         return obj.user.first_name + obj.user.last_name

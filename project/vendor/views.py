@@ -252,6 +252,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         user.role = CUSTOMER
         user.save()
 
+
 class VendorRevenueView(views.APIView):
     permission_classes = [IsVendor, permissions.IsAuthenticated]
 
