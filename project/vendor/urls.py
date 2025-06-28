@@ -40,5 +40,9 @@ urlpatterns = [
         "add-carrier/",
         views.AddCarrierAPIView.as_view(),
     ),
+    path(
+        "carriers-now/",
+        views.CarriersNow.as_view(),
+    ),
     path("", include(router.urls)),
 ]

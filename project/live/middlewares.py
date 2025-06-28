@@ -3,6 +3,7 @@ from channels.middleware import BaseMiddleware
 from channels.db import database_sync_to_async
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from jwt import InvalidTokenError
+from rest_framework_simplejwt.exceptions import InvalidToken
 from urllib.parse import parse_qs
 
 
@@ -24,7 +25,7 @@ class JWTAuthMiddleware(BaseMiddleware):
             try:
                 validated_token = JWTAuthentication().get_validated_token(token[0])
                 scope['user'] = await get_user(validated_token)
-            except InvalidTokenError:
+            except:
                 scope['user'] = AnonymousUser()
         else:
             scope["user"] = AnonymousUser()

@@ -22,3 +22,6 @@ django-channels
 channels-redis
 uvicorn[standard]
 gunicorn
+scikit-learn
+osmnx
+networkx

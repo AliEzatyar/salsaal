@@ -1,13 +1,23 @@
+import json
 from django.conf import settings
 from marketplace.models import Food
 from api.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
-from accounts.models import ADMIN, CARRIER, CARRIER_ADD_OTP_EXPIRATION, CUSTOMER, REST, User, UserOtp
-from carrier.models import Carrier
+from accounts.models import (
+    ADMIN,
+    CARRIER,
+    CARRIER_ADD_OTP_EXPIRATION,
+    CUSTOMER,
+    REST,
+    User,
+    UserOtp,
+)
+from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
 from accounts.utils import OTP_VERIFY_CARRIER, send_otp
+from marketplace.utils import estimate_travel_time, haversine_distance
 from vendor.models import OpeningHour
 from .serializers import OpeningHourSerializer, VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
@@ -22,6 +32,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotAcceptable
 from api.permissions import IsVendorOfCarrier
 from rest_framework import parsers, serializers
+from .utils import r
 
 # Create your views here.
 
@@ -119,10 +130,10 @@ class ManageOpeningHours(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         data = serializer.validated_data
-        weekday = data.get("weekday",None)
-        start_hour = data.get("start_hour",None)
+        weekday = data.get("weekday", None)
+        start_hour = data.get("start_hour", None)
         end_hour = data.get("end_hour", None)
-        is_holiday = data.get("is_holiday",None)
+        is_holiday = data.get("is_holiday", None)
 
         qs = self.get_queryset()
         # preventing repetition
@@ -141,10 +152,10 @@ class ManageOpeningHours(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         data = serializer.validated_data
-        weekday = data.get("weekday",None)
-        start_hour = data.get("start_hour",None)
+        weekday = data.get("weekday", None)
+        start_hour = data.get("start_hour", None)
         end_hour = data.get("end_hour", None)
-        is_holiday = data.get("is_holiday",None)
+        is_holiday = data.get("is_holiday", None)
 
         qs = self.get_queryset().exclude(id=serializer.instance.id)
         # preventing repetition
@@ -175,9 +186,7 @@ class AddCarrierAPIView(views.APIView):
         if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
             raise NotAcceptable(detail="You are not allowed", code=403)
         elif account.role == CARRIER:
-            raise serializers.ValidationError(
-                {"error": "already_exists"}
-            )
+            raise serializers.ValidationError({"error": "already_exists"})
 
         # sending otp
         send_otp(
@@ -208,8 +217,25 @@ class AddCarrierAPIView(views.APIView):
             profile = user.profile
             vendor = self.request.user.vendor
             otp.delete()
-            Carrier.objects.create(user=user, user_profile=profile, vendor=vendor)
+            carrier = Carrier.objects.create(
+                user=user, user_profile=profile, vendor=vendor
+            )
             user.save()
+            # setting carrier live status in redis
+            carrier_key = f"carrier:{carrier.id}:live"
+            vendor_location = self.request.user.profile.location
+            vendor_location = (vendor_location.y, vendor_location.x)
+            customer_location = vendor_location
+            r.set(
+                carrier_key,
+                json.dumps(
+                    {
+                        "return_estimate": 0,
+                        "location": vendor_location,
+                        "destination": customer_location,
+                    }
+                ),
+            )
             return Response(status=status.HTTP_201_CREATED)
 
         except UserOtp.DoesNotExist:
@@ -217,7 +243,7 @@ class AddCarrierAPIView(views.APIView):
                 {"error": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            print("error",e)
+            print("error", e)
             return Response(
                 {"error": "UKNOWN_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -251,6 +277,54 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         instance.delete()
         user.role = CUSTOMER
         user.save()
+
+
+class CarriersNow(views.APIView):
+    """this view returns list of vendor carriers sorted by nearst to farthest ones"""
+
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get(self, *args, **kwargs):
+        carriers = Carrier.objects.filter(
+            vendor__id=self.request.user.vendor.id, is_active=True  # should be changed
+        )
+        live_vendor_carriers = []  # final list being returned
+        for carrier in carriers:
+            try:
+                carrier_key = f"carrier:{carrier.id}:live"
+                carrier_live_data = json.loads(r.get(carrier_key))
+                carrier_current_location = carrier_live_data["location"]
+                vendor_location = self.request.user.profile.location
+                vendor_location = (vendor_location.y, vendor_location.x)
+                city = self.request.user.profile.city  # vendor city
+                time = 0
+                if carrier.status == CARRIER_STATUS_CHOICES[0][0]:  # if carrier is free
+                    distance_m = (
+                        haversine_distance(*vendor_location, *carrier_current_location)
+                        * 1000
+                    )  # meters
+                    print("distance", distance_m)
+                    if distance_m > 100:  # if carrier is not earby the resturant
+                        time = estimate_travel_time(
+                            carrier_current_location, vendor_location, city
+                        )
+                else:  # carrier has not reached to customer yet
+                    customer_location = carrier_live_data["destination"]
+                    time = estimate_travel_time(
+                        carrier_current_location, customer_location, "kabul"
+                    ) + (carrier_live_data["return_estimate"] / 2)
+                details = {"name": carrier.name, "return_time": time}
+                live_vendor_carriers.append(details)
+                print("appended without error")
+            except Exception as e:
+                print("error occured while fetching live carriers status", e, e.args)
+                details = {"name": carrier.name, "return_time": 0}
+                live_vendor_carriers.append(details)
+
+        live_vendor_carriers.sort(
+            key=lambda x: int(x["return_time"])
+        )  # sorting by nearst to longest carriers
+        return Response({"carriers": live_vendor_carriers}, status=status.HTTP_200_OK)
 
 
 class VendorRevenueView(views.APIView):
@@ -396,5 +470,12 @@ class AcceptRejectOrderView(views.APIView):
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print("error:",e.args, e)
+            print("error:", e.args, e)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class CalculateOrderTime(views.APIView):
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get(self,*args, **kwargs):
+        pass

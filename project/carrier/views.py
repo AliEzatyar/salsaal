@@ -24,7 +24,8 @@ from accounts.models import (
 from accounts.utils import OTP_VERIFY_CARRIER, generate_otp
 from django.contrib.contenttypes.models import ContentType
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
-
+from marketplace.utils import estimate_travel_time
+from vendor.utils import r
 
 # Create your views here.
 
@@ -111,6 +112,23 @@ class SetOrderStateCarrying(views.APIView):
             order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
             order.save()
             carrier.save()
+            # setting carrier live status in redis
+            carrier_key = f"carrier:{carrier_id}:live"
+            vendor_location = self.request.user.profile.location
+            vendor_location = (vendor_location.y,vendor_location.x)
+            customer_location = order.user.profile.location
+            customer_location = (customer_location.y,customer_location.x)
+            city = self.request.user.profile.city
+            city = city.lower()
+            carrier_return_estimate = 2 * estimate_travel_time(vendor_location, customer_location, city)
+            r.set(
+                carrier_key,
+                json.dumps({
+                    "return_estimate": carrier_return_estimate,
+                    "location": vendor_location,
+                    "destination": customer_location
+                }),
+            )
             # ---------------------- creating notification
             notf = Notification.objects.create(
                 title="Order set as carrying",
@@ -119,6 +137,8 @@ class SetOrderStateCarrying(views.APIView):
                 ct=ContentType.objects.get_for_model(Order),
                 data=json.dumps({}),
             )
+            # ---------------------- setting carrier data to redis
+
             # response
             return Response(
                 {

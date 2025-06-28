@@ -1,6 +1,10 @@
 from math import sin, cos, radians, sqrt, atan2
 import redis
 from django.conf import settings as s
+import osmnx as ox
+import pickle
+import zlib
+import networkx as nx
 
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 
@@ -80,24 +84,25 @@ class BoughtTogetherRecommender:
 
 class BestVendorsCounter:
     """THis class save view counts and return most viewd vendor ids"""
+
     def __init__(self, city):
         self.redis = r
         self.top_vendors_key = "top_vendors:{city}:city"
 
     def update_counts(self, pk):
-        """increases view count of a vendor in the sorted set """
+        """increases view count of a vendor in the sorted set"""
         r.zincrby(self.top_vendors_key, 1, pk)
 
     def read_counts(self, max_results=5):
         """returns ids of most viewed vendors in the city"""
         top = r.zrange(self.top_vendors_key, 0, -1, desc=True)[:max_results]
-        return list(map(int,top))
+        return list(map(int, top))
 
 
 class BestFoodsCounter:
     """THis class save view counts and return most viewd food ids"""
 
-    def __init__(self,city):
+    def __init__(self, city):
         self.redis = r
         self.best_foods_key = "best_foods:{city}:city"
 
@@ -109,3 +114,37 @@ class BestFoodsCounter:
         """returns ids of most viewed foods in the city"""
         best = r.zrange(self.best_foods_key, 0, -1, desc=True)[:max_results]
         return list(map(int, best))
+
+
+point = (34.495515, 69.032732)
+
+
+def get_graph(key, pnt):
+    if r.exists(key):
+        pickled = r.get(key)
+        G = pickle.loads(pickled)
+        print("map token out of redis")
+    else:
+        G = ox.graph_from_point(pnt, 20000, network_type="drive")
+        pickled = pickle.dumps(G)
+        r.set(key, pickled)
+        print("map saved to redis")
+
+    return G
+
+
+def estimate_travel_time(origin, destination,city,avg_speed=30):
+    # getting whole city graph
+    graph = get_graph(city,origin)
+    # getting distance
+    node1 = ox.nearest_nodes(graph, origin[1], origin[0]) # origin
+    node2 = ox.nearest_nodes(graph, destination[1], destination[0]) # destination
+    route = ox.shortest_path(graph,node1,node2,weight="length") # shortest route
+    distance_m = nx.path_weight(graph,route,"length") # distance
+    print(distance_m)
+    travel_time_min = (distance_m/1000)/ avg_speed * 60
+    return travel_time_min
+
+# print(haversine_distance(*point, *(34.495515, 69.1)))
+# time = estimate_travel_time(point, (34.495515, 69.1),"kabul")
+# print(time,"minutes")

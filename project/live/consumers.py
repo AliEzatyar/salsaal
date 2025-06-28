@@ -1,8 +1,20 @@
+import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
 from json import loads, dumps
-import os
 from live.models import Notification
+from django.conf import settings as s
+from redis.asyncio import Redis
+
+from carrier.models import Carrier
+r = Redis(host=s.REDIS_HOST, port=s.REDIS_PORT, db=s.REDIS_DB)
+
+# Wrappers
+def get_redis_value(key):
+    return r.get(key)
+
+
+def set_redis_value(key, value):
+    return r.set(key, value)
 
 
 class Consumer(AsyncWebsocketConsumer):
@@ -14,6 +26,7 @@ class Consumer(AsyncWebsocketConsumer):
         if not user.is_authenticated:
             await self.close()
             return
+        self.user = user
         # set up group and accept connection
         self.notf_for = self.scope["url_route"]["kwargs"]["for"]
         self.group_id = self.scope["url_route"]["kwargs"]["id"]  # vendor id
@@ -83,6 +96,26 @@ class Consumer(AsyncWebsocketConsumer):
                         },
                     )
                 elif notf_type == "location_data":
+                    # updating carriers location in redis
+                    try:
+                        carrier = await Carrier.objects.aget(user=self.user)
+                        carrier_id = carrier.id
+                        carrier_key = f"carrier:{carrier_id}:live"
+                        location_data = data["data"]
+                        location_data = (location_data["lat"], location_data["lon"])
+                        raw_data = await r.get(carrier_key)
+                        carrier_details = json.loads(raw_data)  # coroutine arg denied
+                        carrier_details["location"] = location_data
+                        await r.set(
+                            carrier_key,
+                            json.dumps(carrier_details),
+                        )
+
+                    except Exception as e:
+                        print(
+                            "error occured while updating carrier locaiton", e.args, e
+                        )
+                        pass
                     await self.channel_layer.group_send(
                         self.group_name,
                         {

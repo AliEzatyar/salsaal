@@ -136,14 +136,14 @@
                             // -------------------------- setting order as carrying
                             if (answer == true) {
                                 const setCarryingUrl = domain + "/api/carrier/set-order-state-carrying/";
-                                const carrier_id = 11 // should be choosen by vendor 
+                                const carrier_id = 14 // should be choosen by vendor 
                                 let headers = new Headers();
                                 headers.append("Content-Type", "application/json")
                                 headers.append("Authorization", vendor_token);
                                 const requestOptions = {
                                     method: "POST",
                                     headers: headers,
-                                    body: JSON.stringify({ "order_id": 146, "carrier_id": carrier_id }),
+                                    body: JSON.stringify({ "order_id": 179, "carrier_id": carrier_id }),
                                     redirect: "follow"
                                 };
                                 fetch(setCarryingUrl, requestOptions)
