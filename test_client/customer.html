@@ -98,12 +98,14 @@
 
 
     // 3 sending answer of customer
+    var order_id;
     customerChannelSocket.onmessage = async (e) => {
         const data = JSON.parse(e['data'])
         console.log(data, "data came to customer")
         if (data['type'] == "recv_notf") {
             const notf_type = data["notf_type"]
             if (notf_type == "vendor_answer") {
+                order_id = data['data']['order_id'] 
                 console.log(data['data'], ":intial answer of vendor")
                 vendorChannelSocket.send(JSON.stringify({
                     "type": "share_notf", "notf_type": "customer_answer",
@@ -124,7 +126,7 @@
                     method: "POST",
                     headers: headers,
                     body: JSON.stringify({
-                        "order_id": 179,
+                        "order_id": order_id,
                         "otp": otp
                     }),
                     redirect: "follow"

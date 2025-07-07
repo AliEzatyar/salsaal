@@ -18,6 +18,7 @@ from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
 from accounts.utils import OTP_VERIFY_CARRIER, send_otp
 from marketplace.utils import estimate_travel_time, haversine_distance
+from cart.models import Cart
 from vendor.models import OpeningHour
 from .serializers import OpeningHourSerializer, VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
@@ -78,7 +79,8 @@ class ConvertToVendorAPIView(views.APIView):
         body: vendor_name
         """
         # if user is already a vendor
-        if self.request.user.role in (REST, CARRIER, ADMIN):
+        user = self.request.user
+        if user.role in (REST, CARRIER, ADMIN):
             return Response(
                 {"error": "user is not allowed to convert to vendor"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -87,8 +89,11 @@ class ConvertToVendorAPIView(views.APIView):
         data = self.request.data
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         ser.is_valid(raise_exception=True)
-        ser.save()
-
+        instance = ser.save()
+        user.cart.delete()
+        # setting vendor's carriers in redis
+        vendor_carriers_key = f"vendor:{instance.id}:carriers"
+        r.hset(vendor_carriers_key, mapping={"f_c_c": 0, "b_c_c": 0, "total_c_c": 0})
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
@@ -212,15 +217,26 @@ class AddCarrierAPIView(views.APIView):
                 return Response(
                     {"error": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
                 )
-            user = otp.user
-            user.role = CARRIER
-            profile = user.profile
+            carrier_user_account = otp.user
+            profile = carrier_user_account.profile
             vendor = self.request.user.vendor
-            otp.delete()
             carrier = Carrier.objects.create(
-                user=user, user_profile=profile, vendor=vendor
+                user=carrier_user_account, user_profile=profile, vendor=vendor
             )
-            user.save()
+            carrier_user_account.role = CARRIER
+            otp.delete()
+            carrier_user_account.cart.delete()
+            carrier_user_account.save()
+            # increasing carrier's count for vendor
+            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
+            total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
+            if not f_c_c:
+                f_c_c = 0
+            f_c_c = int(f_c_c) + 1
+            total_c_c = int(total_c_c) + 1
+            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+            r.hset(vendor_carriers_key, "total_c_c", total_c_c)
             # setting carrier live status in redis
             carrier_key = f"carrier:{carrier.id}:live"
             vendor_location = self.request.user.profile.location
@@ -236,6 +252,7 @@ class AddCarrierAPIView(views.APIView):
                     }
                 ),
             )
+
             return Response(status=status.HTTP_201_CREATED)
 
         except UserOtp.DoesNotExist:
@@ -251,7 +268,7 @@ class AddCarrierAPIView(views.APIView):
 
 class ManageCarrierViewSet(viewsets.ModelViewSet):
     """
-    this view is only accessible by a vendor to manage carriers
+    This view is only accessible by a vendor to manage carriers
     GET, PATCH, DELETE
     UPDATEable: is_active, id_document
     """
@@ -276,6 +293,16 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         user = instance.user
         instance.delete()
         user.role = CUSTOMER
+        Cart.objects.create(user=user)
+        vendor = self.request.user.vendor
+        # decreasing carrier's count
+        vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+        total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
+        total_c_c = int(total_c_c) - 1
+        f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
+        f_c_c = int(f_c_c) - 1
+        r.hset(vendor_carriers_key, "total_c_c", total_c_c)
+        r.hset(vendor_carriers_key, "f_c_c", f_c_c)
         user.save()
 
 
@@ -286,10 +313,11 @@ class CarriersNow(views.APIView):
 
     def get(self, *args, **kwargs):
         carriers = Carrier.objects.filter(
-            vendor__id=self.request.user.vendor.id, is_active=True  # should be changed
+            vendor__id=self.request.user.vendor.id, is_active=True
         )
         live_vendor_carriers = []  # final list being returned
         for carrier in carriers:
+
             try:
                 carrier_key = f"carrier:{carrier.id}:live"
                 carrier_live_data = json.loads(r.get(carrier_key))
@@ -315,9 +343,8 @@ class CarriersNow(views.APIView):
                     ) + (carrier_live_data["return_estimate"] / 2)
                 details = {"name": carrier.name, "return_time": time}
                 live_vendor_carriers.append(details)
-                print("appended without error")
             except Exception as e:
-                print("error occured while fetching live carriers status", e, e.args)
+                print("error occured while fetching live carrier status", e, e.args)
                 details = {"name": carrier.name, "return_time": 0}
                 live_vendor_carriers.append(details)
 
@@ -328,10 +355,12 @@ class CarriersNow(views.APIView):
 
 
 class VendorRevenueView(views.APIView):
+    """THis view returns vendor revenue from different aspects"""
+
     permission_classes = [IsVendor, permissions.IsAuthenticated]
 
     def get(self, *args, **kwargs):
-        """THis view returns vendor revenue"""
+        """this method returns monthly, weekly and today's revenue"""
         vendor = self.request.user.vendor
         orders = Order.objects.filter(status="delivered", vendor=vendor)
         one_month_ago = tz.now() - tz.timedelta(days=30)
@@ -376,7 +405,7 @@ class VendorRevenueView(views.APIView):
 
     def post(self, *args, **kwargs):
         """
-        this method returns vendor revenue in custom range
+        This method returns vendor revenue in custom range
         date format:
             "YYYY-MM-DDTHH:MM:SSZ" --- utc
              //     //  /   //  +4:30 AF
@@ -389,15 +418,15 @@ class VendorRevenueView(views.APIView):
                 {"detail": "please provide start date and end date in AD"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        start_date = date_parser(start_date)
-        end_date = date_parser(end_date)
+        parser = date_parser()
+        start_date = parser.parse(start_date)
+        end_date = parser.parse(end_date)
         if tz.is_naive(start_date):
             start_date = tz.make_aware(date_parser(start_date))  #
         if tz.is_naive(start_date):
             end_date = tz.make_aware(date_parser(end_date))
 
         vendor = self.request.user.vendor
-        # --------------- this month revenue
         orders = Order.objects.filter(
             vendor=vendor,
             status="delivered",
@@ -406,15 +435,18 @@ class VendorRevenueView(views.APIView):
         )
         total_revenue = orders.annotate(
             vendor_earning=ExpressionWrapper(
-                F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
+                F("total_price")
+                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
                 output_field=DecimalField(),
             )
-        ).aggregate(Sum("vendor_earning"))
+        ).aggregate(total=Sum("vendor_earning"))
 
-        return Response({"total-revenue": total_revenue})
+        return Response({"total-revenue": total_revenue["total"]})
 
 
 class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
+    """This enables a vendor to see past orders it completed successfully."""
+
     serializer_class = VOrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
     # ordering
@@ -436,14 +468,14 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
 
 class AcceptRejectOrderView(views.APIView):
     """
-    input: [id:int, accepted:bool]
+    THis view enables a vendor either accept or reject the new order. It adjusts order status appropriately.
     """
 
     permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
 
     def post(self, *args, **kwargs):
         data = self.request.data
-        order_id = data["id"]
+        order_id = data["order_id"]
         accepted = data["accepted"]
 
         try:
@@ -452,7 +484,10 @@ class AcceptRejectOrderView(views.APIView):
             self.check_object_permissions(self.request, order)
             # only 'waiting' order can be set to preparing
             if not order.status == ORDER_STATUS_CHOICES[1][1]:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(
+                    {"detail", "order_not_waiting_state"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             # accepted
             if accepted == True:
                 order.status = ORDER_STATUS_CHOICES[2][1]
@@ -475,7 +510,61 @@ class AcceptRejectOrderView(views.APIView):
 
 
 class CalculateOrderTime(views.APIView):
-    permission_classes = [permissions.IsAuthenticated, IsVendor]
+    """
+    This view takes new order id and estimates new order reaching-time considering
+    preparing orders count, free carriers count and total carriers count of vendor
+    returns {"estimated":integer}
+    """
 
-    def get(self,*args, **kwargs):
-        pass
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
+
+    def get(self, *args, **kwargs):
+        # ------------------ estimating only this order distance and reach time
+        request_data = self.request.query_params
+        new_order_id = request_data["order_id"]
+        order = Order.objects.get(id=int(new_order_id))
+        # check if the vendor owns this order
+        self.check_object_permissions(self.request, order)
+        # ------------------ calculating rough distance time estimate for new order
+        user_location = order.user.profile.location
+        user_location = (user_location.y, user_location.x)  # as lat,lon
+        vendor = self.request.user.vendor
+        vendor_location = vendor.user_profile.location
+        vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
+        estimated = estimate_travel_time(
+            vendor_location, user_location, vendor.user_profile.city.lower()
+        )
+
+        # ----------------- getting total free carriers and total preparing orders
+        vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+        _3_hours_ago = tz.now() - tz.timedelta(hours=3)
+        preparing_orders_count = Order.objects.filter(
+            vendor=vendor,
+            status=ORDER_STATUS_CHOICES[2][0],  # preparing
+            created_at__gte=_3_hours_ago,
+        ).count()
+        free_carriers_count = int(json.loads(r.hget(vendor_carriers_key, "f_c_c")))
+        total_carriers_count = int(json.loads(r.hget(vendor_carriers_key, "total_c_c")))
+        total_time = estimated
+        print("estimated....", estimated, total_carriers_count, free_carriers_count)
+        # ----------------- applying conditions and estimating final ...
+        if preparing_orders_count <= total_carriers_count:
+            print("in first condition")
+            if preparing_orders_count < free_carriers_count:
+                total_time = estimated
+            elif preparing_orders_count >= free_carriers_count:
+                print("preparing greater than free count")
+                total_time = estimated + 20
+        elif preparing_orders_count > total_carriers_count:
+            print("in second condition")
+            if free_carriers_count == 0:
+                total_time = (
+                    estimated
+                    + (20 * round(preparing_orders_count / total_carriers_count))
+                    + 10
+                )
+            else:
+                total_time = estimated + (
+                    20 * round(preparing_orders_count / total_carriers_count)
+                )
+        return Response({"estimated": total_time})

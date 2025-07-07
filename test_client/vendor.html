@@ -74,6 +74,22 @@
                     const boolValue = document.getElementById('boolInput').value === "true";
                     const sendBtn = document.getElementById("sendBtn")
                     const customerId = data['data']['user']
+                    // ---------- requesting estimation time for new order
+                    const esimateOrderTimeUrl = domain + "/api/vendor/estimate-order-time/?order_id=" + data['data']['id']
+                    const headersTimeEstimate = new Headers()
+                    headersTimeEstimate.append("Authorization", vendor_token)
+                    headersTimeEstimate.append("Content-Type", "application/json")
+                    const optionsTimeEstimate = {
+                        method: "GET",
+                        headers: headersTimeEstimate,
+                        redirect: "follow"
+                    };
+                    fetch(esimateOrderTimeUrl, optionsTimeEstimate).then((response) => response.json()).then(
+                        result => {
+                            console.log("order time estimate", result, result["estimated"])
+                            
+                        }
+                    )
                     showPopup()
                     // handling send button on click listener
                     sendBtn.onclick = (event) => {
@@ -111,7 +127,7 @@
                     })
                     if (answer == true) {
                         payload = JSON.stringify({
-                            "id": orderId,
+                            "order_id": orderId,
                             "accepted": true
                         })
                     }
@@ -133,7 +149,7 @@
                             console.log(result, "result of order set as a/r")
 
 
-                            // -------------------------- setting order as carrying
+                            // -------------------------- setting order as carrying after final answer
                             if (answer == true) {
                                 const setCarryingUrl = domain + "/api/carrier/set-order-state-carrying/";
                                 const carrier_id = 14 // should be choosen by vendor 
@@ -143,7 +159,7 @@
                                 const requestOptions = {
                                     method: "POST",
                                     headers: headers,
-                                    body: JSON.stringify({ "order_id": 179, "carrier_id": carrier_id }),
+                                    body: JSON.stringify({ "order_id": orderId, "carrier_id": carrier_id }),
                                     redirect: "follow"
                                 };
                                 fetch(setCarryingUrl, requestOptions)
@@ -153,7 +169,7 @@
                                             status: response.status,
                                             body: data
                                         }));
-                                    })
+                                    })  
                                     .then(({ status, body }) => {
                                         if (status == 403) {
                                             console.log("not allowed", body)

@@ -115,20 +115,33 @@ class SetOrderStateCarrying(views.APIView):
             # setting carrier live status in redis
             carrier_key = f"carrier:{carrier_id}:live"
             vendor_location = self.request.user.profile.location
-            vendor_location = (vendor_location.y,vendor_location.x)
+            vendor_location = (vendor_location.y, vendor_location.x)
             customer_location = order.user.profile.location
-            customer_location = (customer_location.y,customer_location.x)
+            customer_location = (customer_location.y, customer_location.x)
             city = self.request.user.profile.city
             city = city.lower()
-            carrier_return_estimate = 2 * estimate_travel_time(vendor_location, customer_location, city)
+            carrier_return_estimate = 2 * estimate_travel_time(
+                vendor_location, customer_location, city
+            )
             r.set(
                 carrier_key,
-                json.dumps({
-                    "return_estimate": carrier_return_estimate,
-                    "location": vendor_location,
-                    "destination": customer_location
-                }),
+                json.dumps(
+                    {
+                        "return_estimate": carrier_return_estimate,
+                        "location": vendor_location,
+                        "destination": customer_location,
+                    }
+                ),
             )
+            # ---------------- updating vendor's carriers in redis
+            vendor = self.request.user.vendor
+            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            b_c_c = json.loads(r.hget(vendor_carriers_key, "b_c_c"))  # busy carriers count
+            b_c_c = int(b_c_c) + 1  # increase it by one
+            r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
+            f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
+            f_c_c = int(f_c_c) - 1
+            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
             # ---------------------- creating notification
             notf = Notification.objects.create(
                 title="Order set as carrying",
@@ -156,12 +169,12 @@ class SetOrderStateCarrying(views.APIView):
             print(pd, pd.args)
             return Response({"error": "not_allowed"}, status=403)
 
-        except Exception as e:
-            print("error:", e, e.args)
+        # except Exception as e:
+        #     print("error:", e, e.args)
 
-            return Response(
-                {"detail", "unkown_error"}, status=status.HTTP_501_NOT_IMPLEMENTED
-            )
+        #     return Response(
+        #         {"detail", "unkown_error"}, status=status.HTTP_501_NOT_IMPLEMENTED
+        #     )
 
 
 class SetOrderStateDelivered(views.APIView):
@@ -197,15 +210,15 @@ class SetOrderStateDelivered(views.APIView):
             order.paid = True
             OTP.delete()
             order.save()
-            # ---------------------- creating notification
-            # Notification.objects.create(
-            #     title="Order delivered",
-            #     type="order_delivered",
-            #     object_id=order.id,
-            #     ct=ContentType.objects.get_for_model(Order),
-            #     data=json.dumps({}),
-            # )
-            print(order.user.get_full_name())
+            # ---------------- updating vendor's carriers in redis
+            vendor = order.vendor
+            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            b_c_c = r.hget(vendor_carriers_key, "b_c_c")  # busy carriers count
+            b_c_c = int(b_c_c) - 1  # decrementing busy carrier's count
+            r.hset(vendor_carriers_key, "b_c_c",b_c_c)  # updating busy carriers count
+            f_c_c = r.hget(vendor_carriers_key, "f_c_c")
+            f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
+            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
             return Response(
                 {
                     "message": "order_state_delivered",

@@ -44,5 +44,9 @@ urlpatterns = [
         "carriers-now/",
         views.CarriersNow.as_view(),
     ),
+    path(
+        "estimate-order-time/",
+        views.CalculateOrderTime.as_view(),
+    ),
     path("", include(router.urls)),
 ]

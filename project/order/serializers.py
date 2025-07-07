@@ -82,7 +82,7 @@ class VOrderItemSerializer(ModelSerializer):
         return obj.food_name
 
     def get_total_price(self, obj):
-        return obj.total_price
+        return obj.subtotal
 
 
 class VOrderSerializer(ModelSerializer):

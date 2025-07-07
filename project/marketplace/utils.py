@@ -5,25 +5,8 @@ import osmnx as ox
 import pickle
 import zlib
 import networkx as nx
-
+import time
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
-
-
-def haversine_distance(lat1, lon1, lat2, lon2):
-    lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
-    R = 6371  # Earth radius in kilometers
-
-    phi1 = radians(lat1)
-    phi2 = radians(lat2)
-
-    d_phi = radians(lat2 - lat1)
-    d_lambda = radians(lon2 - lon1)
-
-    a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
-
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-    return R * c  # distance in kilometers
 
 
 class BoughtTogetherRecommender:
@@ -116,17 +99,42 @@ class BestFoodsCounter:
         return list(map(int, best))
 
 
-point = (34.495515, 69.032732)
+def haversine_distance(lat1, lon1, lat2, lon2):
+    lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
+    R = 6371  # Earth radius in kilometers
+
+    phi1 = radians(lat1)
+    phi2 = radians(lat2)
+
+    d_phi = radians(lat2 - lat1)
+    d_lambda = radians(lon2 - lon1)
+
+    a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
+
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    return R * c  # distance in kilometers
+
+
+carrier_point = (34.5575556, 69.1335077)
+customer_point = (34.515424, 69.0937623)
 
 
 def get_graph(key, pnt):
     if r.exists(key):
+        t = time.time()
         pickled = r.get(key)
+        print("redis get", time.time() - t)
+        print("graph size", len(pickled) / 1e6, "MB")
+        t = time.time()
         G = pickle.loads(pickled)
+        print("pickle loading got", time.time() - t)
         print("map token out of redis")
     else:
         G = ox.graph_from_point(pnt, 20000, network_type="drive")
         pickled = pickle.dumps(G)
+        print("graph size", len(pickled) / 1e6, "MB")
+
         r.set(key, pickled)
         print("map saved to redis")
 
@@ -135,13 +143,17 @@ def get_graph(key, pnt):
 
 def estimate_travel_time(origin, destination,city,avg_speed=30):
     # getting whole city graph
+    t1 = time.time()
     graph = get_graph(city,origin)
+    print("graph got",time.time()-t1)
+    
+    t2 = time.time()
     # getting distance
     node1 = ox.nearest_nodes(graph, origin[1], origin[0]) # origin
     node2 = ox.nearest_nodes(graph, destination[1], destination[0]) # destination
     route = ox.shortest_path(graph,node1,node2,weight="length") # shortest route
     distance_m = nx.path_weight(graph,route,"length") # distance
-    print(distance_m)
+    print(distance_m,"distance",time.time()-t2)
     travel_time_min = (distance_m/1000)/ avg_speed * 60
     return travel_time_min
 

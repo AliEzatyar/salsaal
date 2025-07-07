@@ -26,18 +26,20 @@ def create_full_prof(sender, instance, created: bool, **kwargs):
         Cart.objects.get_or_create(user=instance)
 
 
-@receiver(post_save, sender=Vendor)
-def delete_cart_vendor(sender, instance, created: bool, **kwargs):
-    """this signal remove cart from user object when converted to vendor"""
-    if created:
-        if hasattr(instance,'cart'):
-            instance.user.cart.delete()
+# @receiver(post_save, sender=Vendor)
+# def delete_cart_vendor(sender, instance, created: bool, **kwargs):
+#     """this signal remove cart from user object when converted to vendor"""
+#     if created:
+#         if hasattr(instance,'cart'):
+#             print("cart deleted ")
+#             instance.user.cart.delete()
 
 
-@receiver(post_save, sender=Carrier)
-def delete_cart_carrier(sender, instance, created: bool, **kwargs):
-    """this signal remove cart from user object when converted to carrier"""
-    if created:
-        user = instance.user
-        if hasattr(user, "cart"):
-            user.cart.delete()
+# @receiver(post_save, sender=Carrier)
+# def delete_cart_carrier(sender, instance, created: bool, **kwargs):
+#     """this signal remove cart from user object when converted to carrier"""
+#     if created:
+#         user = instance.user
+#         if hasattr(user, "cart"):
+#             print("user cart deleted for converting to carrier")
+#             user.cart.delete()
