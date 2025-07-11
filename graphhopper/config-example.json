@@ -1,0 +1,30 @@
+{
+  "graphhopper": {
+    "graph.encoded_values": "road_class",
+    "datareader.file": "afghanistan.osm.pbf",
+    "graph.location": "graph-cache",
+    "profile": "car",
+    "profiles": [
+      {
+        "name": "car",
+        "profile": "custom",
+        "custom_model_files": ["custom-car.json"]
+      }
+    ],
+    "import.osm.ignored_highways": []
+  },
+  "server": {
+    "application_connectors": [
+      {
+        "type": "http",
+        "port": 8989
+      }
+    ],
+    "admin_connectors": [
+      {
+        "type": "http",
+        "port": 8990
+      }
+    ]
+  }
+}

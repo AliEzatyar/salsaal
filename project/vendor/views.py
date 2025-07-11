@@ -42,11 +42,14 @@ from .utils import r
 
 
 class VendorAPIView(views.APIView):
+    """
+        This view enables a vendor to see, edit and delete its vendor account.
+    """
     permission_classes = [permissions.IsAuthenticated, IsVendor]
     http_method_names = ["get", "patch", "delete"]
 
     def get(self, *args, **kwargs):
-        """returns all vendor details"""
+        """returns vendor details"""
         vendor = self.request.user.vendor
         serializer = VendorSerializerDetailed(vendor)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -307,7 +310,8 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
 
 
 class CarriersNow(views.APIView):
-    """this view returns list of vendor carriers sorted by nearst to farthest ones"""
+    """this view returns list of vendor carriers sorted by
+    nearst to farthest ones from vendor location"""
 
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
@@ -317,30 +321,27 @@ class CarriersNow(views.APIView):
         )
         live_vendor_carriers = []  # final list being returned
         for carrier in carriers:
-
             try:
                 carrier_key = f"carrier:{carrier.id}:live"
                 carrier_live_data = json.loads(r.get(carrier_key))
                 carrier_current_location = carrier_live_data["location"]
                 vendor_location = self.request.user.profile.location
                 vendor_location = (vendor_location.y, vendor_location.x)
-                city = self.request.user.profile.city  # vendor city
                 time = 0
                 if carrier.status == CARRIER_STATUS_CHOICES[0][0]:  # if carrier is free
                     distance_m = (
                         haversine_distance(*vendor_location, *carrier_current_location)
                         * 1000
-                    )  # meters
-                    print("distance", distance_m)
-                    if distance_m > 100:  # if carrier is not earby the resturant
+                    )  # rough estimate, no maps used, meters
+                    if distance_m > 200:  # if carrier is far from the resturant
                         time = estimate_travel_time(
-                            carrier_current_location, vendor_location, city
+                            carrier_current_location, vendor_location
                         )
-                else:  # carrier has not reached to customer yet
+                else:  # carrier is busy and has not reached to customer yet 
                     customer_location = carrier_live_data["destination"]
                     time = estimate_travel_time(
-                        carrier_current_location, customer_location, "kabul"
-                    ) + (carrier_live_data["return_estimate"] / 2)
+                        carrier_current_location, customer_location
+                    )
                 details = {"name": carrier.name, "return_time": time}
                 live_vendor_carriers.append(details)
             except Exception as e:
@@ -515,9 +516,8 @@ class CalculateOrderTime(views.APIView):
     preparing orders count, free carriers count and total carriers count of vendor
     returns {"estimated":integer}
     """
-
     permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
-
+    
     def get(self, *args, **kwargs):
         # ------------------ estimating only this order distance and reach time
         request_data = self.request.query_params
@@ -525,15 +525,13 @@ class CalculateOrderTime(views.APIView):
         order = Order.objects.get(id=int(new_order_id))
         # check if the vendor owns this order
         self.check_object_permissions(self.request, order)
-        # ------------------ calculating rough distance time estimate for new order
+        # ------------------ estimateing travel time for new order
+        vendor = self.request.user.vendor
         user_location = order.user.profile.location
         user_location = (user_location.y, user_location.x)  # as lat,lon
-        vendor = self.request.user.vendor
         vendor_location = vendor.user_profile.location
         vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
-        estimated = estimate_travel_time(
-            vendor_location, user_location, vendor.user_profile.city.lower()
-        )
+        estimated = estimate_travel_time(vendor_location, user_location)
 
         # ----------------- getting total free carriers and total preparing orders
         vendor_carriers_key = f"vendor:{vendor.id}:carriers"

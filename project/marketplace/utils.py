@@ -1,11 +1,8 @@
 from math import sin, cos, radians, sqrt, atan2
 import redis
 from django.conf import settings as s
-import osmnx as ox
-import pickle
-import zlib
-import networkx as nx
-import time
+
+import requests as req
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 
 
@@ -100,6 +97,8 @@ class BestFoodsCounter:
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
+    """this function estimates distance, 90 degree traingle, A-start, B , C-goal, then distance
+    is b+c """
     lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
     R = 6371  # Earth radius in kilometers
 
@@ -116,47 +115,22 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return R * c  # distance in kilometers
 
 
-carrier_point = (34.5575556, 69.1335077)
-customer_point = (34.515424, 69.0937623)
-
-
-def get_graph(key, pnt):
-    if r.exists(key):
-        t = time.time()
-        pickled = r.get(key)
-        print("redis get", time.time() - t)
-        print("graph size", len(pickled) / 1e6, "MB")
-        t = time.time()
-        G = pickle.loads(pickled)
-        print("pickle loading got", time.time() - t)
-        print("map token out of redis")
-    else:
-        G = ox.graph_from_point(pnt, 20000, network_type="drive")
-        pickled = pickle.dumps(G)
-        print("graph size", len(pickled) / 1e6, "MB")
-
-        r.set(key, pickled)
-        print("map saved to redis")
-
-    return G
-
-
-def estimate_travel_time(origin, destination,city,avg_speed=30):
-    # getting whole city graph
-    t1 = time.time()
-    graph = get_graph(city,origin)
-    print("graph got",time.time()-t1)
-    
-    t2 = time.time()
-    # getting distance
-    node1 = ox.nearest_nodes(graph, origin[1], origin[0]) # origin
-    node2 = ox.nearest_nodes(graph, destination[1], destination[0]) # destination
-    route = ox.shortest_path(graph,node1,node2,weight="length") # shortest route
-    distance_m = nx.path_weight(graph,route,"length") # distance
-    print(distance_m,"distance",time.time()-t2)
-    travel_time_min = (distance_m/1000)/ avg_speed * 60
-    return travel_time_min
-
-# print(haversine_distance(*point, *(34.495515, 69.1)))
-# time = estimate_travel_time(point, (34.495515, 69.1),"kabul")
-# print(time,"minutes")
+def estimate_travel_time(origin, destination):
+    """
+    this function makes a call to Graphhopper web api locally hosted.
+    How graphhopper is set up?
+    help: https://libreselfhosted.com/project/graphhopper/
+    * download osm.pbf file of afghanistan or ...
+    * install java
+        sudo apt install openjdk-17-jdk
+    * download graphhopper .jar file from:
+        https://github.com/graphhopper/graphhopper/releases
+    * write config.json and custom-car.json
+    * run using java
+        java -Ddw.graphhopper.datareader.file=afghanistan-2025.osm.pbf -jar *.jar server config-example.json
+    Faced a lot of errors when first set up: see
+        
+    """
+    response = req.get(f"http://localhost:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false")
+    response = response.json()
+    return int(response['paths'][0]['time'])/60000 
