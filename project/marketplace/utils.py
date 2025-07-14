@@ -1,7 +1,7 @@
 from math import sin, cos, radians, sqrt, atan2
 import redis
 from django.conf import settings as s
-
+from os import environ as env
 import requests as req
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 
@@ -131,6 +131,7 @@ def estimate_travel_time(origin, destination):
     Faced a lot of errors when first set up: see
         
     """
-    response = req.get(f"http://localhost:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false")
+    hopper_host = env.get("GRAPHHOPPER_HOST")
+    response = req.get(f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false")
     response = response.json()
     return int(response['paths'][0]['time'])/60000 

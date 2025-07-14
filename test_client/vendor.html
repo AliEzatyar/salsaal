@@ -31,7 +31,6 @@
     <h1>vendor page</h1>
     <!--js -->
     <script>
-        let reconnectTimeout = null;
         function showPopup() {
             document.getElementById('popup').style.display = 'block';
             document.getElementById('overlay').style.display = 'block';
@@ -43,7 +42,7 @@
         }
 
 
-        // creating vendor channel socket 
+        // connecting to vendor channel socket 
         const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MzEzMTY4LCJpYXQiOjE3NDg5NDUxNjgsImp0aSI6IjZjMGRjYTQyOTljMDQ1OTg4YTU4MDhlMjcyZmVjZTI4IiwidXNlcl9pZCI6NSwicm9sZSI6MX0.DG6Qk9UQEx0yyVtLmdOgHZF4Bst16twc7e0ufLjDHgQ" // take out of localstorage
         const domain = "http://127.0.0.1:8000"
         const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
@@ -63,16 +62,19 @@
         vendorChannelSocket.onopen = (e) => {
             console.log("connected vendor socket")
         }
+        // vendor channel receives message
         vendorChannelSocket.onmessage = async (e) => {
             // recieves notification data of new order, customer final answer, order being carried/delivered
             var data = JSON.parse(e['data'])
             console.log("recived data", data)
             if (data["type"] == "recv_notf") {
+
                 const notf_type = data["notf_type"]
                 if (notf_type == "new_order") {
-                    // creating pop up
+                    // ----------- message is about new order initializaiton, creating pop up
                     const boolValue = document.getElementById('boolInput').value === "true";
                     const sendBtn = document.getElementById("sendBtn")
+                    showPopup()
                     const customerId = data['data']['user']
                     // ---------- requesting estimation time for new order
                     const esimateOrderTimeUrl = domain + "/api/vendor/estimate-order-time/?order_id=" + data['data']['id']
@@ -87,35 +89,38 @@
                     fetch(esimateOrderTimeUrl, optionsTimeEstimate).then((response) => response.json()).then(
                         result => {
                             console.log("order time estimate", result, result["estimated"])
-                            
+                            // the vendor interface should put the result of estimation on pop up
+                            // code here...
                         }
                     )
-                    showPopup()
-                    // handling send button on click listener
+                    // vendor has filled its answer and clicks 'send answer'
                     sendBtn.onclick = (event) => {
-
-                        const minutes = parseInt(document.getElementById('minutesInput').value);
-                        if (isNaN(minutes)) {
+                        // preparingMinutes input value to integer
+                        const preparingMinutes = parseInt(document.getElementById('minutesInput').value);
+                        if (isNaN(preparingMinutes)) {
                             alert("Please enter a valid integer.");
                             return;
                         }
-                        // console.log("order_id:", data['data']['id'])
+                        // data being sent as vendor's answer, it should include estimation
                         data = {
                             booleanValue: boolValue,
-                            integerValue: minutes,
+                            integerValue: preparingMinutes, // preparing/cooking time 
                             order_id: data['data']['id']
+                            // include delivery estimation here...
                         };
-                        // #2 connecting to customer channel and sending vendor answer 
+                        // connecting to customer channel and sending vendor answer 
                         const customerChannelUrl = ws_domain + `/notf/cstmr/${customerId}/?token=${token_only}`
                         const customerChannelSocket = new WebSocket(customerChannelUrl)
                         // console.log(data, "answer of vendor")
                         customerChannelSocket.onopen = (e) => {
                             customerChannelSocket.send(JSON.stringify({ "type": "share_notf", "notf_type": "vendor_answer", "data": data }))
-                            closePopup();
-
+                            // clearing pop up elements and waiting for response
+                            // code here.....
                         }
                     }
                 }
+
+                // ----------- message is about answer of customer, showing answer to vendor
                 else if (notf_type == "customer_answer") {
                     const answer = data['data']['answer']
                     console.log(data['data']['answer'], ":answer of customer")
@@ -131,7 +136,6 @@
                             "accepted": true
                         })
                     }
-                    console.log(payload, "payload data being sent")
                     const acceptOrderHeaders = new Headers()
                     acceptOrderHeaders.append("Authorization", vendor_token)
                     acceptOrderHeaders.append("Content-Type", "application/json")
@@ -142,14 +146,16 @@
                         redirect: "follow"
                     };
                     const acceptOrderUrl = domain + "/api/vendor/ar-order/"
-
+                    // setting order in preparing state after both-sides acceptance
                     fetch(acceptOrderUrl, acceptOrderOptions)
                         .then((response) => response.text())
                         .then((result) => {
                             console.log(result, "result of order set as a/r")
 
-
-                            // -------------------------- setting order as carrying after final answer
+                            /* 
+                                close pop up, code here.....
+                            */
+                            // -------------------------- setting order as carrying 
                             if (answer == true) {
                                 const setCarryingUrl = domain + "/api/carrier/set-order-state-carrying/";
                                 const carrier_id = 14 // should be choosen by vendor 
@@ -169,7 +175,7 @@
                                             status: response.status,
                                             body: data
                                         }));
-                                    })  
+                                    })
                                     .then(({ status, body }) => {
                                         if (status == 403) {
                                             console.log("not allowed", body)
@@ -193,15 +199,15 @@
                             }
                         })
                 }
-                else if (notf_type == "order_carrying") {
-                    console.log("carrier is moving food")
-                }
                 else if (notf_type == "order_delivered") {
+                    // message is about order delivered successfully
                     console.log(data)
                     const customer_name = data['data']['customer_name']
                     console.log("order delivered successfully to ", customer_name)
                 }
                 else if (notf_type == "location_data") {
+                    // message is about live location data of the carrier
+
                     console.log("location data", data['data'])
                 }
             }

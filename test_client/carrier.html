@@ -4,14 +4,14 @@
     const vendor_id = 2 // every carrier should have its vendor id
     const domain = "http://127.0.0.1:8000"
     const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
-    const current_order_url = domain + "/api/carrier/my-order/"
     // rest.ahmadyar.pro
     // const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODg4NDY5LCJpYXQiOjE3NTA1MjA0NjksImp0aSI6IjI5M2IyNGQ1ODU5ZTQ5OGRiMjY0MzI4ZGI5YjBlYWNlIiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.7JoOtS9nmYDXxCjQGg39StVavyS6-mPL2MXeWJCoeoY"
     // const domain = "https://rest.ahmadyar.pro"
     // const ws_domain = "wss://rest.ahmadyar.pro/ws" // use general one
-
-
+    
+    
     // ----------------------------------------- getting current order of carrier if exists
+    const current_order_url = domain + "/api/carrier/my-order/"
     let headers = new Headers();
     headers.append("Content-Type", "application/json")
     headers.append("Authorization", carrier_token);
@@ -20,6 +20,7 @@
         headers: headers,
         redirect: "follow"
     };
+    // sending the request
     fetch(current_order_url, requestOptions).then((response) => {
         console.log("Status code:", response.status); // 👉 Get the status code
         return response.json().then(data => ({
@@ -33,7 +34,7 @@
         }
         else if (result.status == 200) {
 
-            //-------------------- data of order is fetched, connecting to channels of customer and vendor
+            //-------------------- current order data is fetched, connecting to channels of customer and vendor 
             const vendor_id = result.body["order"]["vendor"]
             const vendor_ws_url = ws_domain + `/notf/vdor/${vendor_id}/?token=${token_only}`
             const customer_id = result.body["order"]["user"]
@@ -47,6 +48,7 @@
                 customerChannelSocket = new WebSocket(customer_ws_url)
             }
             let startBtn = document.createElement("button")
+            // setting onClick listener and setting location watching and sending function to it.
             startBtn.innerText = "Start going..."
             startBtn.onclick = () => startTracking(customerChannelSocket, vendorChannelSocket, customer_ws_url, vendor_ws_url)
             document.body.appendChild(startBtn)
@@ -57,7 +59,12 @@
         }
 
     })
-
+    /*
+        This function watches for location changes and tries to send the location
+        data to customer and vendor channels. In every location changes, if any of those
+        two channels are not in OPEN status, it tries to reconnect to that channel.
+        THis is repeated any time the location changes. 
+    */
     function startTracking(customer_socket, vendor_socket, c_url, v_url) {
         // sending live location data
         if (navigator.geolocation) {

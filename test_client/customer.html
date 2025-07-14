@@ -1,5 +1,5 @@
 <script>
-    // details for connection
+    // details for connection to customer's channel
     const domain = "http://127.0.0.1:8000"
     const wbs_domain = "ws://127.0.0.1:8000/ws"
     const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYxMzkxOTE1LCJpYXQiOjE3NTEwMjM5MTUsImp0aSI6IjBmYjM1ODJkNzc3MTQ5MDJhMjIzNjU1ODMwZWQwNzBlIiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.qEJ2b7Ye2_awzS3_8ZAKutVPcSr6XBG6TZB6XmwQqLE"
@@ -19,9 +19,10 @@
         console.log("reloading...")
         window.location.reload()
     })
+    // setting onOpen event on customer websocket
     customerChannelSocket.onopen = (e) => {
         console.log("customer  Socket Open")
-        // cancel order
+        // cancel order-------> not needed in mobile
         const cancelUrl = domain + "/api/order/user-orders/cancel/"
         const cancelHeaders = new Headers();
         cancelHeaders.append("Authorization", client_token);
@@ -70,13 +71,13 @@
                             // body: formdata,
                             redirect: "follow"
                         };
-
+                        // sending request for creating new order ---> after this, include in app code
                         fetch(domain + "/api/order/user-orders/", requestOptions)
                             .then((response) => response.json())
                             .then((result) => {
 
                                 console.log(result, "result of order creation")
-                                // creating the url and connecting
+                                // connecting to order's vendor channel to send notification and prompt vendor app to open a  pop up 
                                 const url = wbs_domain + `/notf/vdor/${result['order']['vendor']}/?token=${only_token}`
                                 console.log(url)
                                 vendorChannelSocket = new WebSocket(url)
@@ -97,16 +98,18 @@
     }
 
 
-    // 3 sending answer of customer
+    // customer channel receives message
     var order_id;
     customerChannelSocket.onmessage = async (e) => {
         const data = JSON.parse(e['data'])
         console.log(data, "data came to customer")
         if (data['type'] == "recv_notf") {
             const notf_type = data["notf_type"]
+            // handling vendor's answer for waiting order
             if (notf_type == "vendor_answer") {
                 order_id = data['data']['order_id'] 
                 console.log(data['data'], ":intial answer of vendor")
+                // sending final acceptance from customer, answer could be false 
                 vendorChannelSocket.send(JSON.stringify({
                     "type": "share_notf", "notf_type": "customer_answer",
                     "data": { "answer": true, "order_id": data['data']['order_id'] }
@@ -114,9 +117,11 @@
                 console.log("anaswer sent back to vendor", { "answer": true, "order_id": data['data']['order_id'] })
             }
             else if (notf_type == "order_carrying") {
+                // the message is about start of order carrying
                 console.log("carrier is moving food")
-
-                const otp = window.prompt("enter the otp")
+                // 
+                // assuming order is reached, so setting it as delivered,
+                const otp = window.prompt("enter the otp")  
                 // ------------------------ setting order as delivered
                 const setDeliveredUrl = domain + "/api/carrier/set-order-state-delivered/";
                 const headers = new Headers();
@@ -166,6 +171,7 @@
                     })
             }
             else if (notf_type == "location_data") {
+                // message is about live location data, app should cast this data in a map interface
                 console.log(data['data'], "location data comming")
             }
         }
