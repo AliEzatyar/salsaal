@@ -1,13 +1,12 @@
 <script>
     // details for connection to customer's channel
-    const domain = "http://127.0.0.1:8000"
-    const wbs_domain = "ws://127.0.0.1:8000/ws"
-    const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYxMzkxOTE1LCJpYXQiOjE3NTEwMjM5MTUsImp0aSI6IjBmYjM1ODJkNzc3MTQ5MDJhMjIzNjU1ODMwZWQwNzBlIiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.qEJ2b7Ye2_awzS3_8ZAKutVPcSr6XBG6TZB6XmwQqLE"
-    // const domain = "https://rest.ahmadyar.pro"
-    // const wbs_domain = "wss://rest.ahmadyar.pro/ws"
-    // const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgyNDM1LCJpYXQiOjE3NTA1MTQ0MzUsImp0aSI6Ijg1ODMxNTliYmExNDQwNWE4NDMwNTllNTc3ODIyZTU0IiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.q70xP4U8XDbGID954TUzGs6uj7B82k44i2aaY_CIMps"
-
-
+    // const domain = "http://127.0.0.1:8000"
+    // const wbs_domain = "ws://127.0.0.1:8000/ws"
+    // const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYxMzkxOTE1LCJpYXQiOjE3NTEwMjM5MTUsImp0aSI6IjBmYjM1ODJkNzc3MTQ5MDJhMjIzNjU1ODMwZWQwNzBlIiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.qEJ2b7Ye2_awzS3_8ZAKutVPcSr6XBG6TZB6XmwQqLE"
+    // ahmadyar.pro
+    const domain = "https://rest.ahmadyar.pro"
+    const wbs_domain = "wss://rest.ahmadyar.pro/ws"
+    const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgyNDM1LCJpYXQiOjE3NTA1MTQ0MzUsImp0aSI6Ijg1ODMxNTliYmExNDQwNWE4NDMwNTllNTc3ODIyZTU0IiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.q70xP4U8XDbGID954TUzGs6uj7B82k44i2aaY_CIMps"
     const client_token = "Bearer " + only_token
     const customer_id = 7
     // connecting to customer's channel 
@@ -61,7 +60,6 @@
                         const createOrderUrl = domain + "/api/manage-order/";
                         const myHeaders = new Headers();
                         myHeaders.append("Content-Type", "application/json")
-
                         myHeaders.append("Authorization", client_token);
 
 

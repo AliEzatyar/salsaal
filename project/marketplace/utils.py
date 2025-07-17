@@ -127,7 +127,7 @@ def estimate_travel_time(origin, destination):
         https://github.com/graphhopper/graphhopper/releases
     * write config.json and custom-car.json
     * run using java
-        java -Ddw.graphhopper.datareader.file=afghanistan-2025.osm.pbf -jar *.jar server config-example.json
+        java -Ddw.graphhopper.datareader.file=afghanistan-latest.osm.pbf -jar *.jar server prod-config.json
     Faced a lot of errors when first set up: see
         
     """

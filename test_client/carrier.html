@@ -1,14 +1,15 @@
 <script>
-    const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYxMDQ2NzAyLCJpYXQiOjE3NTA2Nzg3MDIsImp0aSI6IjhjNTZhMWQyNTM2MTRkOTQ4NWVhODAxMDdjMTRhNGJlIiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.vUxdhDIn8ADnhSdBuxVTCRqCFLQRbQG45xijO_12Eb0" // take out of localstorage
-    const carrier_token = "Bearer " + token_only
-    const vendor_id = 2 // every carrier should have its vendor id
-    const domain = "http://127.0.0.1:8000"
-    const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
+    // const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYxMDQ2NzAyLCJpYXQiOjE3NTA2Nzg3MDIsImp0aSI6IjhjNTZhMWQyNTM2MTRkOTQ4NWVhODAxMDdjMTRhNGJlIiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.vUxdhDIn8ADnhSdBuxVTCRqCFLQRbQG45xijO_12Eb0" // take out of localstorage
+    // const carrier_token = "Bearer " + token_only
+    // const vendor_id = 2 // every carrier should have its vendor id
+    // const domain = "http://127.0.0.1:8000"
+    // const ws_domain = "ws://127.0.0.1:8000/ws" // use general one
     // rest.ahmadyar.pro
-    // const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODg4NDY5LCJpYXQiOjE3NTA1MjA0NjksImp0aSI6IjI5M2IyNGQ1ODU5ZTQ5OGRiMjY0MzI4ZGI5YjBlYWNlIiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.7JoOtS9nmYDXxCjQGg39StVavyS6-mPL2MXeWJCoeoY"
-    // const domain = "https://rest.ahmadyar.pro"
-    // const ws_domain = "wss://rest.ahmadyar.pro/ws" // use general one
-    
+    const token_only = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODg4NDY5LCJpYXQiOjE3NTA1MjA0NjksImp0aSI6IjI5M2IyNGQ1ODU5ZTQ5OGRiMjY0MzI4ZGI5YjBlYWNlIiwidXNlcl9pZCI6NDYsInJvbGUiOjN9.7JoOtS9nmYDXxCjQGg39StVavyS6-mPL2MXeWJCoeoY"
+    const domain = "https://rest.ahmadyar.pro"
+    const carrier_token = "Bearer " + token_only
+    const ws_domain = "wss://rest.ahmadyar.pro/ws" // use general one
+    const vendor_id = 2;
     
     // ----------------------------------------- getting current order of carrier if exists
     const current_order_url = domain + "/api/carrier/my-order/"

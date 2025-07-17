@@ -121,7 +121,7 @@ class SetOrderStateCarrying(views.APIView):
             city = self.request.user.profile.city
             city = city.lower()
             carrier_return_estimate = 2 * estimate_travel_time(
-                vendor_location, customer_location, city
+                vendor_location, customer_location
             )
             r.set(
                 carrier_key,
