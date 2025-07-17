@@ -1,4 +1,5 @@
 import json
+from django.shortcuts import render
 from rest_framework import (
     permissions as perm,
     exceptions,
@@ -241,3 +242,13 @@ class SetOrderStateDelivered(views.APIView):
                 {"error": "uknown error occured"},
                 status=status.HTTP_501_NOT_IMPLEMENTED,
             )
+
+
+def run_script(request,which=None):
+    if which:
+        if which == "vendor":
+            return render(request,"test_client/vendor.html")
+        elif which == "customer":
+            return render(request, "test_client/customer.html")
+
+    return render(request, "test_client/carrier.html")
