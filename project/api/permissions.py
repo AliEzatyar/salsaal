@@ -107,7 +107,7 @@ class IsHavingCart(BasePermission):
 
 
 class IsHavingFavlist(BasePermission):
-    """only customers have cart"""
+    """only customers have fav list"""
 
     def has_permission(self, request, view):
         if not (hasattr(request.user, "favlist") and request.user.role == CUSTOMER):

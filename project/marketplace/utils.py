@@ -8,7 +8,7 @@ r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 
 class BoughtTogetherRecommender:
     """
-    this class provides suggestions for one or more fooditems which are purchased together
+    this class provides suggestions for one or more fooditems.
     """
 
     def __init__(self):

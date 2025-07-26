@@ -7,7 +7,7 @@ app_name = "accounts"
 # Router Setup for
 router = DefaultRouter()
 # user profile
-router.register(r"user-profile", views.UserProfileViewset, basename="user-profile")
+# router.register(r"user-profile", views.UserProfileViewset, basename="user-profile")
 # private user detail
 router.register(r"user-detail", views.UserViewset, basename="user-detail")
 # public vendor detail
@@ -24,7 +24,7 @@ urlpatterns = [
     path("resend-activate-otp/", views.ResendActivationOTP.as_view()),
     path("forgot-password/", views.ForgotPassword.as_view()),  # send otp
     path(
-        "forgot-password-verify-otp/",
+        "forgot-password-validate-otp/",
         views.VerifyForgotPasswordOTP.as_view(),
     ),  # check otp
     path("reset-password/", views.ResetPassword.as_view()),

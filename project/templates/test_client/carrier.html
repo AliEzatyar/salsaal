@@ -62,59 +62,65 @@
     })
     /*
         This function watches for location changes and tries to send the location
-        data to customer and vendor channels. In every location changes, if any of those
+        data to customer and vendor channels. for every location changes, if any of those
         two channels are not in OPEN status, it tries to reconnect to that channel.
         THis is repeated any time the location changes. 
     */
     function startTracking(customer_socket, vendor_socket, c_url, v_url) {
         // sending live location data
+        var last_sent_time = Date.now();
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition((position) => {
-                const location_data = {
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude
-                }
-                const data = JSON.stringify({
-                    type: "share_notf",
-                    notf_type: "location_data",
-                    data: location_data
-                })
-
-                if (customer_socket.readyState == WebSocket.OPEN) {
-                    console.log("cusotmer socket open")
-                    customer_socket.send(data)
-
-                }
-                else {
-                    console.log("retrying connection to customer's socket")
-                    customer_socket = new WebSocket(c_url)
-                    customer_socket.onopen = (e) => {
-                        customer_socket.send(data)
+                const now = Date.now();
+                if ((last_sent_time - now)/1000 > 10 ){
+                    console.log("more than 10 sec")
+                    const location_data = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
                     }
-                }
+                    const data = JSON.stringify({
+                        type: "share_notf",
+                        notf_type: "location_data",
+                        data: location_data
+                    })
 
-                if (vendor_socket.readyState == WebSocket.OPEN) {
-                    console.log("vendor socket open")
-                    vendor_socket.send(data)
-                }
-                else {
-                    console.log("retrying connection to vendor's socket")
-                    vendor_socket = new WebSocket(v_url)
-                    customer_socket.onopen = (e) => {
+                    if (customer_socket.readyState == WebSocket.OPEN) {
+                        console.log("cusotmer socket open")
+                        customer_socket.send(data)
+
+                    }
+                    else {
+                        console.log("retrying connection to customer's socket")
+                        customer_socket = new WebSocket(c_url)
+                        customer_socket.onopen = (e) => {
+                            customer_socket.send(data)
+                        }
+                    }
+
+                    if (vendor_socket.readyState == WebSocket.OPEN) {
+                        console.log("vendor socket open")
                         vendor_socket.send(data)
                     }
+                    else {
+                        console.log("retrying connection to vendor's socket")
+                        vendor_socket = new WebSocket(v_url)
+                        customer_socket.onopen = (e) => {
+                            vendor_socket.send(data)
+                        }
+                    }
                 }
+                else{
+                    return 5;
+                }
+
                 console.log("Location sent:", location_data)
             }, (err) => {
                 console.error("Geolocation error:", err)
             })
-
         }
         else {
             console.log("location access denied")
         }
     }
-
-
 
 </script>

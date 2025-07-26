@@ -30,13 +30,11 @@ class RegisterUser(generics.CreateAPIView):
 class UserViewset(viewsets.ModelViewSet):
     """
     it works with 4 methods:
-    GET --> retrieve user data
-    PUT --> update user
-    DELETE> delete the user account itself
-    NOTE: this view uses default authentication class which need JWT-token
-    for every request
+    GET --> retrieve user data including user profile
+    PUT --> update user and profile
+    DELETE> delete the user account and profile
+   
     """
-
     http_method_names = ["get", "delete", "patch", "put"]
     serializer_class = UserDetailSerializer
 
@@ -48,6 +46,28 @@ class UserViewset(viewsets.ModelViewSet):
         """limiting queryset to only  one instance"""
         new_qs = User.objects.filter(id=self.request.user.id)
         return new_qs
+
+
+# class UserProfileViewset(viewsets.ModelViewSet):
+#     serializer_class = UserProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated, IsProfileOwner]
+#     # http_method_names = ["patch","get"]
+
+#     def destroy(self, request, *args, **kwargs):
+#         return Response({"error": "user profile deletion not allowed"})
+
+#     def create(self, request, *args, **kwargs):
+#         return Response({"error": "user profile creation not allowed"})
+
+#     def get_object(self):
+#         """only user's profile"""
+#         if hasattr(self.request.user, "profile"):
+#             return self.request.user.profile
+#         return super().get_object()
+
+#     def get_queryset(self):
+#         """overriding to prevent others from accessing another profile"""
+#         return UserProfile.objects.filter(user=self.request.user)
 
 
 class VerifyActivateAccountOTP(views.APIView):
@@ -88,17 +108,17 @@ class ResendActivationOTP(views.APIView):
         email = self.request.data.get("email", None)
         if not email:
             return Response(
-                {"error": "no email address"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "provide_an_email"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         user = User.objects.filter(email=email).first()
         if not user:
             return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+                {"error": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
+            ) 
 
         send_otp(self.request, user)
-        return Response({"message": "OTP sent"}, status=status.HTTP_200_OK)
+        return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
 
 class ForgotPassword(views.APIView):
@@ -130,16 +150,16 @@ class VerifyForgotPasswordOTP(views.APIView):
 
             if user_otp.is_expired():
                 user_otp.delete()  # Optional: cleanup expired OTP
-                return Response({"error": "OTP has expired"}, status=400)
+                return Response({"error": "otp_expired"}, status=400)
             if user_otp.otp == str(otp_input):
-                return Response({"message": "Correct Forgot password OTP "}, status=200)
+                return Response({"message": "otp_valid"}, status=200)
             else:
-                return Response({"error": "Invalid OTP"}, status=400)
+                return Response({"error": "otp_invalid"}, status=400)
 
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+            return Response({"error": "user_not_found"}, status=404)
         except UserOtp.DoesNotExist:
-            return Response({"error": "OTP not found"}, status=404)
+            return Response({"error": "otp_not_found"}, status=404)
 
 
 class ResetPassword(views.APIView):
@@ -155,47 +175,25 @@ class ResetPassword(views.APIView):
 
             if user_otp.is_expired():
                 user_otp.delete()  # Optional: cleanup expired OTP
-                return Response({"error": "OTP has expired"}, status=400)
+                return Response({"detail": "OTP_has_expired"}, status=400)
 
             if user_otp.otp == str(otp_input):
                 new_password = self.request.data.get("password", None)
                 if not new_password:
-                    return Response({"error": "no password entered"}, status=400)
+                    return Response({"detail": "no_password_entered"}, status=400)
                 user_otp.delete()
                 user.set_password(new_password)
                 user.save()
                 return Response(
-                    {"message": "password changed successfully"}, status=200
+                    {"message": "password_changed_successfully"}, status=200
                 )
             else:
-                return Response({"error": "Invalid OTP"}, status=400)
+                return Response({"detail": "otp_invalid"}, status=400)
 
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+            return Response({"detail": "user_not_found"}, status=404)
         except UserOtp.DoesNotExist:
-            return Response({"error": "OTP not found"}, status=404)
-
-
-class UserProfileViewset(viewsets.ModelViewSet):
-    serializer_class = UserProfileSerializer
-    permission_classes = [permissions.IsAuthenticated, IsProfileOwner]
-    # http_method_names = ["patch","get"]
-
-    def destroy(self, request, *args, **kwargs):
-        return Response({"error": "user profile deletion not allowed"})
-
-    def create(self, request, *args, **kwargs):
-        return Response({"error": "user profile creation not allowed"})
-
-    def get_object(self):
-        """only user's profile"""
-        if hasattr(self.request.user, "profile"):
-            return self.request.user.profile
-        return super().get_object()
-
-    def get_queryset(self):
-        """overriding to prevent others from accessing another profile"""
-        return UserProfile.objects.filter(user=self.request.user)
+            return Response({"detail": "otp_not_found"}, status=404)
 
 
 class RoleTokenObtainView(TokenObtainPairView):

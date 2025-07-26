@@ -3,7 +3,6 @@ from marketplace.models import Category, FavItem, Food, Rating
 from order.models import Order, OrderItem
 from accounts.models import CUSTOMER
 from multiVend.settings.base import DEFAULT_SEARCH_DISTANCE
-
 from vendor.utils import to_af_weekday
 from .utils import (
     BestFoodsCounter,
@@ -27,7 +26,6 @@ from marketplace.serializers import (
     CategorySerializer,
 )
 from carrier.models import Carrier
-
 from django.db.models.aggregates import Count
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
@@ -95,7 +93,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["get"], url_path="food-item-detail")
     def item_detail(self, request, pk):
         """provides fooditem detail with distance"""
-        obj = self.get_object() # this prompts filter_queryset, city existence is ensured so
+        obj = (
+            self.get_object()
+        )  # this prompts filter_queryset, city existence is ensured so
         data = request.query_params
         city = self.request.query_params.get("city", None)
         location = data.get("location", None)
@@ -364,7 +364,7 @@ class RatingViewSet(viewsets.ModelViewSet):
     permission_classes = [NotAdmin]
     http_method_names = ["get", "post", "delete", "patch"]
     serializer_class = RatingSerializer
-    # ordering
+    # order of ratings
     filter_backends = [
         filters.OrderingFilter,
         filters.SearchFilter,
@@ -411,7 +411,7 @@ class RatingViewSet(viewsets.ModelViewSet):
             return Rating.objects.none()
 
     def create(self, request, *args, **kwargs):
-        """overriden, obj_id, type,"""
+        """overriden, obj_id, type"""
         if not self.request.user.is_authenticated or self.request.user.role != CUSTOMER:
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = request.data
@@ -503,53 +503,77 @@ class PublicVendorDetail(views.APIView):
     permission_classes = [AllowAny]
     queryset = Vendor.objects.filter(is_approved=True)
 
+    def vendor_detail_key(self, id):
+        return f"vendor:{id}:details"
+
+    def vendor_location_key(self, id):
+        return f"vendor:{id}:location"
+
     def get(self, *args, **kwargs):
+        """
+            This initially tries to get vendor details from cache, if not found,
+            then queries db and serialize and cache.
+            we have to use caching since its not only about vendor but its menue.
+        """
         request_data = self.request.query_params
-        obj_id = request_data.get("id", None)
+        vendor_id = request_data.get("id", None)
         city = request_data.get("city", None)
-        location = request_data.get("location", None)
+        user_location = request_data.get("location", None)
         # take info from user profile if authentication, realtime location prompt should be
         if not city or not city in settings.CITY_NAMES:
             return Response({"detail": "provide_a_correct_city"}, status=400)
-        if not location:
-            return Response(
-                {"detail": "no_location_provided"}, status=400
-            )
-        if obj_id:
+        if not user_location:
+            return Response({"detail": "no_location_provided"}, status=400)
+        if vendor_id:
             try:
-                obj = Vendor.objects.filter(
-                    is_approved=True, id=obj_id, user_profile__city=city
-                ).first()
-                ser = PublicVendorSerializer(obj)
-                if obj:
-                    # decoding location
-                    lat, lon = geohash.decode(location)
-                    distance = distance_calculator(
-                        lat1=obj.user_profile.lattitude,
-                        lon1=obj.user_profile.longitude,
-                        lat2=lat,
-                        lon2=lon,
-                    )
-                    data = ser.data.copy()
-                    data["distance"] = distance
-                    # increasing vendor view count
-                    counter = BestVendorsCounter(str(city).title())
-                    counter.update_counts(obj.id)
-
-                    return Response(data, status=status.HTTP_200_OK)
+                # ------------------------ getting vendor details either cache or db
+                v_lon, v_lon = None, None
+                ser_data = None
+                vendor_in_cache = cache.get(self.vendor_detail_key(vendor_id))
+                if vendor_in_cache:
+                    ser_data = vendor_in_cache.copy()
+                    location = ser_data["location"]
+                    v_lat = location[0]
+                    v_lon = location[1]
                 else:
-                    return Response(status=status.HTTP_404_NOT_FOUND)
+                    obj = Vendor.objects.filter(
+                        is_approved=True, id=vendor_id, user_profile__city=city
+                    ).first()
+                    if obj:
+                        ser = PublicVendorSerializer(obj)
+                        ser_data = ser.data.copy()
+                        cache.set(
+                            self.vendor_detail_key(vendor_id), ser_data, 10 * 60
+                        )  # cache for 10 minutes
+                        v_lat = ser_data["location"][0]
+                        v_lon = ser_data["location"][1]
+
+                    else:
+                        return Response(status=status.HTTP_404_NOT_FOUND)
+                # decoding location and calculating distance
+                c_lat, c_lon = geohash.decode(user_location)
+                distance = distance_calculator(
+                    lat1=v_lat,
+                    lon1=v_lon,
+                    lat2=c_lat,
+                    lon2=c_lon,
+                )
+                ser_data["distance"] = distance
+                # ------------------- increasing vendor view count
+                counter = BestVendorsCounter(str(city).title())
+                counter.update_counts(vendor_id)
+                return Response(ser_data, status=status.HTTP_200_OK)
             except Exception as e:
+                print("error occured in vendor detail", e, e.args)
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
         else:
             return Response(
-                {"detail": "no_id_sent"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "no_id_provided"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
 class FavListViewset(viewsets.ModelViewSet):
     """THis viewset handles CRUD of Fav List"""
-
     serializer_class = FavItemSerializer
     permission_classes = [IsAuthenticated, IsHavingFavlist]
 

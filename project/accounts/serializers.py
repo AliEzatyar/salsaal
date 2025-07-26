@@ -51,6 +51,8 @@ class UserProfileSerializer(ModelSerializer):
 
 
 class UserDetailSerializer(ModelSerializer):
+    profile = UserProfileSerializer()
+    
     class Meta:
         model = User
         fields = [
@@ -60,13 +62,30 @@ class UserDetailSerializer(ModelSerializer):
             "first_name",
             "last_name",
             "phone_number",
+            "profile"
             
         ]
         read_only_fields = [
             "id",
             "email",
         ]  # Prevent updating the email, seperate view is made
+    
+    def update(self, instance, validated_data):
+        # saving user object
+        profile_data = validated_data.pop("profile",None)
+        user_data = validated_data
+        for attr,val in user_data.items():
+            setattr(instance,attr,val)
+        instance.save()
+        
+        # getting profile object
+        if profile_data:
+            profile = instance.profile
+            profile_serializer = self.fields['profile']
+            profile_serializer.update(profile,profile_data)            
 
+        return instance
+        
 
 class VendorCreateSerializer(ModelSerializer):
     class Meta:
