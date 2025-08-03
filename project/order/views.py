@@ -6,10 +6,9 @@ from rest_framework import viewsets, views, status
 from rest_framework.response import Response
 from marketplace.utils import BoughtTogetherRecommender
 from live.models import Notification
-from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 import json
-
+from django.utils.translation import activate,deactivate, gettext as _
 """Order API Views"""
 
 
@@ -96,19 +95,21 @@ class OrderViewSet(viewsets.ModelViewSet):
         # flushing the cart
         cart.items.all().delete()
         # ------------------------- creating the notification object
+        profile = request.user.profile
+        activate(profile.pf_lang)
         safe_data = json.loads(
             json.dumps(
                 serializer.data, cls=DjangoJSONEncoder
             )  # Converts Decimal -> float
         )
         notf = Notification.objects.create(
-            title="Order Created",
+            title=_("New order has been created."),
             type="new_order",
             data=safe_data,
-            object_id=order.id,
-            ct=ContentType.objects.get_for_model(Order),
-            to=order.vendor.id,
+            receiver=order.vendor.user,
+            target=order.id
         )   
+        deactivate()
         response = Response(
             {"order":serializer.data,
              "notf_id":notf.id,

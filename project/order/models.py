@@ -68,7 +68,7 @@ class Order(models.Model):
         """reseting food order"""
         print("status", self.status)
         if self.status != ORDER_STATUS_CHOICES[1][0]:  # not waiting
-            return
+            raise Exception("order_no_in_waiting_status")
         self.delete()
 
     def __str__(self):

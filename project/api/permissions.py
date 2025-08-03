@@ -115,6 +115,8 @@ class IsHavingFavlist(BasePermission):
         return True
 
 
+
+
 class NotAdmin(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:

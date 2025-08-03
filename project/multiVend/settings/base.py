@@ -138,6 +138,18 @@ TIME_ZONE = "UTC"  #
 
 USE_I18N = True
 
+# languages to support
+LANGUAGES = [
+    ("en", "English"),
+    ("fa", "Persian"),
+    ("ps", "Pashto"),
+]
+
+# translation files and compiled files related to them
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, "locale"),
+]
+
 USE_TZ = True
 
 

@@ -9,9 +9,10 @@ REST = 1
 CUSTOMER = 2
 CARRIER = 3
 
-DEFAULT_OTP_EXPIRATION = 10 # minutes
-FOOD_DELIVERY_OTP_EXPIRATION = 3*60 # 3 hours
+DEFAULT_OTP_EXPIRATION = 10  # minutes
+FOOD_DELIVERY_OTP_EXPIRATION = 3 * 60  # 3 hours
 CARRIER_ADD_OTP_EXPIRATION = 1440
+
 
 # Create your models here.
 class UserManager(BaseUserManager):
@@ -59,11 +60,10 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     ROLE_CHOICES = [
-        (ADMIN,"Admin"),
+        (ADMIN, "Admin"),
         (REST, "Resturant"),
         (CUSTOMER, "Customer"),
         (CARRIER, "Carrier"),
-        
     ]
 
     first_name = models.CharField(max_length=60)
@@ -101,7 +101,8 @@ class User(AbstractBaseUser):
         return True
 
     def get_full_name(self):
-        return self.first_name + " "+ self.last_name
+        return self.first_name + " " + self.last_name
+
 
 class UserProfile(g_models.Model):
     user = models.OneToOneField(
@@ -111,7 +112,9 @@ class UserProfile(g_models.Model):
         null=True,
         related_name="profile",
     )
-    
+    pf_lang = models.CharField(
+        max_length=10,default="en", choices=[("en", "English"), ("fa", "Farsi"), ("ps", "Pashto")]
+    )
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15, blank=True, null=True)
@@ -127,7 +130,9 @@ class UserProfile(g_models.Model):
     def save(self, *args, **kwargs):
         """overriding to set location point automatically"""
         if self.lattitude and self.longitude:
-            self.location = Point(float(self.longitude), float(self.lattitude),srid=4326)
+            self.location = Point(
+                float(self.longitude), float(self.lattitude), srid=4326
+            )
         return super().save(*args, **kwargs)
 
     def get_full_address(self):
@@ -142,9 +147,5 @@ class UserOtp(models.Model):
     otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def is_expired(self,expire=DEFAULT_OTP_EXPIRATION):
-        return timezone.now() > self.created_at + timezone.timedelta(
-            minutes=expire
-        )
-
-
+    def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):
+        return timezone.now() > self.created_at + timezone.timedelta(minutes=expire)

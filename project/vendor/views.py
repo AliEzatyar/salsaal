@@ -19,6 +19,7 @@ from carrier.serializers import CarrierSerializer
 from accounts.utils import OTP_VERIFY_CARRIER, send_otp
 from marketplace.utils import estimate_travel_time, haversine_distance
 from cart.models import Cart
+from live.models import Notification
 from vendor.models import OpeningHour
 from .serializers import OpeningHourSerializer, VendorSerializerDetailed
 from api.backends import FoodFilterSet, VOrderFilterSet
@@ -34,6 +35,8 @@ from rest_framework.exceptions import NotAcceptable
 from api.permissions import IsVendorOfCarrier
 from rest_framework import parsers, serializers
 from .utils import r
+from django.utils.translation import activate, deactivate, gettext as _
+
 
 # Create your views here.
 
@@ -490,16 +493,30 @@ class AcceptRejectOrderView(views.APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
             # accepted
+            profile = order.user.profile
+            activate(profile.pf_lang)
+            notf = Notification(
+                    actor=order.vendor.user,
+                    receiver=order.user,
+                    target=order.id
+                )   
             if accepted == True:
-                order.status = ORDER_STATUS_CHOICES[2][1]
+                # order accepted -> set as preparing, send notification
+                order.status = ORDER_STATUS_CHOICES[2][1] # preparing/execution
                 order.save()
+                notf.title = _("Your order has been accepted.")
+                notf.type = "order_accepted"
+                notf.save()
+                deactivate()
                 return Response(
                     {"message": "order_accepted"}, status=status.HTTP_200_OK
                 )
 
-            # rejected
-            # deleting the order
+            # order rejected -> delete order, send notification
             order.cancel_order()
+            notf.title = _("We are sorry! Your order has been rejected.")
+            notf.type = "order_rejected"
+            notf.save()
             # sending notification to customer ....
             return Response({"message": "order_rejected"}, status=status.HTTP_200_OK)
 

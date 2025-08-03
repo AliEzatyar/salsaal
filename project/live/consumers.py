@@ -37,7 +37,6 @@ class Consumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data=None, bytes_data=None):
         """performs logic and share recived data into layers"""
-        print("layers received data ", text_data)
         data = loads(text_data)
         if data["type"] == "share_notf":
             try:

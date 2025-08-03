@@ -27,7 +27,9 @@ from django.contrib.contenttypes.models import ContentType
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from marketplace.utils import estimate_travel_time
 from vendor.utils import r
-
+from django.utils.translation import gettext as _
+from django.utils.translation import activate as activate_language
+from django.utils.translation import deactivate as deactivate_language
 # Create your views here.
 
 
@@ -137,20 +139,26 @@ class SetOrderStateCarrying(views.APIView):
             # ---------------- updating vendor's carriers in redis
             vendor = self.request.user.vendor
             vendor_carriers_key = f"vendor:{vendor.id}:carriers"
-            b_c_c = json.loads(r.hget(vendor_carriers_key, "b_c_c"))  # busy carriers count
+            b_c_c = json.loads(
+                r.hget(vendor_carriers_key, "b_c_c")
+            )  # busy carriers count
             b_c_c = int(b_c_c) + 1  # increase it by one
             r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
             f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
             f_c_c = int(f_c_c) - 1
             r.hset(vendor_carriers_key, "f_c_c", f_c_c)
-            # ---------------------- creating notification
+            # ---------------------- creating notification for customer
+            profile = order.user.profile
+
+            activate_language(profile.pf_lang)
             notf = Notification.objects.create(
-                title="Order set as carrying",
+                title=_("Order set as carrying"),
                 type="order_carrying",
-                object_id=order.id,
-                ct=ContentType.objects.get_for_model(Order),
-                data=json.dumps({}),
+                receiver=order.user,
+                target=order.id,
+                data={"carrier_name": carrier.user.get_full_name()},
             )
+            deactivate_language()
             # ---------------------- setting carrier data to redis
 
             # response
@@ -165,17 +173,12 @@ class SetOrderStateCarrying(views.APIView):
             )
 
         except Order.DoesNotExist:
-            return Response({"error": "no such order"}, status=404)
+            return Response(
+                {"error": "no such order"}, status=status.HTTP_403_FORBIDDEN
+            )
         except exceptions.PermissionDenied as pd:
             print(pd, pd.args)
-            return Response({"error": "not_allowed"}, status=403)
-
-        # except Exception as e:
-        #     print("error:", e, e.args)
-
-        #     return Response(
-        #         {"detail", "unkown_error"}, status=status.HTTP_501_NOT_IMPLEMENTED
-        #     )
+            return Response({"error": "not_allowed"}, status=status.HTTP_403_FORBIDDEN)
 
 
 class SetOrderStateDelivered(views.APIView):
@@ -216,10 +219,21 @@ class SetOrderStateDelivered(views.APIView):
             vendor_carriers_key = f"vendor:{vendor.id}:carriers"
             b_c_c = r.hget(vendor_carriers_key, "b_c_c")  # busy carriers count
             b_c_c = int(b_c_c) - 1  # decrementing busy carrier's count
-            r.hset(vendor_carriers_key, "b_c_c",b_c_c)  # updating busy carriers count
+            r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
             f_c_c = r.hget(vendor_carriers_key, "f_c_c")
             f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
             r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+            # --------------- creating notification of order delivery for vendor
+            profile = order.vendor.user.profile
+            activate_language(profile.pf_lang)
+
+            Notification.objects.create(
+                title=_("Order delivered successfully"),
+                type="order_delivered",
+                receiver=order.vendor.user,
+                target=order.id,
+                data={"customer_name": order.user.get_full_name()},
+            )
             return Response(
                 {
                     "message": "order_state_delivered",
@@ -244,10 +258,10 @@ class SetOrderStateDelivered(views.APIView):
             )
 
 
-def run_script(request,which=None):
+def run_script(request, which=None):
     if which:
         if which == "vendor":
-            return render(request,"test_client/vendor.html")
+            return render(request, "test_client/vendor.html")
         elif which == "customer":
             return render(request, "test_client/customer.html")
 

@@ -24,7 +24,7 @@ urlpatterns = [
     path("resend-activate-otp/", views.ResendActivationOTP.as_view()),
     path("forgot-password/", views.ForgotPassword.as_view()),  # send otp
     path(
-        "forgot-password-validate-otp/",
+        "forgot-password-verify-otp/",
         views.VerifyForgotPasswordOTP.as_view(),
     ),  # check otp
     path("reset-password/", views.ResetPassword.as_view()),

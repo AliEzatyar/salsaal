@@ -5,15 +5,20 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 class Notification(models.Model):
+    receiver = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="notifications"
+    )
+    actor = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE,null=True, related_name="sent_notifications"
+    )
     title = models.CharField(max_length=255)
-    type = models.CharField(
-        max_length=20
-    )  # new_order, carriying, delivered, complain,
-    data = models.JSONField()
-    object_id = models.PositiveIntegerField()
-    ct = models.ForeignKey("contenttypes.ContentType", on_delete=models.CASCADE)
-    related_object = GenericForeignKey(
-        "ct", "object_id"
-    )  # this dynammically findes the object
+    type = models.CharField(max_length=20)  # new_order, carriying, delivered, complain,
+    data = models.JSONField(blank=True,null=True)
+    target = models.PositiveIntegerField(null=True)
     is_read = models.BooleanField(default=False)
-    to  = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+    class Meta:
+        ordering = ["-created_at"]
+        

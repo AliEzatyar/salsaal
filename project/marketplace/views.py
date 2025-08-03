@@ -50,7 +50,6 @@ import geohash
 
 class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     """
-                    Home Page
     This view  handles representation of foods to normal users.
     For food detail, this view requires user location and city from client app.
     """
@@ -320,7 +319,7 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     filterset_class = FoodFilterSet
 
     def filter_queryset(self, queryset):
-        """overriden to apply city filtering on overall search and filter"""
+        """overriden to apply city   filtering on overall search and filter"""
         city = self.request.query_params.get("city", None)
         if not city or not city in settings.CITY_NAMES:
             return queryset.none()
@@ -375,7 +374,7 @@ class RatingViewSet(viewsets.ModelViewSet):
         """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
         rating_type = self.request.query_params.get("type", None)
-        rating_limit = self.request.query_params.get("rating_limit", None)
+        max_results = self.request.query_params.get("max", None)
         # user should be logged in and own the rating object
         if self.request.method in ("DELETE", "PATCH"):
             if (
@@ -396,11 +395,11 @@ class RatingViewSet(viewsets.ModelViewSet):
                 ct = ContentType.objects.get_for_model(Carrier)
             else:
                 return Rating.objects.none()
-            rating_limit = int(rating_limit)
-            if rating_limit and rating_limit > 0:
+            max_results = int(max_results)
+            if max_results and max_results > 0:
                 query_set = Rating.objects.filter(
                     content_type=ct, object_id=int(object_id), enabled=True
-                ).order_by("-rating")[:rating_limit]
+                ).order_by("-rating")[:max_results]
             else:
                 query_set = Rating.objects.filter(
                     content_type=ct, object_id=int(object_id), enabled=True
@@ -481,7 +480,6 @@ class RatingViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# categories for vendor
 class CategoriesReadAPIView(views.APIView):
     http_method_names = ["get"]
 
