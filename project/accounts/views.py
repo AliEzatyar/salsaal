@@ -52,9 +52,7 @@ class UserViewset(viewsets.ModelViewSet):
 
 class VerifyActivateAccountOTP(views.APIView):
     """sign up-after otp verification"""
-
     permission_classes = [permissions.AllowAny]
-
     def post(self, request):
         phone_number = request.data.get("phone_number")
         otp_input = request.data.get("otp")
@@ -70,7 +68,16 @@ class VerifyActivateAccountOTP(views.APIView):
                 user.is_active = True
                 user.save()
                 user_otp.delete()
-                return Response({"message": "account_activated"}, status=200)
+                # sending access and refresh tokens
+                refresh = RefreshToken.for_user(user)
+                return Response(
+                    {
+                        "message": "account_activated",
+                        "refresh": str(refresh),
+                        "access": str(refresh.access_token),
+                    },
+                    status=200,
+                )
             else:
                 return Response({"detail": "invalid_otp"}, status=400)
 

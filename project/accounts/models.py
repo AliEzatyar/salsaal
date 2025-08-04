@@ -113,7 +113,8 @@ class UserProfile(g_models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
-
+    
+    
     def __str__(self):
         return str(self.user)
 
