@@ -131,7 +131,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="home-categories")
     def categories(self, request):
-        """this endpoint returns available categories"""
+        """this endpoint returns available categories for normal users"""
         cat_key = "home_categories"
         categories = cache.get(cat_key)
         if not categories:
@@ -481,21 +481,18 @@ class RatingViewSet(viewsets.ModelViewSet):
 
 
 class CategoriesReadAPIView(views.APIView):
+    """This endpoint a list of categories for vendors when adding new fooditems"""
+
     http_method_names = ["get"]
 
     def get(self, *args, **kwargs):
         return Response(
-            {
-                "categories": [
-                    (cat.id, cat.name)
-                    for cat in Category.objects.filter(show_on_home=True)
-                ]
-            }
+            {"categories": [(cat.id, cat.name) for cat in Category.objects.all()]}
         )
 
 
 class PublicVendorDetail(views.APIView):
-    """this view enables a normal user see a vendor detail with its menue"""
+    """this view enables a normal user see a vendor detail with its fooditems avaialble"""
 
     serializer_class = PublicVendorSerializer
     permission_classes = [AllowAny]
@@ -509,9 +506,9 @@ class PublicVendorDetail(views.APIView):
 
     def get(self, *args, **kwargs):
         """
-            This initially tries to get vendor details from cache, if not found,
-            then queries db and serialize and cache.
-            we have to use caching since its not only about vendor but its menue.
+        This initially tries to get vendor details from cache, if not found,
+        then queries db and serialize and cache.
+        we have to use caching since its not only about vendor but its menue.
         """
         request_data = self.request.query_params
         vendor_id = request_data.get("id", None)
@@ -572,6 +569,7 @@ class PublicVendorDetail(views.APIView):
 
 class FavListViewset(viewsets.ModelViewSet):
     """THis viewset handles CRUD of Fav List"""
+
     serializer_class = FavItemSerializer
     permission_classes = [IsAuthenticated, IsHavingFavlist]
 

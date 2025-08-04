@@ -3,6 +3,7 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
 from django.utils import timezone
+from django.conf import settings
 
 ADMIN = 0
 REST = 1
@@ -72,7 +73,7 @@ class User(AbstractBaseUser):
     email = models.EmailField(max_length=100, unique=True)
     phone_number = models.CharField(
         max_length=12,
-        blank=True,
+        unique=True
     )
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, blank=True, null=True)
 
@@ -87,9 +88,9 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=False)
     region = models.CharField(blank=True, null=True, default="AF")
 
-    USERNAME_FIELD = "email"
+    USERNAME_FIELD = "phone_number"
 
-    REQUIRED_FIELDS = ["username", "first_name", "last_name"]
+    REQUIRED_FIELDS = ["username"]
 
     def __str__(self):
         return self.email
@@ -113,7 +114,12 @@ class UserProfile(g_models.Model):
         related_name="profile",
     )
     pf_lang = models.CharField(
-        max_length=10,default="en", choices=[("en", "English"), ("fa", "Farsi"), ("ps", "Pashto")]
+        max_length=10,
+        default="fa",
+        choices=settings.LANGUAGES,
+    )
+    country = models.CharField(
+        max_length=2, choices=settings.COUNTRIES, default="AF"
     )
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)

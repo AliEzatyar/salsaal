@@ -55,10 +55,10 @@ class MyDecimalField(serializers.Field):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-
+    """used in home-categories"""
     class Meta:
         model = Category
-        fields = ["name"]
+        fields = ["id","name","picture"]
 
 
 class FoodImageSerializer(serializers.ModelSerializer):
@@ -86,9 +86,9 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
-            "category",
-            "prices",
             "min_price",
+            "prices",
+            "category",
             "category_name",
             "description",
             "is_available",

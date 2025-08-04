@@ -11,6 +11,7 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     show_on_home = models.BooleanField(default=True)
+    picture = models.ImageField(blank=True, null=True)
 
     class Meta:
         verbose_name = "category"

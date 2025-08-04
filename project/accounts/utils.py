@@ -29,14 +29,16 @@ def generate_otp():
 OTP_VERIFY_EMAIL = 1
 OTP_FORGOT_PASSWORD =2
 OTP_VERIFY_CARRIER = 3
+OTP_LOGIN = 4
 
 
 def send_otp(request, user, typ=OTP_VERIFY_EMAIL,**kwargs):
     """
-    sends an email to verify the new registered user
+    sends otp using email
     """
     otp = generate_otp()
-    mail_title = "Verify You Email"
+    print("this vas the otp",otp)
+    mail_title = "Verify Your Email"
     do = "activate your account"
     question = ""
     if typ == OTP_FORGOT_PASSWORD:
@@ -48,16 +50,18 @@ def send_otp(request, user, typ=OTP_VERIFY_EMAIL,**kwargs):
         mail_title = "Add to Carriers"
         do  = "add your account to carriers list"
         question = f"Are you working in {kwargs['vendor_name']}, if yes,"
-        
+    elif typ == OTP_LOGIN:
+        mail_title = "Login"
+        do = "login to your account"
     mail_body = render_to_string(
         "accounts/emails/account_verification.html",
         {"user": user,"question":question, "otp": otp, "do": do},
     )
     # removing previous otp if existing
-    pre_otp = UserOtp.objects.filter(user=user).first()
+    pre_otp = UserOtp.objects.filter(user=user).order_by("-created_at")
     if pre_otp:
         pre_otp.delete()
-    
+
     # creating new otp
     UserOtp.objects.create(user=user, otp=otp)
     mail_to = user.email

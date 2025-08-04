@@ -1,4 +1,5 @@
 from rest_framework.serializers import ModelSerializer, ValidationError, DateTimeField
+from accounts.utils import send_otp
 from vendor.models import Vendor
 from .models import User, UserProfile, CUSTOMER
 from rest_framework_simplejwt.serializers import (
@@ -13,21 +14,33 @@ class UserCreationSerializer(ModelSerializer):
         fields = [
             "first_name",
             "last_name",
-            "username",
-            "password",
             "email",
+            "phone_number"
         ]
 
     def create(self, validated_data):
         # overriden for password hashing
         cd = validated_data
         user = User(**cd)
-        user.set_password(cd["password"])
         user.role = CUSTOMER
         user.save()
-
         return user
 
+    def validate(self, attrs):
+        super().validate(attrs)
+        phone_number = attrs.get("phone_number",None)
+        if phone_number:
+            okay = True
+            if not phone_number.startswith("+"):
+                print("no pluys sign")
+                okay = False
+            if not phone_number[1:].isnumeric():
+                print("second validation ")
+                okay = False
+            if not okay:
+                raise ValidationError({"detail":"phone_invalid"})
+        print("validation ended")
+        return attrs
 
 class UserProfileSerializer(ModelSerializer):
     class Meta:
@@ -98,7 +111,7 @@ class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-
+        
         # adding role
         token["role"] = user.role
         return token

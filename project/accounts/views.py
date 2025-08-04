@@ -1,18 +1,19 @@
-from accounts.models import User, UserOtp, UserProfile
+from accounts.models import User, UserOtp
 from accounts.serializers import (
     UserCreationSerializer,
     UserDetailSerializer,
-    UserProfileSerializer,
 )
-from api.permissions import IsProfileOwner
+from .utils import OTP_LOGIN
+from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
-from .serializers import RoleTokenObtainPairSerializer, RoleTokenRefreshSeriaizer
+from .serializers import RoleTokenRefreshSeriaizer
 from rest_framework import permissions
 from rest_framework import generics
 from rest_framework import views, viewsets
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
+
 """Account API Views"""
 
 
@@ -33,8 +34,9 @@ class UserViewset(viewsets.ModelViewSet):
     GET --> retrieve user data including user profile
     PUT --> update user and profile
     DELETE> delete the user account and profile
-   
+
     """
+
     http_method_names = ["get", "delete", "patch", "put"]
     serializer_class = UserDetailSerializer
 
@@ -48,56 +50,36 @@ class UserViewset(viewsets.ModelViewSet):
         return new_qs
 
 
-# class UserProfileViewset(viewsets.ModelViewSet):
-#     serializer_class = UserProfileSerializer
-#     permission_classes = [permissions.IsAuthenticated, IsProfileOwner]
-#     # http_method_names = ["patch","get"]
-
-#     def destroy(self, request, *args, **kwargs):
-#         return Response({"error": "user profile deletion not allowed"})
-
-#     def create(self, request, *args, **kwargs):
-#         return Response({"error": "user profile creation not allowed"})
-
-#     def get_object(self):
-#         """only user's profile"""
-#         if hasattr(self.request.user, "profile"):
-#             return self.request.user.profile
-#         return super().get_object()
-
-#     def get_queryset(self):
-#         """overriding to prevent others from accessing another profile"""
-#         return UserProfile.objects.filter(user=self.request.user)
-
-
 class VerifyActivateAccountOTP(views.APIView):
+    """sign up-after otp verification"""
 
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
+        phone_number = request.data.get("phone_number")
         otp_input = request.data.get("otp")
         try:
-            user = User.objects.get(email=email)
-            user_otp = UserOtp.objects.get(user=user)
+            user = User.objects.get(phone_number=phone_number)
+            # last otp
+            user_otp = UserOtp.objects.filter(user=user).order_by("-created_at").first()
 
             if user_otp.is_expired():
                 user_otp.delete()  # Optional: cleanup expired OTP
-                return Response({"error": "OTP has expired"}, status=400)
+                return Response({"detail": "otp_expired"}, status=400)
             if user_otp.otp == str(otp_input):
                 user.is_active = True
                 user.save()
                 user_otp.delete()
-                return Response(
-                    {"message": "Account activated successfully"}, status=200
-                )
+                return Response({"message": "account_activated"}, status=200)
             else:
-                return Response({"error": "Invalid OTP"}, status=400)
+                return Response({"detail": "invalid_otp"}, status=400)
 
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+            return Response({"detail": "user_not_found"}, status=404)
         except UserOtp.DoesNotExist:
-            return Response({"error": "OTP not found"}, status=404)
+            return Response({"detail": "otp_not_found"}, status=404)
+        except:
+            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class ResendActivationOTP(views.APIView):
@@ -105,99 +87,81 @@ class ResendActivationOTP(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, *args, **kwargs):
-        email = self.request.data.get("email", None)
-        if not email:
+        phone_number = self.request.data.get("phone_number", None)
+        if not phone_number:
             return Response(
-                {"error": "provide_an_email"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(phone_number=phone_number).first()
         if not user:
             return Response(
                 {"error": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
-            ) 
+            )
 
         send_otp(self.request, user)
         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
 
-class ForgotPassword(views.APIView):
+class RoleTokenObtainView(views.APIView):
+    """login"""
     permission_classes = [permissions.AllowAny]
 
-    def post(self, *args, **kwargs):
-        email = self.request.data.get("email")
-        user = User.objects.filter(email=email).first()
-        if not user:
+    def patch(self,*args, **kwargs):
+        """sends otp"""
+        data = self.request.data
+        phone_number = data.get("phone_number")
+        if not phone_number:
+            return Response({"detail":"provide_phone_number"},status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(phone_number=phone_number)
+            send_otp(self.request,user,OTP_LOGIN)
+            return Response({"message":"otp_sent"})
+        except User.DoesNotExist():
             return Response(
-                {"error": "no_account_registered_with_this_email"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"detail": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        send_otp(self.request, user, typ=2)
-        return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
-
-
-class VerifyForgotPasswordOTP(views.APIView):
-
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        email = request.data.get("email")
-        otp_input = request.data.get("otp")
-        try:
-            user = User.objects.get(email=email)
-            user_otp = UserOtp.objects.get(user=user)
-
-            if user_otp.is_expired():
-                user_otp.delete()  # Optional: cleanup expired OTP
-                return Response({"error": "otp_expired"}, status=400)
-            if user_otp.otp == str(otp_input):
-                return Response({"message": "otp_valid"}, status=200)
-            else:
-                return Response({"error": "otp_invalid"}, status=400)
-
-        except User.DoesNotExist:
-            return Response({"error": "user_not_found"}, status=404)
-        except UserOtp.DoesNotExist:
-            return Response({"error": "otp_not_found"}, status=404)
-
-
-class ResetPassword(views.APIView):
-    permission_classes = [permissions.AllowAny]
-
     def post(self, *args, **kwargs):
-        email = self.request.data.get("email")
-        otp_input = self.request.data.get("otp")
-
+        """verifies otp and signs user in"""
         try:
-            user = User.objects.get(email=email)
-            user_otp = UserOtp.objects.get(user=user)
+            data = self.request.data
+            phone_number = data.get("phone_number")
+            code = data.get("otp")
+            user = User.objects.get(phone_number=phone_number)
+            otp_obj = UserOtp.objects.filter(user=user).order_by("-created_at").first()
+            okay = True
+            if not otp_obj:
+                print("no otp")
+                okay = False
+            elif otp_obj.is_expired():
+                print("expired")
 
-            if user_otp.is_expired():
-                user_otp.delete()  # Optional: cleanup expired OTP
-                return Response({"detail": "OTP_has_expired"}, status=400)
-
-            if user_otp.otp == str(otp_input):
-                new_password = self.request.data.get("password", None)
-                if not new_password:
-                    return Response({"detail": "no_password_entered"}, status=400)
-                user_otp.delete()
-                user.set_password(new_password)
-                user.save()
+                otp_obj.delete()
+                okay = False
+            elif otp_obj.otp != str(code):
+                print("incorrect")
+                okay = False
+            if not okay:
                 return Response(
-                    {"message": "password_changed_successfully"}, status=200
+                    {"detail": "authentication_failed"},
+                    status=status.HTTP_403_FORBIDDEN,
                 )
-            else:
-                return Response({"detail": "otp_invalid"}, status=400)
-
-        except User.DoesNotExist:
-            return Response({"detail": "user_not_found"}, status=404)
-        except UserOtp.DoesNotExist:
-            return Response({"detail": "otp_not_found"}, status=404)
-
-
-class RoleTokenObtainView(TokenObtainPairView):
-    serializer_class = RoleTokenObtainPairSerializer
+            # Generate JWT token manually
+            refresh = RefreshToken.for_user(user)
+            otp_obj.delete()
+            return Response(
+                {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                    "rule": user.role
+                }
+            )
+        except Exception as e:
+            print("problems in ace",e,e.args)
+            return Response(
+                {"detail": "authentication_failed"}, status=status.HTTP_403_FORBIDDEN
+            )
 
 
 class RoleTokenRefreshView(TokenRefreshView):
