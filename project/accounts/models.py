@@ -17,43 +17,37 @@ CARRIER_ADD_OTP_EXPIRATION = 1440
 
 # Create your models here.
 class UserManager(BaseUserManager):
-    def create_user(
-        self, first_name: str, last_name: str, username: str, email, password=None
-    ):
-        email = self.normalize_email(email)
-        if not username:
-            raise ValueError("username cannot be empty")
-        if not email:
-            raise ValueError("email cannot be empty")
+    def create_user(self, phone_number, email, full_name, password=None):
 
+        email = self.normalize_email(email)
+        if not phone_number:
+            raise ValueError("phone_number_cannot_be_empty")
+        if not full_name:
+            raise ValueError("full_name_empty")
         user = self.model(
-            first_name=first_name,
-            last_name=last_name,
-            username=username,
+            phone_number=phone_number,
+            full_name=full_name,
             email=email,
+            password=password,
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(
-        self, first_name: str, last_name: str, username: str, email, password=None
-    ):
+    def create_superuser(self, phone_number: str, email, full_name, password=None):
         user = self.create_user(
-            first_name=first_name,
-            last_name=last_name,
-            username=username,
+            phone_number=phone_number,
             email=self.normalize_email(email),
+            full_name=full_name,
+            password=password,
         )
 
         user.set_password(password)
-        user.save(using=self._db)
         user.is_admin = True
         user.is_staff = True
         user.is_active = True
         user.is_superadmin = False
         user.save(using=self._db)
-
         return user
 
 
@@ -67,14 +61,9 @@ class User(AbstractBaseUser):
         (CARRIER, "Carrier"),
     ]
 
-    first_name = models.CharField(max_length=60)
-    last_name = models.CharField(max_length=60)
-    username = models.CharField(max_length=60, unique=True)
+    full_name = models.CharField(max_length=60)
     email = models.EmailField(max_length=100, unique=True)
-    phone_number = models.CharField(
-        max_length=12,
-        unique=True
-    )
+    phone_number = models.CharField(max_length=12, unique=True)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, blank=True, null=True)
 
     # django required fields
@@ -101,9 +90,6 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_lable: str):
         return True
 
-    def get_full_name(self):
-        return self.first_name + " " + self.last_name
-
 
 class UserProfile(g_models.Model):
     user = models.OneToOneField(
@@ -118,9 +104,7 @@ class UserProfile(g_models.Model):
         default="fa",
         choices=settings.LANGUAGES,
     )
-    country = models.CharField(
-        max_length=2, choices=settings.COUNTRIES, default="AF"
-    )
+    country = models.CharField(max_length=2, choices=settings.COUNTRIES, default="AF")
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15, blank=True, null=True)

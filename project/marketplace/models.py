@@ -115,7 +115,7 @@ class FavList(models.Model):
         return self.items.count()
 
     def __str__(self):
-        return f"FavList <{self.user.username}>"
+        return f"FavList <{self.user.full_name}>"
 
 
 class FavItem(models.Model):

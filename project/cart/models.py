@@ -34,7 +34,7 @@ class Cart(models.Model):
         self.items.all().delete()
 
     def __str__(self):
-        return f"Cart <{self.user.username}>"
+        return f"Cart <{self.user.full_name}>"
 
 
 class CartItem(models.Model):

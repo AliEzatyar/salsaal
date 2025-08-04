@@ -6,10 +6,12 @@ from accounts.models import User, UserOtp, UserProfile
 
 class UserAd(UserAdmin):
     filter_horizontal = ()
-    list_display = ['id','username','role','first_name','last_name','email']
+    list_display = ['id','role','full_name','email','phone_number']
     fieldsets = ()
     list_filter = ()
-    list_display_links = ['username']
+    list_display_links = ['email']
+    ordering = ("email",)
+
 
 admin.site.register(UserOtp)
 admin.site.register(User,UserAd)

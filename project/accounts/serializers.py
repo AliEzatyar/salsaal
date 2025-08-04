@@ -1,5 +1,4 @@
-from rest_framework.serializers import ModelSerializer, ValidationError, DateTimeField
-from accounts.utils import send_otp
+from rest_framework.serializers import ModelSerializer, ValidationError
 from vendor.models import Vendor
 from .models import User, UserProfile, CUSTOMER
 from rest_framework_simplejwt.serializers import (
@@ -7,13 +6,11 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-import jwt
 class UserCreationSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "first_name",
-            "last_name",
+            "full_name",
             "email",
             "phone_number"
         ]
@@ -46,7 +43,7 @@ class UserProfileSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ["picture", "city", "address", "lattitude", "longitude"]
-
+        
     def update(self, instance, validated_data):
         pic = validated_data.get("picture", None)
         if pic:
@@ -70,10 +67,8 @@ class UserDetailSerializer(ModelSerializer):
         model = User
         fields = [
             "id",
-            "username",
+            "full_name",
             "email",
-            "first_name",
-            "last_name",
             "phone_number",
             "profile"
             

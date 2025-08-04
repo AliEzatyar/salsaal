@@ -56,9 +56,10 @@ class MyDecimalField(serializers.Field):
 
 class CategorySerializer(serializers.ModelSerializer):
     """used in home-categories"""
+
     class Meta:
         model = Category
-        fields = ["id","name","picture"]
+        fields = ["id", "name", "picture"]
 
 
 class FoodImageSerializer(serializers.ModelSerializer):
@@ -76,7 +77,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     is_available = serializers.BooleanField(default=True)
     images = FoodImageSerializer(many=True, read_only=True)
     uploaded_images = serializers.ListField(
-        child=serializers.ImageField(), write_only=True, required=False
+        child=serializers.ImageField(), write_only=True, required=True
     )
     default_image = serializers.SerializerMethodField("get_image_url")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
@@ -111,7 +112,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         if hasattr(obj.default_image, "image"):
-            return settings.CURRENT_DOMAIN_NAME+obj.default_image.image.url
+            return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
 
     def get_category_name(self, obj):
         return obj.category.name
@@ -149,6 +150,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             # selecting first image as default
             if i == 0:
                 food.default_image = img_obj
+
         food.save()
         return food
 
@@ -163,9 +165,13 @@ class FoodSerializerDetail(serializers.ModelSerializer):
                     setattr(instance, attr, value)
                 name = validated_data.get("name")
                 if name:
-                    existing = Food.objects.filter(name=name,vendor=instance.vendor).exclude(pk=self.instance.pk).exists()
+                    existing = (
+                        Food.objects.filter(name=name, vendor=instance.vendor)
+                        .exclude(pk=self.instance.pk)
+                        .exists()
+                    )
                     if existing:
-                        raise ValidationError({"detail":"foodname_already_used"})
+                        raise ValidationError({"detail": "foodname_already_used"})
                 # deleting all previous images
                 if len(images) > 0:
                     for image in instance.images.all():
@@ -178,7 +184,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
                         instance.default_image = img_obj
                 instance.save()
         except IntegrityError:
-            raise ValidationError({"detail":"uknown_problem"})
+            raise ValidationError({"detail": "uknown_problem"})
         return instance
 
 
@@ -189,6 +195,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     images = FoodImageSerializer(many=True, read_only=True)
     default_image = serializers.SerializerMethodField("get_image_url")
     vendor = serializers.SerializerMethodField("get_vendor_name")
+
     class Meta:
         model = Food
         fields = [
@@ -203,7 +210,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "is_available",
             "avg_rating",
             "rating_count",
-            "vendor"
+            "vendor",
         ]
         read_only_fields = ["__all__"]
 
@@ -213,8 +220,9 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     def get_image_url(self, obj):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
 
-    def get_vendor_name(self,obj):
+    def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
+
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
@@ -259,10 +267,11 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details"""
 
     foods = FoodSerializerMany(many=True, read_only=True)
-    location = serializers.SerializerMethodField("get_location") # read only
+    location = serializers.SerializerMethodField("get_location")  # read only
     opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
-    is_open_now = serializers.SerializerMethodField("get_is_open") # read only
-    picture = serializers.SerializerMethodField("get_picture",read_only=True)
+    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
+    picture = serializers.SerializerMethodField("get_picture", read_only=True)
+
     class Meta:
         model = Vendor
         fields = [
@@ -275,12 +284,12 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "foods",
             "opening_hours",
             "is_open_now",
-            "picture"
+            "picture",
         ]
         read_only_fields = ["id", "is_open_now"]
 
     def get_location(self, obj):
-        """adds vendor location """
+        """adds vendor location"""
         if obj.get_location():
             return obj.get_location().tuple  # json does not support point object
 
@@ -295,20 +304,22 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         ).exists()
         return is_open
 
-    def get_picture(self,obj):
+    def get_picture(self, obj):
         return obj.user_profile.picture.url
+
 
 class FavItemSerializer(serializers.ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
-    picture = serializers.SerializerMethodField("get_food_picture",read_only=True)
+    picture = serializers.SerializerMethodField("get_food_picture", read_only=True)
+
     class Meta:
         model = FavItem
-        fields = ["id","food", "food_name","picture"]
-        read_only_fields = ["picture","food_name"]
+        fields = ["id", "food", "food_name", "picture"]
+        read_only_fields = ["picture", "food_name"]
 
     def create(self, validated_data):
         favlist = FavList.objects.filter(id=self.context["favlist"]).first()
-        exists = favlist.items.filter(food=validated_data['food']).exists()
+        exists = favlist.items.filter(food=validated_data["food"]).exists()
         if exists:
             raise serializers.ValidationError(detail="already_exists")
         if not favlist:
@@ -319,8 +330,9 @@ class FavItemSerializer(serializers.ModelSerializer):
     def get_food_name(self, obj):
         return obj.food.name
 
-    def get_food_picture(self,obj):
+    def get_food_picture(self, obj):
         return obj.food.default_image.image.url
+
 
 class FavListSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField("get_user_name", read_only=True)

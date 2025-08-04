@@ -72,7 +72,7 @@ class Order(models.Model):
         self.delete()
 
     def __str__(self):
-        return f"Order {self.id} - {self.user.username}"
+        return f"Order {self.id} - {self.user.full_name}"
 
 
 class OrderItem(models.Model):
