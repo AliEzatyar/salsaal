@@ -230,7 +230,6 @@ class FoodSerializerMany(serializers.ModelSerializer):
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     min_price = MyDecimalField()
     default_image = serializers.SerializerMethodField("get_photo_url")
-
     class Meta:
         model = Food
         fields = [

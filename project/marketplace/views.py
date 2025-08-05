@@ -68,7 +68,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """only available foods"""
-        return Food.objects.filter(is_available=True)
+        print("using select related")
+        return Food.objects.filter(is_available=True).select_related("vendor__user_profile")
 
     def get_object(self):
         obj = super().get_object()
@@ -81,12 +82,16 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         city = self.request.query_params.get("city", None)
         if not city or not city in settings.CITY_NAMES:
             return queryset.none()
+        queryset = queryset.filter(vendor__user_profile__city=city)
+        
         for backend in list(self.filter_backends):
             queryset = backend().filter_queryset(self.request, queryset, self)
-        return queryset.filter(vendor__user_profile__city=city)
+
+        return 
 
     @method_decorator(cache_page(5 * 60))
     def list(self, request, *args, **kwargs):
+        """its called last"""
         return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=["get"], url_path="food-item-detail")
@@ -297,6 +302,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
         return Response(best_foods)
 
+    @action(detail=False,methods=["get"],url_path="recommended")
+    def recommended_foods(self,request):
+        pass
 
 class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     """

@@ -24,7 +24,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         orders = Order.objects.filter(
             user=request.user, status=ORDER_STATUS_CHOICES[1][1]
         )
-        print("cacneling", orders)
+        print("cacnelling", orders)
         for order in orders:
             order.cancel_order()
         return Response(status=status.HTTP_200_OK)

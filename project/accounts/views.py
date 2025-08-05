@@ -34,7 +34,6 @@ class UserViewset(viewsets.ModelViewSet):
     GET --> retrieve user data including user profile
     PUT --> update user and profile
     DELETE> delete the user account and profile
-
     """
 
     http_method_names = ["get", "delete", "patch", "put"]
@@ -123,8 +122,8 @@ class RoleTokenObtainView(views.APIView):
         try:
             user = User.objects.get(phone_number=phone_number)
             send_otp(self.request,user,OTP_LOGIN)
-            return Response({"message":"otp_sent"})
-        except User.DoesNotExist():
+            return Response({"message":"otp_sent"},status=status.HTTP_301_MOVED_PERMANENTLY)
+        except User.DoesNotExist:
             return Response(
                 {"detail": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
             )
@@ -157,6 +156,10 @@ class RoleTokenObtainView(views.APIView):
             # Generate JWT token manually
             refresh = RefreshToken.for_user(user)
             otp_obj.delete()
+            # if partial sign up had happened, activate account if otp is correct
+            if not user.is_active:
+                user.is_active = True
+                user.save()
             return Response(
                 {
                     "refresh": str(refresh),

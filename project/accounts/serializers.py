@@ -1,3 +1,4 @@
+
 from rest_framework.serializers import ModelSerializer, ValidationError
 from vendor.models import Vendor
 from .models import User, UserProfile, CUSTOMER
@@ -6,6 +7,7 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
 class UserCreationSerializer(ModelSerializer):
     class Meta:
         model = User
@@ -38,6 +40,7 @@ class UserCreationSerializer(ModelSerializer):
                 raise ValidationError({"detail":"phone_invalid"})
         print("validation ended")
         return attrs
+
 
 class UserProfileSerializer(ModelSerializer):
     class Meta:
