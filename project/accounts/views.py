@@ -49,34 +49,43 @@ class UserViewset(viewsets.ModelViewSet):
         return new_qs
 
 
-class VerifyActivateAccountOTP(views.APIView):
+class VerifyOTP(views.APIView):
     """sign up-after otp verification"""
+
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         phone_number = request.data.get("phone_number")
         otp_input = request.data.get("otp")
+        # not otp or phone
+        if not (phone_number and otp_input):
+            return Response(
+                {"detail": "partial_data"}, status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             user = User.objects.get(phone_number=phone_number)
             # last otp
             user_otp = UserOtp.objects.filter(user=user).order_by("-created_at").first()
-
+            # expired otp
             if user_otp.is_expired():
                 user_otp.delete()  # Optional: cleanup expired OTP
                 return Response({"detail": "otp_expired"}, status=400)
+            # correct otp
             if user_otp.otp == str(otp_input):
-                user.is_active = True
-                user.save()
+                if not user.is_active:
+                    user.is_active = True
+                    user.save()
                 user_otp.delete()
                 # sending access and refresh tokens
                 refresh = RefreshToken.for_user(user)
                 return Response(
                     {
-                        "message": "account_activated",
                         "refresh": str(refresh),
                         "access": str(refresh.access_token),
                     },
                     status=200,
                 )
+            # incorrect otp
             else:
                 return Response({"detail": "invalid_otp"}, status=400)
 
@@ -111,67 +120,84 @@ class ResendActivationOTP(views.APIView):
 
 class RoleTokenObtainView(views.APIView):
     """login"""
+
     permission_classes = [permissions.AllowAny]
 
-    def patch(self,*args, **kwargs):
+    # def patch(self, *args, **kwargs):
+    #     """sends otp"""
+    #     data = self.request.data
+    #     phone_number = data.get("phone_number")
+    #     if not phone_number:
+    #         return Response(
+    #             {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
+    #         )
+    #     try:
+    #         user = User.objects.get(phone_number=phone_number)
+    #         send_otp(self.request, user, OTP_LOGIN)
+    #         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
+    #     except User.DoesNotExist:
+    #         return Response(
+    #             {"detail": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
+    #         )
+
+    def post(self, *args, **kwargs):
         """sends otp"""
         data = self.request.data
         phone_number = data.get("phone_number")
         if not phone_number:
-            return Response({"detail":"provide_phone_number"},status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             user = User.objects.get(phone_number=phone_number)
-            send_otp(self.request,user,OTP_LOGIN)
-            return Response({"message":"otp_sent"},status=status.HTTP_200_OK)
+            send_otp(self.request, user, OTP_LOGIN)
+            return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response(
                 {"detail": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
             )
+        # try:
+        #     data = self.request.data
+        #     phone_number = data.get("phone_number")
+        #     code = data.get("otp")
+        #     user = User.objects.get(phone_number=phone_number)
+        #     otp_obj = UserOtp.objects.filter(user=user).order_by("-created_at").first()
+        #     okay = True
+        #     if not otp_obj:
+        #         print("no otp")
+        #         okay = False
+        #     elif otp_obj.is_expired():
+        #         print("expired")
 
-    def post(self, *args, **kwargs):
-        """verifies otp and signs user in"""
-        try:
-            data = self.request.data
-            phone_number = data.get("phone_number")
-            code = data.get("otp")
-            user = User.objects.get(phone_number=phone_number)
-            otp_obj = UserOtp.objects.filter(user=user).order_by("-created_at").first()
-            okay = True
-            if not otp_obj:
-                print("no otp")
-                okay = False
-            elif otp_obj.is_expired():
-                print("expired")
-
-                otp_obj.delete()
-                okay = False
-            elif otp_obj.otp != str(code):
-                print("incorrect")
-                okay = False
-            if not okay:
-                return Response(
-                    {"detail": "authentication_failed"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            # Generate JWT token manually
-            refresh = RefreshToken.for_user(user)
-            otp_obj.delete()
-            # if partial sign up had happened, activate account if otp is correct
-            if not user.is_active:
-                user.is_active = True
-                user.save()
-            return Response(
-                {
-                    "refresh": str(refresh),
-                    "access": str(refresh.access_token),
-                    "rule": user.role
-                }
-            )
-        except Exception as e:
-            print("problems in ace",e,e.args)
-            return Response(
-                {"detail": "authentication_failed"}, status=status.HTTP_403_FORBIDDEN
-            )
+        #         otp_obj.delete()
+        #         okay = False
+        #     elif otp_obj.otp != str(code):
+        #         print("incorrect")
+        #         okay = False
+        #     if not okay:
+        #         return Response(
+        #             {"detail": "authentication_failed"},
+        #             status=status.HTTP_403_FORBIDDEN,
+        #         )
+        #     # Generate JWT token manually
+        #     refresh = RefreshToken.for_user(user)
+        #     otp_obj.delete()
+        #     # if partial sign up had happened, activate account if otp is correct
+        #     if not user.is_active:
+        #         user.is_active = True
+        #         user.save()
+        #     return Response(
+        #         {
+        #             "refresh": str(refresh),
+        #             "access": str(refresh.access_token),
+        #             "rule": user.role,
+        #         }
+        #     )
+        # except Exception as e:
+        #     print("problems in ace", e, e.args)
+        #     return Response(
+        #         {"detail": "authentication_failed"}, status=status.HTTP_403_FORBIDDEN
+        #     )
 
 
 class RoleTokenRefreshView(TokenRefreshView):

@@ -312,8 +312,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 vendor__user_profile__city=city,
                 id__in=most_viewd_ids,
             ).order_by("-avg_rating")[:10]
-            # applying filters
-            best_foods = self.filter_queryset(best_foods)
+            # applying other filters, ordering by distance
+            # best_foods = self.filter_queryset(best_foods) # distance ordering does not mean...
             ser = FoodSerializerMany(best_foods, many=True)
             best_foods = ser.data
             cache.set(key, best_foods, 1 * 3600)  # 1 day
@@ -322,6 +322,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="recommended")
     def recommended_foods(self, request):
+        
         pass
 
     @action(detail=False, methods=["get"], url_path="discounted")

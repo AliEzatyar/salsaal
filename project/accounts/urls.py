@@ -20,7 +20,7 @@ urlpatterns = [
         views.RoleTokenObtainView.as_view(), name="login"
     ),
     path("refresh-token/", views.RoleTokenRefreshView.as_view()),
-    path("activate-account/", views.VerifyActivateAccountOTP.as_view()),
+    path("verify-otp/", views.VerifyOTP.as_view()),
     path("resend-activate-otp/", views.ResendActivationOTP.as_view()),
     path("", include(router.urls)),
 ]
