@@ -57,7 +57,7 @@ class VerifyOTP(views.APIView):
     def post(self, request):
         phone_number = request.data.get("phone_number")
         otp_input = request.data.get("otp")
-        # not otp or phone
+        # not otp or phone sent
         if not (phone_number and otp_input):
             return Response(
                 {"detail": "partial_data"}, status=status.HTTP_400_BAD_REQUEST
@@ -66,9 +66,12 @@ class VerifyOTP(views.APIView):
             user = User.objects.get(phone_number=phone_number)
             # last otp
             user_otp = UserOtp.objects.filter(user=user).order_by("-created_at").first()
+            # non-existing otp
+            if not user_otp:
+                return Response({"detail": "otp_not_found"}, status=404)
             # expired otp
             if user_otp.is_expired():
-                user_otp.delete()  # Optional: cleanup expired OTP
+                user_otp.delete()  
                 return Response({"detail": "otp_expired"}, status=400)
             # correct otp
             if user_otp.otp == str(otp_input):
@@ -91,13 +94,13 @@ class VerifyOTP(views.APIView):
 
         except User.DoesNotExist:
             return Response({"detail": "user_not_found"}, status=404)
-        except UserOtp.DoesNotExist:
-            return Response({"detail": "otp_not_found"}, status=404)
-        except:
+        
+        except Exception as e:
+            print(e,e.args)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class ResendActivationOTP(views.APIView):
+class ResendOTP(views.APIView):
 
     permission_classes = [permissions.AllowAny]
 
