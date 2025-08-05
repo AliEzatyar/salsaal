@@ -67,9 +67,16 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     filterset_class = FoodFilterSet
 
     def get_queryset(self):
-        """only available foods"""
-        print("using select related")
-        return Food.objects.filter(is_available=True).select_related("vendor__user_profile")
+        """
+        only available foods in the user's city
+        """
+
+        city = self.request.query_params.get("city", None)
+        if not city or not city in settings.CITY_NAMES:
+            return Food.objects.none()
+        return Food.objects.filter(
+            is_available=True, vendor__user_profile__city=city
+        ).select_related("vendor__user_profile")
 
     def get_object(self):
         obj = super().get_object()
@@ -77,17 +84,26 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             return None
         return obj
 
-    def filter_queryset(self, queryset):
-        """overriden to apply city filtering on overall search and filter"""
-        city = self.request.query_params.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
-            return queryset.none()
-        queryset = queryset.filter(vendor__user_profile__city=city)
-        
+    def filter_queryset(self, queryset, *args, **kwargs):
+        """
+        overriden to apply ordering the result by distance
+        some of the bellow action views may call it in the end.
+        """
+        lat = kwargs.get("lat")
+        lon = kwargs.get("lon")
         for backend in list(self.filter_backends):
             queryset = backend().filter_queryset(self.request, queryset, self)
-
-        return 
+        # ordering by distance/reach-time
+        queryset = sorted(
+            queryset,
+            key=lambda x: distance_calculator(
+                x.vendor.user_profile.lattitude,
+                x.vendor.user_profile.longitude,
+                lat,
+                lon,
+            ),
+        )
+        return queryset
 
     @method_decorator(cache_page(5 * 60))
     def list(self, request, *args, **kwargs):
@@ -296,15 +312,22 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 vendor__user_profile__city=city,
                 id__in=most_viewd_ids,
             ).order_by("-avg_rating")[:10]
+            # applying filters
+            best_foods = self.filter_queryset(best_foods)
             ser = FoodSerializerMany(best_foods, many=True)
             best_foods = ser.data
             cache.set(key, best_foods, 1 * 3600)  # 1 day
 
         return Response(best_foods)
 
-    @action(detail=False,methods=["get"],url_path="recommended")
-    def recommended_foods(self,request):
+    @action(detail=False, methods=["get"], url_path="recommended")
+    def recommended_foods(self, request):
         pass
+
+    @action(detail=False, methods=["get"], url_path="discounted")
+    def discounted_foods(self, request):
+        pass
+
 
 class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     """

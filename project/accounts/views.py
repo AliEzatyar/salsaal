@@ -122,7 +122,7 @@ class RoleTokenObtainView(views.APIView):
         try:
             user = User.objects.get(phone_number=phone_number)
             send_otp(self.request,user,OTP_LOGIN)
-            return Response({"message":"otp_sent"},status=status.HTTP_301_MOVED_PERMANENTLY)
+            return Response({"message":"otp_sent"},status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response(
                 {"detail": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
