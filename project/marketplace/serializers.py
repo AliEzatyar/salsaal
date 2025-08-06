@@ -3,8 +3,7 @@ import json
 from zoneinfo import ZoneInfo
 from rest_framework import serializers
 from vendor.utils import to_af_weekday
-from vendor.serializers import ReadOnlyOpeningHourSerializer
-from vendor.models import Vendor
+from vendor.models import OpeningHour, Vendor
 from marketplace.models import Category, FavItem, FavList, Food, FoodImage, Rating
 from rest_framework import serializers
 from decimal import InvalidOperation
@@ -230,6 +229,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     min_price = MyDecimalField()
     default_image = serializers.SerializerMethodField("get_photo_url")
+
     class Meta:
         model = Food
         fields = [
@@ -249,6 +249,19 @@ class FoodSerializerMany(serializers.ModelSerializer):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
 
 
+class DiscountFoodSerializerMany(serializers.ModelSerializer):
+
+    default_image = serializers.SerializerMethodField("get_photo_url")
+
+    class Meta:
+        model = Food
+        fields = ["id", "name", "default_image"]
+
+    def get_photo_url(self, obj):
+        return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
+
+
+
 class RatingSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField("get_user_name")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
@@ -260,6 +273,15 @@ class RatingSerializer(serializers.ModelSerializer):
 
     def get_user_name(self, obj):
         return obj.user.get_full_name()
+
+
+class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
+    """for marketplace use"""
+
+    class Meta:
+        model = OpeningHour
+        fields = ["start_hour", "end_hour", "weekday", "is_holiday"]
+        read_only_fields = ["id", "start_hour", "end_hour", "weekday", "is_holdiay"]
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):

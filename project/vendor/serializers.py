@@ -1,4 +1,7 @@
 from rest_framework import serializers
+
+from marketplace.models import Discount
+from marketplace.serializers import DiscountFoodSerializerMany
 from .models import OpeningHour, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS
@@ -41,13 +44,14 @@ class OpeningHourSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
-class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
+
+class DiscountSerializer(serializers.ModelSerializer):
+    foods = DiscountFoodSerializerMany(read_only=True, many=True)
 
     class Meta:
-        model = OpeningHour
-        fields = ["start_hour", "end_hour", "weekday", "is_holiday"]
-        read_only_fields = ["id", "start_hour", "end_hour", "weekday", "is_holdiay"]
-
+        model = Discount
+        fields = ["id","vendor","amount", "deadline", "foods"]
+        read_only_fields = ["id"]
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)

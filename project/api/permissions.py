@@ -65,6 +65,17 @@ class IsVendorOfOrder(BasePermission):
         return obj.vendor == request.user.vendor
 
 
+class IsVendorOfDiscount(BasePermission):
+    def has_permission(self, request, view):
+
+        if not hasattr(request.user, "vendor") or request.user.role != REST:
+            raise PermissionDenied(detail="user_not_vendor")
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        return obj.vendor == request.user.vendor
+
+
 class IsVendorOfCarrier(BasePermission):
 
     def has_object_permission(self, request, view, obj):
@@ -113,8 +124,6 @@ class IsHavingFavlist(BasePermission):
         if not (hasattr(request.user, "favlist") and request.user.role == CUSTOMER):
             raise PermissionDenied(detail="user_has_no_favlist")
         return True
-
-
 
 
 class NotAdmin(BasePermission):

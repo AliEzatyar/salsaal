@@ -1,7 +1,7 @@
 import json
 from django.conf import settings
-from marketplace.models import Food
-from api.permissions import IsVendor, IsVendorOfOrder
+from marketplace.models import Discount, Food
+from api.permissions import IsVendor, IsVendorOfDiscount, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
@@ -21,7 +21,11 @@ from marketplace.utils import estimate_travel_time, haversine_distance
 from cart.models import Cart
 from live.models import Notification
 from vendor.models import OpeningHour
-from .serializers import OpeningHourSerializer, VendorSerializerDetailed
+from .serializers import (
+    DiscountSerializer,
+    OpeningHourSerializer,
+    VendorSerializerDetailed,
+)
 from api.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
 from api.permissions import IsVendorApproved, IsVendorOfFood
@@ -36,6 +40,7 @@ from api.permissions import IsVendorOfCarrier
 from rest_framework import parsers, serializers
 from .utils import r
 from django.utils.translation import activate, deactivate, gettext as _
+from rest_framework.decorators import action
 
 
 # Create your views here.
@@ -46,8 +51,9 @@ from django.utils.translation import activate, deactivate, gettext as _
 
 class VendorAPIView(views.APIView):
     """
-        This view enables a vendor to see, edit and delete its vendor account.
+    This view enables a vendor to see, edit and delete its vendor account.
     """
+
     permission_classes = [permissions.IsAuthenticated, IsVendor]
     http_method_names = ["get", "patch", "delete"]
 
@@ -130,6 +136,74 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context["vendor"] = self.request.user.vendor.id
         return context
+
+
+class ManageDiscountViewSet(viewsets.ModelViewSet):
+    serializer_class = DiscountSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfDiscount]
+
+    def get_queryset(self):
+        return Discount.objects.filter(vendor=self.request.user.vendor)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        ids = data.get("ids", None)
+        if not ids:
+            return Response(
+                {"detail": "no_foods_selected"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        data["vendor"] = self.request.user.vendor.id
+        ser = DiscountSerializer(data=data)
+        ser.is_valid(raise_exception=True)
+        # preventing duplicate
+        if Discount.objects.filter(amount=data["amount"]).exists():
+            return Response(
+                {"detail": "already_exists"}, status=status.HTTP_409_CONFLICT
+            )
+        foods = Food.objects.filter(id__in=ids).select_related("vendor__user","discount")
+        # rejecting discount on other vendor's fooditems, and already-having items 
+        for food in foods:
+            if food.vendor.user != self.request.user:
+                return Response(
+                    {"detail": "you_are_not_allowed"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if food.discount != None and food.discount.is_active:
+                return Response(
+                    {"detail": "fooditems_have_already_discount"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        discount = ser.save()
+        Food.objects.filter(id__in=ids).update(discount=discount)
+        return Response(ser.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        """updating a discount object"""
+        data = request.data
+        new_ids = data.get("ids", None)
+        pre_ids = data.get("pre_ids", None)
+        if not (new_ids and pre_ids):
+            return Response(
+                {"detail": "no_foods_selected"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        # -------  doing set operations and imporve performance
+        new_ids = set(new_ids)
+        pre_ids = set(pre_ids)
+        # new foods are those not in previous ids, but in new ids
+        new_foods_to_set_discount = set.difference(new_ids, pre_ids)
+        # removing-discount are those not in new ids
+        pre_foods_to_remove_discount = set.difference(pre_ids, new_ids)
+        instance = self.get_object()
+        # ------- -- updating the discount object
+        ser = DiscountSerializer(instance, data=data, partial=True)
+        ser.is_valid(raise_exception=True)
+        instance = ser.save()
+        # removing discounts from previous food items
+        Food.objects.filter(id__in=pre_foods_to_remove_discount).update(discount=None)
+        # adding discount on new foods
+        Food.objects.filter(id__in=new_foods_to_set_discount).update(discount=instance)
+        return Response(ser.data, status=status.HTTP_200_OK)
 
 
 class ManageOpeningHours(viewsets.ModelViewSet):
@@ -340,7 +414,7 @@ class CarriersNow(views.APIView):
                         time = estimate_travel_time(
                             carrier_current_location, vendor_location
                         )
-                else:  # carrier is busy and has not reached to customer yet 
+                else:  # carrier is busy and has not reached to customer yet
                     customer_location = carrier_live_data["destination"]
                     time = estimate_travel_time(
                         carrier_current_location, customer_location
@@ -496,13 +570,11 @@ class AcceptRejectOrderView(views.APIView):
             profile = order.user.profile
             activate(profile.pf_lang)
             notf = Notification(
-                    actor=order.vendor.user,
-                    receiver=order.user,
-                    target=order.id
-                )   
+                actor=order.vendor.user, receiver=order.user, target=order.id
+            )
             if accepted == True:
                 # order accepted -> set as preparing, send notification
-                order.status = ORDER_STATUS_CHOICES[2][1] # preparing/execution
+                order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
                 order.save()
                 notf.title = _("Your order has been accepted.")
                 notf.type = "order_accepted"
@@ -533,8 +605,9 @@ class CalculateOrderTime(views.APIView):
     preparing orders count, free carriers count and total carriers count of vendor
     returns {"estimated":integer}
     """
+
     permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
-    
+
     def get(self, *args, **kwargs):
         # ------------------ estimating only this order distance and reach time
         request_data = self.request.query_params

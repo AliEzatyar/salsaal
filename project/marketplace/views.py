@@ -1,5 +1,5 @@
 from zoneinfo import ZoneInfo
-from marketplace.models import Category, FavItem, Food, Rating
+from marketplace.models import Category, Discount, FavItem, Food, Rating
 from order.models import Order, OrderItem
 from accounts.models import CUSTOMER
 from multiVend.settings.base import DEFAULT_SEARCH_DISTANCE
@@ -327,7 +327,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="discounted")
     def discounted_foods(self, request):
-        pass
+        discounted = Discount.objects.prefetch_related("foods").values("foods")
+        print(discounted)
+        return Response({"discounted":discounted})
 
 
 class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):

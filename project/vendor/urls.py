@@ -11,6 +11,9 @@ router = DefaultRouter()
 router.register(
     r"vendor-foods", views.VendorFoodsManageViewSet, basename="vendor-foods"
 )
+router.register(
+    r"manage-discount", views.ManageDiscountViewSet, basename="manage-discount"
+)
 # managing carriers as vendor
 router.register(
     r"manage-carriers", views.ManageCarrierViewSet, basename="manage-carriers"

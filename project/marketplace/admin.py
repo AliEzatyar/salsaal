@@ -1,11 +1,12 @@
 from django.contrib import admin
-from .models import Category, Food, Rating ,FavItem, FavList, FoodImage
+from .models import Category, Food, Rating, FavItem, FavList, FoodImage, Discount
+
 # Register your models here.
 
 
 class FoodAdmin(admin.ModelAdmin):
     model = Food
-    list_display = ["name", "vendor", "is_available", "min_price","default_image"]
+    list_display = ["name", "vendor", "is_available", "min_price", "default_image"]
     list_editable = ["is_available"]
     list_filter = ["is_available", "vendor"]
     search_fields = ["category__name", "vendor__vendor_name"]
@@ -31,15 +32,21 @@ class FavlistItemAdmin(admin.ModelAdmin):
     model = FavItem
     list_display = ["favlist", "food"]
 
+
 class FoodImageAdmin(admin.ModelAdmin):
     model = FoodImage
-    list_display = ['id','image','food']
+    list_display = ["id", "image", "food"]
+
+
+class DiscountAdmin(admin.ModelAdmin):
+    model = Discount
+    list_display = ["id", "vendor", "deadline", "is_active"]
 
 
 admin.site.register(FavList, FavlistAdmin)
 admin.site.register(FavItem, FavlistItemAdmin)
-admin.site.register(FoodImage,FoodImageAdmin)
-
+admin.site.register(FoodImage, FoodImageAdmin)
+admin.site.register(Discount, DiscountAdmin)
 
 admin.site.register(Rating, RatingAdmin)
 admin.site.register(Food, FoodAdmin)

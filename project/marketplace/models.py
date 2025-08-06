@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone as tz
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 
@@ -20,6 +22,22 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Discount(models.Model):
+    vendor = models.ForeignKey(
+        "vendor.Vendor", on_delete=models.CASCADE, related_name="discounts"
+    )
+    amount = models.SmallIntegerField(
+        default=0, validators=[MinValueValidator(1), MaxValueValidator(90)]
+    )
+    deadline = models.DateTimeField(default=tz.now())
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+    class Meta:
+        ordering = ["-created_at"]  # newest
 
 
 class Food(models.Model):
@@ -52,6 +70,9 @@ class Food(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
+    discount = models.ForeignKey(
+        Discount, null=True, blank=True, on_delete=models.SET_NULL, related_name="foods"
+    )
 
     class Meta:
         verbose_name = "food"
