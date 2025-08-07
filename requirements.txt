@@ -22,3 +22,5 @@ django-channels
 channels-redis
 uvicorn[standard]
 gunicorn
+celery
+django-celery-beat

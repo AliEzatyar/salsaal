@@ -49,3 +49,10 @@ CURRENT_DOMAIN_NAME = env.get("CURRENT_DOMAIN_NAME")
 
 # ssl for uvicorn, for uwsgi, we used include uswgi_params
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Celery settings
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+
+# Celery Beat for periodic tasks
+INSTALLED_APPS += ["django_celery_beat"]
