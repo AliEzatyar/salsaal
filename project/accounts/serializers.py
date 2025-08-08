@@ -1,4 +1,3 @@
-
 from rest_framework.serializers import ModelSerializer, ValidationError
 from vendor.models import Vendor
 from .models import User, UserProfile, CUSTOMER
@@ -6,6 +5,7 @@ from rest_framework_simplejwt.serializers import (
     TokenObtainPairSerializer,
     TokenRefreshSerializer,
 )
+from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 class UserCreationSerializer(ModelSerializer):
@@ -13,7 +13,6 @@ class UserCreationSerializer(ModelSerializer):
         model = User
         fields = [
             "full_name",
-            "email",
             "phone_number"
         ]
 
@@ -62,7 +61,14 @@ class UserProfileSerializer(ModelSerializer):
         instance.save()
         return instance
 
+class UserProfileCreationSerializer(ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = [ "pf_lang","country","city", "lattitude", "longitude"]
 
+    def save(self, **kwargs):
+        return super().save(**kwargs)
+    
 class UserDetailSerializer(ModelSerializer):
     profile = UserProfileSerializer()
     
@@ -96,7 +102,7 @@ class UserDetailSerializer(ModelSerializer):
             profile_serializer.update(profile,profile_data)            
 
         return instance
-        
+
 
 class VendorCreateSerializer(ModelSerializer):
     class Meta:
@@ -131,9 +137,3 @@ class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
         data["access"] = str(access)
         data["refresh"] =str(refresh)
         return data
-
-
-
-
-
-

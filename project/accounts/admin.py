@@ -9,7 +9,7 @@ class UserAd(UserAdmin):
     list_display = ['id','role','full_name','email','phone_number']
     fieldsets = ()
     list_filter = ()
-    list_display_links = ['email']
+    list_display_links = ['phone_number']
     ordering = ("email",)
 
 

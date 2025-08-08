@@ -62,9 +62,11 @@ class User(AbstractBaseUser):
     ]
 
     full_name = models.CharField(max_length=60)
-    email = models.EmailField(max_length=100, unique=True)
+    email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=12, unique=True)
-    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, blank=True, null=True)
+    role = models.PositiveSmallIntegerField(
+        choices=ROLE_CHOICES, blank=True, default=CUSTOMER
+    )
 
     # django required fields
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -82,7 +84,7 @@ class User(AbstractBaseUser):
     REQUIRED_FIELDS = ["username"]
 
     def __str__(self):
-        return self.email
+        return self.phone_number
 
     def has_perm(self, perm, obj=None):
         return self.is_admin
@@ -107,14 +109,13 @@ class UserProfile(g_models.Model):
     country = models.CharField(max_length=2, choices=settings.COUNTRIES, default="AF")
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
-    city = models.CharField(max_length=15, blank=True, null=True)
-    lattitude = models.CharField(max_length=20, blank=True, null=True)
-    longitude = models.CharField(max_length=20, blank=True, null=True)
+    city = models.CharField(max_length=15)
+    lattitude = models.CharField(max_length=20)
+    longitude = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
-    
-    
+
     def __str__(self):
         return str(self.user)
 
@@ -135,6 +136,15 @@ class UserOtp(models.Model):
         "accounts.User",
         on_delete=models.CASCADE,
     )
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):
+        return timezone.now() > self.created_at + timezone.timedelta(minutes=expire)
+
+
+class NoUserOtp(models.Model):
+    phone_number = models.CharField(max_length=12)
     otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
 

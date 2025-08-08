@@ -15,9 +15,9 @@ from django.conf import settings
 def create_full_prof(sender, instance, created: bool, **kwargs):
     """this signal creates user profile, cart and favlist"""
     if created: 
-        # creating profile
-        prof = UserProfile(user=instance)
-        prof.save()
+        # # creating profile
+        # prof = UserProfile(user=instance)
+        # prof.save()
         # creating fav list
         fav_list = FavList(user=instance)
         fav_list.save()

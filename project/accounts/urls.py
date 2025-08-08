@@ -17,7 +17,7 @@ urlpatterns = [
     path("register/", views.RegisterUser.as_view()),
     path(
         "login/",
-        views.RoleTokenObtainView.as_view(), name="login"
+        views.LoginApiView.as_view(), name="login"
     ),
     path("refresh-token/", views.RoleTokenRefreshView.as_view()),
     path("verify-otp/", views.VerifyOTP.as_view()),

@@ -5,7 +5,7 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.core.exceptions import PermissionDenied
-from .models import CUSTOMER, UserOtp
+from .models import CUSTOMER, NoUserOtp, UserOtp
 import random
 
 
@@ -26,46 +26,56 @@ def send_log_email(amount, type_=None):
 def generate_otp():
     return random.randint(100000, 999999)
 
-OTP_VERIFY_EMAIL = 1
-OTP_FORGOT_PASSWORD =2
+
+OTP_VERIFY_PHONE = 1
+OTP_FORGOT_PASSWORD = 2
 OTP_VERIFY_CARRIER = 3
 OTP_LOGIN = 4
 
 
-def send_otp(request, user, typ=OTP_VERIFY_EMAIL,**kwargs):
+def send_otp(user=None, phone_number=None, typ=OTP_VERIFY_PHONE,**kwargs):
     """
     sends otp using email
     """
     otp = generate_otp()
-    print("this vas the otp",otp)
-    mail_title = "Verify Your Email"
-    do = "activate your account"
-    question = ""
-    if typ == OTP_FORGOT_PASSWORD:
-        # forgot password
-        mail_title = "Forgot Password"
-        do = "reset your password"
-    elif typ == OTP_VERIFY_CARRIER:
-        # verify carrier
-        mail_title = "Add to Carriers"
-        do  = "add your account to carriers list"
-        question = f"Are you working in {kwargs['vendor_name']}, if yes,"
-    elif typ == OTP_LOGIN:
-        mail_title = "Login"
-        do = "login to your account"
-    mail_body = render_to_string(
-        "accounts/emails/account_verification.html",
-        {"user": user,"question":question, "otp": otp, "do": do},
-    )
-    # removing previous otp if existing
-    pre_otp = UserOtp.objects.filter(user=user).order_by("-created_at")
-    if pre_otp:
-        pre_otp.delete()
+    if not user:
+        # no-user otp for sign up
+        if not phone_number:
+            return
+        # deleting previous
+        NoUserOtp.objects.filter(phone_number=phone_number).delete()
+        # creating new one
+        NoUserOtp.objects.create(otp=otp, phone_number=phone_number)
+        mail_body = render_to_string(
+            "accounts/emails/account_verification.html",
+            {"otp": otp},
+        )
 
-    # creating new otp
-    UserOtp.objects.create(user=user, otp=otp)
-    mail_to = user.email
-    mail = EmailMessage(subject=mail_title, to=[mail_to], body=mail_body)
+    else:
+        do = "activate your account"
+        question = ""
+
+        if typ == OTP_FORGOT_PASSWORD:
+            # forgot password
+            do = "reset your password"
+        elif typ == OTP_VERIFY_CARRIER:
+            # verify carrier
+            do = "add your account to carriers list"
+            question = f"Are you working in {kwargs['vendor_name']}, if yes,"
+        elif typ == OTP_LOGIN:
+            do = "login to your account"
+        mail_body = render_to_string(
+            "accounts/emails/account_verification.html",
+            {"user": user, "question": question, "otp": otp, "do": do},
+        )
+        # removing previous otp if existing
+        pre_otp = UserOtp.objects.filter(user=user).delete()
+        if pre_otp:
+            pre_otp.delete()
+
+        # creating new otp
+        UserOtp.objects.create(user=user, otp=otp)
+    mail = EmailMessage(subject="HI", to=["tareeqshah5@gmail.com"], body=mail_body)
     mail.send()
 
 
