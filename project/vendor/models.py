@@ -77,13 +77,13 @@ class Vendor(models.Model):
 
 HOURS = [(i + add, i + add) for i in range(24) for add in (0,)]
 WEEKDAYS = [
-    (1, "Saturday"),
-    (2, "Sunday"),
-    (3, "Monday"),
-    (4, "Tuesday"),
-    (5, "Wednesday"),
-    (6, "Thursday"),
-    (7, "Friday"),
+    ("1", "Saturday"),
+    ("2", "Sunday"),
+    ("3", "Monday"),
+    ("4", "Tuesday"),
+    ("5", "Wednesday"),
+    ("6", "Thursday"),
+    ("7", "Friday"),
 ]
 
 

@@ -24,3 +24,4 @@ uvicorn[standard]
 gunicorn
 celery
 django-celery-beat
+h3[python]

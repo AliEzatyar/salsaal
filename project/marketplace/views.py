@@ -44,6 +44,8 @@ from django.views.decorators.cache import cache_page
 from .utils import BoughtTogetherRecommender
 from django.conf import settings
 import geohash
+import h3
+from django.db.models import F
 
 """Marketplace API Views"""
 
@@ -191,7 +193,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         index = now.weekday()
         weekday = to_af_weekday(index=index)
         now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour
-        # getting opening-hour objects from cache
+        # getting opening-hour objects from cache or set it
         hours_key = f"hours:{now_af}:objects"
         hours = cache.get(hours_key)
         if not hours:
@@ -203,7 +205,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             hours = list(hours_dict)  # [1,2,3,4]
             cache.set(hours_key, hours, 3600)
 
-        # getting city vendors from cache
+        # getting city vendors from cache or setting it
         city_vendors = cache.get(f"city:{city}:vendors")
         if not city_vendors:
             # cache miss
@@ -213,19 +215,20 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             city_vendors = list(vendors_dict)
             cache.set(f"city:{city}:vendors", city_vendors, 3600 * 24)
 
-        # final filter in db
-        vendors = (
-            Vendor.objects.filter(id__in=city_vendors, opening_hours__in=hours)
-            .annotate(distance=Distance("user_profile__location", user_location))
-            .filter(distance__lte=D(km=max_distance))
-            .order_by("distance")[:10]
-        )
-
-        # pagination
-        page = self.paginate_queryset(vendors)
-        if page:
-            ser = VendorSerializerMany(page, many=True, context={"request": request})
-            return self.get_paginated_response(ser.data)
+        # finding near areas of the user up to 10 hexagons long
+        user_h3 = h3.latlng_to_cell(lat, lon, 9)
+        nearest_h3s = h3.grid_disk(user_h3, 10)
+        # filter in db for existing nearby  open city vendors
+        vendors = Vendor.objects.filter(
+            id__in=city_vendors,
+            opening_hours__in=hours,
+            user_profile__h3_id__in=nearest_h3s,
+        )[:10]
+        for vendor in vendors:
+            vendor.distance = (
+                h3.grid_distance(user_h3, vendor.user_profile.h3_id) * 0.347
+            )
+        # serializing the result
         ser = VendorSerializerMany(vendors, many=True, context={"request": request})
         return Response(ser.data, status=status.HTTP_200_OK)
 
@@ -322,14 +325,14 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="recommended")
     def recommended_foods(self, request):
-        
+
         pass
 
     @action(detail=False, methods=["get"], url_path="discounted")
     def discounted_foods(self, request):
         discounted = Discount.objects.prefetch_related("foods").values("foods")
         print(discounted)
-        return Response({"discounted":discounted})
+        return Response({"discounted": discounted})
 
 
 class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):

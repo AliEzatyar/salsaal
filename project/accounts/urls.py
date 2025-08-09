@@ -14,13 +14,10 @@ router.register(r"user-detail", views.UserViewset, basename="user-detail")
 
 
 urlpatterns = [
-    path("register/", views.RegisterUser.as_view()),
     path(
         "login/",
         views.LoginApiView.as_view(), name="login"
     ),
     path("refresh-token/", views.RoleTokenRefreshView.as_view()),
-    path("verify-otp/", views.VerifyOTP.as_view()),
-    path("resend-otp/", views.ResendOTP.as_view()),
     path("", include(router.urls)),
 ]

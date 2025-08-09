@@ -27,7 +27,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
-        return round(obj.distance.km, 1) if hasattr(obj, "distance") else None
+        return obj.distance if hasattr(obj, "distance") else None
 
     def get_image_url(self, obj):
         image = getattr(obj.user_profile, "picture", None)

@@ -50,121 +50,33 @@ class UserViewset(viewsets.ModelViewSet):
         return new_qs
 
 
-class VerifyOTP(views.APIView):
-    """sign up-after otp verification"""
-
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        phone_number = request.data.get("phone_number")
-        otp_input = request.data.get("otp")
-        # not otp or phone sent
-        if not (phone_number and otp_input):
-            return Response(
-                {"detail": "partial_data"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        try:
-            user = User.objects.get(phone_number=phone_number)
-            # last otp
-            user_otp = UserOtp.objects.filter(user=user).order_by("-created_at").first()
-            # non-existing otp
-            if not user_otp:
-                return Response({"detail": "otp_not_found"}, status=404)
-            # expired otp
-            if user_otp.is_expired():
-                user_otp.delete()
-                return Response({"detail": "otp_expired"}, status=400)
-            # correct otp
-            if user_otp.otp == str(otp_input):
-                if not user.is_active:
-                    user.is_active = True
-                    user.save()
-                user_otp.delete()
-                # sending access and refresh tokens
-                refresh = RefreshToken.for_user(user)
-                return Response(
-                    {
-                        "refresh": str(refresh),
-                        "access": str(refresh.access_token),
-                    },
-                    status=200,
-                )
-            # incorrect otp
-            else:
-                return Response({"detail": "invalid_otp"}, status=400)
-
-        except User.DoesNotExist:
-            return Response({"detail": "user_not_found"}, status=404)
-
-        except Exception as e:
-            print(e, e.args)
-            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
-
-
-class ResendOTP(views.APIView):
-
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, *args, **kwargs):
-        phone_number = self.request.data.get("phone_number", None)
-        if not phone_number:
-            return Response(
-                {"error": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user = User.objects.filter(phone_number=phone_number).first()
-        if not user:
-            return Response(
-                {"error": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        send_otp(self.request, user)
-        return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
-
-
-class RoleTokenObtainView(views.APIView):
-    """login"""
-
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, *args, **kwargs):
-        """sends otp"""
-        data = self.request.data
-        phone_number = data.get("phone_number")
-        if not phone_number:
-            return Response(
-                {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        try:
-            user = User.objects.get(phone_number=phone_number)
-            send_otp(self.request, user, OTP_LOGIN)
-            return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "user_not_found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-
 class LoginApiView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def patch(self, *args, **kwargs):
         data = self.request.data
         phone_number = data.get("phone_number", None)
+
         if not phone_number:
             return Response(
                 {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if len(str(phone_number)) > 12:
+            return Response(
+                {"detail": "invalid_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
             # if user already exists with this phone number
             user = User.objects.get(phone_number=phone_number)
             send_otp(user=user, typ=OTP_LOGIN)
+            print("user exists")
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
             )
         except User.DoesNotExist:
             # new user
+            print("user does not exists")
             send_otp(typ=OTP_VERIFY_PHONE, phone_number=phone_number)
             return Response(
                 {"type": "new_user", "message": "otp_sent"}, status=status.HTTP_200_OK
@@ -246,7 +158,9 @@ class LoginApiView(views.APIView):
                     )
                 # creating user
                 # validating data
-                ser = UserCreationSerializer(data={"phone_number":phone_number,"full_name":full_name})
+                ser = UserCreationSerializer(
+                    data={"phone_number": phone_number, "full_name": full_name}
+                )
                 ser.is_valid(raise_exception=True)
 
                 user = User(

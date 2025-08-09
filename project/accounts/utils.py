@@ -42,6 +42,7 @@ def send_otp(user=None, phone_number=None, typ=OTP_VERIFY_PHONE,**kwargs):
         # no-user otp for sign up
         if not phone_number:
             return
+        
         # deleting previous
         NoUserOtp.objects.filter(phone_number=phone_number).delete()
         # creating new one
@@ -69,10 +70,7 @@ def send_otp(user=None, phone_number=None, typ=OTP_VERIFY_PHONE,**kwargs):
             {"user": user, "question": question, "otp": otp, "do": do},
         )
         # removing previous otp if existing
-        pre_otp = UserOtp.objects.filter(user=user).delete()
-        if pre_otp:
-            pre_otp.delete()
-
+        UserOtp.objects.filter(user=user).delete()
         # creating new otp
         UserOtp.objects.create(user=user, otp=otp)
     mail = EmailMessage(subject="HI", to=["tareeqshah5@gmail.com"], body=mail_body)
