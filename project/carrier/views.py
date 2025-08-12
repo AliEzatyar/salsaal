@@ -25,7 +25,7 @@ from accounts.models import (
 from accounts.utils import OTP_VERIFY_CARRIER, generate_otp
 from django.contrib.contenttypes.models import ContentType
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
-from marketplace.utils import estimate_travel_time
+from marketplace.utils import estimate_travel_time_graphhopper
 from vendor.utils import r
 from django.utils.translation import gettext as _
 from django.utils.translation import activate as activate_language
@@ -123,7 +123,7 @@ class SetOrderStateCarrying(views.APIView):
             customer_location = (customer_location.y, customer_location.x)
             city = self.request.user.profile.city
             city = city.lower()
-            carrier_return_estimate = 2 * estimate_travel_time(
+            carrier_return_estimate = 2 * estimate_travel_time_graphhopper(
                 vendor_location, customer_location
             )
             r.set(

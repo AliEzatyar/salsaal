@@ -225,10 +225,11 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
-
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     min_price = MyDecimalField()
     default_image = serializers.SerializerMethodField("get_photo_url")
+    reach_time = serializers.SerializerMethodField("get_reach_time")
+    distance = serializers.SerializerMethodField("get_distance")
 
     class Meta:
         model = Food
@@ -240,6 +241,8 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "default_image",
             "avg_rating",
             "vendor_name",
+            "reach_time",
+            "distance",
         ]
 
     def get_vendor_name(self, obj):
@@ -247,6 +250,51 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
     def get_photo_url(self, obj):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
+
+    def get_reach_time(self, obj):
+        return obj.reach_time if hasattr(obj, "reach_time") else None
+
+    def get_distance(self, obj):
+        return obj.distance if hasattr(obj, "distance") else None
+
+
+class DiscountedFoodSerializerMany(serializers.ModelSerializer):
+    """this serializer is used in read only views - customers"""
+    default_image = serializers.SerializerMethodField("get_photo_url")
+    reach_time = serializers.SerializerMethodField("get_reach_time")
+    distance = serializers.SerializerMethodField("get_distance")
+    final_price = serializers.SerializerMethodField("get_final_price")
+    min_price = MyDecimalField()
+
+    class Meta:
+        model = Food
+        fields = [
+            "id",
+            "name",
+            "default_image",
+            "avg_rating",
+            "reach_time",
+            "min_price",
+            "distance",
+            "discount",
+            "final_price",
+        ]
+
+    def get_photo_url(self, obj):
+        return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
+
+    def get_reach_time(self, obj):
+        return obj.reach_time if hasattr(obj, "reach_time") else None
+
+    def get_final_price(self, obj):
+        return (
+            obj.min_price * (100 - obj.discount.amount) / 100
+            if hasattr(obj, "discount")
+            else None
+        )
+
+    def get_distance(self, obj):
+        return obj.distance if hasattr(obj, "distance") else None
 
 
 class DiscountFoodSerializerMany(serializers.ModelSerializer):
@@ -259,7 +307,6 @@ class DiscountFoodSerializerMany(serializers.ModelSerializer):
 
     def get_photo_url(self, obj):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
-
 
 
 class RatingSerializer(serializers.ModelSerializer):

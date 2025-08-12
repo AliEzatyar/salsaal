@@ -92,3 +92,7 @@ class OpeningHour(models.Model):
     end_hour = models.FloatField(choices=HOURS, null=True)
     weekday = models.CharField(choices=WEEKDAYS)
     is_holiday = models.BooleanField(default=False)
+
+    
+    def __str__(self):
+        return str(self.start_hour) + "--" + str(self.end_hour)

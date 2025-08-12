@@ -4,7 +4,8 @@ from django.conf import settings as s
 from os import environ as env
 import requests as req
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
-
+DEFAULT_H3_RESOLUTION = 9
+DEFAULT_H3_EDGE_LENGTH = 0.357
 
 class BoughtTogetherRecommender:
     """
@@ -115,7 +116,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return R * c  # distance in kilometers
 
 
-def estimate_travel_time(origin, destination):
+def estimate_travel_time_graphhopper(origin, destination):
     """
     this function makes a call to Graphhopper web api locally hosted.
     How graphhopper is set up?
@@ -135,3 +136,14 @@ def estimate_travel_time(origin, destination):
     response = req.get(f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false")
     response = response.json()
     return int(response['paths'][0]['time'])/60000 
+
+def h3_distance_to_km(val, res):
+    return (val + 2) * DEFAULT_H3_EDGE_LENGTH
+
+
+def distance_to_travel_time(distance,avg_speed):
+    travel_time = distance * 1000 / (avg_speed)
+    if travel_time >= 3600:
+        return "1+"
+    else:
+        return str(distance * 1000 / (avg_speed)/60) 

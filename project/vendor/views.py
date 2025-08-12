@@ -17,7 +17,7 @@ from accounts.models import (
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
 from accounts.utils import OTP_VERIFY_CARRIER, send_otp
-from marketplace.utils import estimate_travel_time, haversine_distance
+from marketplace.utils import estimate_travel_time_graphhopper, haversine_distance
 from cart.models import Cart
 from live.models import Notification
 from vendor.models import OpeningHour
@@ -411,12 +411,12 @@ class CarriersNow(views.APIView):
                         * 1000
                     )  # rough estimate, no maps used, meters
                     if distance_m > 200:  # if carrier is far from the resturant
-                        time = estimate_travel_time(
+                        time = estimate_travel_time_graphhopper(
                             carrier_current_location, vendor_location
                         )
                 else:  # carrier is busy and has not reached to customer yet
                     customer_location = carrier_live_data["destination"]
-                    time = estimate_travel_time(
+                    time = estimate_travel_time_graphhopper(
                         carrier_current_location, customer_location
                     )
                 details = {"name": carrier.name, "return_time": time}
@@ -621,7 +621,7 @@ class CalculateOrderTime(views.APIView):
         user_location = (user_location.y, user_location.x)  # as lat,lon
         vendor_location = vendor.user_profile.location
         vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
-        estimated = estimate_travel_time(vendor_location, user_location)
+        estimated = estimate_travel_time_graphhopper(vendor_location, user_location)
 
         # ----------------- getting total free carriers and total preparing orders
         vendor_carriers_key = f"vendor:{vendor.id}:carriers"

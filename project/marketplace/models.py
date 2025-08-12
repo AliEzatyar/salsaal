@@ -34,7 +34,7 @@ class Discount(models.Model):
     deadline = models.DateTimeField(default=tz.now())
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
 
     class Meta:
         ordering = ["-created_at"]  # newest
@@ -77,7 +77,7 @@ class Food(models.Model):
     class Meta:
         verbose_name = "food"
         verbose_name_plural = "foods"
-        ordering = ["-modified_at"]  # newest
+        ordering = ["-avg_rating"]  # newest
 
     def update_avg_rating(self, *args, **kwargs):
         ct = ContentType.objects.get_for_model(Food)
@@ -104,6 +104,8 @@ class FoodImage(models.Model):
     food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to="foods/")
 
+    def __str__(self):
+        return self.food.name
 
 class Rating(models.Model):
     """rating models is used for both food and vendor models for now"""

@@ -118,6 +118,7 @@ class LoginApiView(views.APIView):
                 # finding user
                 user = User.objects.get(phone_number=phone_number)
                 refresh = RefreshToken.for_user(user)
+                saved_otp.delete()
                 return Response(
                     {"access": str(refresh.access_token), "refresh": str(refresh)},
                     status=status.HTTP_200_OK,
