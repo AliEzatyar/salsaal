@@ -105,7 +105,7 @@ class UserProfile(g_models.Model):
         max_length=10,
         default="fa",
     )
-    country = models.CharField(max_length=2, default="AF")
+    country = models.CharField(max_length=20, default="AF")
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15)
