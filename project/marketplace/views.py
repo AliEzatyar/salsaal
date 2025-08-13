@@ -1,4 +1,3 @@
-import time
 from zoneinfo import ZoneInfo
 from marketplace.models import Category, Discount, FavItem, Food, Rating
 from order.models import Order, OrderItem
@@ -22,6 +21,7 @@ from vendor.models import OpeningHour, Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
     CFoodSerializerDetail,
+    CategoryVendorSerializer,
     DiscountedFoodSerializerMany,
     FavItemSerializer,
     FoodSerializerMany,
@@ -31,25 +31,21 @@ from marketplace.serializers import (
 )
 from carrier.models import Carrier
 from django.db.models.aggregates import Count
+from django.db.models import Prefetch
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
-from django.contrib.gis.db.models.functions import Distance
-from django.contrib.gis.geos import Point
-from django.contrib.gis.measure import D
 from django.utils import timezone
-from rest_framework import filters, status, views, viewsets
+from rest_framework import filters, status, views, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from api.permissions import IsHavingFavlist, NotAdmin
 from django.core.cache import cache
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 from .utils import BoughtTogetherRecommender
 from django.conf import settings
 import geohash
 import h3
-from django.db.models import F
+from .utils import StandardResultSetPagination, DEFAULT_H3_RESOLUTION
 
 """Marketplace API Views"""
 
@@ -195,9 +191,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ).select_related("user_profile")[:5]
         # adding distance property to each vendor
         for vendor in vendors:
-            vendor.distance = h3_distance_to_km(
+            vendor.distance = round(h3_distance_to_km(
                 h3.grid_distance(vendor.user_profile.h3_id, user_h3), 9
-            )
+            ),1)
         ser = VendorSerializerMany(vendors, many=True)
         return Response(ser.data)
 
@@ -257,8 +253,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             distance = h3_distance_to_km(
                 h3.grid_distance(food.vendor.user_profile.h3_id, user_h3), 9
             )
-            food.reach_time = distance_to_travel_time(distance, 7)
-            food.distance = distance
+            food.reach_time = round(distance_to_travel_time(distance))
+            food.distance = round(distance,1)
         # serializing the result
         ser = FoodSerializerMany(foods, many=True)
         return Response(ser.data, status=status.HTTP_200_OK)
@@ -406,7 +402,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             print(discounted_foods_ids, "fodds with disocount")
             cache.set(foods_key, discounted_foods_ids, 10 * 60)
         else:
-            print(discounted_foods_ids,"discount ids already in cache")
+            print(discounted_foods_ids, "discount ids already in cache")
         if not discounted_foods_ids:
             discounted_foods_ids = Food.objects.filter(
                 is_available=True, discount__id__in=all_discounts_in_city
@@ -414,7 +410,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             print(discounted_foods_ids, "fodds with disocount")
             cache.set(foods_key, discounted_foods_ids, 10 * 60)
         else:
-            print(discounted_foods_ids,"discounted in cache")
+            print(discounted_foods_ids, "discounted in cache")
         discounted_foods_final = Food.objects.filter(id__in=discounted_foods_ids)
         ser = DiscountedFoodSerializerMany(discounted_foods_final, many=True)
         return Response(ser.data)
@@ -725,3 +721,48 @@ class FavListViewset(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return FavItem.objects.filter(favlist=self.request.user.favlist)
+
+
+class ListVendorFoods(generics.ListAPIView):
+    serializer_class = FoodSerializerMany
+    pagination_class = StandardResultSetPagination
+
+    def get_queryset(self):
+        """filtering by vendor id"""
+        data = self.request.query_params
+        vendor_id = data.get("vendor", None)
+        if not vendor_id:
+            return Food.objects.none()
+        queryset = Food.objects.filter(vendor__id=vendor_id, is_available=True)
+        return queryset
+
+
+class FoodsByCategory(generics.ListAPIView):
+    serializer_class = CategoryVendorSerializer
+    pagination_class = StandardResultSetPagination
+
+    def get_queryset(self):
+        """filtering by category"""
+        data = self.request.query_params
+        category_id = data.get("category_id", None)
+        user_location = data.get("location", None)
+        if not (category_id and user_location):
+            return Vendor.objects.none()
+
+        vendors = (
+            Vendor.objects.filter(foods__category_id=category_id, is_approved=True)
+            .distinct()
+            .prefetch_related(
+                Prefetch("foods", queryset=Food.objects.filter(category_id=category_id))
+            )
+            .select_related("user_profile")
+            .only("vendor_name", "avg_rating", "foods", "user_profile")
+        )
+        # adding reach time and distance to each vendor
+        user_lat, user_lon = geohash.decode(user_location)
+        for vendor in vendors:
+            user_h3 = h3.latlng_to_cell(user_lat,user_lon,DEFAULT_H3_RESOLUTION)
+            distance = h3_distance_to_km(h3.grid_distance(user_h3,vendor.user_profile.h3_id))
+            vendor.distance = round(distance,1)
+            vendor.reach_time= round(distance_to_travel_time(distance),0)
+        return vendors

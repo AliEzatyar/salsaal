@@ -23,5 +23,7 @@ urlpatterns = [
     # get categories
     path("get-category-names/", views.CategoriesReadAPIView.as_view()),
     path("public-vendor-detail/", views.PublicVendorDetail.as_view()),
+    path("get-vendor-foods/", views.ListVendorFoods.as_view()),
+    path("foods-by-category/",views.FoodsByCategory.as_view())
     # full search
 ]

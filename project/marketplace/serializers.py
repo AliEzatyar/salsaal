@@ -225,6 +225,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
+
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     min_price = MyDecimalField()
     default_image = serializers.SerializerMethodField("get_photo_url")
@@ -260,6 +261,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
 class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
+
     default_image = serializers.SerializerMethodField("get_photo_url")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
@@ -334,7 +336,6 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
 class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details"""
 
-    foods = FoodSerializerMany(many=True, read_only=True)
     location = serializers.SerializerMethodField("get_location")  # read only
     opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
@@ -349,7 +350,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "is_approved",
             "avg_rating",
             "rating_count",
-            "foods",
             "opening_hours",
             "is_open_now",
             "picture",
@@ -412,3 +412,26 @@ class FavListSerializer(serializers.ModelSerializer):
 
     def get_user_name(self, obj):
         return obj.user.get_full_name()
+
+
+class FoodSerializerLessDetail(serializers.ModelSerializer):
+
+    class Meta:
+        model = Food
+        fields = ["name", "min_price", "default_image"]
+
+
+class CategoryVendorSerializer(serializers.ModelSerializer):
+    foods = FoodSerializerLessDetail(many=True, read_only=True)
+    reach_time = serializers.SerializerMethodField("get_reach_time")
+    distance = serializers.SerializerMethodField("get_distance")
+
+    class Meta:
+        model = Vendor
+        fields = ["vendor_name", "distance", "reach_time", "avg_rating", "foods"]
+
+    def get_distance(self, obj):
+        return obj.distance if hasattr(obj,"distance") else None
+
+    def get_reach_time(self, obj):
+        return obj.reach_time if hasattr(obj,"reach_time") else None

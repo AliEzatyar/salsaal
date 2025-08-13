@@ -3,9 +3,14 @@ import redis
 from django.conf import settings as s
 from os import environ as env
 import requests as req
+
+from rest_framework.pagination import PageNumberPagination
+
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 DEFAULT_H3_RESOLUTION = 9
 DEFAULT_H3_EDGE_LENGTH = 0.357
+DEFAULT_AVG_SPEED = 7
+
 
 class BoughtTogetherRecommender:
     """
@@ -99,7 +104,7 @@ class BestFoodsCounter:
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     """this function estimates distance, 90 degree traingle, A-start, B , C-goal, then distance
-    is b+c """
+    is b+c"""
     lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
     R = 6371  # Earth radius in kilometers
 
@@ -130,20 +135,23 @@ def estimate_travel_time_graphhopper(origin, destination):
     * run using java
         java -Ddw.graphhopper.datareader.file=afghanistan-latest.osm.pbf -jar *.jar server prod-config.json
     Faced a lot of errors when first set up: see
-        
+
     """
     hopper_host = env.get("GRAPHHOPPER_HOST")
-    response = req.get(f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false")
+    response = req.get(
+        f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false"
+    )
     response = response.json()
-    return int(response['paths'][0]['time'])/60000 
-
-def h3_distance_to_km(val, res):
-    return (val + 2) * DEFAULT_H3_EDGE_LENGTH
+    return int(response["paths"][0]["time"]) / 60000
 
 
-def distance_to_travel_time(distance,avg_speed):
-    travel_time = distance * 1000 / (avg_speed)
-    if travel_time >= 3600:
-        return "1+"
-    else:
-        return str(distance * 1000 / (avg_speed)/60) 
+def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
+    return (val + 4) * edge_length
+
+
+def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
+    return distance * 1000 / (avg_speed) / 60
+
+
+class StandardResultSetPagination(PageNumberPagination):
+    page_size = 10

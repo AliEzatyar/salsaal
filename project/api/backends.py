@@ -21,14 +21,11 @@ class FoodFilterSet(django_filters.FilterSet):
     # is_expensive = django_filters.BooleanFilter(method="filter_expensive")
     min_price = django_filters.NumberFilter(field_name="min_price", lookup_expr="gte")
     max_price = django_filters.NumberFilter(field_name="min_price", lookup_expr="lte")
-    category = django_filters.CharFilter(
-        field_name="category__name", lookup_expr="iexact"
-    )
     avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
 
     class Meta:
         model = Food
-        fields = ["min_price", "max_price", "category", "avg_rating"]
+        fields = ["min_price", "max_price", "avg_rating"]
 
    
 
