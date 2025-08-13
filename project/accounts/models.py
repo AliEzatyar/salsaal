@@ -104,9 +104,8 @@ class UserProfile(g_models.Model):
     pf_lang = models.CharField(
         max_length=10,
         default="fa",
-        choices=settings.LANGUAGES,
     )
-    country = models.CharField(max_length=2, choices=settings.COUNTRIES, default="AF")
+    country = models.CharField(max_length=2, default="AF")
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15)
