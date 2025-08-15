@@ -5,6 +5,8 @@ from django.contrib.gis.geos import Point
 from django.utils import timezone
 from django.conf import settings
 import h3
+
+from marketplace.utils import DEFAULT_H3_RESOLUTION
 ADMIN = 0
 REST = 1
 CUSTOMER = 2
@@ -115,7 +117,7 @@ class UserProfile(g_models.Model):
     modified_at = models.DateTimeField(auto_now=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
     h3_id = models.CharField(max_length=55,blank=True,null=True)
-    
+
     def __str__(self):
         return str(self.user)
 
@@ -125,8 +127,10 @@ class UserProfile(g_models.Model):
             self.location = Point(
                 float(self.longitude), float(self.lattitude), srid=4326
             )
-            self.h3_id = h3.latlng_to_cell(float(self.lattitude),float(self.longitude),res=9)
-            
+            self.h3_id = h3.latlng_to_cell(
+                float(self.lattitude), float(self.longitude), DEFAULT_H3_RESOLUTION
+            )
+
         return super().save(*args, **kwargs)
 
     def get_full_address(self):

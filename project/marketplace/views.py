@@ -1,3 +1,4 @@
+from time import time
 from zoneinfo import ZoneInfo
 from marketplace.models import Category, Discount, FavItem, Food, Rating
 from order.models import Order, OrderItem
@@ -21,10 +22,13 @@ from vendor.models import OpeningHour, Vendor
 from vendor.serializers import VendorSerializerMany
 from marketplace.serializers import (
     CFoodSerializerDetail,
+    CategoryVendorFoodsSerializer,
     CategoryVendorSerializer,
     DiscountedFoodSerializerMany,
     FavItemSerializer,
+    FoodSerializerLessDetail,
     FoodSerializerMany,
+    AbstractVendorSerializer,
     PublicVendorSerializer,
     RatingSerializer,
     CategorySerializer,
@@ -182,7 +186,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
         city_vendors_ids = self.get_city_vendors(city)
         # finding near areas of the user up to 10 hexagons long -> 3.5km
-        user_h3 = h3.latlng_to_cell(lat, lon, 9)
+        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
         nearest_h3s = h3.grid_disk(user_h3, 10)
         # filter in db for existing nearby  open city vendors
         vendors = Vendor.objects.filter(
@@ -191,9 +195,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ).select_related("user_profile")[:5]
         # adding distance property to each vendor
         for vendor in vendors:
-            vendor.distance = round(h3_distance_to_km(
-                h3.grid_distance(vendor.user_profile.h3_id, user_h3), 9
-            ),1)
+            vendor.distance = round(
+                h3_distance_to_km(
+                    h3.grid_distance(vendor.user_profile.h3_id, user_h3)
+                ),
+                1
+            )
         ser = VendorSerializerMany(vendors, many=True)
         return Response(ser.data)
 
@@ -241,7 +248,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             cache.set(f"city:{city}:vendors", city_vendors, 3600 * 24)
 
         # finding near areas of the user up to 10 hexagons long
-        user_h3 = h3.latlng_to_cell(lat, lon, 9)
+        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
         nearest_h3s = h3.grid_disk(user_h3, 10)
         foods = Food.objects.filter(
             is_available=True,
@@ -251,10 +258,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ).select_related("vendor__user_profile")
         for food in foods:
             distance = h3_distance_to_km(
-                h3.grid_distance(food.vendor.user_profile.h3_id, user_h3), 9
+                h3.grid_distance(food.vendor.user_profile.h3_id, user_h3)
             )
             food.reach_time = round(distance_to_travel_time(distance))
-            food.distance = round(distance,1)
+            food.distance = round(distance, 1)
         # serializing the result
         ser = FoodSerializerMany(foods, many=True)
         return Response(ser.data, status=status.HTTP_200_OK)
@@ -341,7 +348,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         key = f"best_foods:{city}"
         best_foods = cache.get(key, None)
         if not best_foods:
-            print("best foods not in cache")
+            print("best foods not found in cache")
             counter = BestFoodsCounter(city)
             most_viewd_ids = counter.read_counts()
             best_foods = (
@@ -358,10 +365,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
             for food in best_foods:
                 hexagon_distance = h3.grid_distance(
-                    h3.latlng_to_cell(c_lat, c_lon, 9), food.vendor.user_profile.h3_id
+                    h3.latlng_to_cell(c_lat, c_lon, DEFAULT_H3_RESOLUTION), food.vendor.user_profile.h3_id
                 )
                 food.reach_time = distance_to_travel_time(
-                    h3_distance_to_km(hexagon_distance, 9), 7
+                    h3_distance_to_km(hexagon_distance)
                 )
             # applying other filters, ordering by distance
             # best_foods = self.filter_queryset(best_foods) # distance ordering does not mean...
@@ -378,7 +385,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="discounted")
     def discounted_foods(self, request):
-        """this view returns discounted foods"""
+        """this endpoint returns discounted foods"""
         request_data = request.query_params
         city = request_data.get("city", None)
         if not city or not city in settings.CITY_NAMES:
@@ -415,8 +422,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ser = DiscountedFoodSerializerMany(discounted_foods_final, many=True)
         return Response(ser.data)
 
-    @action(detail=False, methods=["get"], url_path="all-vendors")
-    def all_vendors(self, request):
+    @action(detail=False, methods=["get"], url_path="all-vendors-in-city")
+    def all_vendors_in_city(self, request):
+        """this returns all active vendors in the city"""
         request_data = request.query_params
         city = request_data.get("city", None)
         if not city or not city in settings.CITY_NAMES:
@@ -426,8 +434,46 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ser = VendorSerializerMany(vendors, many=True)
         return Response(ser.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=["get"], url_path="nearby-vendors-on-map")
+    def get_nearby_vendors_on_map(self, request):
+        """
+        this endpoint returns a list of serialized vendors to be shown on map
+        it uses AbstractVendorSerializer.
+        note: h3.grid_disk returns amount of n-times hexagons away 
+        as circle from current hex
+        """
+
+        request_data = request.query_params
+        city = request_data.get("city", None)
+        location = request_data.get("location", None)
+        if not city or not city in settings.CITY_NAMES:
+            return Response({"detail": "provide_a_correct_city"}, status=400)
+        if not location:
+            return Response({"detail": "location_data_needed"}, status=400)
+        try:
+            # decoding location
+            lat, lon = geohash.decode(location)
+        except (TypeError, ValueError):
+            return Response({"detail": "invalid_location"}, status=400)
+
+        city_vendors_ids = self.get_city_vendors(city)
+        # finding near areas of the user up to 10 hexagons long -> 3.5km
+        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
+        nearest_h3s = h3.grid_disk(user_h3, 14)
+        # filter in db for existing nearby  open city vendors
+        vendors = (
+            Vendor.objects.filter(
+                id__in=city_vendors_ids,
+                user_profile__h3_id__in=nearest_h3s,
+            )
+            .select_related("user_profile")
+            .only("vendor_name", "id", "user_profile")
+        )
+        ser = AbstractVendorSerializer(vendors, many=True)
+        return Response(ser.data)
+
     def get_city_vendors(self, city):
-        # getting city vendors from cache or setting it
+        """this utility method returns ids of city vendors """
         city_vendors = cache.get(f"city:{city}:vendors")
         if not city_vendors:
             # cache miss
@@ -679,7 +725,7 @@ class PublicVendorDetail(views.APIView):
                         ser = PublicVendorSerializer(obj)
                         ser_data = ser.data.copy()
                         cache.set(
-                            self.vendor_detail_key(vendor_id), ser_data, 10 * 60
+                            self.vendor_detail_key(vendor_id), ser_data, 30 * 60
                         )  # cache for 10 minutes
                         v_lat = ser_data["location"][0]
                         v_lon = ser_data["location"][1]
@@ -694,7 +740,7 @@ class PublicVendorDetail(views.APIView):
                     lat2=c_lat,
                     lon2=c_lon,
                 )
-                ser_data["distance"] = distance
+                ser_data["distance"] = round((distance / 1000), 1)
                 # ------------------- increasing vendor view count
                 counter = BestVendorsCounter(str(city).title())
                 counter.update_counts(vendor_id)
@@ -723,21 +769,55 @@ class FavListViewset(viewsets.ModelViewSet):
         return FavItem.objects.filter(favlist=self.request.user.favlist)
 
 
-class ListVendorFoods(generics.ListAPIView):
-    serializer_class = FoodSerializerMany
-    pagination_class = StandardResultSetPagination
+class ListVendorFoods(views.APIView):
+    """
+    THis returns foods of a vendor either sorted by min price
+    or by grouped by category
+    """
 
-    def get_queryset(self):
-        """filtering by vendor id"""
+    def get(self, *args, **kwargs):
         data = self.request.query_params
-        vendor_id = data.get("vendor", None)
+        vendor_id = data.get("vendor_id", None)
+        cheapest = data.get("cheapest", None)
         if not vendor_id:
-            return Food.objects.none()
-        queryset = Food.objects.filter(vendor__id=vendor_id, is_available=True)
-        return queryset
+            return Response(
+                {"detail": "no_vendor_id"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if cheapest:
+            cheap_foods = Food.objects.filter(
+                vendor_id=vendor_id, is_available=True
+            ).order_by("min_price")[:10]
+            ser = FoodSerializerLessDetail(cheap_foods, many=True)
+            return Response(ser.data)
+        try:
+            # checking the cache
+            key = self.get_cache_key(vendor_id)
+            data = cache.get(key, None)
+            if not data:
+                categories = (
+                    Category.objects.filter(foods__vendor_id=vendor_id)
+                    .distinct()
+                    .prefetch_related(
+                        Prefetch(
+                            "foods",
+                            Food.objects.filter(vendor_id=vendor_id, is_available=True),
+                        )
+                    )
+                )
+                ser = CategoryVendorFoodsSerializer(categories, many=True)
+                data = ser.data
+                cache.set(key, data, 20 * 60)
+            return Response(data)
+        except:
+            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def get_cache_key(self, vendor_id):
+        return f"vendor:{vendor_id}:foods"
 
 
 class FoodsByCategory(generics.ListAPIView):
+    """THis returns foods by category, also pagintaes the result"""
+
     serializer_class = CategoryVendorSerializer
     pagination_class = StandardResultSetPagination
 
@@ -746,11 +826,16 @@ class FoodsByCategory(generics.ListAPIView):
         data = self.request.query_params
         category_id = data.get("category_id", None)
         user_location = data.get("location", None)
-        if not (category_id and user_location):
+        city = data.get("city", None)
+        if not (category_id and user_location and city):
             return Vendor.objects.none()
 
         vendors = (
-            Vendor.objects.filter(foods__category_id=category_id, is_approved=True)
+            Vendor.objects.filter(
+                foods__category_id=category_id,
+                is_approved=True,
+                user_profile__city=city,
+            )
             .distinct()
             .prefetch_related(
                 Prefetch("foods", queryset=Food.objects.filter(category_id=category_id))
@@ -761,8 +846,10 @@ class FoodsByCategory(generics.ListAPIView):
         # adding reach time and distance to each vendor
         user_lat, user_lon = geohash.decode(user_location)
         for vendor in vendors:
-            user_h3 = h3.latlng_to_cell(user_lat,user_lon,DEFAULT_H3_RESOLUTION)
-            distance = h3_distance_to_km(h3.grid_distance(user_h3,vendor.user_profile.h3_id))
-            vendor.distance = round(distance,1)
-            vendor.reach_time= round(distance_to_travel_time(distance),0)
+            user_h3 = h3.latlng_to_cell(user_lat, user_lon, DEFAULT_H3_RESOLUTION)
+            distance = h3_distance_to_km(
+                h3.grid_distance(user_h3, vendor.user_profile.h3_id)
+            )
+            vendor.distance = round(distance, 1)
+            vendor.reach_time = round(distance_to_travel_time(distance), 0)
         return vendors

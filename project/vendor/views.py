@@ -160,8 +160,10 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
             return Response(
                 {"detail": "already_exists"}, status=status.HTTP_409_CONFLICT
             )
-        foods = Food.objects.filter(id__in=ids).select_related("vendor__user","discount")
-        # rejecting discount on other vendor's fooditems, and already-having items 
+        foods = Food.objects.filter(id__in=ids).select_related(
+            "vendor__user", "discount"
+        )
+        # rejecting discount on other vendor's fooditems, and already-having items
         for food in foods:
             if food.vendor.user != self.request.user:
                 return Response(
@@ -611,48 +613,58 @@ class CalculateOrderTime(views.APIView):
     def get(self, *args, **kwargs):
         # ------------------ estimating only this order distance and reach time
         request_data = self.request.query_params
-        new_order_id = request_data["order_id"]
-        order = Order.objects.get(id=int(new_order_id))
-        # check if the vendor owns this order
-        self.check_object_permissions(self.request, order)
-        # ------------------ estimateing travel time for new order
-        vendor = self.request.user.vendor
-        user_location = order.user.profile.location
-        user_location = (user_location.y, user_location.x)  # as lat,lon
-        vendor_location = vendor.user_profile.location
-        vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
-        estimated = estimate_travel_time_graphhopper(vendor_location, user_location)
+        new_order_id = request_data.get("order_id", None)
+        if not new_order_id:
+            return Response(
+                {"detail": "provide_new_order_id"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            order = Order.objects.get(id=int(new_order_id))
+            # check if the vendor owns this order
+            self.check_object_permissions(self.request, order)
+            # ------------------ estimateing travel time for new order
+            vendor = self.request.user.vendor
+            user_location = order.user.profile.location
+            user_location = (user_location.y, user_location.x)  # as lat,lon
+            vendor_location = vendor.user_profile.location
+            vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
+            estimated = estimate_travel_time_graphhopper(vendor_location, user_location)
 
-        # ----------------- getting total free carriers and total preparing orders
-        vendor_carriers_key = f"vendor:{vendor.id}:carriers"
-        _3_hours_ago = tz.now() - tz.timedelta(hours=3)
-        preparing_orders_count = Order.objects.filter(
-            vendor=vendor,
-            status=ORDER_STATUS_CHOICES[2][0],  # preparing
-            created_at__gte=_3_hours_ago,
-        ).count()
-        free_carriers_count = int(json.loads(r.hget(vendor_carriers_key, "f_c_c")))
-        total_carriers_count = int(json.loads(r.hget(vendor_carriers_key, "total_c_c")))
-        total_time = estimated
-        print("estimated....", estimated, total_carriers_count, free_carriers_count)
-        # ----------------- applying conditions and estimating final ...
-        if preparing_orders_count <= total_carriers_count:
-            print("in first condition")
-            if preparing_orders_count < free_carriers_count:
-                total_time = estimated
-            elif preparing_orders_count >= free_carriers_count:
-                print("preparing greater than free count")
-                total_time = estimated + 20
-        elif preparing_orders_count > total_carriers_count:
-            print("in second condition")
-            if free_carriers_count == 0:
-                total_time = (
-                    estimated
-                    + (20 * round(preparing_orders_count / total_carriers_count))
-                    + 10
-                )
-            else:
-                total_time = estimated + (
-                    20 * round(preparing_orders_count / total_carriers_count)
-                )
-        return Response({"estimated": total_time})
+            # ----------------- getting total free carriers and total preparing orders
+            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            _3_hours_ago = tz.now() - tz.timedelta(hours=3)
+            preparing_orders_count = Order.objects.filter(
+                vendor=vendor,
+                status=ORDER_STATUS_CHOICES[2][0],  # preparing
+                created_at__gte=_3_hours_ago,
+            ).count()
+            free_carriers_count = int(json.loads(r.hget(vendor_carriers_key, "f_c_c")))
+            total_carriers_count = int(
+                json.loads(r.hget(vendor_carriers_key, "total_c_c"))
+            )
+            total_time = estimated
+            print("estimated....", estimated, total_carriers_count, free_carriers_count)
+            # ----------------- applying conditions and estimating final ...
+            if preparing_orders_count <= total_carriers_count:
+                print("in first condition")
+                if preparing_orders_count < free_carriers_count:
+                    total_time = estimated
+                elif preparing_orders_count >= free_carriers_count:
+                    print("preparing greater than free count")
+                    total_time = estimated + 20
+            elif preparing_orders_count > total_carriers_count:
+                print("in second condition")
+                if free_carriers_count == 0:
+                    total_time = (
+                        estimated
+                        + (20 * round(preparing_orders_count / total_carriers_count))
+                        + 10
+                    )
+                else:
+                    total_time = estimated + (
+                        20 * round(preparing_orders_count / total_carriers_count)
+                    )
+                return Response({"estimated": total_time})
+        except Exception as e:
+            print("error in order time calculation view\n", e, "\n", e.args)
+            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

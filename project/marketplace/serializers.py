@@ -337,7 +337,7 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details"""
 
     location = serializers.SerializerMethodField("get_location")  # read only
-    opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
+    # opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
     picture = serializers.SerializerMethodField("get_picture", read_only=True)
 
@@ -347,10 +347,9 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "id",
             "vendor_name",
             "location",
-            "is_approved",
             "avg_rating",
             "rating_count",
-            "opening_hours",
+            # "opening_hours",
             "is_open_now",
             "picture",
         ]
@@ -422,6 +421,12 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
 
 
 class CategoryVendorSerializer(serializers.ModelSerializer):
+    """
+    This serializer has vendor_name, distance, reach_time, avg_rating, foods
+    The main use is to render foods by category
+    used in filter by category.
+    {vendor1:{vendor_foods_in_specific_category},...}
+    """
     foods = FoodSerializerLessDetail(many=True, read_only=True)
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
@@ -431,7 +436,37 @@ class CategoryVendorSerializer(serializers.ModelSerializer):
         fields = ["vendor_name", "distance", "reach_time", "avg_rating", "foods"]
 
     def get_distance(self, obj):
-        return obj.distance if hasattr(obj,"distance") else None
+        return obj.distance if hasattr(obj, "distance") else None
 
     def get_reach_time(self, obj):
-        return obj.reach_time if hasattr(obj,"reach_time") else None
+        return obj.reach_time if hasattr(obj, "reach_time") else None
+
+
+class CategoryVendorFoodsSerializer(serializers.ModelSerializer):
+    """
+    This serializer contains `name` and `foods` fields
+    it is used to render vendor foods in vendor detail.
+    {cat_1:{vendor_foods_in_that_category},cat_2:....}
+    """
+
+    foods = FoodSerializerLessDetail(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = ["name", "foods"]
+
+
+class AbstractVendorSerializer(serializers.ModelSerializer):
+    """
+    this serializer has id, location, vendor_name
+    used in vendors on map.
+    """
+
+    location = serializers.SerializerMethodField("get_location")
+
+    class Meta:
+        model = Vendor
+        fields = ["id", "location", "vendor_name"]
+
+    def get_location(self, obj):
+        return (obj.user_profile.lattitude, obj.user_profile.longitude)
