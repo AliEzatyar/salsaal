@@ -84,10 +84,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ).select_related("vendor__user_profile")
 
     def get_object(self):
-        obj = super().get_object()
-        if not obj.vendor.is_approved:
-            return None
-        return obj
+        return None
 
     def list(self, request, *args, **kwargs):
         """its called last"""
@@ -265,6 +262,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         top_week_foods_key = "top_week_foods"
         # getting last week orders ids from cache
         top_week_foods = cache.get(top_week_foods_key)
+        result = top_week_foods
         if not top_week_foods:
             # cache miss
             top_week_foods = (
@@ -279,7 +277,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             ser = FoodSerializerMany(top_week_foods, many=True)
             result = ser.data
             cache.set(top_week_foods_key, result, 24 * 3600)
-
+        
         return Response(result)
 
     @action(detail=False, methods=["get"], url_path="top-vendors")
