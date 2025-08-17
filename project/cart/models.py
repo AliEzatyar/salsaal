@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.db import models
 
 # Create your models here.
@@ -38,6 +39,10 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
+
     cart = models.ForeignKey(
         "cart.Cart", on_delete=models.CASCADE, related_name="items"
     )
@@ -45,7 +50,7 @@ class CartItem(models.Model):
         "marketplace.Food", on_delete=models.CASCADE, related_name="+"
     )
     quantity = models.PositiveSmallIntegerField(default=1)
-    price = models.DecimalField(max_digits=6,decimal_places=1)
-    
+    price = models.DecimalField(max_digits=6, decimal_places=1)
+
     def get_total_price(self):
         return self.price * self.quantity

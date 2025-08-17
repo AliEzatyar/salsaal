@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.db import models
 from accounts.models import User, UserProfile
 from accounts.utils import send_notification
@@ -8,6 +9,10 @@ from django.contrib.contenttypes.models import ContentType
 
 
 class Vendor(models.Model):
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
+
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -25,7 +30,7 @@ class Vendor(models.Model):
     vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
     vendor_license = models.ImageField(upload_to="vendor/license/")
     is_approved = models.BooleanField(default=False, db_index=True)
-   
+
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     avg_rating = models.FloatField(default=0)
@@ -88,11 +93,13 @@ WEEKDAYS = [
 
 
 class OpeningHour(models.Model):
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
     start_hour = models.FloatField(choices=HOURS, null=True)
     end_hour = models.FloatField(choices=HOURS, null=True)
     weekday = models.CharField(choices=WEEKDAYS)
     is_holiday = models.BooleanField(default=False)
 
-    
     def __str__(self):
         return str(self.start_hour) + "--" + str(self.end_hour)

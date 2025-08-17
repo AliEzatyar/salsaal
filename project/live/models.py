@@ -5,6 +5,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 class Notification(models.Model):
+    
     receiver = models.ForeignKey(
         "accounts.User", on_delete=models.CASCADE, related_name="notifications"
     )
@@ -18,7 +19,5 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-
     class Meta:
         ordering = ["-created_at"]
-        

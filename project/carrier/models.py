@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Avg, Count
@@ -10,6 +11,9 @@ CARRIER_STATUS_CHOICES = [
 
 # Create your models here.
 class Carrier(models.Model):
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
     user = models.OneToOneField(
         "accounts.User", on_delete=models.CASCADE, related_name="carrier"
     )
@@ -23,7 +27,7 @@ class Carrier(models.Model):
     is_active  = models.BooleanField(default=False)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
-    
+
     class Meta:
         ordering = ["name"]
 
@@ -36,8 +40,3 @@ class Carrier(models.Model):
         self.avg_rating = avg_and_count["avg"] or 0.0
         self.rating_count = avg_and_count["count"] or 0
         self.save()
-
-    def save(self, *args, **kwargs):
-        """making name automated"""
-        self.name = self.user.first_name + " " + self.user.last_name
-        return super().save(*args, **kwargs)

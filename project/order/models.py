@@ -1,4 +1,5 @@
 from django.db import models
+from uuid import uuid4
 
 # Create your models here.
 from django.db import models
@@ -18,6 +19,9 @@ ORDER_STATUS_CHOICES = [
 
 
 class Order(models.Model):
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
     status = models.CharField(
         max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
@@ -34,6 +38,7 @@ class Order(models.Model):
     carrier = models.ForeignKey(
         "carrier.Carrier", null=True, on_delete=models.SET_NULL, related_name="orders"
     )
+    track_id = models.UUIDField(unique=True,null=True,editable=False)
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, related_name="orders"
     )

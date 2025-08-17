@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import uuid4
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
@@ -42,7 +43,7 @@ class Discount(models.Model):
 
 class Food(models.Model):
     """please consider using decimal price value"""
-
+    uuid = models.UUIDField(default=uuid4,db_index=True, unique=True, editable=False, null=True)
     vendor = models.ForeignKey(
         "vendor.Vendor",
         on_delete=models.CASCADE,

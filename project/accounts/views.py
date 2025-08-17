@@ -189,6 +189,8 @@ class LoginApiView(views.APIView):
                 return Response(
                     {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
                 )
+        else:
+            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class RoleTokenRefreshView(TokenRefreshView):

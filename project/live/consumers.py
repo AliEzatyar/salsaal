@@ -1,11 +1,12 @@
 import json
-from channels.generic.websocket import AsyncWebsocketConsumer
+import time
+from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
 from json import loads, dumps
 from live.models import Notification
 from django.conf import settings as s
 from redis.asyncio import Redis
-
 from carrier.models import Carrier
+
 r = Redis(host=s.REDIS_HOST, port=s.REDIS_PORT, db=s.REDIS_DB)
 
 # Wrappers
@@ -17,8 +18,10 @@ def set_redis_value(key, value):
     return r.set(key, value)
 
 
-class Consumer(AsyncWebsocketConsumer):
-
+class NotificationConsumer(AsyncWebsocketConsumer):
+    """
+        This consumser is used for real-time notification system and live tracking
+    """
     async def connect(self):
         """performs connection settings"""
         # prevent unauthenticated users
@@ -139,3 +142,61 @@ class Consumer(AsyncWebsocketConsumer):
                 }
             )
         )
+
+
+def safe_float(v, default=None):
+    try: return float(v)
+    except: return default
+
+
+class LocationConsumer(AsyncJsonWebsocketConsumer):
+
+    async def connect(self):
+        user = self.scope["user"]
+        if not user.is_authenticated:
+            await self.close()
+            return 
+
+        self.track_id = self.scope["url_route"]["kwargs"]["track_id"]
+        self.group = f"track_{self.track_id}"
+        # authorize: e.g., only driver of this order or customer tied to it
+        # if not self.scope["user"].is_authenticated: await self.close(); return
+        await self.channel_layer.group_add(self.group, self.channel_name)
+        await self.accept()
+
+        # optional: send last known location from cache/db
+        # last = await get_last_location(self.track_id)
+        # if last: await self.send_json({"type": "snapshot", "data": last})
+
+    async def receive_json(self, content, **kwargs):
+        # Expect publisher payloads like: {"role":"driver","lat":..., "lon":..., "heading":..., "speed":..., "ts":...}
+        role = content.get("role")
+        if role == "driver":  # only drivers can publish
+            lat = safe_float(content.get("lat"))
+            lon = safe_float(content.get("lon"))
+            if lat is None or lon is None:
+                return
+            msg = {
+                "type": "location",
+                "track_id": self.track_id,
+                "lat": lat,
+                "lon": lon,
+                "heading": safe_float(content.get("heading")),
+                "speed": safe_float(content.get("speed")),
+                "ts": content.get("ts") or int(time.time() * 1000),
+            }
+            # persist latest (cache/db) if you need replay
+            # await save_last_location(self.track_id, msg)
+            await self.channel_layer.group_send(
+                self.group, {"type": "broadcast", "message": msg}
+            )
+
+        elif role == "ping":
+            await self.send_json({"type": "pong"})
+
+    async def broadcast(self, event):
+        await self.send_json(event["message"])
+
+    async def disconnect(self, code):
+        await self.channel_layer.group_discard(self.group, self.channel_name)
+

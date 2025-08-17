@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.gis.db import models as g_models
@@ -54,6 +55,9 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
+    uuid = models.UUIDField(default=uuid4,db_index=True, unique=True, editable=False, null=True)
+
+
     objects = UserManager()
 
     ROLE_CHOICES = [
@@ -96,6 +100,10 @@ class User(AbstractBaseUser):
 
 
 class UserProfile(g_models.Model):
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
+
     user = models.OneToOneField(
         "accounts.User",
         on_delete=models.CASCADE,

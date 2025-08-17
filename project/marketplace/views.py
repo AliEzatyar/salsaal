@@ -61,7 +61,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     """
 
     serializer_class = FoodSerializerMany
-    permission_classes = [AllowAny]
     # django-filter
     filter_backends = [
         filters.OrderingFilter,
@@ -89,28 +88,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         if not obj.vendor.is_approved:
             return None
         return obj
-
-    # def filter_queryset(self, queryset, *args, **kwargs):
-    #     """
-    #     overriden to apply ordering the result by distance
-    #     some of the bellow action views may call it in the end.
-    #     """
-    #     lat = kwargs.get("lat")
-    #     lon = kwargs.get("lon")
-    #     for backend in list(self.filter_backends):
-    #         queryset = backend().filter_queryset(self.request, queryset, self)
-    #     # ordering by distance/reach-time
-
-    #     queryset = sorted(
-    #         queryset,
-    #         key=lambda x: distance_calculator(
-    #             x.vendor.user_profile.lattitude,
-    #             x.vendor.user_profile.longitude,
-    #             lat,
-    #             lon,
-    #         ),
-    #     )
-    #     return queryset
 
     def list(self, request, *args, **kwargs):
         """its called last"""
@@ -280,11 +257,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         if not order_ids:
             # cache miss
             order_ids = Order.objects.filter(
-                user__profile__city=city, created_at__gte=week_ago
+                user__profile__city=city,
+                # created_at__gte=week_ago
             ).values_list("id", flat=True)
             order_ids = [i for i in order_ids]
             cache.set(week_orders_key, order_ids, timeout=24 * 3600)
-
         top_week_foods_key = "top_week_foods"
         # getting last week orders ids from cache
         top_week_foods = cache.get(top_week_foods_key)
@@ -380,8 +357,42 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="recommended")
     def recommended_foods(self, request):
+        request_data = request.query_params
+        city = request_data.get("city", None)
+        location = request_data.get("location", None)
+        if not city or not city in settings.CITY_NAMES:
+            return Response({"detail": "provide_a_correct_city"}, status=400)
+        if not location:
+            return Response({"detail": "location_data_needed"}, status=400)
+        try:
+            # decoding location
+            lat, lon = geohash.decode(location)
+        except (TypeError, ValueError):
+            return Response({"detail": "invalid_location"}, status=400)
+        foods = Food.objects.filter(
+            vendor__user_profile__city=city, is_available=True
+        ).order_by("-min_price")
+        ser = FoodSerializerMany(foods, many=True)
+        return Response(ser.data)
 
-        pass
+    @action(detail=False, methods=["get"], url_path="cheapest")
+    def cheapest_foods(self,request):
+        request_data = request.query_params
+        city = request_data.get("city", None)
+        location = request_data.get("location", None)
+        if not city or not city in settings.CITY_NAMES:
+            return Response({"detail": "provide_a_correct_city"}, status=400)
+        if not location:
+            return Response({"detail": "location_data_needed"}, status=400)
+        try:
+            # decoding location
+            lat, lon = geohash.decode(location)
+        except (TypeError, ValueError):
+            return Response({"detail": "invalid_location"}, status=400)
+
+        foods = Food.objects.filter(vendor__user_profile__city=city,is_available=True).order_by("min_price")
+        ser = FoodSerializerMany(foods,many=True)
+        return Response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="discounted")
     def discounted_foods(self, request):

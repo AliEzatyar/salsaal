@@ -1,4 +1,5 @@
 venv/
+myvenv
 **pycache**
 **__pycache__**
 **_static

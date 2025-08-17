@@ -1,0 +1,13 @@
+<body>
+  <script>
+    // as a "driver", push a test point every second
+    console.log("app started")
+    const ws = new WebSocket('ws://127.0.0.1:8000/ws/track/123/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3OTM5NDAzLCJpYXQiOjE3NTUzNDc0MDMsImp0aSI6IjZiODFkYjNlYTg1MTQ4ZGU5OGQ3Y2JmZDQyMTAzMmVlIiwidXNlcl9pZCI6NDZ9.KaBC45VHj50rojBLdJFllAS7cMv9Ekej-g8riOQcn_k')
+    ws.onopen = () =>
+      setInterval(() => {
+        const lat = 34.5553 + (Math.random() - 0.5) * 0.01
+        const lon = 69.2075 + (Math.random() - 0.5) * 0.01
+        ws.send(JSON.stringify({ role: 'driver', lat, lon, ts: Date.now() }))
+      }, 1000)
+  </script>
+</body>
