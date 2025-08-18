@@ -77,14 +77,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """
 
         city = self.request.query_params.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city:
             return Food.objects.none()
+        city = str(city).lower()
         return Food.objects.filter(
             is_available=True, vendor__user_profile__city=city
         ).select_related("vendor__user_profile")
-
-    def get_object(self):
-        return None
 
     def list(self, request, *args, **kwargs):
         """its called last"""
@@ -98,6 +96,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         )  # this prompts filter_queryset, city existence is ensured so
         data = request.query_params
         city = self.request.query_params.get("city", None)
+        city = str(city).lower()
+
         location = data.get("location", None)
         vendor_profile = obj.vendor.user_profile
         try:
@@ -148,8 +148,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         request_data = request.query_params
         city = request_data.get("city", None)
         location = request_data.get("location", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         if not location:
             return Response({"detail": "location_data_needed"}, status=400)
         try:
@@ -170,13 +172,13 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         # adding distance property to each vendor
         for vendor in vendors:
             vendor.distance = round(
-                h3_distance_to_km(
-                    h3.grid_distance(vendor.user_profile.h3_id, user_h3)
-                ),
-                1
+                h3_distance_to_km(h3.grid_distance(vendor.user_profile.h3_id, user_h3)),
+                1,
             )
-        ser = VendorSerializerMany(vendors, many=True)
-        return Response(ser.data)
+        paginator = StandardResultSetPagination()
+        qs = paginator.paginate_queryset(vendors, request)
+        ser = VendorSerializerMany(qs, many=True)
+        return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="nearest-fastest")
     def nearest_fastest_foods(self, request):
@@ -184,8 +186,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         request_data = request.query_params
         city = request_data.get("city", None)
         location = request_data.get("location", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city:
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         if not location:
             return Response({"detail": "location_data_needed"}, status=400)
         try:
@@ -237,16 +241,20 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             food.reach_time = round(distance_to_travel_time(distance))
             food.distance = round(distance, 1)
         # serializing the result
-        ser = FoodSerializerMany(foods, many=True)
-        return Response(ser.data, status=status.HTTP_200_OK)
+        paginator = StandardResultSetPagination()
+        qs = paginator.paginate_queryset(foods, request)
+        ser = FoodSerializerMany(qs, many=True)
+        return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="week-trending")
     def week_trending(self, request):
         """this endpoint returns most ordered foods by last week"""
         request_data = request.query_params
         city = request_data.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city:
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         week_ago = timezone.now() - timezone.timedelta(weeks=1)
         week_orders_key = f"orders:{city}:week"
         # getting last week orders ids from cache
@@ -274,10 +282,23 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
             ids = [x["food"] for x in top_week_foods]
             top_week_foods = Food.objects.filter(id__in=ids)
-            ser = FoodSerializerMany(top_week_foods, many=True)
-            result = ser.data
-            cache.set(top_week_foods_key, result, 24 * 3600)
-        
+            # paginating and sending the result
+            paginator = StandardResultSetPagination()
+            qs = paginator.paginate_queryset(top_week_foods, request)
+            ser = FoodSerializerMany(qs, many=True)
+            print(ser.data,"to week not in cache")
+            cache.set(
+                top_week_foods_key,
+                {
+                    "count": paginator.page.paginator.count,
+                    "next": paginator.get_next_link(),
+                    "previous": paginator.get_previous_link(),
+                    "results": ser.data,
+                },
+                24 * 3600,
+            )
+            return paginator.get_paginated_response(ser.data)
+        print(result,"top week foods was  in cache")
         return Response(result)
 
     @action(detail=False, methods=["get"], url_path="top-vendors")
@@ -285,11 +306,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """this endpoint returns top rating and most viewed vendors in the city"""
         request_data = request.query_params
         city = request_data.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response(
                 {"detail": "provide_a_correct_city"}, status=status.HTTP_400_BAD_REQUEST
             )
-        city = str(city).title()
+        city = str(city).lower()
         key = f"top_vendors:{city}"
         # getting top ratings from cache
         top_vendors = cache.get(key, None)
@@ -300,9 +321,22 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             top_vendors = Vendor.objects.filter(
                 is_approved=True, user_profile__city=city, id__in=top
             ).order_by("-avg_rating")[:10]
-            ser = VendorSerializerMany(top_vendors, many=True)
-            top_vendors = ser.data
-            cache.set(key, top_vendors, 1 * 3600)  # 1 day
+            # paginating and sending the result
+            paginator = StandardResultSetPagination()
+            qs = paginator.paginate_queryset(top_vendors, request)
+            ser = VendorSerializerMany(qs, many=True)
+            print(ser.data, "top vndors no int cache")
+            cache.set(
+                key,
+                {
+                    "count": paginator.page.paginator.count,
+                    "next": paginator.get_next_link(),
+                    "previous": paginator.get_previous_link(),
+                    "results": ser.data,
+                },
+                1 * 3600,
+            )
+            return paginator.get_paginated_response(ser.data)
         return Response(top_vendors)
 
     @action(detail=False, methods=["get"], url_path="best-foods")
@@ -311,15 +345,16 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         request_data = request.query_params
         city = request_data.get("city", None)
         location = request_data.get("location", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response(
                 {"detail": "provide_a_correct_city"}, status=status.HTTP_400_BAD_REQUEST
             )
+        city = str(city).lower()
+
         if not location:
             return Response(
                 {"detail": "provide_location"}, status=status.HTTP_400_BAD_REQUEST
             )
-
         key = f"best_foods:{city}"
         best_foods = cache.get(key, None)
         if not best_foods:
@@ -340,7 +375,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
             for food in best_foods:
                 hexagon_distance = h3.grid_distance(
-                    h3.latlng_to_cell(c_lat, c_lon, DEFAULT_H3_RESOLUTION), food.vendor.user_profile.h3_id
+                    h3.latlng_to_cell(c_lat, c_lon, DEFAULT_H3_RESOLUTION),
+                    food.vendor.user_profile.h3_id,
                 )
                 food.reach_time = distance_to_travel_time(
                     h3_distance_to_km(hexagon_distance)
@@ -350,36 +386,100 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             ser = FoodSerializerMany(best_foods, many=True)
             best_foods = ser.data
             cache.set(key, best_foods, 1)  # 1 seconds
-
+            # ---
+            # paginating and sending the result
+            paginator = StandardResultSetPagination()
+            qs = paginator.paginate_queryset(best_foods, request)
+            ser = FoodSerializerMany(qs, many=True)
+            cache.set(
+                key,
+                {
+                    "count": paginator.page.paginator.count,
+                    "next": paginator.get_next_link(),
+                    "previous": paginator.get_previous_link(),
+                    "results": ser.data,
+                },
+                1 * 3600,
+            )
+            return paginator.get_paginated_response(ser.data)
+        print("best foods in cache-----")
         return Response(best_foods)
 
     @action(detail=False, methods=["get"], url_path="recommended")
     def recommended_foods(self, request):
+        """this endpoint returns top rating foods in the city"""
         request_data = request.query_params
         city = request_data.get("city", None)
         location = request_data.get("location", None)
-        if not city or not city in settings.CITY_NAMES:
-            return Response({"detail": "provide_a_correct_city"}, status=400)
+        if not city :
+            return Response(
+                {"detail": "provide_a_correct_city"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        city = str(city).lower()
+
         if not location:
-            return Response({"detail": "location_data_needed"}, status=400)
-        try:
-            # decoding location
-            lat, lon = geohash.decode(location)
-        except (TypeError, ValueError):
-            return Response({"detail": "invalid_location"}, status=400)
-        foods = Food.objects.filter(
-            vendor__user_profile__city=city, is_available=True
-        ).order_by("-min_price")
-        ser = FoodSerializerMany(foods, many=True)
-        return Response(ser.data)
+            return Response(
+                {"detail": "provide_location"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        key = f"best_foods:{city}"
+        best_foods = cache.get(key, None)
+        if not best_foods:
+            print("best foods not found in cache")
+            counter = BestFoodsCounter(city)
+            most_viewd_ids = counter.read_counts()
+            best_foods = (
+                Food.objects.filter(
+                    is_available=True,
+                    vendor__user_profile__city=city,
+                    id__in=most_viewd_ids,
+                )
+                .select_related("vendor__user_profile")
+                .order_by("-avg_rating")[:10]
+            )
+            # adding reach time and delivery fee
+            c_lat, c_lon = geohash.decode(location)
+
+            for food in best_foods:
+                hexagon_distance = h3.grid_distance(
+                    h3.latlng_to_cell(c_lat, c_lon, DEFAULT_H3_RESOLUTION),
+                    food.vendor.user_profile.h3_id,
+                )
+                food.reach_time = distance_to_travel_time(
+                    h3_distance_to_km(hexagon_distance)
+                )
+            # applying other filters, ordering by distance
+            # best_foods = self.filter_queryset(best_foods) # distance ordering does not mean...
+            ser = FoodSerializerMany(best_foods, many=True)
+            best_foods = ser.data
+            cache.set(key, best_foods, 1)  # 1 seconds
+            # ---
+            # paginating and sending the result
+            paginator = StandardResultSetPagination()
+            qs = paginator.paginate_queryset(best_foods, request)
+            ser = FoodSerializerMany(qs, many=True)
+            cache.set(
+                key,
+                {
+                    "count": paginator.page.paginator.count,
+                    "next": paginator.get_next_link(),
+                    "previous": paginator.get_previous_link(),
+                    "results": ser.data,
+                },
+                1 * 3600,
+            )
+            return paginator.get_paginated_response(ser.data)
+        print("best foods in cache-----")
+        return Response(best_foods)
 
     @action(detail=False, methods=["get"], url_path="cheapest")
-    def cheapest_foods(self,request):
+    def cheapest_foods(self, request):
         request_data = request.query_params
         city = request_data.get("city", None)
         location = request_data.get("location", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         if not location:
             return Response({"detail": "location_data_needed"}, status=400)
         try:
@@ -388,17 +488,24 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         except (TypeError, ValueError):
             return Response({"detail": "invalid_location"}, status=400)
 
-        foods = Food.objects.filter(vendor__user_profile__city=city,is_available=True).order_by("min_price")
-        ser = FoodSerializerMany(foods,many=True)
-        return Response(ser.data)
+        foods = Food.objects.filter(
+            vendor__user_profile__city=city, is_available=True
+        ).order_by("min_price")
+        # paginating and sending the result
+        paginator = StandardResultSetPagination()
+        qs = paginator.paginate_queryset(foods, request)
+        ser = FoodSerializerMany(qs, many=True)
+        return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="discounted")
     def discounted_foods(self, request):
         """this endpoint returns discounted foods"""
         request_data = request.query_params
         city = request_data.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         # getting ids of all discounts avaialbe in city from cache
         key = f"discounts:{city}:city"
         foods_key = f"city:{city}:dis_foods"
@@ -428,16 +535,21 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         else:
             print(discounted_foods_ids, "discounted in cache")
         discounted_foods_final = Food.objects.filter(id__in=discounted_foods_ids)
-        ser = DiscountedFoodSerializerMany(discounted_foods_final, many=True)
-        return Response(ser.data)
+        # paginating and sending the result
+        paginator = StandardResultSetPagination()
+        qs = paginator.paginate_queryset(discounted_foods_final, request)
+        ser = DiscountedFoodSerializerMany(qs, many=True)
+        return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="all-vendors-in-city")
     def all_vendors_in_city(self, request):
         """this returns all active vendors in the city"""
         request_data = request.query_params
         city = request_data.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         vendors_ids = self.get_city_vendors(city)
         vendors = Vendor.objects.filter(id__in=vendors_ids).order_by("-avg_rating")
         ser = VendorSerializerMany(vendors, many=True)
@@ -448,15 +560,17 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """
         this endpoint returns a list of serialized vendors to be shown on map
         it uses AbstractVendorSerializer.
-        note: h3.grid_disk returns amount of n-times hexagons away 
+        note: h3.grid_disk returns amount of n-times hexagons away
         as circle from current hex
         """
 
         request_data = request.query_params
         city = request_data.get("city", None)
         location = request_data.get("location", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         if not location:
             return Response({"detail": "location_data_needed"}, status=400)
         try:
@@ -482,8 +596,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         return Response(ser.data)
 
     def get_city_vendors(self, city):
-        """this utility method returns ids of city vendors """
+        """this utility method returns ids of city vendors"""
+        city = str(city).lower()
         city_vendors = cache.get(f"city:{city}:vendors")
+        
         if not city_vendors:
             # cache miss
             vendors_dict = Vendor.objects.filter(
@@ -517,8 +633,10 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     def filter_queryset(self, queryset):
         """overriden to apply city   filtering on overall search and filter"""
         city = self.request.query_params.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return queryset.none()
+        city = str(city).lower()
+
         for backend in list(self.filter_backends):
             queryset = backend().filter_queryset(self.request, queryset, self)
         return queryset.filter(vendor__user_profile__city=city)
@@ -548,8 +666,10 @@ class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
     def filter_queryset(self, queryset):
         """overriden to apply city filtering on overall search and filter"""
         city = self.request.query_params.get("city", None)
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return queryset.none()
+        city = str(city).lower()
+
         for backend in list(self.filter_backends):
             queryset = backend().filter_queryset(self.request, queryset, self)
         return queryset.filter(user_profile__city=city)
@@ -695,7 +815,7 @@ class PublicVendorDetail(views.APIView):
     queryset = Vendor.objects.filter(is_approved=True)
 
     def vendor_detail_key(self, id):
-        return f"vendor:{id}:details"
+        return f"vdr:{id}:dt"
 
     def vendor_location_key(self, id):
         return f"vendor:{id}:location"
@@ -707,12 +827,14 @@ class PublicVendorDetail(views.APIView):
         we have to use caching since its not only about vendor but its menue.
         """
         request_data = self.request.query_params
-        vendor_id = request_data.get("id", None)
+        vendor_id = request_data.get("uuid", None)
         city = request_data.get("city", None)
         user_location = request_data.get("location", None)
         # take info from user profile if authentication, realtime location prompt should be
-        if not city or not city in settings.CITY_NAMES:
+        if not city :
             return Response({"detail": "provide_a_correct_city"}, status=400)
+        city = str(city).lower()
+
         if not user_location:
             return Response({"detail": "no_location_provided"}, status=400)
         if vendor_id:
@@ -838,7 +960,7 @@ class FoodsByCategory(generics.ListAPIView):
         city = data.get("city", None)
         if not (category_id and user_location and city):
             return Vendor.objects.none()
-
+        city = str(city).lower()
         vendors = (
             Vendor.objects.filter(
                 foods__category_id=category_id,

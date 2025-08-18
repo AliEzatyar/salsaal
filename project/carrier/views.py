@@ -122,7 +122,7 @@ class SetOrderStateCarrying(views.APIView):
             customer_location = order.user.profile.location
             customer_location = (customer_location.y, customer_location.x)
             city = self.request.user.profile.city
-            city = city.lower()
+            city = str(city).lower()
             carrier_return_estimate = 2 * estimate_travel_time_graphhopper(
                 vendor_location, customer_location
             )

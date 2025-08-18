@@ -96,6 +96,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "default_image",
             "uploaded_images",
             "avg_rating",
+            "rating_count",
             "created_at",
             "modified_at",
         ]
@@ -242,6 +243,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "default_image",
             "avg_rating",
             "vendor_name",
+            "rating_count",
             "reach_time",
             "distance",
         ]
@@ -275,6 +277,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "name",
             "default_image",
             "avg_rating",
+            "rating_count",
             "reach_time",
             "min_price",
             "distance",
@@ -334,7 +337,7 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):
-    """public vendor details"""
+    """public vendor details, used in public vendor detail"""
 
     location = serializers.SerializerMethodField("get_location")  # read only
     # opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
@@ -417,7 +420,13 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
 
     class Meta:
         model = Food
-        fields = ["name", "min_price", "default_image"]
+        fields = [
+            "name",
+            "min_price",
+            "default_image",
+            "rating_count",
+            "avg_rating",
+        ]
 
 
 class CategoryVendorSerializer(serializers.ModelSerializer):

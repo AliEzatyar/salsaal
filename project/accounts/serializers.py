@@ -45,7 +45,7 @@ class UserProfileSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ["picture", "city", "address", "lattitude", "longitude"]
-        
+
     def update(self, instance, validated_data):
         pic = validated_data.get("picture", None)
         if pic:
@@ -68,7 +68,7 @@ class UserProfileCreationSerializer(ModelSerializer):
 
     def save(self, **kwargs):
         return super().save(**kwargs)
-    
+
 class UserDetailSerializer(ModelSerializer):
     profile = UserProfileSerializer()
     
