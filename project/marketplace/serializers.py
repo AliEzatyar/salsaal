@@ -80,6 +80,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     )
     default_image = serializers.SerializerMethodField("get_image_url")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+    vendor_id = serializers.SerializerMethodField("get_vendor_id")
 
     class Meta:
         model = Food
@@ -99,6 +100,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "rating_count",
             "created_at",
             "modified_at",
+            "vendor_id"
         ]
         read_only_fields = [
             "avg_rating",
@@ -187,6 +189,9 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             raise ValidationError({"detail": "uknown_problem"})
         return instance
 
+    def get_vendor_id(self, obj):
+        return obj.vendor.id
+
 
 class CFoodSerializerDetail(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField("get_category_name")
@@ -194,7 +199,8 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     min_price = MyDecimalField(read_only=True)
     images = FoodImageSerializer(many=True, read_only=True)
     default_image = serializers.SerializerMethodField("get_image_url")
-    vendor = serializers.SerializerMethodField("get_vendor_name")
+    vendor_name = serializers.SerializerMethodField("get_vendor_name")
+    vendor_id = serializers.SerializerMethodField("get_vendor_id")
 
     class Meta:
         model = Food
@@ -210,7 +216,8 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "is_available",
             "avg_rating",
             "rating_count",
-            "vendor",
+            "vendor_name",
+            "vendor_id"
         ]
         read_only_fields = ["__all__"]
 
@@ -223,11 +230,16 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
 
+    def get_vendor_id(self, obj):
+        return obj.vendor.id
+
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
 
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
+    vendor_id = serializers.SerializerMethodField("get_vendor_id")
+
     min_price = MyDecimalField()
     default_image = serializers.SerializerMethodField("get_photo_url")
     reach_time = serializers.SerializerMethodField("get_reach_time")
@@ -243,13 +255,19 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "default_image",
             "avg_rating",
             "vendor_name",
+            "vendor_id",
             "rating_count",
             "reach_time",
             "distance",
+            
         ]
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
+
+    def get_vendor_id(self, obj):
+        return obj.vendor.id
+
 
     def get_photo_url(self, obj):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
@@ -269,6 +287,8 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
     final_price = serializers.SerializerMethodField("get_final_price")
     min_price = MyDecimalField()
+    vendor_id = serializers.SerializerMethodField("get_vendor_id")
+    vendor_name = serializers.SerializerMethodField("get_vendor_name")
 
     class Meta:
         model = Food
@@ -283,6 +303,9 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "distance",
             "discount",
             "final_price",
+            "vendor_id",
+            "vendor_name"
+            
         ]
 
     def get_photo_url(self, obj):
@@ -301,17 +324,30 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     def get_distance(self, obj):
         return obj.distance if hasattr(obj, "distance") else None
 
+    def get_vendor_id(self, obj):
+        return obj.vendor.id
+
+    def get_vendor_name(self, obj):
+        return obj.vendor.vendor_name
 
 class DiscountFoodSerializerMany(serializers.ModelSerializer):
 
     default_image = serializers.SerializerMethodField("get_photo_url")
+    vendor_id = serializers.SerializerMethodField("get_vendor_id")
+    vendor_name = serializers.SerializerMethodField("get_vendor_name")
 
     class Meta:
         model = Food
-        fields = ["id", "name", "default_image"]
+        fields = ["id", "name", "default_image","vendor_id","vendor_name"]
 
     def get_photo_url(self, obj):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
+
+    def get_vendor_id(self, obj):
+        return obj.vendor.id
+
+    def get_vendor_name(self, obj):
+        return obj.vendor.vendor_name
 
 
 class RatingSerializer(serializers.ModelSerializer):
@@ -417,7 +453,7 @@ class FavListSerializer(serializers.ModelSerializer):
 
 
 class FoodSerializerLessDetail(serializers.ModelSerializer):
-
+    vendor_id = serializers.SerializerMethodField("get_vendor_id")
     class Meta:
         model = Food
         fields = [
@@ -426,8 +462,11 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
             "default_image",
             "rating_count",
             "avg_rating",
+            "vendor_id"
         ]
 
+    def get_vendor_id(self, obj):
+        return obj.vendor.id
 
 class CategoryVendorSerializer(serializers.ModelSerializer):
     """
