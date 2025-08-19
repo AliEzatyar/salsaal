@@ -100,7 +100,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "rating_count",
             "created_at",
             "modified_at",
-            "vendor_id"
+            "vendor_id",
         ]
         read_only_fields = [
             "avg_rating",
@@ -217,7 +217,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "avg_rating",
             "rating_count",
             "vendor_name",
-            "vendor_id"
+            "vendor_id",
         ]
         read_only_fields = ["__all__"]
 
@@ -259,7 +259,6 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "rating_count",
             "reach_time",
             "distance",
-            
         ]
 
     def get_vendor_name(self, obj):
@@ -267,7 +266,6 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
     def get_vendor_id(self, obj):
         return obj.vendor.id
-
 
     def get_photo_url(self, obj):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
@@ -280,11 +278,9 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
 
 class DiscountedFoodSerializerMany(serializers.ModelSerializer):
-    """this serializer is used in read only views - customers"""
+    """this serializer is used in read only views - customers home page"""
 
     default_image = serializers.SerializerMethodField("get_photo_url")
-    reach_time = serializers.SerializerMethodField("get_reach_time")
-    distance = serializers.SerializerMethodField("get_distance")
     final_price = serializers.SerializerMethodField("get_final_price")
     min_price = MyDecimalField()
     vendor_id = serializers.SerializerMethodField("get_vendor_id")
@@ -296,23 +292,16 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "id",
             "name",
             "default_image",
-            "avg_rating",
-            "rating_count",
-            "reach_time",
-            "min_price",
-            "distance",
             "discount",
             "final_price",
             "vendor_id",
-            "vendor_name"
-            
+            "vendor_name",
+            "min_price",
+            "category",
         ]
 
     def get_photo_url(self, obj):
         return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
-
-    def get_reach_time(self, obj):
-        return obj.reach_time if hasattr(obj, "reach_time") else None
 
     def get_final_price(self, obj):
         return (
@@ -321,8 +310,6 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             else None
         )
 
-    def get_distance(self, obj):
-        return obj.distance if hasattr(obj, "distance") else None
 
     def get_vendor_id(self, obj):
         return obj.vendor.id
@@ -330,24 +317,6 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
 
-class DiscountFoodSerializerMany(serializers.ModelSerializer):
-
-    default_image = serializers.SerializerMethodField("get_photo_url")
-    vendor_id = serializers.SerializerMethodField("get_vendor_id")
-    vendor_name = serializers.SerializerMethodField("get_vendor_name")
-
-    class Meta:
-        model = Food
-        fields = ["id", "name", "default_image","vendor_id","vendor_name"]
-
-    def get_photo_url(self, obj):
-        return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
-
-    def get_vendor_id(self, obj):
-        return obj.vendor.id
-
-    def get_vendor_name(self, obj):
-        return obj.vendor.vendor_name
 
 
 class RatingSerializer(serializers.ModelSerializer):
@@ -454,19 +423,25 @@ class FavListSerializer(serializers.ModelSerializer):
 
 class FoodSerializerLessDetail(serializers.ModelSerializer):
     vendor_id = serializers.SerializerMethodField("get_vendor_id")
+    image = serializers.SerializerMethodField("get_image_url")
+
     class Meta:
         model = Food
         fields = [
             "name",
             "min_price",
-            "default_image",
+            "image",
             "rating_count",
             "avg_rating",
-            "vendor_id"
+            "vendor_id",
         ]
 
     def get_vendor_id(self, obj):
         return obj.vendor.id
+
+    def get_image_url(self, obj):
+        return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
+
 
 class CategoryVendorSerializer(serializers.ModelSerializer):
     """
@@ -475,6 +450,7 @@ class CategoryVendorSerializer(serializers.ModelSerializer):
     used in filter by category.
     {vendor1:{vendor_foods_in_specific_category},...}
     """
+
     foods = FoodSerializerLessDetail(many=True, read_only=True)
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
