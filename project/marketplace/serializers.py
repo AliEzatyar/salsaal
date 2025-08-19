@@ -347,7 +347,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     location = serializers.SerializerMethodField("get_location")  # read only
     # opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
-    picture = serializers.SerializerMethodField("get_picture", read_only=True)
 
     class Meta:
         model = Vendor
@@ -359,7 +358,8 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "rating_count",
             # "opening_hours",
             "is_open_now",
-            "picture",
+            "image",
+            "logo"
         ]
         read_only_fields = ["id", "is_open_now"]
 
@@ -379,8 +379,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         ).exists()
         return is_open
 
-    def get_picture(self, obj):
-        return obj.user_profile.picture.url
 
 
 class FavItemSerializer(serializers.ModelSerializer):

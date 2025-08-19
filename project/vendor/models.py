@@ -29,8 +29,9 @@ class Vendor(models.Model):
     )
     vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
     vendor_license = models.ImageField(upload_to="vendor/license/")
+    image = models.ImageField(upload_to="vendor/image/")
+    logo = models.ImageField(upload_to="vendor/logo/")
     is_approved = models.BooleanField(default=False, db_index=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     avg_rating = models.FloatField(default=0)

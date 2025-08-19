@@ -12,7 +12,6 @@ WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 
 class VendorSerializerMany(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
-    image_url = serializers.SerializerMethodField("get_image_url")
     reach_time = serializers.SerializerMethodField("get_reach_time")
 
     class Meta:
@@ -23,7 +22,8 @@ class VendorSerializerMany(serializers.ModelSerializer):
             "avg_rating",
             "rating_count",
             "distance",
-            "image_url",
+            "image",
+            "logo",
             "reach_time",
         ]
 
@@ -31,11 +31,6 @@ class VendorSerializerMany(serializers.ModelSerializer):
         # obj.distance is a Distance object; convert to km/miles/etc.
         return obj.distance if hasattr(obj, "distance") else None
 
-    def get_image_url(self, obj):
-        image = getattr(obj.user_profile, "picture", None)
-        if image and hasattr(image, "url"):
-            return settings.CURRENT_DOMAIN_NAME + image.url
-        return None
 
     def get_reach_time(self, obj):
         return obj.reach_time if hasattr(obj, "reach_time") else None
@@ -105,6 +100,7 @@ class DiscountSerializer(serializers.ModelSerializer):
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
+    """used in vendor management views- only vendors access"""
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
 
     class Meta:
@@ -113,6 +109,8 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "id",
             "vendor_name",
             "vendor_license",
+            "image",
+            "logo",
             "is_approved",
             "user",
             "user_profile",
