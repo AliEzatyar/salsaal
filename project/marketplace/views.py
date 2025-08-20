@@ -350,6 +350,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         paginator = StandardResultSetPagination()
         qs = paginator.paginate_queryset(vendors, request)
         ser = VendorSerializerWithFoodImages(qs, many=True)
+        # print(ser.data,"data")
         return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="nearby-vendors-on-map")

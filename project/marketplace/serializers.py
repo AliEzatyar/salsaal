@@ -318,7 +318,6 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
         return obj.vendor.vendor_name
 
 
-
 class RatingSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField("get_user_name")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
@@ -380,7 +379,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         return is_open
 
 
-
 class FavItemSerializer(serializers.ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
     picture = serializers.SerializerMethodField("get_food_picture", read_only=True)
@@ -422,6 +420,7 @@ class FavListSerializer(serializers.ModelSerializer):
 class FoodSerializerLessDetail(serializers.ModelSerializer):
     vendor_id = serializers.SerializerMethodField("get_vendor_id")
     image = serializers.SerializerMethodField("get_image_url")
+    min_price = MyDecimalField(read_only=True)
 
     class Meta:
         model = Food
