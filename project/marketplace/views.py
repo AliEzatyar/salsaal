@@ -905,7 +905,7 @@ class PublicVendorDetail(views.APIView):
         we have to use caching since its not only about vendor but its menue.
         """
         request_data = self.request.query_params
-        vendor_id = request_data.get("uuid", None)
+        vendor_id = request_data.get("id", None)
         city = request_data.get("city", None)
         user_location = request_data.get("location", None)
         # take info from user profile if authentication, realtime location prompt should be

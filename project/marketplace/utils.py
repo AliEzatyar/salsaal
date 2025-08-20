@@ -73,7 +73,7 @@ class BestVendorsCounter:
 
     def __init__(self, city):
         self.redis = r
-        self.top_vendors_key = "top_vendors:{city}:city"
+        self.top_vendors_key = f"top_vendors:{city}:city"
 
     def update_counts(self, pk):
         """increases view count of a vendor in the sorted set"""
