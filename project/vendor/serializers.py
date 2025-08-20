@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from marketplace.models import Discount, Food
 from marketplace.serializers import FoodSerializerLessDetail
-from project.vendor.utils import to_af_weekday
+from vendor.utils import to_af_weekday
 from .models import OpeningHour, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS

@@ -14,7 +14,7 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     show_on_home = models.BooleanField(default=True)
-    picture = models.ImageField(blank=True, null=True)
+    picture = models.ImageField(upload_to="categories/",blank=True, null=True)
 
     class Meta:
         verbose_name = "category"
@@ -107,6 +107,7 @@ class FoodImage(models.Model):
 
     def __str__(self):
         return self.food.name
+
 
 class Rating(models.Model):
     """rating models is used for both food and vendor models for now"""
