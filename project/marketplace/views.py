@@ -951,7 +951,7 @@ class PublicVendorDetail(views.APIView):
                 )
                 ser_data["distance"] = round((distance / 1000), 1)
                 # ------------------- increasing vendor view count
-                counter = BestVendorsCounter(str(city).title())
+                counter = BestVendorsCounter(str(city))
                 counter.update_counts(vendor_id)
                 return Response(ser_data, status=status.HTTP_200_OK)
             except Exception as e:
