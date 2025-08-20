@@ -1,7 +1,9 @@
+from zoneinfo import ZoneInfo
 from rest_framework import serializers
-
+from django.utils import timezone
 from marketplace.models import Discount, Food
 from marketplace.serializers import FoodSerializerLessDetail
+from project.vendor.utils import to_af_weekday
 from .models import OpeningHour, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS
@@ -13,6 +15,7 @@ WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 class VendorSerializerMany(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
     reach_time = serializers.SerializerMethodField("get_reach_time")
+    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
 
     class Meta:
         model = Vendor
@@ -25,23 +28,35 @@ class VendorSerializerMany(serializers.ModelSerializer):
             "image",
             "logo",
             "reach_time",
+            "is_open_now",
         ]
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
         return obj.distance if hasattr(obj, "distance") else None
 
-
     def get_reach_time(self, obj):
         return obj.reach_time if hasattr(obj, "reach_time") else None
+
+    def get_is_open(self, obj):
+        """this checks whether the vendor obj has any opening hour right now"""
+        now = timezone.now()  # utc now
+        index = now.weekday()  # utc weekday
+        weekday = to_af_weekday(index=index)  # afg weekday
+        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
+        is_open = obj.opening_hours.filter(
+            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
+        ).exists()
+        return is_open
 
 
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
     """this provides vendor detail with its foods in `All Venodrs` part"""
+
     distance = serializers.SerializerMethodField("get_distance")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     foods = FoodSerializerLessDetail(many=True, read_only=True)
-
+    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
     class Meta:
         model = Vendor
         fields = [
@@ -52,6 +67,7 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
             "distance",
             "reach_time",
             "foods",
+            "is_open_now"
         ]
 
     def get_distance(self, obj):
@@ -60,6 +76,18 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
 
     def get_reach_time(self, obj):
         return obj.reach_time if hasattr(obj, "reach_time") else None
+
+
+    def get_is_open(self, obj):
+        """this checks whether the vendor obj has any opening hour right now"""
+        now = timezone.now()  # utc now
+        index = now.weekday()  # utc weekday
+        weekday = to_af_weekday(index=index)  # afg weekday
+        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
+        is_open = obj.opening_hours.filter(
+            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
+        ).exists()
+        return is_open
 
 
 class OpeningHourSerializer(serializers.ModelSerializer):
@@ -72,6 +100,7 @@ class OpeningHourSerializer(serializers.ModelSerializer):
 
 class DiscountFoodSerializerMany(serializers.ModelSerializer):
     """used in DiscountSerializer"""
+
     default_image = serializers.SerializerMethodField("get_photo_url")
     vendor_id = serializers.SerializerMethodField("get_vendor_id")
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
@@ -101,6 +130,7 @@ class DiscountSerializer(serializers.ModelSerializer):
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
     """used in vendor management views- only vendors access"""
+
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
 
     class Meta:
