@@ -136,7 +136,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         categories = cache.get(cat_key)
         if not categories:
             # cach miss
-            categories = Category.objects.filter(show_on_home=True).values("name", "id")
+            categories = Category.objects.filter(show_on_home=True)
             ser = CategorySerializer(categories, many=True)
             categories = ser.data
             cache.set(cat_key, categories, timeout=24 * 3600)

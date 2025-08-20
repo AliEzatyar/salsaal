@@ -55,11 +55,14 @@ class MyDecimalField(serializers.Field):
 
 class CategorySerializer(serializers.ModelSerializer):
     """used in home-categories"""
-
+    picture = serializers.SerializerMethodField("get_picture_url")
     class Meta:
         model = Category
         fields = ["id", "name", "picture"]
 
+    def get_picture_url(self,obj):
+        
+        return settings.CURRENT_DOMAIN_NAME + obj.picture.url
 
 class FoodImageSerializer(serializers.ModelSerializer):
     class Meta:

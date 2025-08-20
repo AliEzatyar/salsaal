@@ -16,6 +16,8 @@ class VendorSerializerMany(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
+    image = serializers.SerializerMethodField("get_image_url")
+    logo = serializers.SerializerMethodField("get_logo_url")
 
     class Meta:
         model = Vendor
@@ -48,6 +50,12 @@ class VendorSerializerMany(serializers.ModelSerializer):
             weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
         ).exists()
         return is_open
+
+    def get_image_url(self,obj):
+        return settings.CURRENT_DOMAIN_NAME + obj.image.url
+
+    def get_logo_url(self, obj):
+        return settings.CURRENT_DOMAIN_NAME + obj.logo.url
 
 
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
