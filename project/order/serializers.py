@@ -40,7 +40,7 @@ class OrderItemSerializer(ModelSerializer):
         return obj.food_name
 
     def get_image_url(self,obj):
-        return obj.food.default_image.image.url
+        return obj.food.image.url
 
 
 class OrderSerializer(ModelSerializer):

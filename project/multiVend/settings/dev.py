@@ -56,3 +56,9 @@ CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 
 # Celery Beat for periodic tasks
 INSTALLED_APPS += ["django_celery_beat"]
+
+
+# overriding media prepending url
+MEDIA_URL = "https://www.eatee.food/"
+
+

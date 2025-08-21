@@ -58,3 +58,5 @@ CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
 # Celery Beat for periodic tasks
 INSTALLED_APPS += ["django_celery_beat"]
+
+MEDIA_URL = ""

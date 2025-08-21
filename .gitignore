@@ -15,7 +15,6 @@ local.tar
 uwsgi_app.sock
 command**
 **aws**
-**foods**
 **users**
 **doc**
 **loadtest**

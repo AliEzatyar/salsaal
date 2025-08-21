@@ -16,9 +16,6 @@ class VendorSerializerMany(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
-    image = serializers.SerializerMethodField("get_image_url")
-    logo = serializers.SerializerMethodField("get_logo_url")
-
     class Meta:
         model = Vendor
         fields = [
@@ -51,11 +48,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
         ).exists()
         return is_open
 
-    def get_image_url(self,obj):
-        return settings.CURRENT_DOMAIN_NAME + obj.image.url
 
-    def get_logo_url(self, obj):
-        return settings.CURRENT_DOMAIN_NAME + obj.logo.url
 
 
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
@@ -65,6 +58,7 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
     reach_time = serializers.SerializerMethodField("get_reach_time")
     foods = FoodSerializerLessDetail(many=True, read_only=True)
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
+
     class Meta:
         model = Vendor
         fields = [
@@ -75,7 +69,7 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
             "distance",
             "reach_time",
             "foods",
-            "is_open_now"
+            "is_open_now",
         ]
 
     def get_distance(self, obj):
@@ -84,7 +78,6 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
 
     def get_reach_time(self, obj):
         return obj.reach_time if hasattr(obj, "reach_time") else None
-
 
     def get_is_open(self, obj):
         """this checks whether the vendor obj has any opening hour right now"""
@@ -109,16 +102,12 @@ class OpeningHourSerializer(serializers.ModelSerializer):
 class DiscountFoodSerializerMany(serializers.ModelSerializer):
     """used in DiscountSerializer"""
 
-    default_image = serializers.SerializerMethodField("get_photo_url")
     vendor_id = serializers.SerializerMethodField("get_vendor_id")
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
 
     class Meta:
         model = Food
-        fields = ["id", "name", "default_image", "vendor_id", "vendor_name"]
-
-    def get_photo_url(self, obj):
-        return settings.CURRENT_DOMAIN_NAME + obj.default_image.image.url
+        fields = ["id", "name", "image", "vendor_id", "vendor_name"]
 
     def get_vendor_id(self, obj):
         return obj.vendor.id
@@ -140,6 +129,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     """used in vendor management views- only vendors access"""
 
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
+    logo = serializers.SerializerMethodField("get_logo_url")
 
     class Meta:
         model = Vendor

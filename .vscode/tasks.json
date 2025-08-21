@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Python",
+      "type": "shell",
+      "command": "bash",
+      "problemMatcher": [],
+      "options": { "title": "python" }
+    },
+    {
+      "label": "S3",
+      "type": "shell",
+      "command": "bash",
+      "problemMatcher": [],
+      "options": { "title": "s3" }
+    },
+    {
+      "label": "SSH",
+      "type": "shell",
+      "command": "bash",
+      "problemMatcher": [],
+      "options": { "title": "ssh" }
+    },
+    {
+      "label": "redis",
+      "type": "shell",
+      "command": "bash",
+      "problemMatcher": [],
+      "options": { "title": "redis" }
+    },
+    {
+      "label": "Start All Shells",
+      "dependsOn": ["Python", "S3", "SSH","redis"],
+      "dependsOrder": "parallel"
+    }
+  ]
+}

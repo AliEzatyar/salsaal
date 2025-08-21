@@ -14,8 +14,7 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     show_on_home = models.BooleanField(default=True)
-    picture = models.ImageField(upload_to="categories/",blank=True, null=True)
-
+    icon = models.ImageField(upload_to="categories-icons/", blank=True, null=True)
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
@@ -59,12 +58,7 @@ class Food(models.Model):
         related_name="foods",
         db_index=True,
     )
-    default_image = models.ForeignKey(
-        "marketplace.FoodImage",
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="defualt_for",
-    )
+    image = models.ImageField(upload_to="foods-images/",blank=True, null=True)
     description = models.TextField(max_length=250)
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -100,13 +94,6 @@ class Food(models.Model):
     def __str__(self):
         return self.name
 
-
-class FoodImage(models.Model):
-    food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name="images")
-    image = models.ImageField(upload_to="foods/")
-
-    def __str__(self):
-        return self.food.name
 
 
 class Rating(models.Model):

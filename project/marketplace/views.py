@@ -334,7 +334,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 Prefetch(
                     "foods",
                     Food.objects.only(
-                        "default_image",
+                        "image",
                         "min_price",
                         "name",
                         "rating_count",
