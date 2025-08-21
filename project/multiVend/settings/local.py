@@ -57,6 +57,32 @@ CELERY_BROKER_URL = "redis://localhost:6379/0"  # or use RabbitMQ
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
 # Celery Beat for periodic tasks
-INSTALLED_APPS += ["django_celery_beat"]
+INSTALLED_APPS += ["django_celery_beat", "storages"]
 
-MEDIA_URL = ""
+
+# S3 config
+
+AWS_STORAGE_BUCKET_NAME = "food-delivery-images-prod"
+AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY")
+AWS_QUERYSTRING_AUTH = True  # so URLs are clean, no ?X-Amz-Signature=...
+AWS_S3_REGION_NAME = "us-east-1"  # change if your bucket is in another region
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+# Tell Django to use S3 for media storage
+# Public URL of your bucket (can be S3 or CloudFront CDN)
+MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": AWS_STORAGE_BUCKET_NAME,
+            "region_name": AWS_S3_REGION_NAME,
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+

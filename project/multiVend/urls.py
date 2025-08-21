@@ -32,6 +32,6 @@ urlpatterns = [
 ]
 
 
-# in foodion, NGINX does it, but in debug mode, django should do
-if settings.DEBUG and settings.LOCAL:
-    urlpatterns += static(settings.MEDIA_URL,document_root =settings.MEDIA_ROOT)
+# # in foodion, NGINX does it, but in debug mode, django should do
+# if settings.DEBUG and settings.LOCAL:
+#     urlpatterns += static(settings.MEDIA_URL,document_root =settings.MEDIA_ROOT)
