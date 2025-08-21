@@ -102,15 +102,12 @@ class OpeningHourSerializer(serializers.ModelSerializer):
 class DiscountFoodSerializerMany(serializers.ModelSerializer):
     """used in DiscountSerializer"""
 
-    vendor_id = serializers.SerializerMethodField("get_vendor_id")
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
 
     class Meta:
         model = Food
-        fields = ["id", "name", "image", "vendor_id", "vendor_name"]
+        fields = ["id", "name", "image", "vendor", "vendor_name"]
 
-    def get_vendor_id(self, obj):
-        return obj.vendor.id
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name

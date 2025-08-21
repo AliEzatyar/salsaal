@@ -24,6 +24,8 @@ urlpatterns = [
     path("get-category-names/", views.CategoriesReadAPIView.as_view()),
     path("public-vendor-detail/", views.PublicVendorDetail.as_view()),
     path("get-vendor-foods/", views.ListVendorFoods.as_view()),
-    path("foods-by-category/",views.FoodsByCategory.as_view())
+    path("foods-by-category/", views.FoodsByCategory.as_view()),
+    path("like-food-item/", views.LikeFood.as_view()),
+    path("like-vendor/", views.LikeVendor.as_view()),
     # full search
 ]

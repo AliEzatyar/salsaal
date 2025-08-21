@@ -27,7 +27,6 @@ class FoodFilterSet(django_filters.FilterSet):
         model = Food
         fields = ["min_price", "max_price", "avg_rating"]
 
-   
 
 class VendorFilterSet(django_filters.FilterSet):
     avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
@@ -155,3 +154,5 @@ class CustomVendorSearch(SearchFilter):
         )
 
         return vendors
+
+

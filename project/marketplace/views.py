@@ -1,9 +1,5 @@
-from time import time
-from zoneinfo import ZoneInfo
 from marketplace.models import Category, Discount, FavItem, Food, Rating
-from order.models import Order, OrderItem
 from accounts.models import CUSTOMER
-from vendor.utils import to_af_weekday
 from .utils import (
     BestFoodsCounter,
     BestVendorsCounter,
@@ -33,11 +29,9 @@ from marketplace.serializers import (
     CategorySerializer,
 )
 from carrier.models import Carrier
-from django.db.models.aggregates import Count
 from django.db.models import Prefetch
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
-from django.utils import timezone
 from rest_framework import filters, status, views, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -48,7 +42,8 @@ from .utils import BoughtTogetherRecommender
 from django.db.models import Avg
 import geohash
 import h3
-from .utils import StandardResultSetPagination, DEFAULT_H3_RESOLUTION
+from .utils import StandardResultSetPagination, DEFAULT_H3_RESOLUTION, r
+
 
 """Marketplace API Views"""
 
@@ -147,9 +142,18 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """this endpoint returns discounted foods"""
         request_data = request.query_params
         city = request_data.get("city", None)
+        location = request_data.get("location", None)
         if not city:
             return Response({"detail": "provide_a_correct_city"}, status=400)
         city = str(city).lower()
+        if not location:
+            return Response({"detail": "location_data_needed"}, status=400)
+        try:
+            # decoding location
+            lat, lon = geohash.decode(location)
+        except (TypeError, ValueError):
+            return Response({"detail": "invalid_location"}, status=400)
+        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
 
         # getting ids of all discounts avaialbe in city from cache
         key = f"discounts:{city}:city"
@@ -179,7 +183,14 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             cache.set(foods_key, discounted_foods_ids, 10 * 60)
         else:
             print(discounted_foods_ids, "discounted in cache")
-        discounted_foods_final = Food.objects.filter(id__in=discounted_foods_ids)
+        discounted_foods_final = Food.objects.filter(id__in=discounted_foods_ids).select_related("vendor__user_profile")
+        for f in discounted_foods_final:
+            distance = round(
+                h3_distance_to_km(h3.grid_distance(f.vendor.user_profile.h3_id, user_h3)),
+                1,
+            )
+            f.distance = distance
+            f.reach_time = round(distance_to_travel_time(distance), 1)
         # paginating and sending the result
         paginator = StandardResultSetPagination()
         qs = paginator.paginate_queryset(discounted_foods_final, request)
@@ -719,6 +730,35 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
             queryset = backend().filter_queryset(self.request, queryset, self)
         return queryset.filter(vendor__user_profile__city=city)
 
+class LikeFood(views.APIView):
+
+    def get(self,*args, **kwargs):
+        data = self.request.query_params
+        food_id = data.get("id",None)
+        if not food_id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        exists = Food.objects.filter(id=food_id).exists()
+        if exists: 
+            key = f"food:{food_id}:likes"
+            r.incrby(key,1)
+            return Response()
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+class LikeVendor(views.APIView):
+
+    def get(self, *args, **kwargs):
+        data = self.request.query_params
+        vendor_id = data.get("id", None)
+        if not vendor_id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        exists = Vendor.objects.filter(id=vendor_id).exists()
+        if exists:
+            key = f"vendor:{vendor_id}:likes"
+            r.incrby(key, 1)
+            return Response()
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
 
 class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
     """
@@ -950,6 +990,7 @@ class PublicVendorDetail(views.APIView):
                     lon2=c_lon,
                 )
                 ser_data["distance"] = round((distance / 1000), 1)
+                ser_data["likes"] = r.get("")
                 # ------------------- increasing vendor view count
                 counter = BestVendorsCounter(str(city))
                 counter.update_counts(vendor_id)

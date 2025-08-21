@@ -56,13 +56,9 @@ class MyDecimalField(serializers.Field):
 class CategorySerializer(serializers.ModelSerializer):
     """used in home-categories"""
 
-
     class Meta:
         model = Category
         fields = ["id", "name", "icon"]
-
-
-
 
 
 class FoodSerializerDetail(serializers.ModelSerializer):
@@ -73,7 +69,6 @@ class FoodSerializerDetail(serializers.ModelSerializer):
     min_price = MyDecimalField(read_only=True)
     is_available = serializers.BooleanField(default=True)
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    vendor_id = serializers.SerializerMethodField("get_vendor_id")
 
     class Meta:
         model = Food
@@ -91,7 +86,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "rating_count",
             "created_at",
             "modified_at",
-            "vendor_id",
+            "vendor",
         ]
         read_only_fields = [
             "avg_rating",
@@ -102,7 +97,6 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "image",
         ]
 
-    
     def get_category_name(self, obj):
         return obj.category.name
 
@@ -157,16 +151,12 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             raise ValidationError({"detail": "uknown_problem"})
         return instance
 
-    def get_vendor_id(self, obj):
-        return obj.vendor.id
-
 
 class CFoodSerializerDetail(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField("get_category_name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
-    vendor_id = serializers.SerializerMethodField("get_vendor_id")
 
     class Meta:
         model = Food
@@ -182,7 +172,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "avg_rating",
             "rating_count",
             "vendor_name",
-            "vendor_id",
+            "vendor",
         ]
         read_only_fields = ["__all__"]
 
@@ -192,15 +182,11 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
 
-    def get_vendor_id(self, obj):
-        return obj.vendor.id
-
 
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
 
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
-    vendor_id = serializers.SerializerMethodField("get_vendor_id")
     min_price = MyDecimalField()
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
@@ -215,7 +201,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "image",
             "avg_rating",
             "vendor_name",
-            "vendor_id",
+            "vendor",
             "rating_count",
             "reach_time",
             "distance",
@@ -223,9 +209,6 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
-
-    def get_vendor_id(self, obj):
-        return obj.vendor.id
 
     def get_reach_time(self, obj):
         return obj.reach_time if hasattr(obj, "reach_time") else None
@@ -237,9 +220,10 @@ class FoodSerializerMany(serializers.ModelSerializer):
 class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers home page"""
 
+    reach_time = serializers.SerializerMethodField("get_reach_time")
+    distance = serializers.SerializerMethodField("get_distance")
     final_price = serializers.SerializerMethodField("get_final_price")
     min_price = MyDecimalField()
-    vendor_id = serializers.SerializerMethodField("get_vendor_id")
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
 
     class Meta:
@@ -250,10 +234,12 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "image",
             "discount",
             "final_price",
-            "vendor_id",
+            "vendor",
             "vendor_name",
             "min_price",
             "category",
+            "reach_time",
+            "distance",
         ]
 
     def get_final_price(self, obj):
@@ -263,11 +249,14 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             else None
         )
 
-    def get_vendor_id(self, obj):
-        return obj.vendor.id
-
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
+
+    def get_reach_time(self, obj):
+        return obj.reach_time if hasattr(obj, "reach_time") else None
+
+    def get_distance(self, obj):
+        return obj.distance if hasattr(obj, "distance") else None
 
 
 class RatingSerializer(serializers.ModelSerializer):
@@ -331,6 +320,7 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         ).exists()
         return is_open
 
+
 class FavItemSerializer(serializers.ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
     picture = serializers.SerializerMethodField("get_food_picture", read_only=True)
@@ -370,7 +360,6 @@ class FavListSerializer(serializers.ModelSerializer):
 
 
 class FoodSerializerLessDetail(serializers.ModelSerializer):
-    vendor_id = serializers.SerializerMethodField("get_vendor_id")
     min_price = MyDecimalField(read_only=True)
 
     class Meta:
@@ -381,11 +370,9 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
             "image",
             "rating_count",
             "avg_rating",
-            "vendor_id",
+            "vendor",
         ]
 
-    def get_vendor_id(self, obj):
-        return obj.vendor.id
 
 
 class CategoryVendorSerializer(serializers.ModelSerializer):
