@@ -49,7 +49,7 @@ urlpatterns = [
     ),
     path(
         "estimate-order-time/",
-        views.CalculateOrderTime.as_view(),
+        views.CalculateOrderTimeAndDeliveryCost.as_view(),
     ),
     path("", include(router.urls)),
 ]

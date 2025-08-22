@@ -601,7 +601,7 @@ class AcceptRejectOrderView(views.APIView):
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class CalculateOrderTime(views.APIView):
+class CalculateOrderTimeAndDeliveryCost(views.APIView):
     """
     This view takes new order id and estimates new order reaching-time considering
     preparing orders count, free carriers count and total carriers count of vendor
@@ -628,7 +628,9 @@ class CalculateOrderTime(views.APIView):
             user_location = (user_location.y, user_location.x)  # as lat,lon
             vendor_location = vendor.user_profile.location
             vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
-            estimated = estimate_travel_time_graphhopper(vendor_location, user_location)
+            estimated, distance_km = estimate_travel_time_graphhopper(
+                vendor_location, user_location
+            )
 
             # ----------------- getting total free carriers and total preparing orders
             vendor_carriers_key = f"vendor:{vendor.id}:carriers"
@@ -644,7 +646,7 @@ class CalculateOrderTime(views.APIView):
             )
             total_time = estimated
             print("estimated....", estimated, total_carriers_count, free_carriers_count)
-            # ----------------- applying conditions and estimating final ...
+            # ----------------- applying conditions and finalizing estimation of time  ...
             if preparing_orders_count <= total_carriers_count:
                 print("in first condition")
                 if preparing_orders_count < free_carriers_count:
@@ -664,7 +666,21 @@ class CalculateOrderTime(views.APIView):
                     total_time = estimated + (
                         20 * round(preparing_orders_count / total_carriers_count)
                     )
-                return Response({"estimated": total_time})
+            # ------------------ calculating delivery fee -------------------------------------
+            delivery_cost = None
+            v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
+            v_mfcfd = vendor.mfcfd  # vendor's minimum food count free delivery
+            if (
+                vendor.mfcfd
+                and vendor.mfdd > 0
+                and distance_km < v_mfdd
+                and order.total_items > v_mfcfd
+            ):
+                delivery_cost = 0
+            else:
+                delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
+
+            return Response({"estimated": total_time, "delivery_cost": delivery_cost})
         except Exception as e:
             print("error in order time calculation view\n", e, "\n", e.args)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

@@ -281,46 +281,6 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "start_hour", "end_hour", "weekday", "is_holdiay"]
 
 
-class PublicVendorSerializer(serializers.ModelSerializer):
-    """public vendor details, used in public vendor detail"""
-
-    location = serializers.SerializerMethodField("get_location")  # read only
-    # opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
-    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
-    logo = serializers.SerializerMethodField("get_logo_url")
-
-    class Meta:
-        model = Vendor
-        fields = [
-            "id",
-            "vendor_name",
-            "location",
-            "avg_rating",
-            "rating_count",
-            # "opening_hours",
-            "is_open_now",
-            "image",
-            "logo",
-        ]
-        read_only_fields = ["id", "is_open_now"]
-
-    def get_location(self, obj):
-        """adds vendor location"""
-        if obj.get_location():
-            return obj.get_location().tuple  # json does not support point object
-
-    def get_is_open(self, obj):
-        """this checks whether the vendor obj has any opening hour right now"""
-        now = timezone.now()  # utc now
-        index = now.weekday()  # utc weekday
-        weekday = to_af_weekday(index=index)  # afg weekday
-        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-        is_open = obj.opening_hours.filter(
-            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
-        ).exists()
-        return is_open
-
-
 class FavItemSerializer(serializers.ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
     picture = serializers.SerializerMethodField("get_food_picture", read_only=True)
@@ -411,18 +371,3 @@ class CategoryVendorFoodsSerializer(serializers.ModelSerializer):
         model = Category
         fields = ["name", "foods"]
 
-
-class AbstractVendorSerializer(serializers.ModelSerializer):
-    """
-    this serializer has id, location, vendor_name
-    used in vendors on map.
-    """
-
-    location = serializers.SerializerMethodField("get_location")
-
-    class Meta:
-        model = Vendor
-        fields = ["id", "location", "vendor_name"]
-
-    def get_location(self, obj):
-        return (obj.user_profile.lattitude, obj.user_profile.longitude)

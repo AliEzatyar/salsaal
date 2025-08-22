@@ -39,6 +39,17 @@ class Vendor(models.Model):
     opening_hours = models.ManyToManyField(
         to="vendor.OpeningHour", related_name="vendors"
     )
+    mfdd = models.PositiveSmallIntegerField(
+        default=0, blank=True
+    )  # max free distance delivery
+    mfcfd = models.PositiveSmallIntegerField(
+        null=True, blank=True
+    )  # min food count free delivery
+    min_order_price = models.PositiveSmallIntegerField(default=100)  # AFS
+    delivery_fee_km = models.PositiveSmallIntegerField(
+        default=3
+    )  # delivery fee per km AFS
+    is_available = models.BooleanField(default=True)
 
     class Meta:
 

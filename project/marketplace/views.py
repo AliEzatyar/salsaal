@@ -13,8 +13,8 @@ from api.backends import (
     FoodFilterSet,
     VendorFilterSet,
 )
-from vendor.models import OpeningHour, Vendor
-from vendor.serializers import VendorSerializerMany, VendorSerializerWithFoodImages
+from vendor.models import Vendor
+from vendor.serializers import VendorSerializerMany, AbstractVendorSerializer,PublicVendorSerializer,VendorSerializerWithFoodImages
 from marketplace.serializers import (
     CFoodSerializerDetail,
     CategoryVendorFoodsSerializer,
@@ -23,8 +23,6 @@ from marketplace.serializers import (
     FavItemSerializer,
     FoodSerializerLessDetail,
     FoodSerializerMany,
-    AbstractVendorSerializer,
-    PublicVendorSerializer,
     RatingSerializer,
     CategorySerializer,
 )
@@ -974,7 +972,7 @@ class PublicVendorDetail(views.APIView):
                         ser = PublicVendorSerializer(obj)
                         ser_data = ser.data.copy()
                         cache.set(
-                            self.vendor_detail_key(vendor_id), ser_data, 30 * 60
+                            self.vendor_detail_key(vendor_id), ser_data, 5 * 60
                         )  # cache for 10 minutes
                         v_lat = ser_data["location"][0]
                         v_lon = ser_data["location"][1]

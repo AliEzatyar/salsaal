@@ -16,6 +16,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
+
     class Meta:
         model = Vendor
         fields = [
@@ -47,8 +48,6 @@ class VendorSerializerMany(serializers.ModelSerializer):
             weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
         ).exists()
         return is_open
-
-
 
 
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
@@ -108,7 +107,6 @@ class DiscountFoodSerializerMany(serializers.ModelSerializer):
         model = Food
         fields = ["id", "name", "image", "vendor", "vendor_name"]
 
-
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
 
@@ -126,8 +124,6 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     """used in vendor management views- only vendors access"""
 
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
-    logo = serializers.SerializerMethodField("get_logo_url")
-
     class Meta:
         model = Vendor
         fields = [
@@ -143,6 +139,10 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "avg_rating",
             "rating_count",
             "opening_hours",
+            "mfdd",
+            "mfcfd",
+            "min_order_price",
+            "delivery_fee_km",
         ]
         read_only_fields = [
             "id",
@@ -153,11 +153,6 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "rating",
             "opening_hours",
         ]
-
-    def get_distance(self, obj):
-        # obj.distance is a Distance object; convert to km/miles/etc.
-        # distance attribute comes from annotate
-        return round(obj.distance.km, 1) if hasattr(obj, "distance") else None
 
     def update(self, instance, validated_data):
         """overriding to apply user profile update together with vendor"""
@@ -185,3 +180,75 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         validated_data["user_profile"] = user_profile
 
         return super().create(validated_data)
+
+
+class PublicVendorSerializer(serializers.ModelSerializer):
+    """public vendor details, used in public vendor detail"""
+
+    location = serializers.SerializerMethodField("get_location")  # read only
+    # opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
+    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
+
+    class Meta:
+        model = Vendor
+        fields = [
+            "id",
+            "vendor_name",
+            "location",
+            "avg_rating",
+            "rating_count",
+            "is_open_now",
+            "image",
+            "logo",
+            "mfdd",
+            "mfcfd",
+            "min_order_price",
+            "delivery_fee_km",
+        ]
+        read_only_fields = ["__all__"]
+
+    def get_location(self, obj):
+        """adds vendor location"""
+        if obj.get_location():
+            return obj.get_location().tuple  # json does not support point object
+
+    def get_is_open(self, obj):
+        """this checks whether the vendor obj has any opening hour right now"""
+        now = timezone.now()  # utc now
+        index = now.weekday()  # utc weekday
+        weekday = to_af_weekday(index=index)  # afg weekday
+        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
+        is_open = False
+        today_open_hour = obj.opening_hours.filter(
+            weekday=weekday
+        ).first()
+        # closed today either always or vendor sets unavailable for some reasons
+        if not today_open_hour or not obj.is_available :
+            is_open = "closed_today"
+        # already closed
+        elif today_open_hour.end_hour < now_af:
+            is_open = "already_closed"
+        # open
+        elif today_open_hour.start_hour < now_af and today_open_hour.end_hour > now_af:
+            print(today_open_hour,weekday)
+            is_open = "yes"
+        else:
+            is_open = today_open_hour.start_hour 
+        return is_open
+
+
+class AbstractVendorSerializer(serializers.ModelSerializer):
+    """
+    this serializer has id, location, vendor_name
+    used in vendors on map.
+    """
+
+    location = serializers.SerializerMethodField("get_location")
+
+    class Meta:
+        model = Vendor
+        fields = ["id", "location", "vendor_name"]
+        read_only_fields = ["__all__"]
+
+    def get_location(self, obj):
+        return (obj.user_profile.lattitude, obj.user_profile.longitude)

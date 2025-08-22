@@ -142,7 +142,7 @@ def estimate_travel_time_graphhopper(origin, destination):
         f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false"
     )
     response = response.json()
-    return int(response["paths"][0]["time"]) / 60000
+    return (int(response["paths"][0]["time"]) / 60000, round(float(response["paths"][0]["distance"])/1000,1))
 
 
 def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):

@@ -31,7 +31,7 @@ class Discount(models.Model):
     amount = models.SmallIntegerField(
         default=0, validators=[MinValueValidator(1), MaxValueValidator(90)]
     )
-    deadline = models.DateTimeField(default=tz.now())
+    deadline = models.DateTimeField(default=tz.now)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
