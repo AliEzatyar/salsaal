@@ -146,7 +146,7 @@ def estimate_travel_time_graphhopper(origin, destination):
 
 
 def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
-    return (val + 4) * edge_length
+    return (val + 2) * edge_length
 
 
 def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):

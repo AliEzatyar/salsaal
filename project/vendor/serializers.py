@@ -1,4 +1,5 @@
 from zoneinfo import ZoneInfo
+
 from rest_framework import serializers
 from django.utils import timezone
 from marketplace.models import Discount, Food
@@ -44,9 +45,19 @@ class VendorSerializerMany(serializers.ModelSerializer):
         index = now.weekday()  # utc weekday
         weekday = to_af_weekday(index=index)  # afg weekday
         now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-        is_open = obj.opening_hours.filter(
-            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
-        ).exists()
+        is_open = False
+        today_open_hour = obj.opening_hours.filter(weekday=weekday).first()
+        # closed today either always or vendor sets unavailable for some reasons
+        if not today_open_hour or not obj.is_available:
+            is_open = "closed_today"
+        # already closed
+        elif today_open_hour.end_hour < now_af:
+            is_open = "already_closed"
+        # open
+        elif today_open_hour.start_hour < now_af and today_open_hour.end_hour > now_af:
+            is_open = "yes"
+        else:
+            is_open = today_open_hour.start_hour
         return is_open
 
 
@@ -84,9 +95,19 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
         index = now.weekday()  # utc weekday
         weekday = to_af_weekday(index=index)  # afg weekday
         now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-        is_open = obj.opening_hours.filter(
-            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
-        ).exists()
+        is_open = False
+        today_open_hour = obj.opening_hours.filter(weekday=weekday).first()
+        # closed today either always or vendor sets unavailable for some reasons
+        if not today_open_hour or not obj.is_available:
+            is_open = "closed_today"
+        # already closed
+        elif today_open_hour.end_hour < now_af:
+            is_open = "already_closed"
+        # open
+        elif today_open_hour.start_hour < now_af and today_open_hour.end_hour > now_af:
+            is_open = "yes"
+        else:
+            is_open = today_open_hour.start_hour
         return is_open
 
 
@@ -230,7 +251,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             is_open = "already_closed"
         # open
         elif today_open_hour.start_hour < now_af and today_open_hour.end_hour > now_af:
-            print(today_open_hour,weekday)
             is_open = "yes"
         else:
             is_open = today_open_hour.start_hour 

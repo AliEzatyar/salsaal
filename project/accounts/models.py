@@ -162,6 +162,6 @@ class NoUserOtp(models.Model):
     phone_number = models.CharField(max_length=12)
     otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):
         return timezone.now() > self.created_at + timezone.timedelta(minutes=expire)

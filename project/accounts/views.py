@@ -4,6 +4,7 @@ from accounts.serializers import (
     UserDetailSerializer,
 )
 from django.db.utils import IntegrityError
+from django.core.cache import cache
 from .utils import OTP_LOGIN, OTP_VERIFY_PHONE
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
@@ -14,6 +15,7 @@ from rest_framework import views, viewsets
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenRefreshView
+from marketplace.utils import r
 
 """Account API Views"""
 
@@ -69,14 +71,12 @@ class LoginApiView(views.APIView):
             # if user already exists with this phone number
             user = User.objects.get(phone_number=phone_number)
             send_otp(user=user, typ=OTP_LOGIN)
-            print("user exists")
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
             )
         except User.DoesNotExist:
             # new user
-            print("user does not exists")
             send_otp(typ=OTP_VERIFY_PHONE, phone_number=phone_number)
             return Response(
                 {"type": "new_user", "message": "otp_sent"}, status=status.HTTP_200_OK
@@ -107,6 +107,14 @@ class LoginApiView(views.APIView):
             # -------------------------------- sending tokens
             try:
                 # verifying otp
+                tries = r.get(f"user:{phone_number}:tries")
+                r.incrby(f"user:{phone_number}:tries", 1)
+                if tries and int(tries) > 3:
+                    return Response(
+                        {"detail": "max_attempt_reached"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
                 saved_otp = UserOtp.objects.get(otp=otp)
                 if (
                     saved_otp.is_expired()
@@ -139,6 +147,14 @@ class LoginApiView(views.APIView):
             # ----------------- creating user account + sending tokens
             # verifying otp
             try:
+                tries = r.get(f"user:{phone_number}:tries")
+                r.incrby(f"user:{phone_number}:tries", 1)
+
+                if tries and int(tries) > 3:
+                    return Response(
+                        {"detail": "max_attempt_reached"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
                 saved_otp = NoUserOtp.objects.get(otp=otp)
                 if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
                     return Response(

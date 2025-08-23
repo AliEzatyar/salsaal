@@ -75,7 +75,7 @@ def send_otp(user=None, phone_number=None, typ=OTP_VERIFY_PHONE,**kwargs):
         UserOtp.objects.create(user=user, otp=otp)
     mail = EmailMessage(subject="HI", to=["tareeqshah5@gmail.com"], body=mail_body)
     mail.send()
-
+    return otp
 
 def send_forgot_email(request, user, template=None):
     current_site = get_current_site(request)
