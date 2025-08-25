@@ -14,7 +14,12 @@ from api.backends import (
     VendorFilterSet,
 )
 from vendor.models import Vendor
-from vendor.serializers import VendorSerializerMany, AbstractVendorSerializer,PublicVendorSerializer,VendorSerializerWithFoodImages
+from vendor.serializers import (
+    VendorSerializerMany,
+    AbstractVendorSerializer,
+    PublicVendorSerializer,
+    VendorSerializerWithFoodImages,
+)
 from marketplace.serializers import (
     CFoodSerializerDetail,
     CategoryVendorFoodsSerializer,
@@ -52,6 +57,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     For food detail, this view requires user location and city from client app.
     """
 
+    permission_classes = [AllowAny]
     serializer_class = FoodSerializerMany
     # django-filter
     filter_backends = [
@@ -107,7 +113,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             recommender = BoughtTogetherRecommender()
             suggestion_ids = recommender.suggest_foods_for([obj.id])
             suggestion_foods = Food.objects.filter(id__in=suggestion_ids)
-            ser_many = FoodSerializerMany(suggestion_foods, many=True)
+            ser_many = FoodSerializerLessDetail(suggestion_foods, many=True)
             # updating the counter for this food
             counter = BestFoodsCounter(city)
             counter.update_counts(obj.id)
@@ -161,9 +167,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         if not all_discounts_in_city:
             all_discounts_in_city = Discount.objects.filter(
                 is_active=True,
-                vendor__user_profile__city=self.request.user.profile.city,
+                vendor__user_profile__city=city,
             ).values_list("id", flat=True)
-            print(all_discounts_in_city, "this is discounts ids")
+            print(all_discounts_in_city, "city_discounts", city)
+            # print(all_discounts_in_city, "this is discounts ids")
             cache.set(key, all_discounts_in_city, 10 * 60)
             # updating discounted foods
             discounted_foods_ids = Food.objects.filter(
@@ -181,14 +188,25 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             cache.set(foods_key, discounted_foods_ids, 10 * 60)
         else:
             print(discounted_foods_ids, "discounted in cache")
-        discounted_foods_final = Food.objects.filter(id__in=discounted_foods_ids).select_related("vendor__user_profile")
-        for f in discounted_foods_final:
-            distance = round(
-                h3_distance_to_km(h3.grid_distance(f.vendor.user_profile.h3_id, user_h3)),
-                1,
-            )
-            f.distance = distance
-            f.reach_time = round(distance_to_travel_time(distance), 1)
+        discounted_foods_final = Food.objects.filter(
+            id__in=discounted_foods_ids
+        ).select_related("vendor__user_profile")
+        try:
+            """here can be an error due to long distance of user and vendor,
+            since h3 library does not work for a big distance"""
+            for f in discounted_foods_final:
+                # print(user_h3,f.v~endor.user_profile.h3_id)
+                # continue
+                distance = round(
+                    h3_distance_to_km(
+                        h3.grid_distance(user_h3, f.vendor.user_profile.h3_id)
+                    ),
+                    1,
+                )
+                f.distance = distance
+                f.reach_time = round(distance_to_travel_time(distance),1)
+        except:
+            pass
         # paginating and sending the result
         paginator = StandardResultSetPagination()
         qs = paginator.paginate_queryset(discounted_foods_final, request)
@@ -306,7 +324,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             # adding distance property to each vendor
             for vendor in top_vendors:
                 distance = round(
-                    h3_distance_to_km(h3.grid_distance(vendor.user_profile.h3_id, user_h3)),
+                    h3_distance_to_km(
+                        h3.grid_distance(vendor.user_profile.h3_id, user_h3)
+                    ),
                     1,
                 )
                 vendor.distance = distance
@@ -333,9 +353,22 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """this returns all active vendors in the city"""
         request_data = request.query_params
         city = request_data.get("city", None)
+
+        city = request_data.get("city", None)
+        location = request_data.get("location", None)
         if not city:
             return Response({"detail": "provide_a_correct_city"}, status=400)
         city = str(city).lower()
+
+        if not location:
+            return Response({"detail": "location_data_needed"}, status=400)
+        try:
+            # decoding location
+            lat, lon = geohash.decode(location)
+        except (TypeError, ValueError):
+            return Response({"detail": "invalid_location"}, status=400)
+        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
+
         vendors_ids = self.get_city_vendors(city)
         vendors = (
             Vendor.objects.filter(id__in=vendors_ids)
@@ -355,11 +388,17 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             )
             .order_by("-avg_rating")
         )
+        for vendor in vendors:
+            distance = round(
+                h3_distance_to_km(h3.grid_distance(vendor.user_profile.h3_id, user_h3)),
+                1,
+            )
+            vendor.distance = distance
+            vendor.reach_time = round(distance_to_travel_time(distance), 1)
         # paginating and sending the result
         paginator = StandardResultSetPagination()
         qs = paginator.paginate_queryset(vendors, request)
         ser = VendorSerializerWithFoodImages(qs, many=True)
-        # print(ser.data,"data")
         return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="nearby-vendors-on-map")
@@ -697,6 +736,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     #     return paginator.get_paginated_response(ser.data)
 """
 
+
 class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     """
     this viewset enables a user search for a fooditem
@@ -728,17 +768,18 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
             queryset = backend().filter_queryset(self.request, queryset, self)
         return queryset.filter(vendor__user_profile__city=city)
 
+
 class LikeFood(views.APIView):
 
-    def get(self,*args, **kwargs):
+    def get(self, *args, **kwargs):
         data = self.request.query_params
-        food_id = data.get("id",None)
+        food_id = data.get("id", None)
         if not food_id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         exists = Food.objects.filter(id=food_id).exists()
-        if exists: 
+        if exists:
             key = f"food:{food_id}:likes"
-            r.incrby(key,1)
+            r.incrby(key, 1)
             return Response()
         return Response(status=status.HTTP_404_NOT_FOUND)
 

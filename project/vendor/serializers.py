@@ -37,7 +37,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
         return obj.distance if hasattr(obj, "distance") else None
 
     def get_reach_time(self, obj):
-        return obj.reach_time if hasattr(obj, "reach_time") else None
+        return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
     def get_is_open(self, obj):
         """this checks whether the vendor obj has any opening hour right now"""
@@ -80,6 +80,7 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
             "reach_time",
             "foods",
             "is_open_now",
+
         ]
 
     def get_distance(self, obj):
@@ -87,7 +88,7 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
         return obj.distance if hasattr(obj, "distance") else None
 
     def get_reach_time(self, obj):
-        return obj.reach_time if hasattr(obj, "reach_time") else None
+        return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
     def get_is_open(self, obj):
         """this checks whether the vendor obj has any opening hour right now"""

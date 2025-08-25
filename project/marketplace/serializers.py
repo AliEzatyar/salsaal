@@ -211,7 +211,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
         return obj.vendor.vendor_name
 
     def get_reach_time(self, obj):
-        return obj.reach_time if hasattr(obj, "reach_time") else None
+        return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
     def get_distance(self, obj):
         return obj.distance if hasattr(obj, "distance") else None
@@ -253,7 +253,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
         return obj.vendor.vendor_name
 
     def get_reach_time(self, obj):
-        return obj.reach_time if hasattr(obj, "reach_time") else None
+        return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
     def get_distance(self, obj):
         return obj.distance if hasattr(obj, "distance") else None
@@ -325,6 +325,7 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
     class Meta:
         model = Food
         fields = [
+            "id",
             "name",
             "min_price",
             "image",
@@ -332,7 +333,6 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
             "avg_rating",
             "vendor",
         ]
-
 
 
 class CategoryVendorSerializer(serializers.ModelSerializer):
@@ -355,7 +355,7 @@ class CategoryVendorSerializer(serializers.ModelSerializer):
         return obj.distance if hasattr(obj, "distance") else None
 
     def get_reach_time(self, obj):
-        return obj.reach_time if hasattr(obj, "reach_time") else None
+        return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
 
 class CategoryVendorFoodsSerializer(serializers.ModelSerializer):
@@ -370,4 +370,3 @@ class CategoryVendorFoodsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["name", "foods"]
-

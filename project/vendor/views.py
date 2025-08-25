@@ -140,7 +140,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
 
 class ManageDiscountViewSet(viewsets.ModelViewSet):
     serializer_class = DiscountSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendorOfDiscount]
+    # permission_classes = [permissions.IsAuthenticated, IsVendorOfDiscount]
 
     def get_queryset(self):
         return Discount.objects.filter(vendor=self.request.user.vendor)

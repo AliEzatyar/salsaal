@@ -173,7 +173,7 @@ MESSAGE_TAGS = {messages.ERROR: "red", messages.INFO: "green", messages.SUCCESS:
 # REST SETTINGS
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
+        "rest_framework.permissions.AllowAny",
         # "api.permissions.NotAdmin"
     ],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],

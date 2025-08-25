@@ -9,5 +9,11 @@ class VendAdmin(admin.ModelAdmin):
     list_editable = ["is_approved"]
 
 
-admin.site.register(OpeningHour)
+# Register your models here.
+class HourAdmin(admin.ModelAdmin):
+    model = OpeningHour
+    list_display = ["start_hour", "end_hour", "weekday"]
+
+
+admin.site.register(OpeningHour,HourAdmin)
 admin.site.register(Vendor, VendAdmin)

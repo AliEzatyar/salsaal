@@ -111,7 +111,7 @@ class LoginApiView(views.APIView):
                 r.incrby(f"user:{phone_number}:tries", 1)
                 if tries and int(tries) > 3:
                     return Response(
-                        {"detail": "max_attempt_reached"},
+                        {"detail": "max_attempts_reached"},
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
@@ -127,6 +127,8 @@ class LoginApiView(views.APIView):
                 user = User.objects.get(phone_number=phone_number)
                 refresh = RefreshToken.for_user(user)
                 saved_otp.delete()
+                r.delete(f"user:{phone_number}:tries")
+
                 return Response(
                     {"access": str(refresh.access_token), "refresh": str(refresh)},
                     status=status.HTTP_200_OK,
@@ -152,7 +154,7 @@ class LoginApiView(views.APIView):
 
                 if tries and int(tries) > 3:
                     return Response(
-                        {"detail": "max_attempt_reached"},
+                        {"detail": "max_attempts_reached"},
                         status=status.HTTP_403_FORBIDDEN,
                     )
                 saved_otp = NoUserOtp.objects.get(otp=otp)
@@ -179,7 +181,6 @@ class LoginApiView(views.APIView):
                     data={"phone_number": phone_number, "full_name": full_name}
                 )
                 ser.is_valid(raise_exception=True)
-
                 user = User(
                     phone_number=phone_number, is_active=True, full_name=full_name
                 )
@@ -190,6 +191,7 @@ class LoginApiView(views.APIView):
                 ser = UserProfileCreationSerializer(data=new_user_data)
                 ser.is_valid(raise_exception=True)
                 profile = ser.save(user=user)
+                r.delete(f"user:{phone_number}:tries")
                 saved_otp.delete()
                 refresh = RefreshToken.for_user(user)
                 return Response(

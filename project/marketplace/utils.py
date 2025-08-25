@@ -9,7 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 DEFAULT_H3_RESOLUTION = 9
 DEFAULT_H3_EDGE_LENGTH = 0.357
-DEFAULT_AVG_SPEED = 7
+DEFAULT_AVG_SPEED = 5
 
 
 class BoughtTogetherRecommender:
@@ -146,7 +146,7 @@ def estimate_travel_time_graphhopper(origin, destination):
 
 
 def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
-    return (val + 2) * edge_length
+    return (val ) * edge_length
 
 
 def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
@@ -154,4 +154,9 @@ def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
 
 
 class StandardResultSetPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 4
+
+    def __init__(self,page_size=10):
+        super().__init__()
+        self.page_size =page_size
+        
