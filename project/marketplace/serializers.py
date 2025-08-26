@@ -183,6 +183,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
         return obj.vendor.vendor_name
 
 
+
 class FoodSerializerMany(serializers.ModelSerializer):
     """this serializer is used in read only views - customers"""
 
@@ -269,7 +270,7 @@ class RatingSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "user"]
 
     def get_user_name(self, obj):
-        return obj.user.get_full_name()
+        return obj.user.full_name
 
 
 class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
@@ -332,6 +333,7 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
             "rating_count",
             "avg_rating",
             "vendor",
+            
         ]
 
 

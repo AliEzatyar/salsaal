@@ -4,7 +4,7 @@ from accounts.models import User, UserProfile
 from accounts.utils import send_notification
 from marketplace.models import Food, Rating
 from django.contrib.contenttypes.models import ContentType
-
+from django.contrib.postgres.indexes import GinIndex
 # Create your models here.
 
 
@@ -54,7 +54,13 @@ class Vendor(models.Model):
     class Meta:
 
         ordering = ["-avg_rating"]
-
+        indexes = [
+            GinIndex(
+                name="vendor_name_trgm",
+                fields=["vendor_name"],
+                opclasses=["gin_trgm_ops"],
+            ),
+        ]
     def get_location(self):
         """returns the location of the vendor"""
         return self.user_profile.location

@@ -204,7 +204,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                     1,
                 )
                 f.distance = distance
-                f.reach_time = round(distance_to_travel_time(distance),1)
+                f.reach_time = round(distance_to_travel_time(distance), 1)
         except:
             pass
         # paginating and sending the result
@@ -745,7 +745,6 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = FoodSerializerMany
     queryset = Food.objects.filter(is_available=True)
-    permission_classes = [AllowAny]
     # django-filter
     filter_backends = [
         CustomFoodSearch,
@@ -826,16 +825,15 @@ class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
         if not city:
             return queryset.none()
         city = str(city).lower()
-
         for backend in list(self.filter_backends):
             queryset = backend().filter_queryset(self.request, queryset, self)
         return queryset.filter(user_profile__city=city)
 
 
 class RatingViewSet(viewsets.ModelViewSet):
-    permission_classes = [NotAdmin]
     http_method_names = ["get", "post", "delete", "patch"]
     serializer_class = RatingSerializer
+    pagination_class = StandardResultSetPagination
     # order of ratings
     filter_backends = [
         filters.OrderingFilter,
@@ -846,8 +844,6 @@ class RatingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
-        rating_type = self.request.query_params.get("type", None)
-        max_results = self.request.query_params.get("max", None)
         # user should be logged in and own the rating object
         if self.request.method in ("DELETE", "PATCH"):
             if (
@@ -857,26 +853,13 @@ class RatingViewSet(viewsets.ModelViewSet):
                 return Rating.objects.none()
             return Rating.objects.filter(user=self.request.user)
         # for GET
-        if not object_id or not rating_type:
+        if not object_id:
             return Rating.objects.none()
         try:
-            if rating_type == "vendor":
-                ct = ContentType.objects.get_for_model(Vendor)
-            elif rating_type == "food":
-                ct = ContentType.objects.get_for_model(Food)
-            elif rating_type == "carrier":
-                ct = ContentType.objects.get_for_model(Carrier)
-            else:
-                return Rating.objects.none()
-            max_results = int(max_results)
-            if max_results and max_results > 0:
-                query_set = Rating.objects.filter(
-                    content_type=ct, object_id=int(object_id), enabled=True
-                ).order_by("-rating")[:max_results]
-            else:
-                query_set = Rating.objects.filter(
-                    content_type=ct, object_id=int(object_id), enabled=True
-                ).order_by("-rating")
+            ct = ContentType.objects.get_for_model(Vendor)
+            query_set = Rating.objects.filter(
+                content_type=ct, object_id=int(object_id), enabled=True
+            ).order_by("-rating")
             return query_set
         except:
             # if any problem, no rating is returned
@@ -884,15 +867,14 @@ class RatingViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """overriden, obj_id, type"""
-        if not self.request.user.is_authenticated or self.request.user.role != CUSTOMER:
+        if  self.request.user.role != CUSTOMER:
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = request.data
-        rating_type = data.get("type")
         obj_id = data.get("obj_id")
         rating_data = data.get("rating")
-        if not rating_type or not obj_id or not type(obj_id) == int:
+        if  not obj_id or not type(obj_id) == int:
             return Response(
-                {"error": "rating type must be sent"},
+                {"detail":"provide_id"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         previous = Rating.objects.filter(
@@ -915,23 +897,12 @@ class RatingViewSet(viewsets.ModelViewSet):
             instance = serializer.instance
             #
             related_obj = None
-
-            if rating_type == "vendor":
-                ct = ContentType.objects.get_for_model(Vendor)
-                instance.content_type = ct
-                related_obj = Vendor.objects.filter(id=obj_id).first()
-            elif rating_type == "food":
-                ct = ContentType.objects.get_for_model(Food)
-                instance.content_type = ct
-                related_obj = Food.objects.filter(id=obj_id).first()
-            elif rating_type == "carrier":
-                ct = ContentType.objects.get_for_model(Carrier)
-                instance.content_type = ct
-                related_obj = Carrier.objects.filter(id=obj_id).first()
-
+            ct = ContentType.objects.get_for_model(Vendor)
+            instance.content_type = ct
+            related_obj = Vendor.objects.filter(id=obj_id).first()
             if not related_obj:
                 return Response(
-                    {"error": "no such object"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": "no_such_vendor"}, status=status.HTTP_400_BAD_REQUEST
                 )
 
             instance.object_id = int(obj_id)
@@ -1000,7 +971,7 @@ class PublicVendorDetail(views.APIView):
                 v_lon, v_lon = None, None
                 ser_data = None
                 vendor_in_cache = cache.get(self.vendor_detail_key(vendor_id))
-                if vendor_in_cache:
+                if None:
                     ser_data = vendor_in_cache.copy()
                     location = ser_data["location"]
                     v_lat = location[0]
@@ -1010,6 +981,25 @@ class PublicVendorDetail(views.APIView):
                         is_approved=True, id=vendor_id, user_profile__city=city
                     ).first()
                     if obj:
+                        vendor_foods = Food.objects.filter(vendor_id=obj.id,is_available=True)
+                        featured_items = vendor_foods.filter(is_featured=True)
+                        vendor_categories = vendor_foods.values_list(
+                            "category__name", flat=True
+                        )
+                        
+                        discounted_vendor_foods = vendor_foods.filter(
+                            discount__is_active=True
+                        ).only(
+                            "id",
+                            "name",
+                            "image",
+                            "min_price",
+                            "category"
+                        )
+                        obj.featured_items = featured_items # later on we decide
+                        obj.discounted_foods = discounted_vendor_foods
+                        obj.categories = vendor_categories
+                        obj.categories_count = len(vendor_categories)
                         ser = PublicVendorSerializer(obj)
                         ser_data = ser.data.copy()
                         cache.set(
@@ -1029,7 +1019,6 @@ class PublicVendorDetail(views.APIView):
                     lon2=c_lon,
                 )
                 ser_data["distance"] = round((distance / 1000), 1)
-                ser_data["likes"] = r.get("")
                 # ------------------- increasing vendor view count
                 counter = BestVendorsCounter(str(city))
                 counter.update_counts(vendor_id)

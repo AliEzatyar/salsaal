@@ -6,7 +6,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone as tz
 from django.core.validators import MinValueValidator, MaxValueValidator
-
+from django.contrib.postgres.indexes import GinIndex
 # Create your models here.
 
 
@@ -15,6 +15,7 @@ class Category(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     show_on_home = models.BooleanField(default=True)
     icon = models.ImageField(upload_to="categories-icons/", blank=True, null=True)
+    description = models.CharField(max_length=255,null=True,blank=True)
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
@@ -68,11 +69,19 @@ class Food(models.Model):
     discount = models.ForeignKey(
         Discount, null=True, blank=True, on_delete=models.SET_NULL, related_name="foods"
     )
+    is_featured = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "food"
         verbose_name_plural = "foods"
         ordering = ["-avg_rating"]  # newest
+        indexes = [
+            GinIndex(
+                name="food_name_trgm",
+                fields=["name"],
+                opclasses=["gin_trgm_ops"],
+                ),
+        ]
 
     def update_avg_rating(self, *args, **kwargs):
         ct = ContentType.objects.get_for_model(Food)

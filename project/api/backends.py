@@ -13,6 +13,7 @@ import geohash
 from multiVend.settings.base import DEFAULT_SEARCH_DISTANCE
 from vendor.models import Vendor
 from django.conf import settings
+from django.contrib.postgres.search import TrigramSimilarity
 
 
 class FoodFilterSet(django_filters.FilterSet):
@@ -30,7 +31,6 @@ class FoodFilterSet(django_filters.FilterSet):
 
 class VendorFilterSet(django_filters.FilterSet):
     avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
-
     class Meta:
         model = Vendor
         fields = ["avg_rating"]
@@ -100,7 +100,7 @@ class VOrderFilterSet(django_filters.FilterSet):
 
 
 class CustomFoodSearch(SearchFilter):
-    search_param = "q"
+    search_param = "query"
 
     def filter_queryset(self, request, queryset, view):
         """overriden for custom search"""
@@ -110,49 +110,45 @@ class CustomFoodSearch(SearchFilter):
             return queryset.none()
 
         # searching for foods
-        foods = Food.objects.filter(
-            Q(name__icontains=search_param) | Q(description__icontains=search_param),
-        ).select_related("vendor__user_profile")
+        foods = (
+            Food.objects.annotate(similarity=TrigramSimilarity("name", search_param))
+            .filter(similarity__gte=0.2)
+            .select_related("vendor__user_profile")
+            .order_by("-similarity")
+        )
         return foods
 
 
 class CustomVendorSearch(SearchFilter):
-    search_param = "q"
+    search_param = "query"
 
     def filter_queryset(self, request, queryset, view):
         # if search param value is void
         # getting user location
         request_data = request.query_params
         search_param = request_data.get(self.search_param)
-        location = request_data.get("location",None)
-        max_distance = request_data.get("max_distance", DEFAULT_SEARCH_DISTANCE)
+        location = request_data.get("location", None)
         user_location = None
+        
         # determinig user location
         try:
             if location:
                 # decode location data
-                lat,lon = geohash.decode(location)
+                lat, lon = geohash.decode(location)
                 user_location = Point(float(lon), float(lat), srid=4326)
         except:
             return queryset.none()
 
         # if no location provided, no city, incorrect city, then nothing found
-        if not user_location:
+        if not user_location or not search_param or not search_param.strip():
             return queryset.none()
-        # if no search query, return nearby vendors at max distance 
-        if not search_param or not search_param.strip():
-            vendors = queryset.annotate(
-                distance=Distance("user_profile__location", user_location)
-            ).filter(distance__lte=D(km=max_distance))
-            return vendors
-
         # searching for vendors nearby at max distance
         vendors = (
-            Vendor.objects.filter(vendor_name__icontains=search_param)
+            Vendor.objects.annotate(similarity=TrigramSimilarity("vendor_name",search_param))
+            .filter(similarity__gt=0.2)
             .annotate(distance=Distance("user_profile__location", user_location))
-            .filter(distance__lte=D(km=max_distance))
+            .annotate(reach_time = F("distance")/7/60)
+            .order_by("-similarity")
         )
 
         return vendors
-
-

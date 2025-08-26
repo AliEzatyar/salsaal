@@ -1,9 +1,9 @@
 from zoneinfo import ZoneInfo
-
+from django.contrib.gis.measure  import Distance
 from rest_framework import serializers
 from django.utils import timezone
 from marketplace.models import Discount, Food
-from marketplace.serializers import FoodSerializerLessDetail
+from marketplace.serializers import CategorySerializer, DiscountedFoodSerializerMany, FoodSerializerLessDetail
 from vendor.utils import to_af_weekday
 from .models import OpeningHour, Vendor
 from accounts.models import REST
@@ -34,6 +34,9 @@ class VendorSerializerMany(serializers.ModelSerializer):
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
+        distance_attr = getattr(obj,"distance")
+        if type(distance_attr) == Distance:
+            return obj.distance.km
         return obj.distance if hasattr(obj, "distance") else None
 
     def get_reach_time(self, obj):
@@ -210,7 +213,12 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     location = serializers.SerializerMethodField("get_location")  # read only
     # opening_hours = ReadOnlyOpeningHourSerializer(many=True, read_only=True)
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
-
+    discounted_foods = serializers.SerializerMethodField("get_discounted_foods")
+    featured_items = serializers.SerializerMethodField(
+        "get_featured_items"
+    )
+    categories = serializers.SerializerMethodField("get_categories")
+    categories_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = Vendor
         fields = [
@@ -225,7 +233,11 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "mfdd",
             "mfcfd",
             "min_order_price",
-            "delivery_fee_km",
+            # "delivery_fee_km",
+            "discounted_foods",
+            "featured_items",
+            "categories",
+            "categories_count"
         ]
         read_only_fields = ["__all__"]
 
@@ -234,6 +246,10 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         if obj.get_location():
             return obj.get_location().tuple  # json does not support point object
 
+    def get_categories(self,obj):
+        categories = getattr(obj,"categories")
+        return categories
+    
     def get_is_open(self, obj):
         """this checks whether the vendor obj has any opening hour right now"""
         now = timezone.now()  # utc now
@@ -256,6 +272,18 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         else:
             is_open = today_open_hour.start_hour 
         return is_open
+
+    def get_discounted_foods(self,obj):
+        discounted = getattr(obj,"discounted_foods")
+        if discounted:
+            return DiscountedFoodSerializerMany(discounted,many=True).data
+        return
+
+    def get_featured_items(self, obj):
+        featured = getattr(obj, "featured_items")
+        if featured:
+            return FoodSerializerLessDetail(featured, many=True).data
+        return
 
 
 class AbstractVendorSerializer(serializers.ModelSerializer):
