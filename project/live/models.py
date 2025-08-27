@@ -5,7 +5,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 class Notification(models.Model):
-    
     receiver = models.ForeignKey(
         "accounts.User", on_delete=models.CASCADE, related_name="notifications"
     )

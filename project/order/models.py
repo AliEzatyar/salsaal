@@ -38,9 +38,12 @@ class Order(models.Model):
     carrier = models.ForeignKey(
         "carrier.Carrier", null=True, on_delete=models.SET_NULL, related_name="orders"
     )
-    track_id = models.UUIDField(unique=True,null=True,editable=False)
+    track_id = models.UUIDField(unique=True, null=True, editable=False)
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, related_name="orders"
+    )
+    destination = models.CharField(
+        max_length=40, default="null,null"
     )
 
     class Meta:

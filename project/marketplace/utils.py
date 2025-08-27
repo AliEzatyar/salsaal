@@ -150,6 +150,7 @@ def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
 
 
 def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
+    print(distance,avg_speed,)
     return distance * 1000 / (avg_speed) / 60
 
 

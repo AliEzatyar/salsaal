@@ -1,4 +1,5 @@
 import json
+from zoneinfo import ZoneInfo
 from django.shortcuts import render
 from rest_framework import (
     permissions as perm,
@@ -30,6 +31,7 @@ from vendor.utils import r
 from django.utils.translation import gettext as _
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
+
 # Create your views here.
 
 
@@ -119,7 +121,8 @@ class SetOrderStateCarrying(views.APIView):
             carrier_key = f"carrier:{carrier_id}:live"
             vendor_location = self.request.user.profile.location
             vendor_location = (vendor_location.y, vendor_location.x)
-            customer_location = order.user.profile.location
+            order_user = order.user
+            customer_location = order_user.profile.location
             customer_location = (customer_location.y, customer_location.x)
             city = self.request.user.profile.city
             city = str(city).lower()
@@ -159,16 +162,42 @@ class SetOrderStateCarrying(views.APIView):
                 data={"carrier_name": carrier.user.get_full_name()},
             )
             deactivate_language()
-            # ---------------------- setting carrier data to redis
-
+            # ---------------------- sending notification to customer
+            r.publish(
+                f"pub:order:{order_id}",
+                json.dumps(
+                    {
+                        "type": "ORDER_SET_CARRYING",
+                        "data": {
+                            "CARRIER_ID": carrier_id,
+                            "DATE": dj_tz.now().astimezone(ZoneInfo("Asia/Kabul")),
+                            "OTP": OTP
+                        },
+                    }
+                ),
+            )
+            # --------------------- sending notification to carrier's room
+            r.publish(
+                f"pub:carrier:{carrier_id}",
+                json.dumps(
+                    {
+                        "type": "DELIVERY_TASK",
+                        "data": {
+                            "ORDER_RECEIVER": order_user.full_name,
+                            "DESTINATION": order.destination, 
+                            "DATE": dj_tz.now().astimezone(ZoneInfo("Asia/Kabul")),
+                        },
+                    }
+                ),
+            )
             # response
             return Response(
-                {
-                    "message": "order_status_carrying",
-                    "OTP": OTP,
-                    "notf_id": notf.id,
-                    "customer_id": order.user.id,
-                },
+                # {
+                    # "message": "order_status_carrying",
+                    # "OTP": OTP,
+                    # "notf_id": notf.id,
+                    # "customer_id": order.user.id,
+                # },
                 status=status.HTTP_201_CREATED,
             )
 
@@ -234,6 +263,20 @@ class SetOrderStateDelivered(views.APIView):
                 target=order.id,
                 data={"customer_name": order.user.get_full_name()},
             )
+            r.publish(
+                f"pub:order:{order_id}",
+                json.dumps(
+                    {
+                        "type": "ORDER_DELIVERED",
+                        "data": {
+                            "ORDER_RECEIVER": order.user.full_name,
+                            "ORDER_ID": order.id,
+                            "DATE": dj_tz.now.astimezone(ZoneInfo("Asia/Kabul")),
+                        },
+                    }
+                ),
+            )
+
             return Response(
                 {
                     "message": "order_state_delivered",
