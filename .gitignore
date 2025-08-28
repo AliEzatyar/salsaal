@@ -24,4 +24,7 @@ command**
 **graph-cache**
 **graphhopper**
 **.sql**
-uwsocket/
+**node_modules**
+**.env**
+private**
+public**

@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.http import HttpResponse
 from accounts.models import CUSTOMER, NoUserOtp, User, UserOtp, UserProfile
 from accounts.serializers import (
     UserCreationSerializer,
@@ -213,3 +215,7 @@ class LoginApiView(views.APIView):
 
 class RoleTokenRefreshView(TokenRefreshView):
     serializer_class = RoleTokenRefreshSeriaizer
+
+
+def jwtks_view(request):
+    return HttpResponse(settings.SIMPLE_JWT["VERIFYING_KEY"], content_type="text/plain")

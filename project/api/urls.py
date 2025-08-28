@@ -15,4 +15,5 @@ urlpatterns = [
     path("order/", include("order.urls", namespace="order")),
     path("vendor/", include("vendor.urls", namespace="vendor")),
     path("live/", include("live.urls", namespace="live")),
+    
 ]

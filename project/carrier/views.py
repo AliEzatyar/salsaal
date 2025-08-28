@@ -184,7 +184,7 @@ class SetOrderStateCarrying(views.APIView):
                         "type": "DELIVERY_TASK",
                         "data": {
                             "ORDER_RECEIVER": order_user.full_name,
-                            "DESTINATION": order.destination, 
+                            "DESTINATION": order.destination,
                             "DATE": dj_tz.now().astimezone(ZoneInfo("Asia/Kabul")),
                         },
                     }

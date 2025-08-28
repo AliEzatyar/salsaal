@@ -27,3 +27,4 @@ django-celery-beat
 h3[python]
 boto3
 django-storages
+cryptography

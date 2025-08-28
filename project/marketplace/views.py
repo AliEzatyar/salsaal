@@ -170,25 +170,18 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 is_active=True,
                 vendor__user_profile__city=city,
             ).values_list("id", flat=True)
-            print(all_discounts_in_city, "city_discounts", city)
             # print(all_discounts_in_city, "this is discounts ids")
             cache.set(key, all_discounts_in_city, 10 * 60)
             # updating discounted foods
             discounted_foods_ids = Food.objects.filter(
                 is_available=True, discount__id__in=all_discounts_in_city
             )
-            print(discounted_foods_ids, "fodds with disocount")
             cache.set(foods_key, discounted_foods_ids, 10 * 60)
-        else:
-            print(discounted_foods_ids, "discount ids already in cache")
         if not discounted_foods_ids:
             discounted_foods_ids = Food.objects.filter(
                 is_available=True, discount__id__in=all_discounts_in_city
             )
-            print(discounted_foods_ids, "fodds with disocount")
             cache.set(foods_key, discounted_foods_ids, 10 * 60)
-        else:
-            print(discounted_foods_ids, "discounted in cache")
         discounted_foods_final = Food.objects.filter(
             id__in=discounted_foods_ids
         ).select_related("vendor__user_profile")
@@ -196,7 +189,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             """here can be an error due to long distance of user and vendor,
             since h3 library does not work for a big distance"""
             for f in discounted_foods_final:
-                # print(user_h3,f.v~endor.user_profile.h3_id)
                 # continue
                 distance = round(
                     h3_distance_to_km(

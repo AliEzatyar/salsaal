@@ -1,0 +1,35 @@
+<script>
+    const ws = new WebSocket("ws://localhost:3000/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTY5MjM1LCJpYXQiOjE3NTYzNzcyMzUsImp0aSI6ImY1OTA4MWUxNDMwMjQxODc4ZGI1NWU4YTliYTAyY2Y4IiwidXNlcl9pZCI6IjEifQ.Xn-cCovWmFAc487qD0LHnymBQn9gavM_-cEPvaK0utADvV5W83Lglj5NlStVZUuqdgmmz7Zgvn0XyRJCpGot2rfaTaaoxYsZJk7tk5jL5_VLW0MGcoxoqU-kHCH6TnsVuAKFXHFDqqQpy4Ck03ODqj7DYwTxsfCA7iaMriu_xVg9vrAIf6pHUMY-2YxziQSDmVOFOuHsPgNA9b7gKaV95m2Vj32zrRnRNcqhn2w6c9d6Me96bSs1v9B7kI4ig-H2XdbP25X6emiyfPeLikVXJ3D-3wyPeBJB0LUNLT-ZcR4C6cfQTUngW689vHbEbJmyY9H6Vk7hxBFoyD6qjmEq6A");
+    var hasSubscribed;
+    ws.onopen = (e) => {
+        console.log("openend")
+        if (ws.readyState) {
+            const data = { carrierId: 5 }
+            ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
+            hasSubscribed = true;
+            console.log("socket subscribed to carrier")
+            setInterval(()=>{
+                ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data: { lat: 34.524, lon: 65.234, carrierId: 5, ts: Date.now().toString() } }))
+                console.log("location data sent")
+            },1000)
+
+        }
+
+
+    }
+    ws.onmessage = (e) => {
+        console.log("carrier status came")
+        console.log(e)
+
+    }
+    ws.onclose = (e) => {
+        console.log("websocket closed")
+    }
+    console.log(ws.readyState && hasSubscribed)
+    if (ws.readyState && hasSubscribed) {
+        console.log("ready and has susbcribe, sending initial location....")
+        ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data:{ lat:34.524, lon:65.234, carrierId:5, ts:Date.now().toString() } }))
+            
+    }
+
+</script>
