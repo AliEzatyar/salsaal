@@ -6,7 +6,10 @@ import { configDotenv } from "dotenv";
 configDotenv()
 
 const PORT = process.env.SERVER_PORT || 3000;
+
 const djangoServerUrl = process.env.DJANGO_SERVER_URL
+const redisUrl = env.REDIS_URL
+console.log(redisUrl,"thi-----redis-url")
 // getting public key for verifying user's jwt tokens
 const res = await fetch(djangoServerUrl + "/jwtks/");
 const JWT_PUBLIC_KEY = await res.text();
@@ -14,10 +17,10 @@ console.log("this is the public key",JWT_PUBLIC_KEY)
 
 // creating and connecting redis publisher and subscriber
 const redisPub = createClient({
-    url: "redis://localhost:6379/1",  // <- connection details
+    url: redisUrl,  // <- connection details
 })
 const redisSub = createClient({
-    url: "redis://localhost:6379/0",  // <- connection details
+    url: redisUrl,  // <- connection details
 })
 redisPub.connect();
 redisSub.connect();

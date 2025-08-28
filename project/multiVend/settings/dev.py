@@ -82,3 +82,11 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+SIMPLE_JWT = {
+    "ALGORITHM": "RS256",
+    "SIGNING_KEY": open(BASE_DIR.parent / "private.pem").read(),
+    "VERIFYING_KEY": open(BASE_DIR.parent / "public.pem").read(),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
+}

@@ -1,7 +1,9 @@
 FROM node:20-slim
 WORKDIR /app
-COPY uws/package*.json ./
-RUN npm install
-COPY uws/ .
+COPY package.json /app/
+COPY package-lock.json /app/
 
-CMD ["node", "server.js"]
+RUN npm install
+COPY . /app/
+
+CMD ["npm", "run","start"]
