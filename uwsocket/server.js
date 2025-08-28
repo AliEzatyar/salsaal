@@ -8,7 +8,7 @@ configDotenv()
 const PORT = process.env.SERVER_PORT || 3000;
 
 const djangoServerUrl = process.env.DJANGO_SERVER_URL
-const redisUrl = env.REDIS_URL
+const redisUrl = process.env.REDIS_URL
 console.log(redisUrl,"thi-----redis-url")
 // getting public key for verifying user's jwt tokens
 const res = await fetch(djangoServerUrl + "/jwtks/");
@@ -43,7 +43,6 @@ function verifyJWT(token) {
 // helper methods for subscribe and unsubscribe
 
 function subscribeToRoom(ws, room) {
-    token = test
     ws.subscribe(room);
 }
 
@@ -162,7 +161,6 @@ redisSub.pSubscribe("pub:*", (message, channel) => {
     app.publish(room, message)
 });
 
-
-app.listen(Number(PORT), (token) => {
-    console.log('uWS listening on', PORT);
+app.listen(Number(PORT), '0.0.0.0', (token) => {
+    console.log('uWS listening on', PORT,"0000");
 });

@@ -1,5 +1,6 @@
 <script>
-    const ws = new WebSocket("ws://localhost:3000/notification?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTY5MjM1LCJpYXQiOjE3NTYzNzcyMzUsImp0aSI6ImY1OTA4MWUxNDMwMjQxODc4ZGI1NWU4YTliYTAyY2Y4IiwidXNlcl9pZCI6IjEifQ.Xn-cCovWmFAc487qD0LHnymBQn9gavM_-cEPvaK0utADvV5W83Lglj5NlStVZUuqdgmmz7Zgvn0XyRJCpGot2rfaTaaoxYsZJk7tk5jL5_VLW0MGcoxoqU-kHCH6TnsVuAKFXHFDqqQpy4Ck03ODqj7DYwTxsfCA7iaMriu_xVg9vrAIf6pHUMY-2YxziQSDmVOFOuHsPgNA9b7gKaV95m2Vj32zrRnRNcqhn2w6c9d6Me96bSs1v9B7kI4ig-H2XdbP25X6emiyfPeLikVXJ3D-3wyPeBJB0LUNLT-ZcR4C6cfQTUngW689vHbEbJmyY9H6Vk7hxBFoyD6qjmEq6A");
+    // const ws = new WebSocket("ws://localhost:3000/notification?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTY5MjM1LCJpYXQiOjE3NTYzNzcyMzUsImp0aSI6ImY1OTA4MWUxNDMwMjQxODc4ZGI1NWU4YTliYTAyY2Y4IiwidXNlcl9pZCI6IjEifQ.Xn-cCovWmFAc487qD0LHnymBQn9gavM_-cEPvaK0utADvV5W83Lglj5NlStVZUuqdgmmz7Zgvn0XyRJCpGot2rfaTaaoxYsZJk7tk5jL5_VLW0MGcoxoqU-kHCH6TnsVuAKFXHFDqqQpy4Ck03ODqj7DYwTxsfCA7iaMriu_xVg9vrAIf6pHUMY-2YxziQSDmVOFOuHsPgNA9b7gKaV95m2Vj32zrRnRNcqhn2w6c9d6Me96bSs1v9B7kI4ig-H2XdbP25X6emiyfPeLikVXJ3D-3wyPeBJB0LUNLT-ZcR4C6cfQTUngW689vHbEbJmyY9H6Vk7hxBFoyD6qjmEq6A");
+    const ws = new WebSocket("wss://www.eatee.food/ws/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTc2NDcyLCJpYXQiOjE3NTYzODQ0NzIsImp0aSI6IjI1ZTZkMmE5NmNhYTQyOGQ5NGRhNTgwMWY2MmE4NDM2IiwidXNlcl9pZCI6IjEifQ.I9o9kYFXmja9LyeH3cloF6lkLAZygZ19yOdLmren7WheCFmxubkZlzeppiLEHANxqw646ZiGFfxSJmAKZ__-GupIHE04qhpR0w6a9qnsz9aqrWZKsaYAROgpSlIBykp-5wO8Hw7s12mpY1J21Owz-BZnWMPzs6370waBjKjs2bl3PjeGTvFQpI9ua4wCDCiKeNSQrQq5j5Yz0S2zZdGS8jz_xp_fKAFGvDRD3GjZjjg4oFOl-gNMMpqviWSHN9S9poMveDm9Sjfv4xULaR1dKkJLkueLEsTun-fIv512Q5WJ5-beDxuDd0gwb-dxFZGTpNp3szg6Db1MBQvm0ZlyIg");
     ws.onopen = (e) => {
         console.log("openend notification channel")
         if (ws.readyState){
@@ -17,9 +18,12 @@
     ws.onclose = (e)=>{
         console.log("notification websocket closed")
     }
-    // live tracking
-    const ws_carrier = new WebSocket("ws://localhost:3000/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTY5MjM1LCJpYXQiOjE3NTYzNzcyMzUsImp0aSI6ImY1OTA4MWUxNDMwMjQxODc4ZGI1NWU4YTliYTAyY2Y4IiwidXNlcl9pZCI6IjEifQ.Xn-cCovWmFAc487qD0LHnymBQn9gavM_-cEPvaK0utADvV5W83Lglj5NlStVZUuqdgmmz7Zgvn0XyRJCpGot2rfaTaaoxYsZJk7tk5jL5_VLW0MGcoxoqU-kHCH6TnsVuAKFXHFDqqQpy4Ck03ODqj7DYwTxsfCA7iaMriu_xVg9vrAIf6pHUMY-2YxziQSDmVOFOuHsPgNA9b7gKaV95m2Vj32zrRnRNcqhn2w6c9d6Me96bSs1v9B7kI4ig-H2XdbP25X6emiyfPeLikVXJ3D-3wyPeBJB0LUNLT-ZcR4C6cfQTUngW689vHbEbJmyY9H6Vk7hxBFoyD6qjmEq6A");
-        ws_carrier.onopen = (e) => {
+    // live tracking    const ws = new WebSocket("wss://www.eatee.food/ws/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTc2NDcyLCJpYXQiOjE3NTYzODQ0NzIsImp0aSI6IjI1ZTZkMmE5NmNhYTQyOGQ5NGRhNTgwMWY2MmE4NDM2IiwidXNlcl9pZCI6IjEifQ.I9o9kYFXmja9LyeH3cloF6lkLAZygZ19yOdLmren7WheCFmxubkZlzeppiLEHANxqw646ZiGFfxSJmAKZ__-GupIHE04qhpR0w6a9qnsz9aqrWZKsaYAROgpSlIBykp-5wO8Hw7s12mpY1J21Owz-BZnWMPzs6370waBjKjs2bl3PjeGTvFQpI9ua4wCDCiKeNSQrQq5j5Yz0S2zZdGS8jz_xp_fKAFGvDRD3GjZjjg4oFOl-gNMMpqviWSHN9S9poMveDm9Sjfv4xULaR1dKkJLkueLEsTun-fIv512Q5WJ5-beDxuDd0gwb-dxFZGTpNp3szg6Db1MBQvm0ZlyIg");
+
+    // const ws_carrier = new WebSocket("ws://localhost:3000/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTY5MjM1LCJpYXQiOjE3NTYzNzcyMzUsImp0aSI6ImY1OTA4MWUxNDMwMjQxODc4ZGI1NWU4YTliYTAyY2Y4IiwidXNlcl9pZCI6IjEifQ.Xn-cCovWmFAc487qD0LHnymBQn9gavM_-cEPvaK0utADvV5W83Lglj5NlStVZUuqdgmmz7Zgvn0XyRJCpGot2rfaTaaoxYsZJk7tk5jL5_VLW0MGcoxoqU-kHCH6TnsVuAKFXHFDqqQpy4Ck03ODqj7DYwTxsfCA7iaMriu_xVg9vrAIf6pHUMY-2YxziQSDmVOFOuHsPgNA9b7gKaV95m2Vj32zrRnRNcqhn2w6c9d6Me96bSs1v9B7kI4ig-H2XdbP25X6emiyfPeLikVXJ3D-3wyPeBJB0LUNLT-ZcR4C6cfQTUngW689vHbEbJmyY9H6Vk7hxBFoyD6qjmEq6A");
+    const ws_carrier = new WebSocket("wss://www.eatee.food/ws/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTc2NDcyLCJpYXQiOjE3NTYzODQ0NzIsImp0aSI6IjI1ZTZkMmE5NmNhYTQyOGQ5NGRhNTgwMWY2MmE4NDM2IiwidXNlcl9pZCI6IjEifQ.I9o9kYFXmja9LyeH3cloF6lkLAZygZ19yOdLmren7WheCFmxubkZlzeppiLEHANxqw646ZiGFfxSJmAKZ__-GupIHE04qhpR0w6a9qnsz9aqrWZKsaYAROgpSlIBykp-5wO8Hw7s12mpY1J21Owz-BZnWMPzs6370waBjKjs2bl3PjeGTvFQpI9ua4wCDCiKeNSQrQq5j5Yz0S2zZdGS8jz_xp_fKAFGvDRD3GjZjjg4oFOl-gNMMpqviWSHN9S9poMveDm9Sjfv4xULaR1dKkJLkueLEsTun-fIv512Q5WJ5-beDxuDd0gwb-dxFZGTpNp3szg6Db1MBQvm0ZlyIg");
+
+    ws_carrier.onopen = (e) => {
             console.log("openend carrier channel")
             if (ws_carrier.readyState) {
                 const data = { carrierId: 5 }
