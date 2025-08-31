@@ -9,11 +9,11 @@ const PORT = process.env.SERVER_PORT || 3000;
 
 const djangoServerUrl = process.env.DJANGO_SERVER_URL
 const redisUrl = process.env.REDIS_URL
-console.log(redisUrl,"thi-----redis-url")
+console.log(redisUrl, "thi-----redis-url")
 // getting public key for verifying user's jwt tokens
 const res = await fetch(djangoServerUrl + "/jwtks/");
 const JWT_PUBLIC_KEY = await res.text();
-console.log("this is the public key",JWT_PUBLIC_KEY) 
+console.log("this is the public key", JWT_PUBLIC_KEY)
 
 // creating and connecting redis publisher and subscriber
 const redisPub = createClient({
@@ -35,7 +35,7 @@ function verifyJWT(token) {
         return jwt.verify(token, JWT_PUBLIC_KEY, { "algorithms": "RS256" })
     } catch (error) {
         console.log(error)
-        return null        
+        return null
     }
 }
 
@@ -85,16 +85,20 @@ app.ws("/*", {
             }
         }
     },
-    open: (ws) => {
+    open: async (ws, req) => {
         const { sub: userId } = ws.claims;
-        ws.id = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-        ws.rooms = new Set();
-        // Default personal room
-        const userRoom = `user:${userId}`;
-        subscribeToRoom(ws, userRoom);
-        ws.rooms.add(userRoom);
-        sockets.set(ws.id, ws);
-
+        if (userId) {
+            console.log("user connected to uwsocket server, id is: ", userId)
+            ws.id = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+            ws.rooms = new Set();
+            // Default personal room
+            const userRoom = `user:${userId}`;
+            subscribeToRoom(ws, userRoom);
+            ws.rooms.add(userRoom);
+            sockets.set(ws.id, ws);
+            // saving onlin status to redis for django to replace with  FCM, APNs if offline
+            redisPub.hSet("ws:users", userId, "1")
+        }
     },
     // this messages only come from client web sockets, e.g. mobil apps + web browsers
     message: async (ws, message, isBinary) => {
@@ -127,6 +131,14 @@ app.ws("/*", {
                     ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', room }))
                     break;
                 }
+                case "SUBSCRIBE_VENDOR": {
+                    console.log("subscription to vendor room")
+                    let room = `vendor:${data.vendorId}`;
+                    subscribeToRoom(ws, room);
+                    ws.rooms.add(room);
+                    ws.send(JSON.stringify({ ok: true, type: "SUBSCRIBED", room }))
+                    break;
+                }
                 case "CARRIER_LOCATION": {
                     const { lat, lon, carrierId, ts } = data;
                     redisPub.geoAdd("carrier_location", {
@@ -149,6 +161,12 @@ app.ws("/*", {
     },
 
     close: (ws) => {
+        const { sub: userId } = ws.claims;
+        console.log("user left")
+        if (userId) {
+            console.log("iD: ", userId)
+            redisPub.hDel("ws:users", userId)
+        }
         // unSubscribeAll(ws)
     }
 });
@@ -162,5 +180,5 @@ redisSub.pSubscribe("pub:*", (message, channel) => {
 });
 
 app.listen(Number(PORT), '0.0.0.0', (token) => {
-    console.log('uWS listening on', PORT,"0000");
+    console.log('uWS listening on', PORT, "0000");
 });

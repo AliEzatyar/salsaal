@@ -8,8 +8,10 @@ from .utils import (
     h3_distance_to_km,
     haversine_distance as distance_calculator,
 )
-from api.backends import (
+from marketplace.backends import (
+    CustomFoodOrdering,
     CustomFoodSearch,
+    CustomVendorOrdering,
     CustomVendorSearch,
     FoodFilterSet,
     VendorFilterSet,
@@ -158,7 +160,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             lat, lon = geohash.decode(location)
         except (TypeError, ValueError):
             return Response({"detail": "invalid_location"}, status=400)
-        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
 
         # getting ids of all discounts avaialbe in city from cache
         key = f"discounts:{city}:city"
@@ -191,10 +192,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             for f in discounted_foods_final:
                 # continue
                 distance = round(
-                    h3_distance_to_km(
-                        h3.grid_distance(user_h3, f.vendor.user_profile.h3_id)
-                    ),
-                    1,
+                    distance_calculator(f.vendor.user_profile.lattitude,
+                                              f.vendor.user_profile.longitude,
+                                              lat,
+                                              lon)
+                    ,1
                 )
                 f.distance = distance
                 f.reach_time = round(distance_to_travel_time(distance), 1)
@@ -235,7 +237,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         # adding distance property to each vendor
         for vendor in vendors:
             distance = round(
-                h3_distance_to_km(h3.grid_distance(vendor.user_profile.h3_id, user_h3)),
+                distance_calculator(
+                    vendor.user_profile.lattitude,
+                    vendor.user_profile.longitude,
+                    lat,
+                    lon,
+                ),
                 1,
             )
             vendor.distance = distance
@@ -263,8 +270,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             lat, lon = geohash.decode(location)
         except (TypeError, ValueError):
             return Response({"detail": "invalid_location"}, status=400)
-        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-
         city_vendors_ids = self.get_city_vendors(city)
         vendors = (
             Vendor.objects.filter(id__in=city_vendors_ids)
@@ -274,7 +279,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         # adding distance property to each vendor
         for vendor in vendors:
             distance = round(
-                h3_distance_to_km(h3.grid_distance(vendor.user_profile.h3_id, user_h3)),
+                distance_calculator(
+                    vendor.user_profile.lattitude,
+                    vendor.user_profile.longitude,
+                    lat,
+                    lon,
+                ),
                 1,
             )
             vendor.distance = distance
@@ -302,7 +312,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             lat, lon = geohash.decode(location)
         except (TypeError, ValueError):
             return Response({"detail": "invalid_location"}, status=400)
-        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
 
         key = f"top_vendors:{city}:city"
         # getting top ratings from cache
@@ -317,8 +326,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             # adding distance property to each vendor
             for vendor in top_vendors:
                 distance = round(
-                    h3_distance_to_km(
-                        h3.grid_distance(vendor.user_profile.h3_id, user_h3)
+                    distance_calculator(
+                        vendor.user_profile.lattitude,
+                        vendor.user_profile.longitude,
+                        lat,
+                        lon,
                     ),
                     1,
                 )
@@ -361,7 +373,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             lat, lon = geohash.decode(location)
         except (TypeError, ValueError):
             return Response({"detail": "invalid_location"}, status=400)
-        user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
 
         vendors_ids = self.get_city_vendors(city)
         vendors = (
@@ -384,7 +395,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         )
         for vendor in vendors:
             distance = round(
-                h3_distance_to_km(h3.grid_distance(vendor.user_profile.h3_id, user_h3)),
+                distance_calculator(
+                    vendor.user_profile.lattitude,
+                    vendor.user_profile.longitude,
+                    lat,
+                    lon,
+                ),
                 1,
             )
             vendor.distance = distance
@@ -743,23 +759,14 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     filter_backends = [
         CustomFoodSearch,
         DjangoFilterBackend,
-        filters.OrderingFilter,
+        CustomFoodOrdering,
     ]
-    ordering_fields = ["name", "min_price", "avg_rating"]
-    ordering = ["-avg_rating"]
     # filering
     filterset_class = FoodFilterSet
 
-    def filter_queryset(self, queryset):
-        """overriden to apply city   filtering on overall search and filter"""
-        city = self.request.query_params.get("city", None)
-        if not city:
-            return queryset.none()
-        city = str(city).lower()
-
-        for backend in list(self.filter_backends):
-            queryset = backend().filter_queryset(self.request, queryset, self)
-        return queryset.filter(vendor__user_profile__city=city)
+    def get(self, request, *args, **kwargs):
+        print(request.query_params)
+        return super().get(request, *args, **kwargs)
 
 
 class LikeFood(views.APIView):
@@ -799,29 +806,19 @@ class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
     """
 
     queryset = Vendor.objects.filter(is_approved=True)
-
     serializer_class = VendorSerializerMany
+    pagination_class = StandardResultSetPagination
     permission_classes = [AllowAny]
     # django-filter, note that put ordering at the end since ordering matters in this list if you override two above
     filter_backends = [
         CustomVendorSearch,
         DjangoFilterBackend,
-        filters.OrderingFilter,
+        CustomVendorOrdering,
     ]
-    ordering_fields = ["vendor_name", "avg_rating", "rating_count"]
+    ordering_fields = ["vendor_name", "avg_rating", "rating_count","reach_time"]
     ordering = ["-avg_rating"]
     # filering
     filterset_class = VendorFilterSet
-
-    def filter_queryset(self, queryset):
-        """overriden to apply city filtering on overall search and filter"""
-        city = self.request.query_params.get("city", None)
-        if not city:
-            return queryset.none()
-        city = str(city).lower()
-        for backend in list(self.filter_backends):
-            queryset = backend().filter_queryset(self.request, queryset, self)
-        return queryset.filter(user_profile__city=city)
 
 
 class RatingViewSet(viewsets.ModelViewSet):
@@ -965,8 +962,7 @@ class PublicVendorDetail(views.APIView):
                 v_lon, v_lon = None, None
                 ser_data = None
                 vendor_in_cache = cache.get(self.vendor_detail_key(vendor_id))
-                user_lat, user_lon = geohash.decode(user_location)
-                user_h3 = h3.latlng_to_cell(user_lat, user_lon, DEFAULT_H3_RESOLUTION)
+                lat, lon = geohash.decode(user_location)
 
                 if vendor_in_cache:
                     ser_data = vendor_in_cache.copy()
@@ -980,8 +976,14 @@ class PublicVendorDetail(views.APIView):
                         vendor_categories = sorted(list(set(vendor_foods.values_list(
                             "category__name", flat=True
                         ))),key=lambda x: strxfrm(x),reverse=True)
-                        distance = h3_distance_to_km(
-                            h3.grid_distance(user_h3, obj.user_profile.h3_id)
+                        distance = round(
+                            distance_calculator(
+                                obj.user_profile.lattitude,
+                                obj.user_profile.longitude,
+                                lat,
+                                lon,
+                            ),
+                            1,
                         )
                         discounted_vendor_foods = vendor_foods.filter(
                             discount__is_active=True
@@ -1006,7 +1008,7 @@ class PublicVendorDetail(views.APIView):
 
                     else:
                         return Response(status=status.HTTP_404_NOT_FOUND)
-               
+
                 # ------------------- increasing vendor view count
                 counter = BestVendorsCounter(str(city))
                 counter.update_counts(vendor_id)
@@ -1111,12 +1113,14 @@ class FoodsByCategory(generics.ListAPIView):
             .only("vendor_name", "avg_rating", "foods", "user_profile")
         )
         # adding reach time and distance to each vendor
-        user_lat, user_lon = geohash.decode(user_location)
+        lat, lon = geohash.decode(user_location)
         for vendor in vendors:
-            user_h3 = h3.latlng_to_cell(user_lat, user_lon, DEFAULT_H3_RESOLUTION)
-            distance = h3_distance_to_km(
-                h3.grid_distance(user_h3, vendor.user_profile.h3_id)
-            )
-            vendor.distance = round(distance, 1)
+            distance = round(distance_calculator(
+                vendor.user_profile.lattitude,
+                vendor.user_profile.longitude,
+                lat,
+                lon
+            ),1)
+            vendor.distance = distance
             vendor.reach_time = round(distance_to_travel_time(distance), 0)
         return vendors

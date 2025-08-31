@@ -8,7 +8,10 @@ from marketplace.utils import BoughtTogetherRecommender
 from live.models import Notification
 from django.core.serializers.json import DjangoJSONEncoder
 import json
-from django.utils.translation import activate,deactivate, gettext as _
+from live.serializers import NotificationSerializer
+from django.utils.translation import activate, deactivate, gettext as _
+from marketplace.utils import r
+
 """Order API Views"""
 
 
@@ -56,9 +59,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         vendor_id = CartItem.objects.filter(cart=cart).first().food.vendor.id
         data["vendor"] = vendor_id
 
-        # creating the serializer
+        # -------------   assigning the serializer value and creating order
         serializer = self.get_serializer(data=data)
-
         if Order.objects.filter(
             user=request.user, status=ORDER_STATUS_CHOICES[1][1], vendor__id=vendor_id
         ).exists():
@@ -86,14 +88,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             )[0]
             pks.append(item.food.id)
             order_items.append(order_item)
+        # flushing the cart
+        cart.items.all().delete()
         # ------------------------ feeding recommender
         recommender = BoughtTogetherRecommender()
         recommender.update_together_bought(pks)
         order.calculate_total_price()  # setting total price field value
         order.set_total_items()  # setting total items amount field value
-
-        # flushing the cart
-        cart.items.all().delete()
         # ------------------------- creating the notification object
         profile = request.user.profile
         activate(profile.pf_lang)
@@ -103,17 +104,24 @@ class OrderViewSet(viewsets.ModelViewSet):
             )  # Converts Decimal -> float
         )
         notf = Notification.objects.create(
-            title=_("New order has been created."),
-            type="new_order",
+            title=_("you have a new order!"),
+            type="NEW_ORDER",
             data=safe_data,
             receiver=order.vendor.user,
-            target=order.id
-        )   
+        )
         deactivate()
+        # ----- sending notification to vendors room using redis
+        r.publish(
+            f"pub:vendor:{order.vendor.id}",
+            json.dumps(
+                {
+                    "type": "NEW_ORDER",
+                    "data": NotificationSerializer(notf).data,
+                } # vendor app should extract order id and subscribe to --order room
+            ),
+        )
         response = Response(
-            {"order":serializer.data,
-             "notf_id":notf.id,
-             },
+            {"order_id": order.id}, # buyer account uses to subscribe to -order room for further things
             status=status.HTTP_201_CREATED,
         )
         return response

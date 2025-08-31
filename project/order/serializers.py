@@ -61,6 +61,7 @@ class OrderSerializer(ModelSerializer):
             "carrier",
             "vendor",
             "items",
+            "otp"
         ]
         # read_only_fields= ["paid","user","total_price","created_at","total_items","carrier","vendor","items","is_credit"]
         read_only_fields = ["__all__"]

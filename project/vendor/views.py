@@ -1,4 +1,5 @@
 import json
+from zoneinfo import ZoneInfo
 from django.conf import settings
 from marketplace.models import Discount, Food
 from api.permissions import IsVendor, IsVendorOfDiscount, IsVendorOfOrder
@@ -16,17 +17,18 @@ from accounts.models import (
 )
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
-from accounts.utils import OTP_VERIFY_CARRIER, send_otp
+from accounts.utils import OTP_VERIFY_CARRIER, generate_otp, send_otp
 from marketplace.utils import estimate_travel_time_graphhopper, haversine_distance
 from cart.models import Cart
 from live.models import Notification
+from live.serializers import NotificationSerializer
 from vendor.models import OpeningHour
 from .serializers import (
     DiscountSerializer,
     OpeningHourSerializer,
     VendorSerializerDetailed,
 )
-from api.backends import FoodFilterSet, VOrderFilterSet
+from marketplace.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
 from api.permissions import IsVendorApproved, IsVendorOfFood
 from rest_framework import permissions, viewsets, views, status, filters
@@ -35,6 +37,8 @@ from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from django.utils import timezone as tz
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils import timezone as dj_tz
+
 from rest_framework.exceptions import NotAcceptable
 from api.permissions import IsVendorOfCarrier
 from rest_framework import parsers, serializers
@@ -572,25 +576,45 @@ class AcceptRejectOrderView(views.APIView):
             profile = order.user.profile
             activate(profile.pf_lang)
             notf = Notification(
-                actor=order.vendor.user, receiver=order.user, target=order.id
+                receiver=order.user
             )
             if accepted == True:
                 # order accepted -> set as preparing, send notification
                 order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
                 order.save()
                 notf.title = _("Your order has been accepted.")
-                notf.type = "order_accepted"
+                notf.type = "ORDER_ACCEPTED"
                 notf.save()
                 deactivate()
+                # creating OTP
+                r.publish(
+                    f"pub:user:{order.user.id}",
+                    json.dumps(
+                        {
+                            "type": "ORDER_ACCEPTED",
+                            "data": NotificationSerializer(notf).data,
+                            
+                        }
+                    ),
+                )
                 return Response(
                     {"message": "order_accepted"}, status=status.HTTP_200_OK
                 )
-
             # order rejected -> delete order, send notification
             order.cancel_order()
             notf.title = _("We are sorry! Your order has been rejected.")
             notf.type = "order_rejected"
             notf.save()
+            r.publish(
+                f"pub:user:{order.user.id}",
+                json.dumps(
+                    {
+                        "type": "ORDER_REJECTED",
+                        "data": NotificationSerializer(notf).data,
+                    }
+                ),
+            )
+
             # sending notification to customer ....
             return Response({"message": "order_rejected"}, status=status.HTTP_200_OK)
 

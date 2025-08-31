@@ -2,13 +2,20 @@ from uuid import uuid4
 from django.db import models
 from accounts.models import User, UserProfile
 from accounts.utils import send_notification
-from marketplace.models import Food, Rating
+from marketplace.models import Rating
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.indexes import GinIndex
+
 # Create your models here.
+VENDOR_TYPES = [
+    (1, "restaurant"),
+    (2, "coffeshop"),
+    (3, "juiceshop"),
+]
 
 
 class Vendor(models.Model):
+
     uuid = models.UUIDField(
         default=uuid4, db_index=True, unique=True, editable=False, null=True
     )
@@ -29,6 +36,7 @@ class Vendor(models.Model):
     )
     vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
     vendor_license = models.ImageField(upload_to="vendor/license/")
+    vendor_type = models.PositiveSmallIntegerField(choices=VENDOR_TYPES,default=1)
     image = models.ImageField(upload_to="vendor/image/")
     logo = models.ImageField(upload_to="vendor/logo/")
     is_approved = models.BooleanField(default=False, db_index=True)
@@ -61,6 +69,7 @@ class Vendor(models.Model):
                 opclasses=["gin_trgm_ops"],
             ),
         ]
+
     def get_location(self):
         """returns the location of the vendor"""
         return self.user_profile.location
@@ -120,4 +129,4 @@ class OpeningHour(models.Model):
     is_holiday = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.weekday+"-"+str(self.start_hour) + "-" + str(self.end_hour)
+        return self.weekday + "-" + str(self.start_hour) + "-" + str(self.end_hour)

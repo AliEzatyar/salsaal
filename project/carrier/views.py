@@ -27,6 +27,7 @@ from accounts.utils import OTP_VERIFY_CARRIER, generate_otp
 from django.contrib.contenttypes.models import ContentType
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from marketplace.utils import estimate_travel_time_graphhopper
+from live.serializers import NotificationSerializer
 from vendor.utils import r
 from django.utils.translation import gettext as _
 from django.utils.translation import activate as activate_language
@@ -106,10 +107,6 @@ class SetOrderStateCarrying(views.APIView):
             #     if not order.paid:
             #         return Response({"error": "payment not completed"}, status=400)
 
-            user = order.user
-            # creating OTP
-            OTP = generate_otp()
-            UserOtp.objects.create(user=user, otp=OTP)
             # setting order carrier to requesting carrier
             order.carrier = carrier
             carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
@@ -158,22 +155,17 @@ class SetOrderStateCarrying(views.APIView):
                 title=_("Order set as carrying"),
                 type="order_carrying",
                 receiver=order.user,
-                target=order.id,
-                data={"carrier_name": carrier.user.get_full_name()},
+                data={"order_id": order.id},
             )
             deactivate_language()
             # ---------------------- sending notification to customer
             r.publish(
-                f"pub:order:{order_id}",
+                f"pub:user:{order.user.id}",
                 json.dumps(
                     {
                         "type": "ORDER_SET_CARRYING",
-                        "data": {
-                            "CARRIER_ID": carrier_id,
-                            "DATE": dj_tz.now().astimezone(ZoneInfo("Asia/Kabul")),
-                            "OTP": OTP
-                        },
-                    }
+                        "data": NotificationSerializer(notf).data,
+                    } # customer app should extract order id and subscribe it for live tracking
                 ),
             )
             # --------------------- sending notification to carrier's room
@@ -182,23 +174,14 @@ class SetOrderStateCarrying(views.APIView):
                 json.dumps(
                     {
                         "type": "DELIVERY_TASK",
-                        "data": {
-                            "ORDER_RECEIVER": order_user.full_name,
-                            "DESTINATION": order.destination,
-                            "DATE": dj_tz.now().astimezone(ZoneInfo("Asia/Kabul")),
-                        },
-                    }
+                        "data": NotificationSerializer(notf).data
+                    } # carrier app subscribes to order room either from notfications part or any and live tracking starts
                 ),
             )
             # response
             return Response(
-                # {
-                    # "message": "order_status_carrying",
-                    # "OTP": OTP,
-                    # "notf_id": notf.id,
-                    # "customer_id": order.user.id,
-                # },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
+                # vendor app can/is subscribe to order room and track order live 
             )
 
         except Order.DoesNotExist:
@@ -227,7 +210,6 @@ class SetOrderStateDelivered(views.APIView):
             order = Order.objects.get(id=order_id)
             # check if the customer owns this order
             self.check_object_permissions(self.request, order)
-
             # check if otp is correct
             user = order.user
             OTP = UserOtp.objects.filter(user=user, otp=input_OTP).first()
@@ -255,33 +237,25 @@ class SetOrderStateDelivered(views.APIView):
             # --------------- creating notification of order delivery for vendor
             profile = order.vendor.user.profile
             activate_language(profile.pf_lang)
-
-            Notification.objects.create(
+            notf = Notification.objects.create(
                 title=_("Order delivered successfully"),
                 type="order_delivered",
                 receiver=order.vendor.user,
-                target=order.id,
-                data={"customer_name": order.user.get_full_name()},
+                data={"order_id": order_id},
             )
             r.publish(
-                f"pub:order:{order_id}",
+                f"pub:vendor:{vendor.id}",
                 json.dumps(
                     {
                         "type": "ORDER_DELIVERED",
                         "data": {
-                            "ORDER_RECEIVER": order.user.full_name,
-                            "ORDER_ID": order.id,
-                            "DATE": dj_tz.now.astimezone(ZoneInfo("Asia/Kabul")),
+                            NotificationSerializer(notf).data
                         },
                     }
                 ),
             )
 
             return Response(
-                {
-                    "message": "order_state_delivered",
-                    "customer_name": order.user.get_full_name(),
-                },
                 status=status.HTTP_202_ACCEPTED,
             )
         except Order.DoesNotExist:

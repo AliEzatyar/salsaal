@@ -23,7 +23,9 @@ def send_log_email(amount, type_=None):
     mail.send()
 
 
-def generate_otp():
+def generate_otp(length=6):
+    if length == 8:
+        return random.randint(10000000,99999999)
     return random.randint(100000, 999999)
 
 
@@ -73,7 +75,7 @@ def send_otp(user=None, phone_number=None, typ=OTP_VERIFY_PHONE,**kwargs):
         UserOtp.objects.filter(user=user).delete()
         # creating new otp
         UserOtp.objects.create(user=user, otp=otp)
-    mail = EmailMessage(subject="HI", to=["tareeqshah5@gmail.com"], body=mail_body)
+    mail = EmailMessage(subject="HI", to=["tareeqshah5@gmail.com","wahidiali859@gmail.com"], body=mail_body)
     mail.send()
     return otp
 

@@ -30,13 +30,14 @@ class VendorSerializerMany(serializers.ModelSerializer):
             "logo",
             "reach_time",
             "is_open_now",
+            "vendor_type"
         ]
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
         distance_attr = getattr(obj,"distance")
         if type(distance_attr) == Distance:
-            return obj.distance.km
+            return round(obj.distance.km,1)
         return obj.distance if hasattr(obj, "distance") else None
 
     def get_reach_time(self, obj):
@@ -97,7 +98,6 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
             "reach_time",
             "foods",
             "is_open_now",
-
         ]
 
     def get_distance(self, obj):
@@ -196,6 +196,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "mfcfd",
             "min_order_price",
             "delivery_fee_km",
+            "vendor_type"
         ]
         read_only_fields = [
             "id",
@@ -252,6 +253,7 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "vendor_name",
+            "vendor_type",
             "location",
             "avg_rating",
             "reach_time",
@@ -318,7 +320,7 @@ class AbstractVendorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vendor
-        fields = ["id", "location", "vendor_name"]
+        fields = ["id", "location", "vendor_name","vendor_type"]
         read_only_fields = ["__all__"]
 
     def get_location(self, obj):

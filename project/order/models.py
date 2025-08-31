@@ -5,6 +5,7 @@ from uuid import uuid4
 from django.db import models
 from django.contrib.auth import get_user_model
 from marketplace.models import Food
+from accounts.utils import generate_otp
 from vendor.models import Vendor
 
 User = get_user_model()
@@ -38,13 +39,11 @@ class Order(models.Model):
     carrier = models.ForeignKey(
         "carrier.Carrier", null=True, on_delete=models.SET_NULL, related_name="orders"
     )
-    track_id = models.UUIDField(unique=True, null=True, editable=False)
+    otp = models.IntegerField(null=True, blank=True)
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, related_name="orders"
     )
-    destination = models.CharField(
-        max_length=40, default="null,null"
-    )
+    destination = models.CharField(max_length=40, default="null,null")
 
     class Meta:
         indexes = [models.Index(fields=["-created_at"])]
@@ -78,6 +77,15 @@ class Order(models.Model):
         if self.status != ORDER_STATUS_CHOICES[1][0]:  # not waiting
             raise Exception("order_no_in_waiting_status")
         self.delete()
+
+    def save(self, *args, **kwargs):
+        """this method is overriden for auto-filling otp of order"""
+        if not self.pk:
+            otp = generate_otp(8)
+            print("created, otp", otp)
+            self.otp = otp
+
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Order {self.id} - {self.user.full_name}"

@@ -1,0 +1,44 @@
+<script>
+    // --------------- connecting to uwsockets server and subscribing to personal room of vendor
+    // const ws = new WebSocket("wss://www.eatee.food/ws/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTc2NDcyLCJpYXQiOjE3NTYzODQ0NzIsImp0aSI6IjI1ZTZkMmE5NmNhYTQyOGQ5NGRhNTgwMWY2MmE4NDM2IiwidXNlcl9pZCI6IjEifQ.I9o9kYFXmja9LyeH3cloF6lkLAZygZ19yOdLmren7WheCFmxubkZlzeppiLEHANxqw646ZiGFfxSJmAKZ__-GupIHE04qhpR0w6a9qnsz9aqrWZKsaYAROgpSlIBykp-5wO8Hw7s12mpY1J21Owz-BZnWMPzs6370waBjKjs2bl3PjeGTvFQpI9ua4wCDCiKeNSQrQq5j5Yz0S2zZdGS8jz_xp_fKAFGvDRD3GjZjjg4oFOl-gNMMpqviWSHN9S9poMveDm9Sjfv4xULaR1dKkJLkueLEsTun-fIv512Q5WJ5-beDxuDd0gwb-dxFZGTpNp3szg6Db1MBQvm0ZlyIg");
+    const ws = new WebSocket("ws://localhost:3000/?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTY5MjM1LCJpYXQiOjE3NTYzNzcyMzUsImp0aSI6ImY1OTA4MWUxNDMwMjQxODc4ZGI1NWU4YTliYTAyY2Y4IiwidXNlcl9pZCI6IjEifQ.Xn-cCovWmFAc487qD0LHnymBQn9gavM_-cEPvaK0utADvV5W83Lglj5NlStVZUuqdgmmz7Zgvn0XyRJCpGot2rfaTaaoxYsZJk7tk5jL5_VLW0MGcoxoqU-kHCH6TnsVuAKFXHFDqqQpy4Ck03ODqj7DYwTxsfCA7iaMriu_xVg9vrAIf6pHUMY-2YxziQSDmVOFOuHsPgNA9b7gKaV95m2Vj32zrRnRNcqhn2w6c9d6Me96bSs1v9B7kI4ig-H2XdbP25X6emiyfPeLikVXJ3D-3wyPeBJB0LUNLT-ZcR4C6cfQTUngW689vHbEbJmyY9H6Vk7hxBFoyD6qjmEq6A");
+    const domain = "http://192.168.0.120:8000"
+    const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYxMzkxOTE1LCJpYXQiOjE3NTEwMjM5MTUsImp0aSI6IjBmYjM1ODJkNzc3MTQ5MDJhMjIzNjU1ODMwZWQwNzBlIiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.qEJ2b7Ye2_awzS3_8ZAKutVPcSr6XBG6TZB6XmwQqLE"
+    // const domain = "https://www.eatee.food"
+    // const wbs_domain = "wss://www.eatee.food/ws"
+    // const only_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYwODgyNDM1LCJpYXQiOjE3NTA1MTQ0MzUsImp0aSI6Ijg1ODMxNTliYmExNDQwNWE4NDMwNTllNTc3ODIyZTU0IiwidXNlcl9pZCI6Nywicm9sZSI6Mn0.q70xP4U8XDbGID954TUzGs6uj7B82k44i2aaY_CIMps"
+    const client_token = "Bearer " + only_token
+    const vendor_id= 2
+
+    // logging connection
+    // creating an order
+    ws.onopen = (e) => {
+        console.log("vendor room connection successfull");
+        if (ws.readyState){
+            const data= {vendorId:vendor_id}
+            ws.send(JSON.stringify({type:"SUBSCRIBE_VENDOR",data}))
+            console.log("subscribed to vendor room")
+        }
+    }
+
+    // handling messages
+    ws.onmessage = (e)=>{
+        console.log("message came to vendor", e)
+        const message_data = e.data
+        const message_type = message_data.type;
+        if (message_type == "ORDER_DIALOG") { // order communication between vendor and customer
+            console.log("order message to vendor", message_data.data)
+        }
+        else if (message_type == "LOCATION_DATA") {
+            console.log("location data received ", message_data.data)
+        }
+        else if (message_type == "NEW_ORDER") {
+            console.log("new order has been created",)
+            const new_order_data = message_data.data.data;
+            console.log("new order data",new_order_data)
+
+            }
+    }
+
+
+</script>
