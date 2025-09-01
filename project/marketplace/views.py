@@ -815,8 +815,6 @@ class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
         DjangoFilterBackend,
         CustomVendorOrdering,
     ]
-    ordering_fields = ["vendor_name", "avg_rating", "rating_count","reach_time"]
-    ordering = ["-avg_rating"]
     # filering
     filterset_class = VendorFilterSet
 
@@ -862,6 +860,7 @@ class RatingViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = request.data
         obj_id = data.get("obj_id")
+        liked_foods = data.get("liked_foods",None)
         rating_data = data.get("rating")
         if  not obj_id or not type(obj_id) == int:
             return Response(
@@ -871,13 +870,25 @@ class RatingViewSet(viewsets.ModelViewSet):
         previous = Rating.objects.filter(
             object_id=int(obj_id), user=request.user
         ).first()
-        # handling indirect update
+        # handling likes of food
+        if liked_foods:
+            for f in liked_foods:
+                try:
+                    print("food like...")
+                    food = Food.objects.get(id=f)
+                    food.likes +=1
+                    food.save()
+                except:
+                    pass
+        # handling update
         if previous:
             # prviously exists, performing update
             previous.comment = rating_data["comment"]
+            previous.rating = rating_data["rating"]
             previous.enabled = True
             previous.save()
-            return Response({"updated": True}, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
+        # new rating
         else:
             # performing new rating creation
             serializer = self.get_serializer(data=rating_data)

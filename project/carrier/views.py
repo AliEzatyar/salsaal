@@ -28,7 +28,8 @@ from django.contrib.contenttypes.models import ContentType
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from marketplace.utils import estimate_travel_time_graphhopper
 from live.serializers import NotificationSerializer
-from vendor.utils import r
+from carrier.utils import get_carrier_key
+from vendor.utils import get_vendor_carriers_key, r
 from django.utils.translation import gettext as _
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
@@ -115,7 +116,7 @@ class SetOrderStateCarrying(views.APIView):
             order.save()
             carrier.save()
             # setting carrier live status in redis
-            carrier_key = f"carrier:{carrier_id}:live"
+            carrier_key = get_carrier_key(carrier_id)
             vendor_location = self.request.user.profile.location
             vendor_location = (vendor_location.y, vendor_location.x)
             order_user = order.user
@@ -138,11 +139,14 @@ class SetOrderStateCarrying(views.APIView):
             )
             # ---------------- updating vendor's carriers in redis
             vendor = self.request.user.vendor
-            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
             b_c_c = json.loads(
                 r.hget(vendor_carriers_key, "b_c_c")
             )  # busy carriers count
+            if not b_c_c:
+                b_c_c = 0
             b_c_c = int(b_c_c) + 1  # increase it by one
+
             r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
             f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
             f_c_c = int(f_c_c) - 1
@@ -165,7 +169,7 @@ class SetOrderStateCarrying(views.APIView):
                     {
                         "type": "ORDER_SET_CARRYING",
                         "data": NotificationSerializer(notf).data,
-                    } # customer app should extract order id and subscribe it for live tracking
+                    }  # customer app should extract order id and subscribe it for live tracking
                 ),
             )
             # --------------------- sending notification to carrier's room
@@ -174,14 +178,14 @@ class SetOrderStateCarrying(views.APIView):
                 json.dumps(
                     {
                         "type": "DELIVERY_TASK",
-                        "data": NotificationSerializer(notf).data
-                    } # carrier app subscribes to order room either from notfications part or any and live tracking starts
+                        "data": NotificationSerializer(notf).data,
+                    }  # carrier app subscribes to order room either from notfications part or any and live tracking starts
                 ),
             )
             # response
             return Response(
                 status=status.HTTP_200_OK,
-                # vendor app can/is subscribe to order room and track order live 
+                # vendor app can/is subscribe to order room and track order live
             )
 
         except Order.DoesNotExist:
@@ -227,7 +231,7 @@ class SetOrderStateDelivered(views.APIView):
             order.save()
             # ---------------- updating vendor's carriers in redis
             vendor = order.vendor
-            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
             b_c_c = r.hget(vendor_carriers_key, "b_c_c")  # busy carriers count
             b_c_c = int(b_c_c) - 1  # decrementing busy carrier's count
             r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
@@ -248,9 +252,7 @@ class SetOrderStateDelivered(views.APIView):
                 json.dumps(
                     {
                         "type": "ORDER_DELIVERED",
-                        "data": {
-                            NotificationSerializer(notf).data
-                        },
+                        "data": {NotificationSerializer(notf).data},
                     }
                 ),
             )

@@ -6,3 +6,6 @@ r = Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 def to_af_weekday(index):
     return (9 + index) % 7 + 1
 
+
+def get_vendor_carriers_key(id):
+    return f"vendor:{id}:carriers"

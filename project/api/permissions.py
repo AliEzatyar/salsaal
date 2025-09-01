@@ -53,7 +53,6 @@ class IsVendor(BasePermission):
 
 class IsVendorOfOrder(BasePermission):
     def has_permission(self, request, view):
-
         if not hasattr(request.user, "vendor") or request.user.role != REST:
             print("user not vendor")
             raise PermissionDenied(detail="user_not_vendor")

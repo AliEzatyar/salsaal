@@ -105,10 +105,10 @@ app.ws("/*", {
         try {
             // setting message type like notification or location and its related data
             const { type, data } = JSON.parse(Buffer.from(message).toString());
-            console.log("message came from client to channel")
+            console.log("message came from client to channel",type,data)
             switch (type) {
                 case "SUBSCRIBE_ORDER": {
-                    console.log("subscribed to order ", data.orderId)
+                    console.log("subscribed to order ", data.orderId, data.subscriber)
                     let room = `order:${data.orderId}`;
                     subscribeToRoom(ws, room);
                     ws.rooms.add(room)
@@ -139,6 +139,7 @@ app.ws("/*", {
                     ws.send(JSON.stringify({ ok: true, type: "SUBSCRIBED", room }))
                     break;
                 }
+
                 case "CARRIER_LOCATION": {
                     const { lat, lon, carrierId, ts } = data;
                     redisPub.geoAdd("carrier_location", {
@@ -150,6 +151,12 @@ app.ws("/*", {
                     redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "LOC", lat, lon, ts }));
                     break
 
+                }
+
+                case "ORDER_DIALOG": {
+                    const orderId = data.orderId
+                    console.log("message type order dialog in server",data)
+                    redisPub.publish(`pub:order:${orderId}`, JSON.stringify({ type: "ORDER_DIALOG", data: data }));
                 }
                 default:
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));

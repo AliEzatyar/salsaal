@@ -22,6 +22,7 @@ from marketplace.utils import estimate_travel_time_graphhopper, haversine_distan
 from cart.models import Cart
 from live.models import Notification
 from live.serializers import NotificationSerializer
+from carrier.utils import get_carrier_key
 from vendor.models import OpeningHour
 from .serializers import (
     DiscountSerializer,
@@ -42,7 +43,7 @@ from django.utils import timezone as dj_tz
 from rest_framework.exceptions import NotAcceptable
 from api.permissions import IsVendorOfCarrier
 from rest_framework import parsers, serializers
-from .utils import r
+from .utils import get_vendor_carriers_key, r
 from django.utils.translation import activate, deactivate, gettext as _
 from rest_framework.decorators import action
 
@@ -105,10 +106,10 @@ class ConvertToVendorAPIView(views.APIView):
         data = self.request.data
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         ser.is_valid(raise_exception=True)
-        instance = ser.save()
+        vendor = ser.save()
         user.cart.delete()
         # setting vendor's carriers in redis
-        vendor_carriers_key = f"vendor:{instance.id}:carriers"
+        vendor_carriers_key = get_vendor_carriers_key(vendor.id)
         r.hset(vendor_carriers_key, mapping={"f_c_c": 0, "b_c_c": 0, "total_c_c": 0})
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
@@ -266,42 +267,42 @@ class AddCarrierAPIView(views.APIView):
     http_method_names = ["post", "patch"]
 
     def post(self, *args, **kwargs):
-        """this method verifies the email entered and sends OTP"""
+        """this method verifies the phone_number entered and sends OTP"""
         data = self.request.data
-        email = data.get("email")
-        account = User.objects.filter(email=email).first()
+        phone_number = data.get("phone_number")
+        account = User.objects.filter(phone_number=phone_number).first()
         if not account or not account.is_active:
             raise serializers.ValidationError(
-                {"error": "no_account_found_by_that_email"}
+                {"detail": "no_account_found_by_that_email"}
             )
         if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
             raise NotAcceptable(detail="You are not allowed", code=403)
         elif account.role == CARRIER:
-            raise serializers.ValidationError({"error": "already_exists"})
+            raise serializers.ValidationError({"detail": "already_exists"})
 
         # sending otp
         send_otp(
-            self.request,
             account,
+            phone_number,
             OTP_VERIFY_CARRIER,
             vendor_name=self.request.user.vendor.vendor_name,
         )
         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
     def patch(self, *args, **kwargs):
-        """verifies the otp and converts the email-account to carrier account"""
+        """verifies the otp and converts the phone_number-account to carrier account"""
         data = self.request.data
-        email = data.get("email")
+        phone_number = data.get("phone_number")
         otp = data.get("otp")
         try:
             otp = UserOtp.objects.get(otp=otp)
             if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
                 return Response(
-                    {"error": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST
                 )
-            if not otp.user.email == email:
+            if not otp.user.phone_number == phone_number:
                 return Response(
-                    {"error": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
                 )
             carrier_user_account = otp.user
             profile = carrier_user_account.profile
@@ -314,7 +315,7 @@ class AddCarrierAPIView(views.APIView):
             carrier_user_account.cart.delete()
             carrier_user_account.save()
             # increasing carrier's count for vendor
-            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
             f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
             total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
             if not f_c_c:
@@ -324,17 +325,16 @@ class AddCarrierAPIView(views.APIView):
             r.hset(vendor_carriers_key, "f_c_c", f_c_c)
             r.hset(vendor_carriers_key, "total_c_c", total_c_c)
             # setting carrier live status in redis
-            carrier_key = f"carrier:{carrier.id}:live"
+            carrier_key = get_carrier_key(carrier.id)
             vendor_location = self.request.user.profile.location
             vendor_location = (vendor_location.y, vendor_location.x)
-            customer_location = vendor_location
             r.set(
                 carrier_key,
                 json.dumps(
                     {
                         "return_estimate": 0,
                         "location": vendor_location,
-                        "destination": customer_location,
+                        "destination": vendor_location,
                     }
                 ),
             )
@@ -382,7 +382,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         Cart.objects.create(user=user)
         vendor = self.request.user.vendor
         # decreasing carrier's count
-        vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+        vendor_carriers_key = get_vendor_carriers_key(vendor.id)
         total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
         total_c_c = int(total_c_c) - 1
         f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
@@ -390,6 +390,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         r.hset(vendor_carriers_key, "total_c_c", total_c_c)
         r.hset(vendor_carriers_key, "f_c_c", f_c_c)
         user.save()
+
 
 
 class CarriersNow(views.APIView):
@@ -405,7 +406,7 @@ class CarriersNow(views.APIView):
         live_vendor_carriers = []  # final list being returned
         for carrier in carriers:
             try:
-                carrier_key = f"carrier:{carrier.id}:live"
+                carrier_key = get_carrier_key(carrier.id)
                 carrier_live_data = json.loads(r.get(carrier_key))
                 carrier_current_location = carrier_live_data["location"]
                 vendor_location = self.request.user.profile.location
@@ -575,9 +576,7 @@ class AcceptRejectOrderView(views.APIView):
             # accepted
             profile = order.user.profile
             activate(profile.pf_lang)
-            notf = Notification(
-                receiver=order.user
-            )
+            notf = Notification(receiver=order.user)
             if accepted == True:
                 # order accepted -> set as preparing, send notification
                 order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
@@ -593,7 +592,6 @@ class AcceptRejectOrderView(views.APIView):
                         {
                             "type": "ORDER_ACCEPTED",
                             "data": NotificationSerializer(notf).data,
-                            
                         }
                     ),
                 )
@@ -657,17 +655,37 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
             )
 
             # ----------------- getting total free carriers and total preparing orders
-            vendor_carriers_key = f"vendor:{vendor.id}:carriers"
+            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
             _3_hours_ago = tz.now() - tz.timedelta(hours=3)
             preparing_orders_count = Order.objects.filter(
                 vendor=vendor,
                 status=ORDER_STATUS_CHOICES[2][0],  # preparing
                 created_at__gte=_3_hours_ago,
             ).count()
-            free_carriers_count = int(json.loads(r.hget(vendor_carriers_key, "f_c_c")))
-            total_carriers_count = int(
-                json.loads(r.hget(vendor_carriers_key, "total_c_c"))
+
+            free_carriers_count = r.hget(vendor_carriers_key, "f_c_c")
+            total_carriers_count = r.hget(vendor_carriers_key, "total_c_c")
+            print(
+                "free carriers--",
+                free_carriers_count,
+                "\ntotal carriers---",
+                total_carriers_count,
+                "estiated before conditions",
+                estimated,
+                "\npreparing_orders_count",
+                preparing_orders_count,
             )
+            if free_carriers_count:
+                free_carriers_count = int(json.loads(free_carriers_count))
+            else:
+                free_carriers_count = vendor.carriers.count()
+                r.hset(vendor_carriers_key, "f_c_c", free_carriers_count)
+
+            if total_carriers_count:
+                total_carriers_count = int(json.loads(total_carriers_count))
+            else:
+                total_carriers_count = vendor.carriers.count()
+                r.hset(vendor_carriers_key, "total_c_c", total_carriers_count)
             total_time = estimated
             print("estimated....", estimated, total_carriers_count, free_carriers_count)
             # ----------------- applying conditions and finalizing estimation of time  ...
@@ -690,7 +708,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     total_time = estimated + (
                         20 * round(preparing_orders_count / total_carriers_count)
                     )
-            # ------------------ calculating delivery fee -------------------------------------
+            # ------------------ calculating delivery fee ----------------/---------------------
             delivery_cost = None
             v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
             v_mfcfd = vendor.mfcfd  # vendor's minimum food count free delivery

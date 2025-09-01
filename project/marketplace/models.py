@@ -7,6 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone as tz
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.postgres.indexes import GinIndex
+
 # Create your models here.
 
 
@@ -15,7 +16,8 @@ class Category(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     show_on_home = models.BooleanField(default=True)
     icon = models.ImageField(upload_to="categories-icons/", blank=True, null=True)
-    description = models.CharField(max_length=255,null=True,blank=True)
+    description = models.CharField(max_length=255, null=True, blank=True)
+
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
@@ -35,7 +37,6 @@ class Discount(models.Model):
     deadline = models.DateTimeField(default=tz.now)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
 
     class Meta:
         ordering = ["-created_at"]  # newest
@@ -43,7 +44,10 @@ class Discount(models.Model):
 
 class Food(models.Model):
     """please consider using decimal price value"""
-    uuid = models.UUIDField(default=uuid4,db_index=True, unique=True, editable=False, null=True)
+
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
     vendor = models.ForeignKey(
         "vendor.Vendor",
         on_delete=models.CASCADE,
@@ -59,7 +63,7 @@ class Food(models.Model):
         related_name="foods",
         db_index=True,
     )
-    image = models.ImageField(upload_to="foods-images/",blank=True, null=True)
+    image = models.ImageField(upload_to="foods-images/", blank=True, null=True)
     description = models.TextField(max_length=250)
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -70,6 +74,7 @@ class Food(models.Model):
         Discount, null=True, blank=True, on_delete=models.SET_NULL, related_name="foods"
     )
     is_featured = models.BooleanField(default=False)
+    likes = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = "food"
@@ -80,7 +85,7 @@ class Food(models.Model):
                 name="food_name_trgm",
                 fields=["name"],
                 opclasses=["gin_trgm_ops"],
-                ),
+            ),
         ]
 
     def update_avg_rating(self, *args, **kwargs):
@@ -102,7 +107,6 @@ class Food(models.Model):
 
     def __str__(self):
         return self.name
-
 
 
 class Rating(models.Model):

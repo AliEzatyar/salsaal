@@ -1,5 +1,6 @@
 """this file contains search, sort and filter logic"""
 
+import time
 import geohash
 import django_filters
 import h3
@@ -10,12 +11,14 @@ from rest_framework.filters import SearchFilter
 from rest_framework.filters import OrderingFilter
 from django.db.models import F
 from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.measure import D
 from django.contrib.gis.geos import Point
 from rest_framework.filters import OrderingFilter
 from marketplace.utils import (
     distance_to_travel_time,
     haversine_distance,
 )
+from multiVend.country.info import DEFAULT_SEARCH_DISTANCE
 from vendor.models import Vendor
 from django.contrib.postgres.search import TrigramSimilarity
 
@@ -37,31 +40,34 @@ class FoodFilterSet(django_filters.FilterSet):
 
 
 class CustomFoodOrdering(OrderingFilter):
-    ordering_fields = ["min_price"]  # can include real fields
+    ordering_fields = ["min_price", "likes"]  # can include real fields
     ordering = ["min_price"]  # default
     ordering_param = "sort_by"
 
     def filter_queryset(self, request, queryset, view):
-        # First, let normal ordering happen
+        """overriden for adding reach time for every food,
+        since this filter is applied last, pythonic attrs are kept"""
         queryset = super().filter_queryset(request, queryset, view)
-        request_data = request.query_params
-        print(request_data, request)
-        sort_by = request_data.get("sort_by", None)
 
+        request_data = request.query_params
+        sort_by = request_data.get("sort_by", None)
         user_location = request_data.get("location", None)
         # Now add temporary attribute
         if user_location:
             lat, lon = geohash.decode(user_location)
             for food in queryset:
-                distance = haversine_distance(food.vendor.user_profile.lattitude,
-                                              food.vendor.user_profile.longitude,
-                                              lat,
-                                              lon)
-                print(distance,"------------------")
+                distance = round(
+                    haversine_distance(
+                        food.vendor.user_profile.lattitude,
+                        food.vendor.user_profile.longitude,
+                        lat,
+                        lon,
+                    ),
+                    1,
+                )
                 food.reach_time = round(distance_to_travel_time(distance))
         if sort_by:
             if sort_by == "-reach_time":
-                print("sort - reachtime")
                 return sorted(queryset, key=lambda x: x.reach_time, reverse=True)
             elif sort_by == "reach_time":
                 return sorted(queryset, key=lambda x: x.reach_time)
@@ -93,14 +99,6 @@ class CustomFoodSearch(SearchFilter):
         )
         print(foods)
         return foods
-
-
-class VendorFilterSet(django_filters.FilterSet):
-    avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
-    
-    class Meta:
-        model = Vendor
-        fields = ["avg_rating","vendor_type"]
 
 
 class VOrderFilterSet(django_filters.FilterSet):
@@ -137,7 +135,6 @@ class VOrderFilterSet(django_filters.FilterSet):
             return queryset.filter(status=ORDER_STATUS_CHOICES[4][0])
 
     def filter_by_date_range(self, queryset, name, value):
-
         today = now().date()
         try:
             if value == "today":
@@ -167,9 +164,21 @@ class VOrderFilterSet(django_filters.FilterSet):
 
 
 class CustomVendorOrdering(OrderingFilter):
-    ordering_fields = ["vendor_name", "avg_rating", "rating_count", "reach_time"]
+    ordering_fields = ["avg_rating", "rating_count", "reach_time", "distance"]
     ordering = ["-avg_rating"]  # default
     ordering_param = "sort_by"
+
+    def filter_queryset(self, request, queryset, view):
+        """overriden to handle distance sorting"""
+        ordering = self.get_ordering(request, queryset, view)
+
+        if ordering:
+            if ordering == "distance":
+                return sorted(queryset, key=lambda x: x.distance)
+            elif ordering == "-distance":
+                return sorted(queryset, key=lambda x: x.distance, reverse=True)
+            return queryset.order_by(*ordering)
+        return queryset
 
 
 class CustomVendorSearch(SearchFilter):
@@ -182,15 +191,18 @@ class CustomVendorSearch(SearchFilter):
         search_param = request_data.get(self.search_param)
         location = request_data.get("location", None)
         city = request_data.get("city", None)
+        max_distance = request_data.get("max_distance",None)
         if not (location and city):
             return queryset.none()
         city = str(city).lower()
         # determinig user location
         try:
             # decode location data
+            if max_distance:
+                max_distance = float(max_distance)
             lat, lon = geohash.decode(location)
             location = Point(float(lon), float(lat), srid=4326)
-        except:
+        except Exception as e:
             return queryset.none()
         # searching for vendors nearby at max distance
         if search_param:
@@ -199,15 +211,39 @@ class CustomVendorSearch(SearchFilter):
                 .annotate(similarity=TrigramSimilarity("vendor_name", search_param))
                 .filter(similarity__gt=0.2)
                 .annotate(distance=Distance("user_profile__location", location))
+                .filter(
+                    distance__lte=(
+                        D(km=max_distance)
+                        if max_distance
+                        else D(km=DEFAULT_SEARCH_DISTANCE)
+                    )
+                )
                 .annotate(reach_time=F("distance") / 7 / 60)
                 .order_by("-similarity")
             )
             return vendors
-        # return vendors in city 
+        # return vendors in city
         vendors = (
             Vendor.objects.filter(user_profile__city=city)
             .annotate(distance=Distance("user_profile__location", location))
+            .filter(
+                distance__lte=(
+                    D(km=max_distance)
+                    if max_distance
+                    else D(km=DEFAULT_SEARCH_DISTANCE)
+                )
+            )
             .annotate(reach_time=F("distance") / 7 / 60)
-            .order_by("-distance")
+            .order_by("distance")
         )
+        print(vendors)
         return vendors
+
+
+class VendorFilterSet(django_filters.FilterSet):
+    avg_rating = django_filters.NumberFilter(field_name="avg_rating", lookup_expr="gte")
+    distance = django_filters.NumberFilter()
+
+    class Meta:
+        model = Vendor
+        fields = ["avg_rating", "vendor_type"]

@@ -74,7 +74,7 @@ class Order(models.Model):
     def cancel_order(self):
         """reseting food order"""
         print("status", self.status)
-        if self.status != ORDER_STATUS_CHOICES[1][0]:  # not waiting
+        if self.status not in [ORDER_STATUS_CHOICES[1][1], ORDER_STATUS_CHOICES[2][1]]:  # not waiting
             raise Exception("order_no_in_waiting_status")
         self.delete()
 

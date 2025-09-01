@@ -173,6 +173,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "rating_count",
             "vendor_name",
             "vendor",
+            "likes"
         ]
         read_only_fields = ["__all__"]
 
@@ -181,7 +182,6 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
-
 
 
 class FoodSerializerMany(serializers.ModelSerializer):
@@ -206,6 +206,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "rating_count",
             "reach_time",
             "distance",
+            "likes"
         ]
 
     def get_vendor_name(self, obj):
@@ -241,6 +242,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "category",
             "reach_time",
             "distance",
+            "likes",
         ]
 
     def get_final_price(self, obj):
@@ -330,10 +332,8 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
             "name",
             "min_price",
             "image",
-            "rating_count",
-            "avg_rating",
             "vendor",
-            
+            "likes",
         ]
 
 

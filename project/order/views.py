@@ -25,7 +25,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     def cancel(self, request):
         """this cancells only waiting orders"""
         orders = Order.objects.filter(
-            user=request.user, status=ORDER_STATUS_CHOICES[1][1]
+            user=request.user,
+            status__in=[ORDER_STATUS_CHOICES[1][1], ORDER_STATUS_CHOICES[2][1]],
         )
         print("cacnelling", orders)
         for order in orders:
