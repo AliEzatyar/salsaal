@@ -64,14 +64,14 @@ class UserProfileSerializer(ModelSerializer):
 class UserProfileCreationSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = [ "pf_lang","country","city", "lattitude", "longitude"]
+        fields = [ "pf_lang","country","city", "lattitude", "longitude","address"]
 
     def save(self, **kwargs):
         return super().save(**kwargs)
 
 class UserDetailSerializer(ModelSerializer):
     profile = UserProfileSerializer()
-    
+
     class Meta:
         model = User
         fields = [
@@ -79,14 +79,16 @@ class UserDetailSerializer(ModelSerializer):
             "full_name",
             "email",
             "phone_number",
-            "profile"
+            "profile",
+            "created_date"
             
         ]
         read_only_fields = [
             "id",
             "email",
+            "created_date",
         ]  # Prevent updating the email, seperate view is made
-    
+
     def update(self, instance, validated_data):
         # saving user object
         profile_data = validated_data.pop("profile",None)
@@ -94,7 +96,7 @@ class UserDetailSerializer(ModelSerializer):
         for attr,val in user_data.items():
             setattr(instance,attr,val)
         instance.save()
-        
+
         # getting profile object
         if profile_data:
             profile = instance.profile

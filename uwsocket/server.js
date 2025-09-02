@@ -86,7 +86,8 @@ app.ws("/*", {
         }
     },
     open: async (ws, req) => {
-        const { sub: userId } = ws.claims;
+        const claims = ws.claims;
+        const userId = claims.user_id;
         if (userId) {
             console.log("user connected to uwsocket server, id is: ", userId)
             ws.id = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
@@ -148,7 +149,7 @@ app.ws("/*", {
                         member: carrierId.toString()   // must be "member" not "carrierId"
                     });
                     redisPub.hSet(`carrier_last_${carrierId}`, { latitude: lat, longitude: lon, ts });
-                    redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "LOC", lat, lon, ts }));
+                    redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", lat, lon, ts }));
                     break
 
                 }
@@ -157,6 +158,7 @@ app.ws("/*", {
                     const orderId = data.orderId
                     console.log("message type order dialog in server",data)
                     redisPub.publish(`pub:order:${orderId}`, JSON.stringify({ type: "ORDER_DIALOG", data: data }));
+                    break
                 }
                 default:
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));

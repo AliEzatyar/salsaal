@@ -86,11 +86,13 @@ class IsVendorOfCarrier(BasePermission):
 class IsBuyer(BasePermission):
     def has_permission(self, request, view):
         if request.user.role != CUSTOMER:
+            print("user_not_buyer")
             raise PermissionDenied(detail="user_not_buyer")
         return True
 
     def has_object_permission(self, request, view, obj):
         """checks whether the requesting user owns the order"""
+        print("user does not own order")
         return obj.user == request.user
 
 

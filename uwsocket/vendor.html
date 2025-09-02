@@ -48,7 +48,9 @@
     <input id="prepTime" type="number" min="0" value="15" />
     <button id="sendBtn">Send as JSON</button>
 </div>
-
+<div class="card" id="carrying" style="display: none;">
+    <button id="setCarrying">Set order as carrying</button>
+</div>
 
 <div class="card">
     <label>Order Details Container</label>
@@ -61,6 +63,8 @@
     // const ws = new WebSocket("wss://www.eatee.food/ws/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTc2NDcyLCJpYXQiOjE3NTYzODQ0NzIsImp0aSI6IjI1ZTZkMmE5NmNhYTQyOGQ5NGRhNTgwMWY2MmE4NDM2IiwidXNlcl9pZCI6IjEifQ.I9o9kYFXmja9LyeH3cloF6lkLAZygZ19yOdLmren7WheCFmxubkZlzeppiLEHANxqw646ZiGFfxSJmAKZ__-GupIHE04qhpR0w6a9qnsz9aqrWZKsaYAROgpSlIBykp-5wO8Hw7s12mpY1J21Owz-BZnWMPzs6370waBjKjs2bl3PjeGTvFQpI9ua4wCDCiKeNSQrQq5j5Yz0S2zZdGS8jz_xp_fKAFGvDRD3GjZjjg4oFOl-gNMMpqviWSHN9S9poMveDm9Sjfv4xULaR1dKkJLkueLEsTun-fIv512Q5WJ5-beDxuDd0gwb-dxFZGTpNp3szg6Db1MBQvm0ZlyIg");
     const ws = new WebSocket("ws://localhost:3000/?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MjM5ODU5LCJpYXQiOjE3NTY2NDc4NTksImp0aSI6IjA2NmYxMjg5OGUwYjQzYjNhMjA5ZGNiYWVhMTMxYThhIiwidXNlcl9pZCI6IjUifQ.HFTs0J-6mdi0zuSLR__yjRUZTK0xTkncQU3GSPUiiS8VX4h6NX3RpJHG8EW1-tCCkA7gaQNisZ0k-b0yQeCGoDp7pikpj0y2EFkQ4WMK38XJJgWX552H8fFb4F2Fbtc1rtCT33bqB6NULP2rB79JhvoQsMIoEduZImXPcP00vSangLEz2Vu5RImn4dFRUTXXZ1ZCJNhS9wAfTzn1eAAWWR-dN9rcIMuWT9vKbyxLSi0LYA2ZXKoXW_gaPrpSRQfltw7Ik5IlFdm32690zoMvudr53Sb4WP_S__Xk5C27QA9VY_9p_4iO_T_FbPKgjzW8uweTo6-3a5fqxnhCbmxGng");
     const domain = "http://192.168.0.120:8000"
+    // const domain = "http://127.0.0.1:8000"
+
     const only_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MjM5ODU5LCJpYXQiOjE3NTY2NDc4NTksImp0aSI6IjA2NmYxMjg5OGUwYjQzYjNhMjA5ZGNiYWVhMTMxYThhIiwidXNlcl9pZCI6IjUifQ.HFTs0J-6mdi0zuSLR__yjRUZTK0xTkncQU3GSPUiiS8VX4h6NX3RpJHG8EW1-tCCkA7gaQNisZ0k-b0yQeCGoDp7pikpj0y2EFkQ4WMK38XJJgWX552H8fFb4F2Fbtc1rtCT33bqB6NULP2rB79JhvoQsMIoEduZImXPcP00vSangLEz2Vu5RImn4dFRUTXXZ1ZCJNhS9wAfTzn1eAAWWR-dN9rcIMuWT9vKbyxLSi0LYA2ZXKoXW_gaPrpSRQfltw7Ik5IlFdm32690zoMvudr53Sb4WP_S__Xk5C27QA9VY_9p_4iO_T_FbPKgjzW8uweTo6-3a5fqxnhCbmxGng"
     // const domain = "https://www.eatee.food"
     // const wbs_domain = "wss://www.eatee.food/ws"
@@ -117,8 +121,39 @@
         const message_type = message_data.type;
         if (message_type == "ORDER_DIALOG") { // order communication between vendor and customer
             console.log("order DIALOG message to vendor", message_data)
+            const final = message_data.data.final
+            const orderId = message_data.data.orderId
+            console.log(final)
+
+            document.getElementById("carrying").style.display = "block"
+            document.getElementById("setCarrying").onclick = (e) => {
+                // setting order as carrying state
+                const setOrderCarryingUrl = domain + "/api/vendor/set-order-state-carrying/"
+                const headersOrderCarrying = new Headers()
+                headersOrderCarrying.append("Authorization", vendor_token)
+                headersOrderCarrying.append("Content-Type", "application/json")
+                const optionsOrderCarrying = {
+                    method: "POST",
+                    headers: headersOrderCarrying,
+                    body: JSON.stringify({ carrier_id: 14, order_id: orderId }),
+                    redirect: "follow"
+                };
+                fetch(setOrderCarryingUrl, optionsOrderCarrying).then((response) => {
+                    response.text()
+                }).then(
+                    result => {
+                        console.log(result, "result of set as carrying....")
+                        if (ws.readyState) {
+                            const data = { carrierId: 14 }
+                            console.log("subscribing data before sending")
+                            ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
+                            console.log("subscribed to carrier's  room")
+                        }
+                    })
+            }
+
         }
-        else if (message_type == "LOCATION_DATA") {
+        else if (message_type == "CARRIER_LOCATION") {
             console.log("location data received ", message_data.data)
         }
         else if (message_type == "NEW_ORDER") {
@@ -135,27 +170,7 @@
             // Render on load
             renderOrder(new_order_data, orderContainer);
             document.getElementById("sendBtn").onclick = (ev) => {
-                // setting order as accepted
-                const acceptOrderUrl = domain + "/api/vendor/ar-order/"
-                const acceptOrderHeaders = new Headers()
-                acceptOrderHeaders.append("Authorization", vendor_token)
-                acceptOrderHeaders.append("Content-Type", "application/json")
-                payload = JSON.stringify({
-                    "order_id": new_order_data.id,
-                    "accepted": true
-                })
-                const acceptOrderOptions = {
-                    method: "POST",
-                    headers: acceptOrderHeaders,
-                    body: payload,
-                    redirect: "follow"
-                };
-                // -------------- accepting/rej setting order in preparing state after both-sides acceptance
-                fetch(acceptOrderUrl, acceptOrderOptions)
-                    .then((response) => response.text())
-                    .then((result) => {
-                        console.log(result, "result of order set as a/r")
-                    })
+
                 //--------------------  calculating order reach time
                 const esimateOrderTimeUrl = domain + "/api/vendor/estimate-order-time/?order_id=" + new_order_data.id
                 const headersTimeEstimate = new Headers()
@@ -173,7 +188,7 @@
                         const prepTime = document.getElementById("prepTime")
                         const delivery_cost = result["delivery_cost"]
                         const delivery_time_estimate = result["estimated"]
-                        const order_total_price =Number(new_order_data.total_price)
+                        const order_total_price = Number(new_order_data.total_price)
                         const total_cost = delivery_cost + order_total_price
                         const total_time = delivery_time_estimate + Number(prepTime.value)
 

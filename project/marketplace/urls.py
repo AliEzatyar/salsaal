@@ -27,5 +27,9 @@ urlpatterns = [
     path("foods-by-category/", views.FoodsByCategory.as_view()),
     path("like-food-item/", views.LikeFood.as_view()),
     path("like-vendor/", views.LikeVendor.as_view()),
+    path(
+        "ar-order/",
+        views.AcceptRejectOrderView.as_view(),
+    ),
     # full search
 ]

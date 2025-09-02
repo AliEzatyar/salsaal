@@ -1,5 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
+from carrier.views import SetOrderStateCarrying
 from . import views
 
 app_name = "vendor"
@@ -30,10 +32,10 @@ urlpatterns = [
         "vendor-details/",
         views.VendorAPIView.as_view(),
     ),
-    path(
-        "ar-order/",
-        views.AcceptRejectOrderView.as_view(),
-    ),
+    # path(
+    #     "ar-order/",
+    #     # views.AcceptRejectOrderView.as_view(),
+    # ),
     path(
         "convert-to-vendor/",
         views.ConvertToVendorAPIView.as_view(),
@@ -50,6 +52,10 @@ urlpatterns = [
     path(
         "estimate-order-time/",
         views.CalculateOrderTimeAndDeliveryCost.as_view(),
+    ),
+    path(
+        "set-order-state-carrying/",
+        SetOrderStateCarrying.as_view(),
     ),
     path("", include(router.urls)),
 ]

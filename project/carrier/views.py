@@ -94,10 +94,12 @@ class SetOrderStateCarrying(views.APIView):
         try:
             order = Order.objects.get(id=order_id)
             carrier = Carrier.objects.get(pk=carrier_id)
-            # vendor should own this carrier
-            if carrier.vendor != self.request.user.vendor:
+
+            if (
+                carrier.vendor != self.request.user.vendor
+            ):  # vendor should own this carrier
                 return Response(status=status.HTTP_403_FORBIDDEN)
-            if carrier.status == CARRIER_STATUS_CHOICES[1][0]:
+            if carrier.status == CARRIER_STATUS_CHOICES[1][0]:  # carreri busy
                 return Response(
                     {"detail": "carrier_busy"}, status=status.HTTP_409_CONFLICT
                 )
@@ -140,11 +142,13 @@ class SetOrderStateCarrying(views.APIView):
             # ---------------- updating vendor's carriers in redis
             vendor = self.request.user.vendor
             vendor_carriers_key = get_vendor_carriers_key(vendor.id)
-            b_c_c = json.loads(
-                r.hget(vendor_carriers_key, "b_c_c")
-            )  # busy carriers count
-            if not b_c_c:
+            b_c_c = r.hget(vendor_carriers_key, "b_c_c")
+            if b_c_c:
+                b_c_c = json.loads(b_c_c)
+            else:
                 b_c_c = 0
+                r.hset(vendor_carriers_key, "b_c_c", b_c_c)
+
             b_c_c = int(b_c_c) + 1  # increase it by one
 
             r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
@@ -157,9 +161,9 @@ class SetOrderStateCarrying(views.APIView):
             activate_language(profile.pf_lang)
             notf = Notification.objects.create(
                 title=_("Order set as carrying"),
-                type="order_carrying",
+                type="ORDER_SET_CARRYING",
                 receiver=order.user,
-                data={"order_id": order.id},
+                data={"order_id": order.id, "carrier_id": carrier_id},
             )
             deactivate_language()
             # ---------------------- sending notification to customer
@@ -167,24 +171,26 @@ class SetOrderStateCarrying(views.APIView):
                 f"pub:user:{order.user.id}",
                 json.dumps(
                     {
-                        "type": "ORDER_SET_CARRYING",
+                        "type": "NOTIFICATION",
                         "data": NotificationSerializer(notf).data,
                     }  # customer app should extract order id and subscribe it for live tracking
                 ),
             )
+            print("notification sent to customer", f"pub:user:{order.user.id}")
             # --------------------- sending notification to carrier's room
             r.publish(
                 f"pub:carrier:{carrier_id}",
                 json.dumps(
                     {
-                        "type": "DELIVERY_TASK",
+                        "type": "NOTIFICATION",
                         "data": NotificationSerializer(notf).data,
                     }  # carrier app subscribes to order room either from notfications part or any and live tracking starts
                 ),
             )
             # response
             return Response(
-                status=status.HTTP_200_OK,
+                {"message":"order_set_carrying"},
+                status=status.HTTP_200_OK
                 # vendor app can/is subscribe to order room and track order live
             )
 
@@ -243,7 +249,7 @@ class SetOrderStateDelivered(views.APIView):
             activate_language(profile.pf_lang)
             notf = Notification.objects.create(
                 title=_("Order delivered successfully"),
-                type="order_delivered",
+                type="ORDER_DELIVERED",
                 receiver=order.vendor.user,
                 data={"order_id": order_id},
             )
@@ -251,7 +257,7 @@ class SetOrderStateDelivered(views.APIView):
                 f"pub:vendor:{vendor.id}",
                 json.dumps(
                     {
-                        "type": "ORDER_DELIVERED",
+                        "type": "NOTIFICATION",
                         "data": {NotificationSerializer(notf).data},
                     }
                 ),

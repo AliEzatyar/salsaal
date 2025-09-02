@@ -82,7 +82,6 @@ class Order(models.Model):
         """this method is overriden for auto-filling otp of order"""
         if not self.pk:
             otp = generate_otp(8)
-            print("created, otp", otp)
             self.otp = otp
 
         return super().save(*args, **kwargs)

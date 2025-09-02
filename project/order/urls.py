@@ -21,5 +21,6 @@ urlpatterns = [
         views.OrderItemDetailAPIView.as_view(),
         name="order-item-detail",
     ),
+    
     path("", include(router.urls)),
 ]
