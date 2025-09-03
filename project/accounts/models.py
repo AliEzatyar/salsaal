@@ -4,8 +4,8 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
 from django.utils import timezone
-from django.conf import settings
-import h3
+from django.contrib.auth import get_user_model
+from h3 import latlng_to_cell as h3_latlng_to_cell
 
 from marketplace.utils import DEFAULT_H3_RESOLUTION
 ADMIN = 0
@@ -135,7 +135,7 @@ class UserProfile(g_models.Model):
             self.location = Point(
                 float(self.longitude), float(self.lattitude), srid=4326
             )
-            self.h3_id = h3.latlng_to_cell(
+            self.h3_id = h3_latlng_to_cell(
                 float(self.lattitude), float(self.longitude), DEFAULT_H3_RESOLUTION
             )
             self.city = str(self.city).lower()
@@ -144,6 +144,17 @@ class UserProfile(g_models.Model):
 
     def get_full_address(self):
         return self.address + ", " + self.city
+
+
+class Device(models.Model):
+    PLATFORM_CHOICES = (
+        ("ios", "iOS"), 
+        ("android", "Android"),
+    )
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE,related_name="devices")
+    token = models.CharField(max_length=255, unique=True)
+    platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class UserOtp(models.Model):

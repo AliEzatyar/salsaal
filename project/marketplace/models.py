@@ -75,6 +75,8 @@ class Food(models.Model):
     )
     is_featured = models.BooleanField(default=False)
     likes = models.IntegerField(default=0)
+    is_drink = models.BooleanField(default=False)
+    
 
     class Meta:
         verbose_name = "food"

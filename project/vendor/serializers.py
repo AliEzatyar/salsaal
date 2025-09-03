@@ -3,12 +3,11 @@ from django.contrib.gis.measure  import Distance
 from rest_framework import serializers
 from django.utils import timezone
 from marketplace.models import Discount, Food
-from marketplace.serializers import CategorySerializer, DiscountedFoodSerializerMany, FoodSerializerLessDetail
+from marketplace.serializers import DiscountedFoodSerializerMany, FoodSerializerLessDetail
 from vendor.utils import to_af_weekday
 from .models import OpeningHour, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS
-from django.conf import settings
 
 WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 
@@ -248,6 +247,8 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     categories = serializers.SerializerMethodField("get_categories")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     categories_count = serializers.IntegerField(read_only=True)
+    distance = serializers.SerializerMethodField("get_distance")
+
     class Meta:
         model = Vendor
         fields = [
@@ -267,7 +268,8 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "discounted_foods",
             "featured_items",
             "categories",
-            "categories_count"
+            "categories_count",
+            "distance"
         ]
         read_only_fields = ["__all__"]
 
@@ -293,7 +295,7 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         if today_open_hour:
             return True
         return False
-        
+
     def get_discounted_foods(self,obj):
         discounted = getattr(obj,"discounted_foods")
         if discounted:
@@ -308,6 +310,10 @@ class PublicVendorSerializer(serializers.ModelSerializer):
 
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
+
+    def get_distance(self, obj):
+        # obj.distance is a Distance object; convert to km/miles/etc.
+        return obj.distance if hasattr(obj, "distance") else None
 
 
 class AbstractVendorSerializer(serializers.ModelSerializer):

@@ -31,11 +31,20 @@ class Cart(models.Model):
             or 0
         )
 
+    def get_vendor(self):
+        return self.items.first().food.vendor if self.items.first() else None
+
     def clear(self):
         self.items.all().delete()
 
     def __str__(self):
         return f"Cart <{self.user.full_name}>"
+
+    def is_empty(self):
+        count = self.items.count()
+        if count > 0:
+            return False
+        return True
 
 
 class CartItem(models.Model):

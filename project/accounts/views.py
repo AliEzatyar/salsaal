@@ -1,12 +1,11 @@
 from django.conf import settings
 from django.http import HttpResponse
-from accounts.models import CUSTOMER, NoUserOtp, User, UserOtp, UserProfile
+from accounts.models import CUSTOMER, NoUserOtp, User, UserOtp
 from accounts.serializers import (
     UserCreationSerializer,
     UserDetailSerializer,
 )
 from django.db.utils import IntegrityError
-from django.core.cache import cache
 from .utils import OTP_LOGIN, OTP_VERIFY_PHONE
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp

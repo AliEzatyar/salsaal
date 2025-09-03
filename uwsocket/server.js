@@ -98,7 +98,8 @@ app.ws("/*", {
             ws.rooms.add(userRoom);
             sockets.set(ws.id, ws);
             // saving onlin status to redis for django to replace with  FCM, APNs if offline
-            redisPub.hSet("ws:users", userId, "1")
+            await redisPub.hSet("ws:users", userId, "1");
+
         }
     },
     // this messages only come from client web sockets, e.g. mobil apps + web browsers
@@ -106,7 +107,7 @@ app.ws("/*", {
         try {
             // setting message type like notification or location and its related data
             const { type, data } = JSON.parse(Buffer.from(message).toString());
-            console.log("message came from client to channel",type,data)
+            console.log("message came from client to channel", type, data)
             switch (type) {
                 case "SUBSCRIBE_ORDER": {
                     console.log("subscribed to order ", data.orderId, data.subscriber)
@@ -156,10 +157,11 @@ app.ws("/*", {
 
                 case "ORDER_DIALOG": {
                     const orderId = data.orderId
-                    console.log("message type order dialog in server",data)
+                    console.log("message type order dialog in server", data)
                     redisPub.publish(`pub:order:${orderId}`, JSON.stringify({ type: "ORDER_DIALOG", data: data }));
                     break
                 }
+
                 default:
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));
             }

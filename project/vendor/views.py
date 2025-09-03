@@ -1,8 +1,6 @@
 import json
-from zoneinfo import ZoneInfo
-from django.conf import settings
 from marketplace.models import Discount, Food
-from api.permissions import IsVendor, IsVendorOfDiscount, IsVendorOfOrder
+from api.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
@@ -17,11 +15,9 @@ from accounts.models import (
 )
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
-from accounts.utils import OTP_VERIFY_CARRIER, generate_otp, send_otp
+from accounts.utils import OTP_VERIFY_CARRIER, send_otp
 from marketplace.utils import estimate_travel_time_graphhopper, haversine_distance
 from cart.models import Cart
-from live.models import Notification
-from live.serializers import NotificationSerializer
 from carrier.utils import get_carrier_key
 from vendor.models import OpeningHour
 from .serializers import (
@@ -38,14 +34,11 @@ from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from django.utils import timezone as tz
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
-from django.utils import timezone as dj_tz
-
 from rest_framework.exceptions import NotAcceptable
 from api.permissions import IsVendorOfCarrier
 from rest_framework import parsers, serializers
 from .utils import get_vendor_carriers_key, r
-from django.utils.translation import activate, deactivate, gettext as _
-from rest_framework.decorators import action
+from django.utils.translation import gettext as _
 
 
 # Create your views here.

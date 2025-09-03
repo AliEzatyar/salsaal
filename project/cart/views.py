@@ -1,4 +1,3 @@
-from decimal import Decimal
 from marketplace.models import Food
 from api.permissions import IsHavingCart
 from marketplace.serializers import FoodSerializerMany
@@ -7,7 +6,6 @@ from .serializers import CartSerializer
 from rest_framework import views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from marketplace.utils import BoughtTogetherRecommender
 
 # Create your views here.
 
@@ -22,44 +20,55 @@ class CartApiView(views.APIView):
 
     def get(self, *args, **kwargs):
         """showing cart detail with items"""
-
         cart = self.request.user.cart
         serializer = CartSerializer(cart)
-        food_ids = [i.food.id for i in cart.items.select_related("food")]
-        recommender = BoughtTogetherRecommender()
-        suggestion_ids = recommender.suggest_foods_for(food_ids)
-        suggestion_foods = Food.objects.filter(id__in=suggestion_ids)
-        ser_many = FoodSerializerMany(suggestion_foods, many=True)
+        #  suggested foods
+        # recommender = BoughtTogetherRecommender()
+        # suggestion_ids = recommender.suggest_foods_for(food_ids)
+        # suggestion_foods = Food.objects.filter(id__in=suggestion_ids)
+        # ser_many = FoodSerializerMany(suggestion_foods, many=True)
+        # drinks
+        if not cart.is_empty():
+            vendor = cart.get_vendor()
+            drinks = Food.objects.filter(is_drink=True, vendor=vendor)
+            drinks_serializer = FoodSerializerMany(drinks, many=True)
+            return Response(
+                {
+                    "cart": serializer.data,
+                    "vendor_id": vendor.id,
+                    "vendor_name": vendor.vendor_name,
+                    "drinks": drinks_serializer.data,
+                    # "suggestions": ser_many.data,
+                },
+                status=status.HTTP_200_OK,
+            )
         return Response(
-            {"cart": serializer.data, "suggestions": ser_many.data},
-            status=status.HTTP_200_OK,
+            status=status.HTTP_404_NOT_FOUND,
         )
 
     def patch(self, *args, **kwargs):
         """partial update for cart-items amount change and price selection"""
         data = self.request.data
         items_data = data["items"]
-        item_ids = [item[0] for item in items_data]  # ids
-        available_items = CartItem.objects.filter(
-            id__in=item_ids,
-            cart__user__id=self.request.user.id,
-        )
-        items_dict = {item.id: item for item in available_items}
-        updated_items = []
         try:
-            for item_id, quantity,choosen_price in items_data:
-                item = items_dict.get(item_id, None)
+            for item in items_data:
+                item_id = item.get("id", None)
+                item_quantity = item.get("quantity", None)
+                item_price = item.get("price", None)
+                item = CartItem.objects.filter(
+                    id=item_id,
+                    cart__user__id=self.request.user.id,
+                ).first()
                 if item:
-                    item.quantity = quantity
-                    if choosen_price in item.food.prices:
-                        item.price = Decimal(choosen_price)
-                    updated_items.append(item)
-        except:
+                    if item_quantity:
+                        item.quantity = item_quantity
+                    if item_price:
+                        if item_price in item.food.prices:
+                            item.price = item_price
+                    item.save()
+        except Exception as e:
+            print("error while updateing cart", e)
             pass
-        if updated_items:
-            CartItem.objects.bulk_update(updated_items, ["quantity","price"])
-
-        # successful items quantity update
         cart = self.request.user.cart
         serializer = CartSerializer(cart)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -78,7 +87,7 @@ class CartApiView(views.APIView):
                     )
                 else:
                     Response(
-                        {"error": "no_matching_item"}, status=status.HTTP_404_NOT_FOUND
+                        {"detail": "no_matching_item"}, status=status.HTTP_404_NOT_FOUND
                     )
             except:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -95,34 +104,38 @@ class CartApiView(views.APIView):
         data = self.request.data
         food_id = data.get("id", None)
         quantity = data.get("quantity", None)
-        if not food_id:
+        size = data.get("size", None)
+        if not (food_id and quantity and size):
             return Response(
-                {"error": "no_id_provided"},
+                {"detail": "no_id_provided"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
             food = Food.objects.get(pk=food_id)
             if food and food.is_available:
-                exists = CartItem.objects.filter(cart=cart, food=food).exists()
-                if not exists:
-                    # if item is created now and added
-                    if not quantity:
-                        quantity = 1
-                    CartItem.objects.create(cart=cart, food=food, quantity=quantity,price=food.min_price)
-                    return Response(status=status.HTTP_200_OK)
-                return Response(
-                    {"message": "already_exists"}, status=status.HTTP_400_BAD_REQUEST
+                if not size in food.prices:
+                    size = food.min_price
+                if not quantity:
+                    quantity = 1
+                # handling both create and update
+                CartItem.objects.update_or_create(
+                    cart=cart,
+                    food=food,
+                    defaults={"quantity": quantity, "price": size},
                 )
+                return Response(status=status.HTTP_200_OK)
 
             else:
                 return Response(
-                    {"error": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
+                    {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
                 )
         except Food.DoesNotExist:
             return Response(
-                {"error": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            print(e)
             return Response(
-                {"error": "unknown_error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"detail": "unknown_error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

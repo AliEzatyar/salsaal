@@ -1,15 +1,11 @@
-import json
 from locale import strxfrm
 from marketplace.models import Category, Discount, FavItem, Food, Rating
 from accounts.models import CUSTOMER
 from order.models import ORDER_STATUS_CHOICES, Order
-from live.models import Notification
-from live.serializers import NotificationSerializer
 from .utils import (
     BestFoodsCounter,
     BestVendorsCounter,
     distance_to_travel_time,
-    h3_distance_to_km,
     haversine_distance as distance_calculator,
 )
 from marketplace.backends import (
@@ -38,7 +34,6 @@ from marketplace.serializers import (
     RatingSerializer,
     CategorySerializer,
 )
-from django.db.models import F
 from django.db.models import Prefetch
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
@@ -46,7 +41,7 @@ from rest_framework import filters, status, views, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from api.permissions import IsBuyer, IsHavingFavlist, IsVendorOfOrder
+from api.permissions import IsBuyer, IsHavingFavlist
 from django.core.cache import cache
 from .utils import BoughtTogetherRecommender
 from django.db.models import Avg
@@ -54,7 +49,7 @@ import geohash
 import h3
 from .utils import StandardResultSetPagination, DEFAULT_H3_RESOLUTION, r
 from rest_framework.permissions  import IsAuthenticated
-from django.utils.translation import activate, deactivate, gettext as _
+from django.utils.translation import gettext as _
 
 
 """Marketplace API Views"""
@@ -1070,7 +1065,7 @@ class ListVendorFoods(views.APIView):
             )
         if cheapest:
             cheap_foods = Food.objects.filter(
-                vendor_id=vendor_id, is_available=True
+                vendor_id=vendor_id, is_available=True, is_drink=False
             ).order_by("min_price")[:10]
             ser = FoodSerializerLessDetail(cheap_foods, many=True)
             return Response(ser.data)

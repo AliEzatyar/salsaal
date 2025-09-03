@@ -13,14 +13,18 @@
             ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
             hasSubscribed = true;
             console.log("socket subscribed to carrier")
-            
+
 
         }
     }
     // here, carrier either reads notifications 
     ws.onmessage = (e) => {
         const data = JSON.parse(e.data)
-        if (data.type == "NOTIFICATION"){
+        setInterval(() => {
+            console.log("ping...")
+            ws.send(JSON.stringify({ type: "PING", data: { x: 2 } }))
+        }, 3000)
+        if (data.type == "NOTIFICATION") {
             const notf = data.data;
             if (notf.type == "ORDER_SET_CARRYING") {
                 setInterval(() => {
@@ -30,7 +34,7 @@
             }
 
         }
-        
+
     }
     ws.onclose = (e) => {
         console.log("websocket closed")
