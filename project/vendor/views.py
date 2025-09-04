@@ -1,8 +1,9 @@
+from datetime import datetime
 import json
 from marketplace.models import Discount, Food
 from api.permissions import IsVendor, IsVendorOfOrder
 from order.serializers import VOrderSerializer
-from order.models import ORDER_STATUS_CHOICES, Order
+from order.models import ORDER_STATUS_CHOICES, Order, OrderItem
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
 from accounts.models import (
     ADMIN,
@@ -32,6 +33,8 @@ from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from django.utils import timezone as tz
+from django.db.models import Prefetch
+
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotAcceptable
@@ -92,7 +95,7 @@ class ConvertToVendorAPIView(views.APIView):
         user = self.request.user
         if user.role in (REST, CARRIER, ADMIN):
             return Response(
-                {"error": "user is not allowed to convert to vendor"},
+                {"detail": "user is not allowed to convert to vendor"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -336,12 +339,12 @@ class AddCarrierAPIView(views.APIView):
 
         except UserOtp.DoesNotExist:
             return Response(
-                {"error": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             print("error", e)
             return Response(
-                {"error": "UKNOWN_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"detail": "UKNOWN_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -383,7 +386,6 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         r.hset(vendor_carriers_key, "total_c_c", total_c_c)
         r.hset(vendor_carriers_key, "f_c_c", f_c_c)
         user.save()
-
 
 
 class CarriersNow(views.APIView):
@@ -544,7 +546,6 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         return queryset
 
 
-
 class CalculateOrderTimeAndDeliveryCost(views.APIView):
     """
     This view takes new order id and estimates new order reaching-time considering
@@ -563,7 +564,13 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                 {"detail": "provide_new_order_id"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            order = Order.objects.get(id=int(new_order_id))
+            order = (
+                Order.objects.filter(id=new_order_id)
+                .prefetch_related(
+                    Prefetch("items", queryset=OrderItem.objects.select_related("food"))
+                )
+                .first()
+            )
             # check if the vendor owns this order
             self.check_object_permissions(self.request, order)
             # ------------------ estimateing travel time for new order
@@ -630,6 +637,24 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     total_time = estimated + (
                         20 * round(preparing_orders_count / total_carriers_count)
                     )
+            # calculating preparation time
+            prep_time = 0
+            for item in order.items.all():
+                if item.food.is_ready_type:
+                    today = tz.now().date()
+                    # combine today's date with both times
+                    ready_dt = datetime.combine(today, item.food.ready_time)
+                    now_dt = datetime.combine(today, tz.now().time())
+                    delta = ready_dt - now_dt
+                    minutes = delta.total_seconds() / 60
+                    if minutes > 0:
+                        if prep_time < minutes:
+                            prep_time = minutes
+                else:
+                    if prep_time < item.food.duration:
+                        prep_time = item.food.duration
+            print(prep_time, "max preparation time")
+
             # ------------------ calculating delivery fee ----------------/---------------------
             delivery_cost = None
             v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
@@ -644,7 +669,13 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
             else:
                 delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
 
-            return Response({"estimated": total_time, "delivery_cost": delivery_cost})
+            return Response(
+                {
+                    "estimated": total_time,
+                    "delivery_cost": delivery_cost,
+                    "preparation_time": round(prep_time),
+                }
+            )
         except Exception as e:
             print("error in order time calculation view\n", e, "\n", e.args)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

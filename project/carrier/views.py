@@ -108,7 +108,7 @@ class SetOrderStateCarrying(views.APIView):
             # if payment is online and not paid, not allowed
             # if order.is_credit:
             #     if not order.paid:
-            #         return Response({"error": "payment not completed"}, status=400)
+            #         return Response({"detail": "payment not completed"}, status=400)
 
             # setting order carrier to requesting carrier
             order.carrier = carrier
@@ -196,11 +196,11 @@ class SetOrderStateCarrying(views.APIView):
 
         except Order.DoesNotExist:
             return Response(
-                {"error": "no such order"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "no such order"}, status=status.HTTP_403_FORBIDDEN
             )
         except exceptions.PermissionDenied as pd:
             print(pd, pd.args)
-            return Response({"error": "not_allowed"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "not_allowed"}, status=status.HTTP_403_FORBIDDEN)
 
 
 class SetOrderStateDelivered(views.APIView):
@@ -224,9 +224,9 @@ class SetOrderStateDelivered(views.APIView):
             user = order.user
             OTP = UserOtp.objects.filter(user=user, otp=input_OTP).first()
             if not OTP:
-                return Response({"error": "otp_incorrect"}, status=400)
+                return Response({"detail": "otp_incorrect"}, status=400)
             if OTP.is_expired(expire=FOOD_DELIVERY_OTP_EXPIRATION):
-                return Response({"error": "otp_expired"}, status=400)
+                return Response({"detail": "otp_expired"}, status=400)
 
             # setting order in submited state and carrier in free state
             order.status = ORDER_STATUS_CHOICES[4][1]  # delivered
@@ -267,18 +267,18 @@ class SetOrderStateDelivered(views.APIView):
                 status=status.HTTP_202_ACCEPTED,
             )
         except Order.DoesNotExist:
-            return Response({"error": "no_macthing_order"}, status=404)
+            return Response({"detail": "no_macthing_order"}, status=404)
         except UserOtp.DoesNotExist:
-            return Response({"error": "invalid_otp"}, status=400)
+            return Response({"detail": "invalid_otp"}, status=400)
         except exceptions.PermissionDenied:
             return Response(
-                {"error": "not_allowed"},
+                {"detail": "not_allowed"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         except Exception as e:
             print("error:", e, e.args)
             return Response(
-                {"error": "uknown error occured"},
+                {"detail": "uknown error occured"},
                 status=status.HTTP_501_NOT_IMPLEMENTED,
             )
 

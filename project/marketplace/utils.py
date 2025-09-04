@@ -142,11 +142,14 @@ def estimate_travel_time_graphhopper(origin, destination):
         f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false"
     )
     response = response.json()
-    return (int(response["paths"][0]["time"]) / 60000, round(float(response["paths"][0]["distance"])/1000,1))
+    return (
+        int(response["paths"][0]["time"]) / 60000,
+        round(float(response["paths"][0]["distance"]) / 1000, 1),
+    )
 
 
 def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
-    return (val ) * edge_length
+    return (val) * edge_length
 
 
 def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
@@ -155,10 +158,33 @@ def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
 
 class StandardResultSetPagination(PageNumberPagination):
 
-    def __init__(self,page_size=10):
+    def __init__(self, page_size=10):
         super().__init__()
-        self.page_size =page_size
+        self.page_size = page_size
 
 
 def is_user_online(user_id):
     return r.hexists(f"ws:users:{user_id}")  # returns 1 if online, 0 if offline
+
+
+def distance_reach_time(qs, lat, lon, typ="food"):
+    for obj in qs:
+        distance = round(
+            haversine_distance(
+                (
+                    obj.vendor.user_profile.lattitude
+                    if typ == "food"
+                    else obj.user_profile.lattitude
+                ),
+                (
+                    obj.vendor.user_profile.longitude
+                    if typ == "food"
+                    else obj.user_profile.longitude
+                ),
+                lat,
+                lon,
+            ),
+            1,
+        )
+        obj.distance = distance
+        obj.reach_time = round(distance_to_travel_time(distance), 1)

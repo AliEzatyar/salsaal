@@ -87,6 +87,9 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "created_at",
             "modified_at",
             "vendor",
+            "duration",
+            "is_ready_type",
+            "ready_time",
         ]
         read_only_fields = [
             "avg_rating",
@@ -95,6 +98,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "min_price",
             "id",
             "image",
+            "vendor",
         ]
 
     def get_category_name(self, obj):
@@ -116,17 +120,16 @@ class FoodSerializerDetail(serializers.ModelSerializer):
                 .exists()
             ):
                 raise serializers.ValidationError(
-                    "This food name already exists for this vendor."
+                    "this_food_name_already_exists_for_this_vendor."
                 )
         else:
             # For create
             if Food.objects.filter(vendor=vendor, name__iexact=name).exists():
                 raise serializers.ValidationError(
-                    "This food name already exists for this vendor."
+                    "this_food_name_already_exists_for_this_vendor."
                 )
 
         food = Food.objects.create(**validated_data)
-        food.save()
         return food
 
     def update(self, instance, validated_data):
@@ -151,6 +154,23 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             raise ValidationError({"detail": "uknown_problem"})
         return instance
 
+    def validate(self, attrs):
+        is_ready_type = attrs.get("is_ready_type")
+        if is_ready_type:
+            if not attrs.get("ready_time"):
+                raise serializers.ValidationError(
+                    "ready_type_foods_must_have_ready_time"
+                )
+            attrs["duration"] = None
+        else:
+            duration = attrs.get("duration")
+            if not duration or int(duration) <= 0:
+                raise serializers.ValidationError(
+                    "fast_food_must_have_cooking_duration"
+                )
+            attrs["ready_time"] = None
+        return attrs
+
 
 class CFoodSerializerDetail(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField("get_category_name")
@@ -173,7 +193,7 @@ class CFoodSerializerDetail(serializers.ModelSerializer):
             "rating_count",
             "vendor_name",
             "vendor",
-            "likes"
+            "likes",
         ]
         read_only_fields = ["__all__"]
 
@@ -206,7 +226,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "rating_count",
             "reach_time",
             "distance",
-            "likes"
+            "likes",
         ]
 
     def get_vendor_name(self, obj):
@@ -227,6 +247,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     final_price = serializers.SerializerMethodField("get_final_price")
     min_price = MyDecimalField()
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
+    discount = serializers.SerializerMethodField("get_discount")
 
     class Meta:
         model = Food
@@ -244,6 +265,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "distance",
             "likes",
         ]
+        read_only_fields = ["__all__"]
 
     def get_final_price(self, obj):
         return (
@@ -251,6 +273,9 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             if hasattr(obj, "discount")
             else None
         )
+
+    def get_discount(self, obj):
+        return obj.discount.amount if hasattr(obj, "discount") else None
 
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name

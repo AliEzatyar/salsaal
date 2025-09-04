@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone as tz
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.postgres.indexes import GinIndex
-
+from django.db.models import Q
 # Create your models here.
 
 
@@ -76,7 +76,9 @@ class Food(models.Model):
     is_featured = models.BooleanField(default=False)
     likes = models.IntegerField(default=0)
     is_drink = models.BooleanField(default=False)
-    
+    is_ready_type = models.BooleanField(default=False)
+    ready_time = models.TimeField(null=True, blank=True)
+    duration = models.PositiveSmallIntegerField(null=True, blank=True)
 
     class Meta:
         verbose_name = "food"
@@ -87,6 +89,24 @@ class Food(models.Model):
                 name="food_name_trgm",
                 fields=["name"],
                 opclasses=["gin_trgm_ops"],
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                name="ready_or_duration_check",
+                check=(
+                    (
+                        Q(is_ready_type=True)
+                        & Q(ready_time__isnull=False)
+                        & Q(duration__isnull=True)
+                    )
+                    | (
+                        Q(is_ready_type=False)
+                        & Q(duration__isnull=False)
+                        & Q(duration__gt=0)
+                        & Q(ready_time__isnull=True)
+                    )
+                ),
             ),
         ]
 

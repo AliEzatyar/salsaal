@@ -55,7 +55,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         # setting vendor id
         if cart.calculate_total_items() < 1:
             return Response(
-                {"error": "no item in cart"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "cart_empty"}, status=status.HTTP_400_BAD_REQUEST
             )
         vendor_id = CartItem.objects.filter(cart=cart).first().food.vendor.id
         data["vendor"] = vendor_id
@@ -67,7 +67,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         ).exists():
             # prevent duplicate order if user has one 'waiting' order already
             return Response(
-                {"error": "order_already_in_process"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "order_already_in_process"}, status=status.HTTP_403_FORBIDDEN
             )
 
         serializer.is_valid(raise_exception=True)  # validating data

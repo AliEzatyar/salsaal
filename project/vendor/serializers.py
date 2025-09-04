@@ -34,7 +34,7 @@ class VendorSerializerMany(serializers.ModelSerializer):
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
-        distance_attr = getattr(obj,"distance")
+        distance_attr = getattr(obj,"distance",None)
         if type(distance_attr) == Distance:
             return round(obj.distance.km,1)
         return obj.distance if hasattr(obj, "distance") else None
