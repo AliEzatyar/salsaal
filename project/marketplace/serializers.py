@@ -47,7 +47,7 @@ class ListOfDecimalsField(serializers.Field):
 
 class MyDecimalField(serializers.Field):
     def to_representation(self, value):
-        return round(float(value), 2)
+        return round(float(value), 1)
 
 
 """serializers"""

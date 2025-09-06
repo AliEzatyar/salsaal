@@ -33,3 +33,4 @@ urlpatterns = [
     ),
     # full search
 ]
+    

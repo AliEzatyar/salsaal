@@ -1,19 +1,23 @@
 from rest_framework import serializers
+
+from marketplace.serializers import MyDecimalField
 from .models import Cart, CartItem
 
 
 class CartItemSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField(source="food.name")
     subtotal = serializers.SerializerMethodField("get_subtotal")
+    price = MyDecimalField(read_only=True)
     image = serializers.ReadOnlyField(source="food.image.url")
-    prices = serializers.ReadOnlyField(source= "food.prices")
+
     class Meta:
         model = CartItem
-        fields = ["id", "name", "price", "subtotal", "quantity","image","prices"]
+        fields = ["id", "name", "price", "subtotal", "quantity", "image"]
         read_only_fields = ["cart"]
 
     def get_subtotal(self, obj):
         return obj.get_total_price()
+
 
 
 class CartSerializer(serializers.ModelSerializer):

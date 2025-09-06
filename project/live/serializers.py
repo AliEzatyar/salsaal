@@ -9,12 +9,13 @@ class NotificationSerializer(ModelSerializer):
     class Meta:
         model = Notification
         fields = [
-            "receiver",
             "title",
             "type",
             "data",
             "is_read",
             "date_time",
+            "target_id",
+            "target_obj_type",
         ]
         read_only_fields = ["__all__"]
 

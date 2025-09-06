@@ -42,8 +42,16 @@ class CartApiView(views.APIView):
                 },
                 status=status.HTTP_200_OK,
             )
+
         return Response(
-            status=status.HTTP_404_NOT_FOUND,
+            {
+                "cart": serializer.data,
+                "vendor_id": None,
+                "vendor_name": None,
+                "drinks": [],
+                # "suggestions": ser_many.data,
+            },
+            status=status.HTTP_200_OK,
         )
 
     def patch(self, *args, **kwargs):

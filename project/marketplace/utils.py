@@ -157,7 +157,7 @@ def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
 
 
 class StandardResultSetPagination(PageNumberPagination):
-
+    page_size = 10
     def __init__(self, page_size=10):
         super().__init__()
         self.page_size = page_size

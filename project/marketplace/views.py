@@ -2,6 +2,7 @@ from locale import strxfrm
 from marketplace.models import Category, Discount, FavItem, Food, Rating
 from accounts.models import CUSTOMER
 from order.models import ORDER_STATUS_CHOICES, Order
+from live.models import Notification
 from .utils import (
     BestFoodsCounter,
     BestVendorsCounter,
@@ -38,6 +39,8 @@ from marketplace.serializers import (
 from django.db.models import Prefetch
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
+from django.core.paginator import Paginator
+from django.urls import reverse
 from rest_framework import filters, status, views, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -52,6 +55,7 @@ from .utils import StandardResultSetPagination, DEFAULT_H3_RESOLUTION, r
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import gettext as _
 import time
+from django.utils.timezone import datetime
 
 """Marketplace API Views"""
 
@@ -61,8 +65,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     This view  handles representation of foods to normal users.
     For food detail, this view requires user location and city from client app.
     """
-
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = FoodSerializerMany
     # django-filter
     filter_backends = [
@@ -147,13 +150,21 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         if not city:
             return Response({"detail": "provide_a_correct_city"}, status=400)
         city = str(city).lower()
+        user_cart_items_count = 0
+        user_notf_count = 0
         if not location:
             return Response({"detail": "location_data_needed"}, status=400)
         try:
             # decoding location
             lat, lon = geohash.decode(location)
-        except (TypeError, ValueError):
-            return Response({"detail": "invalid_location"}, status=400)
+            user_cart_items_count = self.request.user.cart.calculate_total_items()
+            user_notf_count = Notification.objects.filter(
+                receiver=self.request.user, is_read=False
+            ).count()
+
+        except Exception as e:
+            print(e)
+            return Response(status=400)
         city_vendors_ids = self.get_city_vendors(city)
         city_vendors = (
             Vendor.objects.filter(is_approved=True, id__in=city_vendors_ids)
@@ -166,7 +177,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 "logo",
                 "vendor_type",
                 "user_profile",
-                "opening_hours"
+                "opening_hours",
             )
             .prefetch_related("opening_hours")
         )
@@ -228,39 +239,25 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             top_vendors = city_vendors.filter(id__in=top).order_by("-avg_rating")[:10]
             # adding distance property to each vendor
             distance_reach_time(top_vendors, lat, lon, "vendor")
-        top_vendors_ser = VendorSerializerMany(top_vendors, many=True)
+            top_vendors_ser = VendorSerializerMany(top_vendors, many=True)
+            top_vendors = top_vendors_ser.data
+            cache.set(key,top_vendors,3600)
 
-        # all vendors in city
-        all_vendors_in_city = city_vendors.prefetch_related(
-            Prefetch(
-                "foods",
-                Food.objects.only(
-                    "image",
-                    "min_price",
-                    "name",
-                    "rating_count",
-                    "avg_rating",
-                    "vendor_id",
-                )[:10],
-                to_attr="limited_foods",
-            )
-        ).order_by("-avg_rating")
-        distance_reach_time(all_vendors_in_city, lat, lon, "vendor")
-        all_vendors_in_city_ser = VendorSerializerMany(all_vendors_in_city, many=True)
-        print(time.time() - now,"seconds")
+        print(time.time() - now, "seconds")
         # final response
         return Response(
             {
+                "cart_count": user_cart_items_count,
+                "notf_count": user_notf_count,
                 "categories": categories,
                 "discounted_foods": discounted_foods_ser.data,
                 "local_vendors": local_vendors_ser.data,
                 "cheapest_vendors": cheapest_vendors_ser.data,
-                "top_vendors": top_vendors_ser.data,
-                "city_vendors": all_vendors_in_city_ser.data,
+                "top_vendors": top_vendors,
             }
         )
 
-    @action(detail=False, methods=["get"], url_path="home-categories")
+    @action(detail=False, methods=["get"],url_path="home-categories")
     def categories(self, request):
         """this endpoint returns available categories for normal users"""
         cat_key = "home_categories"
@@ -485,7 +482,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             return paginator.get_paginated_response(ser.data)
         return Response(top_vendors)
 
-    @action(detail=False, methods=["get"], url_path="all-vendors-in-city")
+    @action(detail=False, methods=["get"],url_name="all_vendors_in_city", url_path="all-vendors-in-city")
     def all_vendors_in_city(self, request):
         """this returns all active vendors in the city"""
         request_data = request.query_params
@@ -896,7 +893,6 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     filterset_class = FoodFilterSet
 
     def get(self, request, *args, **kwargs):
-        print(request.query_params)
         return super().get(request, *args, **kwargs)
 
 
