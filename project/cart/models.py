@@ -26,7 +26,7 @@ class Cart(models.Model):
         # return sum(item.quantity * item.food.min_price for item in items)
         return (
             self.items.aggregate(
-                total=models.Sum(models.F("quantity") * models.F("food__min_price"))
+                total=models.Sum(models.F("quantity") * models.F("price"))
             )["total"]
             or 0
         )

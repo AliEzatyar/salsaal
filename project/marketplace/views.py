@@ -1,7 +1,6 @@
 from locale import strxfrm
 from marketplace.models import Category, Discount, FavItem, Food, Rating
 from accounts.models import CUSTOMER
-from order.models import ORDER_STATUS_CHOICES, Order
 from live.models import Notification
 from .utils import (
     BestFoodsCounter,
@@ -39,8 +38,6 @@ from marketplace.serializers import (
 from django.db.models import Prefetch
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import DjangoFilterBackend
-from django.core.paginator import Paginator
-from django.urls import reverse
 from rest_framework import filters, status, views, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -183,7 +180,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         )
         city_foods = Food.objects.filter(
             is_available=True, vendor__user_profile__city=city
-        ).only(
+        ).select_related("discount","vendor").only(
             "id",
             "name",
             "image",
@@ -1271,45 +1268,3 @@ class FoodsByCategory(generics.ListAPIView):
             vendor.reach_time = round(distance_to_travel_time(distance), 0)
         return vendors
 
-
-class AcceptRejectOrderView(views.APIView):
-    """
-    THis view enables a vendor either accept or reject the new order. It adjusts order status appropriately.
-    """
-
-    permission_classes = [IsAuthenticated, IsBuyer]
-
-    def post(self, *args, **kwargs):
-        data = self.request.data
-        order_id = data["order_id"]
-        accepted = data["accepted"]
-
-        try:
-            order = Order.objects.get(id=order_id)
-            # check if this user owns the order
-            self.check_object_permissions(self.request, order)
-            # only 'waiting' order can be set to preparing
-            if not order.status == ORDER_STATUS_CHOICES[1][1]:
-
-                print("order  not wiaing......", order_id)
-                return Response(
-                    {"detail", "order_not_waiting_state"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            # accepted
-            if accepted == True:
-                # order accepted -> set as preparing, send notification
-                order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
-                order.save()
-                return Response(
-                    {"message": "order_accepted"}, status=status.HTTP_200_OK
-                )
-            # order rejected -> delete order, send notification
-            order.cancel_order()
-            return Response({"message": "order_rejected"}, status=status.HTTP_200_OK)
-
-        except Order.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            print("error:", e.args, e)
-            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

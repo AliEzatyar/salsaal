@@ -215,6 +215,19 @@ class LoginApiView(views.APIView):
 class RoleTokenRefreshView(TokenRefreshView):
     serializer_class = RoleTokenRefreshSeriaizer
 
-
+class UpsertFcm(views.APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        device_token = data.get("token",None)
+        if not device_token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        # updating 
+        user_device = request.user.device                   
+        return super().post(request, *args, **kwargs)
+    
+    
 def jwtks_view(request):
     return HttpResponse(settings.SIMPLE_JWT["VERIFYING_KEY"], content_type="text/plain")
+
+

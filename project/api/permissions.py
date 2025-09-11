@@ -92,7 +92,7 @@ class IsBuyer(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         """checks whether the requesting user owns the order"""
-        print("user does not own order")
+        print("do user own order?", obj.user == request.user)
         return obj.user == request.user
 
 

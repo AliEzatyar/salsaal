@@ -22,8 +22,8 @@ const redisPub = createClient({
 const redisSub = createClient({
     url: redisUrl,  // <- connection details
 })
-redisPub.connect();
-redisSub.connect();
+await redisPub.connect();
+await redisSub.connect();
 
 
 
@@ -46,9 +46,6 @@ function subscribeToRoom(ws, room) {
     ws.subscribe(room);
 }
 
-function unSubscribeAll(ws) {
-    for (const room of ws.rooms || []) ws.unsubscribe(room);
-}
 
 // uwebsocket server app
 const app = uWS.App()
@@ -60,7 +57,7 @@ app.ws("/*", {
     idleTimeout: 60, // seconds
     maxBackpressure: 1024 * 1024,
     maxPayloadLength: 64 * 1024,
-    // this is called before and http connectio is upgraded to https, we do authentication
+    // this is called before and http connectio is upgraded to tcp socket, we do authentication
     upgrade: (res, req, context) => {
         try {
             const token = req.getQuery('token');
@@ -88,14 +85,13 @@ app.ws("/*", {
     open: async (ws, req) => {
         const claims = ws.claims;
         const userId = claims.user_id;
+        console.log("connection......", claims)
         if (userId) {
-            console.log("user connected to uwsocket server, id is: ", userId)
+            console.log("user connected to uwsocket server, id: ", userId)
             ws.id = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-            ws.rooms = new Set();
             // Default personal room
             const userRoom = `user:${userId}`;
             subscribeToRoom(ws, userRoom);
-            ws.rooms.add(userRoom);
             sockets.set(ws.id, ws);
             // saving onlin status to redis for django to replace with  FCM, APNs if offline
             await redisPub.hSet("ws:users", userId, "1");
@@ -106,38 +102,76 @@ app.ws("/*", {
     message: async (ws, message, isBinary) => {
         try {
             // setting message type like notification or location and its related data
+            console.log("message.......", Buffer.from(message).toString())
             const { type, data } = JSON.parse(Buffer.from(message).toString());
             console.log("message came from client to channel", type, data)
             switch (type) {
                 case "SUBSCRIBE_ORDER": {
-                    console.log("subscribed to order ", data.orderId, data.subscriber)
+                    console.log("subscribed to order ", data.orderId)
+                    const key = `order:${data.orderId}:status`;
+                    const exists = await redisPub.exists(key);
                     let room = `order:${data.orderId}`;
-                    subscribeToRoom(ws, room);
-                    ws.rooms.add(room)
-                    ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', room }))
-                    break;
+                    subscribeToRoom(ws, room); // always subscribe
+                    if (exists) {
+                        console.log("exists");
+                        var latestStatus = await redisPub.get(key);
+                        latestStatus = JSON.parse(latestStatus)
+                        ws.send(JSON.stringify({
+                            ok: true,
+                            type: "SUBSCRIBED",
+                        }));
+                        const type = latestStatus.type
+                        const data  =  latestStatus.data
+                        ws.send(JSON.stringify({
+                            type: type,
+                            data: data
+                        }))
+                    }
+
+                    else {
+                        console.log("it did not exist")
+                        const orderId = data.orderId;
+                        const key = `order:${orderId}:status`;
+
+                        const payload = {
+                            status: "INITIAL",
+                            data: null
+                        };
+                        
+                        const jsonData = JSON.stringify(payload);
+                        await redisPub.set(key, jsonData);
+
+                        ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', data: null }))
+                        
+                    }
+                    break
                 }
                 case "UNSUBSCRIBE_ORDER": {
+
                     let room = `order:${data.orderId}`;
                     console.log("unsubscribed from order", data.orderId)
                     ws.unsubscribe(room);
-                    ws.rooms.delete(room);
-                    ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', room }))
+                    ws.send(JSON.stringify({ ok: true, type: 'UNSUBSCRIBED', room }))
                     break
                 }
                 case "SUBSCRIBE_CARRIER": {
                     console.log("subscribed to carrier ", data.carrierId)
                     let room = `carrier:${data.carrierId}`;
                     subscribeToRoom(ws, room);
-                    ws.rooms.add(room)
                     ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', room }))
                     break;
+                }
+                case "UNSUBSCRIBE_CARRIER": {
+                    console.log("leaving carrier room");
+                    let room = `carrier:${data.carrierId}`;
+                    ws.unsubscribe(room)
+                    ws.send(JSON.stringify({ ok: true, type: 'UNSUBSCRIBED', room }))
+                    break
                 }
                 case "SUBSCRIBE_VENDOR": {
                     console.log("subscription to vendor room")
                     let room = `vendor:${data.vendorId}`;
                     subscribeToRoom(ws, room);
-                    ws.rooms.add(room);
                     ws.send(JSON.stringify({ ok: true, type: "SUBSCRIBED", room }))
                     break;
                 }
@@ -155,27 +189,93 @@ app.ws("/*", {
 
                 }
 
-                case "ORDER_DIALOG": {
-                    const orderId = data.orderId
-                    console.log("message type order dialog in server", data)
-                    redisPub.publish(`pub:order:${orderId}`, JSON.stringify({ type: "ORDER_DIALOG", data: data }));
-                    break
+                case "VENDOR_ACCEPTED": {
+                    const orderId = data.orderId;
+                    const key = `order:${orderId}:status`;
+
+                    const payload = {
+                        type: "VENDOR_ACCEPTED",
+                        data: data
+                    };
+
+                    const jsonData = JSON.stringify(payload);
+                    await redisPub.set(key, jsonData);
+
+                    console.log("order status saved in server accepted", jsonData);
+
+                    redisPub.publish(
+                        `pub:order:${orderId}`,
+                        JSON.stringify({ type: "VENDOR_ACCEPTED", data: data })
+                    );
+                    break;
                 }
+
+                case "VENDOR_REJECTED": {
+                    const orderId = data.orderId;
+                    const key = `order:${orderId}:status`;
+
+                    const payload = {
+                        status: "VENDOR_REJECTED",
+                        data: null
+                    };
+
+                    const jsonData = JSON.stringify(payload);
+                    await redisPub.set(key, jsonData);
+
+                    console.log("order status saved in server rejected", jsonData);
+
+                    redisPub.publish(
+                        `pub:order:${orderId}`,
+                        JSON.stringify({ type: "VENDOR_REJECTED", data: payload })
+                    );
+                    break;
+                }
+
+                case "BUYER_FINALIZED": {
+                    const orderId = data.orderId;
+                    const key = `order:${orderId}:status`;
+
+                    const payload = {
+                        status: "BUYER_FINALIZED",
+                        data
+                    };
+
+                    const jsonData = JSON.stringify(payload);
+                    await redisPub.set(key, jsonData);
+
+                    console.log("order status saved in server buyer finalized", jsonData);
+
+                    redisPub.publish(
+                        `pub:order:${orderId}`,
+                        JSON.stringify({ type: "BUYER_FINALIZED", data: payload })
+                    );
+                    break;
+                }
+
+                case "ORDER_UPDATE":{
+                    console.log("order updated", data);
+                    redisPub.publish(
+                        `pub:order:${orderId}`,
+                        JSON.stringify({ type: "ORDER_UPDATE", data: data })
+                    );
+                    break;
+                }
+
 
                 default:
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));
             }
 
         } catch (error) {
+            console.log(error)
             ws.send(JSON.stringify({ ok: false, error: "BAD_PAYLOAD" }));
         }
     },
 
     close: (ws) => {
         const { sub: userId } = ws.claims;
-        console.log("user left")
+        console.log("user left", userId)
         if (userId) {
-            console.log("iD: ", userId)
             redisPub.hDel("ws:users", userId)
         }
         // unSubscribeAll(ws)
@@ -190,6 +290,8 @@ redisSub.pSubscribe("pub:*", (message, channel) => {
     app.publish(room, message)
 });
 
+
+
 app.listen(Number(PORT), '0.0.0.0', (token) => {
-    console.log('uWS listening on', PORT, "0000");
+    console.log('uWS listening on', PORT);
 });

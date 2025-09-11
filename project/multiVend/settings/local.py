@@ -94,3 +94,12 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
 }
 
+
+# Firebase cloud messageing                      
+import firebase_admin
+from firebase_admin import credentials, messaging
+
+# Replace 'path/to/your/serviceAccountKey.json' with the actual path
+# It's better to load this path from Django settings or environment variables for production
+cred = credentials.Certificate(config("FIREBASE_SERVICE_ACCOUNT_KEY"))
+firebase_admin.initialize_app(cred)

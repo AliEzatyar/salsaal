@@ -61,7 +61,7 @@
 <script>
     // --------------- connecting to uwsockets server and subscribing to personal room of vendor
     // const ws = new WebSocket("wss://www.eatee.food/ws/carrier?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTc2NDcyLCJpYXQiOjE3NTYzODQ0NzIsImp0aSI6IjI1ZTZkMmE5NmNhYTQyOGQ5NGRhNTgwMWY2MmE4NDM2IiwidXNlcl9pZCI6IjEifQ.I9o9kYFXmja9LyeH3cloF6lkLAZygZ19yOdLmren7WheCFmxubkZlzeppiLEHANxqw646ZiGFfxSJmAKZ__-GupIHE04qhpR0w6a9qnsz9aqrWZKsaYAROgpSlIBykp-5wO8Hw7s12mpY1J21Owz-BZnWMPzs6370waBjKjs2bl3PjeGTvFQpI9ua4wCDCiKeNSQrQq5j5Yz0S2zZdGS8jz_xp_fKAFGvDRD3GjZjjg4oFOl-gNMMpqviWSHN9S9poMveDm9Sjfv4xULaR1dKkJLkueLEsTun-fIv512Q5WJ5-beDxuDd0gwb-dxFZGTpNp3szg6Db1MBQvm0ZlyIg");
-    const ws = new WebSocket("ws://localhost:3000/?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MjM5ODU5LCJpYXQiOjE3NTY2NDc4NTksImp0aSI6IjA2NmYxMjg5OGUwYjQzYjNhMjA5ZGNiYWVhMTMxYThhIiwidXNlcl9pZCI6IjUifQ.HFTs0J-6mdi0zuSLR__yjRUZTK0xTkncQU3GSPUiiS8VX4h6NX3RpJHG8EW1-tCCkA7gaQNisZ0k-b0yQeCGoDp7pikpj0y2EFkQ4WMK38XJJgWX552H8fFb4F2Fbtc1rtCT33bqB6NULP2rB79JhvoQsMIoEduZImXPcP00vSangLEz2Vu5RImn4dFRUTXXZ1ZCJNhS9wAfTzn1eAAWWR-dN9rcIMuWT9vKbyxLSi0LYA2ZXKoXW_gaPrpSRQfltw7Ik5IlFdm32690zoMvudr53Sb4WP_S__Xk5C27QA9VY_9p_4iO_T_FbPKgjzW8uweTo6-3a5fqxnhCbmxGng");
+    const ws = new WebSocket("ws://192.168.0.120:3000/?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU5MjM5ODU5LCJpYXQiOjE3NTY2NDc4NTksImp0aSI6IjA2NmYxMjg5OGUwYjQzYjNhMjA5ZGNiYWVhMTMxYThhIiwidXNlcl9pZCI6IjUifQ.HFTs0J-6mdi0zuSLR__yjRUZTK0xTkncQU3GSPUiiS8VX4h6NX3RpJHG8EW1-tCCkA7gaQNisZ0k-b0yQeCGoDp7pikpj0y2EFkQ4WMK38XJJgWX552H8fFb4F2Fbtc1rtCT33bqB6NULP2rB79JhvoQsMIoEduZImXPcP00vSangLEz2Vu5RImn4dFRUTXXZ1ZCJNhS9wAfTzn1eAAWWR-dN9rcIMuWT9vKbyxLSi0LYA2ZXKoXW_gaPrpSRQfltw7Ik5IlFdm32690zoMvudr53Sb4WP_S__Xk5C27QA9VY_9p_4iO_T_FbPKgjzW8uweTo6-3a5fqxnhCbmxGng");
     const domain = "http://192.168.0.120:8000"
     // const domain = "http://127.0.0.1:8000"
 
@@ -169,33 +169,33 @@
 
             // Render on load
             renderOrder(new_order_data, orderContainer);
-            document.getElementById("sendBtn").onclick = (ev) => {
 
-                //--------------------  calculating order reach time
-                const esimateOrderTimeUrl = domain + "/api/vendor/estimate-order-time/?order_id=" + new_order_data.id
-                const headersTimeEstimate = new Headers()
-                headersTimeEstimate.append("Authorization", vendor_token)
-                headersTimeEstimate.append("Content-Type", "application/json")
-                const optionsTimeEstimate = {
-                    method: "GET",
-                    headers: headersTimeEstimate,
-                    redirect: "follow"
-                };
-                fetch(esimateOrderTimeUrl, optionsTimeEstimate).then((response) => response.json()).then(
-                    result => {
-                        console.log("order time estimate", result, result["estimated"])
-                        console.log("send btn clicked")
-                        const prepTime = document.getElementById("prepTime")
-                        const delivery_cost = result["delivery_cost"]
-                        const delivery_time_estimate = result["estimated"]
-                        const order_total_price = Number(new_order_data.total_price)
-                        const total_cost = delivery_cost + order_total_price
-                        const total_time = delivery_time_estimate + Number(prepTime.value)
+            //--------------------  calculating order reach time
+            const esimateOrderTimeUrl = domain + "/api/vendor/estimate-order-time/?order_id=" + new_order_data.id
+            const headersTimeEstimate = new Headers()
+            headersTimeEstimate.append("Authorization", vendor_token)
+            headersTimeEstimate.append("Content-Type", "application/json")
+            const optionsTimeEstimate = {
+                method: "GET",
+                headers: headersTimeEstimate,
+                redirect: "follow"
+            };
+            fetch(esimateOrderTimeUrl, optionsTimeEstimate).then((response) => response.json()).then(
+                result => {
+                    console.log("order time estimate", result, result["estimated"])
+                    console.log("send btn clicked")
+                    const delivery_cost = result["delivery_cost"]
+                    const delivery_time_estimate = result["estimated"]
+                    const order_total_price = Number(new_order_data.total_price)
+                    const total_cost = delivery_cost + order_total_price
+                    const prepTime = result["preparation_time"]
+                    const total_time = delivery_time_estimate + prepTime
+                    setTimeout((e) => {
 
                         ws.send(JSON.stringify({
-                            type: "ORDER_DIALOG", data: {
+                            type: "VENDOR_ACCEPTED", data: {
                                 orderId: new_order_data.id,
-                                "preparation_time": Number(prepTime.value),
+                                "preparation_time": prepTime,
                                 "estimation": delivery_time_estimate,
                                 "order_cost": order_total_price,
                                 "delivery_cost": delivery_cost,
@@ -203,10 +203,14 @@
                                 "total_time": total_time
                             }
                         }))
+                    },0)
 
-                    }
-                )
-            }
+                }
+            )
+        }
+        
+        else if (message_type == "BUYER_FINALIZED"){
+            return
         }
     }
 

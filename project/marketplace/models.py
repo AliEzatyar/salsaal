@@ -63,7 +63,7 @@ class Food(models.Model):
         related_name="foods",
         db_index=True,
     )
-    image = models.ImageField(upload_to="foods-images/", blank=True, null=True)
+    image = models.ImageField(upload_to="foods-images/")
     description = models.TextField(max_length=250)
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -126,6 +126,7 @@ class Food(models.Model):
             self.min_price = Decimal(min([float(x) for x in self.prices]))
 
         return super().save(*args, **kwargs)
+
 
     def __str__(self):
         return self.name

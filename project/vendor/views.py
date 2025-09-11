@@ -671,7 +671,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
 
             return Response(
                 {
-                    "estimated": total_time,
+                    "estimated": round(total_time),
                     "delivery_cost": delivery_cost,
                     "preparation_time": round(prep_time),
                 }

@@ -56,30 +56,44 @@ class CartApiView(views.APIView):
 
     def patch(self, *args, **kwargs):
         """partial update for cart-items amount change and price selection"""
-        data = self.request.data
-        items_data = data["items"]
-        try:
-            for item in items_data:
-                item_id = item.get("id", None)
-                item_quantity = item.get("quantity", None)
-                item_price = item.get("price", None)
-                item = CartItem.objects.filter(
-                    id=item_id,
-                    cart__user__id=self.request.user.id,
-                ).first()
-                if item:
-                    if item_quantity:
-                        item.quantity = item_quantity
-                    if item_price:
-                        if item_price in item.food.prices:
-                            item.price = item_price
-                    item.save()
-        except Exception as e:
-            print("error while updateing cart", e)
-            pass
         cart = self.request.user.cart
-        serializer = CartSerializer(cart)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = self.request.data
+        food_id = data.get("id", None)
+        quantity = data.get("quantity", None)
+        size = data.get("size", None)
+        if not (food_id and quantity and size):
+            return Response(
+                {"detail": "no_id_provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            food = Food.objects.get(pk=food_id)
+            if food and food.is_available:
+                if not size in food.prices:
+                    size = food.min_price
+                if not quantity:
+                    quantity = 1
+                # handling both create and update
+                CartItem.objects.filter(cart=cart, food=food).update(
+                    quantity=quantity,
+                    price=size,
+                )
+                return Response(status=status.HTTP_200_OK)
+
+            else:
+                return Response(
+                    {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
+                )
+        except Food.DoesNotExist:
+            return Response(
+                {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            print(e)
+            return Response(
+                {"detail": "unknown_error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     def delete(self, *args, **kwargs):
         """provides deleting a cart item or clearing cart"""
@@ -129,7 +143,8 @@ class CartApiView(views.APIView):
                 CartItem.objects.update_or_create(
                     cart=cart,
                     food=food,
-                    defaults={"quantity": quantity, "price": size},
+                    price=size,
+                    defaults={"quantity": quantity},
                 )
                 return Response(status=status.HTTP_200_OK)
 

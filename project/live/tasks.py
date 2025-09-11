@@ -11,3 +11,5 @@ def delete_notifications():
     now = tz.now()
     Notification.objects.filter(is_read=True,date_time__lt=now - days_ago).delete()
     return "Deleted!"
+
+

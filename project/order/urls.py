@@ -21,6 +21,13 @@ urlpatterns = [
         views.OrderItemDetailAPIView.as_view(),
         name="order-item-detail",
     ),
-    
+    path(
+        "user-orders/ar-order/",
+        views.AcceptRejectOrderView.as_view(),
+    ),
+    path(
+        "user-orders/re-order/",
+        views.ReOrder.as_view(),
+    ),
     path("", include(router.urls)),
 ]

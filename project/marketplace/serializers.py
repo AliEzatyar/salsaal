@@ -271,7 +271,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
         return (
             obj.min_price * (100 - obj.discount.amount) / 100
             if hasattr(obj, "discount")
-            else None
+            else obj.min_price
         )
 
     def get_discount(self, obj):

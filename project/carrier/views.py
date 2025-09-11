@@ -23,8 +23,6 @@ from accounts.models import (
     UserOtp,
     FOOD_DELIVERY_OTP_EXPIRATION,
 )
-from accounts.utils import OTP_VERIFY_CARRIER, generate_otp
-from django.contrib.contenttypes.models import ContentType
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from marketplace.utils import estimate_travel_time_graphhopper
 from live.serializers import NotificationSerializer
@@ -221,6 +219,8 @@ class SetOrderStateDelivered(views.APIView):
             # check if the customer owns this order
             self.check_object_permissions(self.request, order)
             # check if otp is correct
+            self.request.user.cart.items.all().delete()
+
             user = order.user
             OTP = UserOtp.objects.filter(user=user, otp=input_OTP).first()
             if not OTP:

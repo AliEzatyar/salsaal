@@ -18,6 +18,12 @@ ORDER_STATUS_CHOICES = [
     ("delivered", "delivered"),
 ]
 
+VALID_PAYMENT_TYPES = [
+    ("cash_on_delivery", "cash_on_delivery"),
+    ("hesab_pay", "hesab_pay"),
+    ("debit_card", "debit_card"),
+]
+
 
 class Order(models.Model):
     uuid = models.UUIDField(
@@ -44,9 +50,13 @@ class Order(models.Model):
         "vendor.Vendor", on_delete=models.CASCADE, related_name="orders"
     )
     destination = models.CharField(max_length=40, default="null,null")
+    payment_type = models.CharField(
+        max_length=60, choices=VALID_PAYMENT_TYPES, default=VALID_PAYMENT_TYPES[0][0]
+    )
 
     class Meta:
         indexes = [models.Index(fields=["-created_at"])]
+        ordering = ["-created_at"]
 
     def calculate_total_price(self):
         self.total_price = sum(item.subtotal for item in self.items.all())
@@ -74,9 +84,13 @@ class Order(models.Model):
     def cancel_order(self):
         """reseting food order"""
         print("status", self.status)
-        if self.status not in [ORDER_STATUS_CHOICES[1][1], ORDER_STATUS_CHOICES[2][1]]:  # not waiting
-            raise Exception("order_no_in_waiting_status")
-        self.delete()
+        if self.status not in [
+            ORDER_STATUS_CHOICES[1][1],
+            ORDER_STATUS_CHOICES[2][1],
+        ]:  # not waiting
+            raise Exception("order_not_in_waiting_or_preparing_status")
+        self.status = ORDER_STATUS_CHOICES[0][0]
+        self.save()
 
     def save(self, *args, **kwargs):
         """this method is overriden for auto-filling otp of order"""
