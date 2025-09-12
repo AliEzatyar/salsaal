@@ -37,7 +37,7 @@ class FavlistItemAdmin(admin.ModelAdmin):
 
 class DiscountAdmin(admin.ModelAdmin):
     model = Discount
-    list_display = ["id", "vendor", "deadline", "is_active"]
+    list_display = ["id", "vendor", "deadline", "is_active","amount"]
 
 
 admin.site.register(FavList, FavlistAdmin)

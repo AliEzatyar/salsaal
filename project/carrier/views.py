@@ -16,7 +16,7 @@ from api.permissions import (
     IsCarrierOfVendor,
     IsOrderPreparingState,
     IsOrderCarryingState,
-    IsVendorOfOrder,
+    IsVendorOfObject,
 )
 from order.models import Order, ORDER_STATUS_CHOICES
 from accounts.models import (
@@ -80,7 +80,7 @@ class SetOrderStateCarrying(views.APIView):
 
     permission_classes = [
         perm.IsAuthenticated,
-        IsVendorOfOrder,
+        IsVendorOfObject,
         IsOrderPreparingState,
     ]
 

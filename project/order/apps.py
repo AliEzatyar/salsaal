@@ -6,4 +6,5 @@ class OrderConfig(AppConfig):
     name = 'order'
 
     def ready(self):
+        from . import signals
         return super().ready()

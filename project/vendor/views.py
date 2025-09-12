@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 from marketplace.models import Discount, Food
-from api.permissions import IsVendor, IsVendorOfOrder
+from api.permissions import IsVendor, IsVendorOfObject, IsVendorOfObject
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order, OrderItem
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
@@ -20,6 +20,7 @@ from accounts.utils import OTP_VERIFY_CARRIER, send_otp
 from marketplace.utils import estimate_travel_time_graphhopper, haversine_distance
 from cart.models import Cart
 from carrier.utils import get_carrier_key
+from marketplace.tasks import deactivate_discounts
 from vendor.models import OpeningHour
 from .serializers import (
     DiscountSerializer,
@@ -28,20 +29,21 @@ from .serializers import (
 )
 from marketplace.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import FoodSerializerDetail
-from api.permissions import IsVendorApproved, IsVendorOfFood
+from api.permissions import IsVendorApproved, IsVendorOfObject
 from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch
 from django.utils import timezone as tz
-from django.db.models import Prefetch
+from django.db import transaction
 
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotAcceptable
-from api.permissions import IsVendorOfCarrier
+from api.permissions import IsVendorOfObject
 from rest_framework import parsers, serializers
-from .utils import get_vendor_carriers_key, r
+from .utils import get_vendor_carriers_key, r, revert_discount, apply_discount
 from django.utils.translation import gettext as _
+from rest_framework.decorators import action
 
 
 # Create your views here.
@@ -114,7 +116,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on foods of a vendor"""
 
     serializer_class = FoodSerializerDetail
-    permission_classes = [permissions.IsAuthenticated, IsVendorOfFood, IsVendorApproved]
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfObject, IsVendorApproved]
     # ordering
     filter_backends = [
         filters.OrderingFilter,
@@ -141,72 +143,175 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
 
 class ManageDiscountViewSet(viewsets.ModelViewSet):
     serializer_class = DiscountSerializer
-    # permission_classes = [permissions.IsAuthenticated, IsVendorOfDiscount]
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
 
     def get_queryset(self):
         return Discount.objects.filter(vendor=self.request.user.vendor)
 
     def create(self, request, *args, **kwargs):
+        """
+        this creates a new discount
+        the client side should provide ids[] of food items
+        """
         data = request.data
         ids = data.get("ids", None)
-        if not ids:
-            return Response(
-                {"detail": "no_foods_selected"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        amount = data.get("amount", None)
+        vendor_id = request.user.vendor.id
+
+        if not (ids and amount):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
         data["vendor"] = self.request.user.vendor.id
         ser = DiscountSerializer(data=data)
         ser.is_valid(raise_exception=True)
         # preventing duplicate
-        if Discount.objects.filter(amount=data["amount"]).exists():
+        if Discount.objects.filter(amount=amount).exists():
             return Response(
-                {"detail": "already_exists"}, status=status.HTTP_409_CONFLICT
+                {"detail": "discount_already_exists"}, status=status.HTTP_409_CONFLICT
             )
-        foods = Food.objects.filter(id__in=ids).select_related(
+
+        foods = Food.objects.filter(id__in=ids,vendor__id=vendor_id).select_related(
             "vendor__user", "discount"
         )
-        # rejecting discount on other vendor's fooditems, and already-having items
-        for food in foods:
-            if food.vendor.user != self.request.user:
-                return Response(
-                    {"detail": "you_are_not_allowed"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            if food.discount != None and food.discount.is_active:
-                return Response(
-                    {"detail": "fooditems_have_already_discount"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        # rejecting discount on other vendors fooditems, and upserting
+        with transaction.atomic():
+            discount = ser.save()
+            for food in foods:
+                if food.discount != None:
+                    # if food has already discount, reset to original price and set newset discount
+                    revert_discount(food, food.discount.amount)
+                # applying discount to all prices of food
+                apply_discount(food, amount)
+                food.discount = discount
+            Food.objects.bulk_update(foods, ["discount", "min_price", "prices"])
 
-        discount = ser.save()
-        Food.objects.filter(id__in=ids).update(discount=discount)
         return Response(ser.data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
-        """updating a discount object"""
+        """
+        updating a discount object
+        input: ids --> list of ids to apply discount
+        * if amount of discount is set to an existing discount value, denied
+        * if a food belongs to another discount, last one is set.
+        * this view considers 3 scenarios:
+            1- updating discount amount and updating food prices accordingly
+            2- adding new foods to discount and updating prices accordingly
+            3- removing discount from foods  
+        
+        """
         data = request.data
+        pre_discount = self.get_object()
         new_ids = data.get("ids", None)
-        pre_ids = data.get("pre_ids", None)
-        if not (new_ids and pre_ids):
+        pre_ids = set(pre_discount.foods.values_list("pk",flat=True))
+        vendor_id = request.user.vendor.id
+        if not new_ids:
             return Response(
                 {"detail": "no_foods_selected"}, status=status.HTTP_400_BAD_REQUEST
             )
-        # -------  doing set operations and imporve performance
-        new_ids = set(new_ids)
-        pre_ids = set(pre_ids)
-        # new foods are those not in previous ids, but in new ids
-        new_foods_to_set_discount = set.difference(new_ids, pre_ids)
-        # removing-discount are those not in new ids
-        pre_foods_to_remove_discount = set.difference(pre_ids, new_ids)
-        instance = self.get_object()
-        # ------- -- updating the discount object
-        ser = DiscountSerializer(instance, data=data, partial=True)
+        # updating new discount object
+        pre_discount_amount = pre_discount.amount
+        ser = DiscountSerializer(pre_discount, data=data, partial=True)
         ser.is_valid(raise_exception=True)
-        instance = ser.save()
-        # removing discounts from previous food items
-        Food.objects.filter(id__in=pre_foods_to_remove_discount).update(discount=None)
-        # adding discount on new foods
-        Food.objects.filter(id__in=new_foods_to_set_discount).update(discount=instance)
+        new_discount_amount = ser.validated_data.get("amount", None)
+        if (
+            Discount.objects.filter(amount=new_discount_amount)
+            .exclude(id=pre_discount.id)
+            .exists()
+        ):
+            return Response(
+                {"detail": "discount_already_exists_with_this_amount"}, status=status.HTTP_409_CONFLICT
+            )
+        # ----------- removing discounts from previous food items and finding new foods
+        # set operations
+        new_ids = set(new_ids)
+        # new foods ids that are not in pre_ids
+        ids_foods_to_add_discount = set.difference(new_ids, pre_ids)
+        # pre foods ids that are not in new ids and discount should be removed
+        ids_foods_to_remove_discount = set.difference(pre_ids, new_ids)
+        # pre foods ids that need  discount update
+        ids_foods_to_update_discount = set.intersection(new_ids, pre_ids)
+        vendor_foods = Food.objects.filter(vendor__id=vendor_id)
+        with transaction.atomic():
+            # new discount
+            new_discount = ser.save()
+            # -------------  updating prices of foods having this discount already
+            foods_to_update_discount = vendor_foods.filter(
+                id__in=ids_foods_to_update_discount
+            ).only("id", "min_price", "prices", "discount")
+            for food in foods_to_update_discount:
+                print("discount updated...", food.id)
+                # reverting food prices to original ones
+                revert_discount(food, pre_discount_amount)
+                # applying discount to all prices of food
+                apply_discount(food, new_discount_amount)
+                food.discount = new_discount
+            Food.objects.bulk_update(
+                foods_to_update_discount, ["prices", "min_price", "discount"]
+            )
+            # --------------reseting prices and removing discount of removed foods from this discount
+            foods_to_remove_discount = vendor_foods.filter(
+                id__in=ids_foods_to_remove_discount
+            ).only("id", "min_price", "prices", "discount")
+            for food in foods_to_remove_discount:
+                print("discount removed...", food.id)
+                # reverting food prices to original ones
+                revert_discount(food, pre_discount_amount)
+                # applying discount to all prices of food
+                food.discount = None
+            Food.objects.bulk_update(
+                foods_to_remove_discount, ["prices", "min_price", "discount"]
+            )
+
+            # ---------------- adding discount on new foods and updatin their price
+            foods_to_add_discount = vendor_foods.filter(
+                id__in=ids_foods_to_add_discount
+            ).select_related("discount").only("id", "min_price", "prices", "discount")
+            for food in new_foods_to_set_discount:
+                print("discount added...", food.id)
+                # applying discount to all prices of food
+                if food.discount !=None:
+                    revert_discount(food,food.discount.amount)
+                apply_discount(food, new_discount_amount)
+                food.discount = new_discount
+            Food.objects.bulk_update(
+                foods_to_add_discount, ["prices", "min_price", "discount"]
+            )
         return Response(ser.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="edable")
+    def enable_disable(self, request, *args, **kwargs):
+        """
+        this endpoint enables or disables a discount
+        edable takes True and False, first one means enable latter means disable.
+        if edable is None, no enable or disable happens.
+        request must be sent out of update and exact.
+        """
+        typ = request.data.get("type", "enable")
+        discount = self.get_object()
+        try:
+            foods = discount.foods.only("id", "min_price", "prices")
+            # enable discount
+            edable = None
+            if typ == "enable" and discount.is_active == False:
+                edable = True
+                for food in foods:
+                    apply_discount(food, discount.amount)
+            # disable discount
+            elif typ == "disable" and discount.is_active == True:
+                edable = False
+                for food in foods:
+                    revert_discount(food, discount.amount)
+            # bulk update
+            with transaction.atomic():
+                if edable in (True, False):
+                    Food.objects.bulk_update(foods, ["min_price", "prices"])
+                    discount.is_active = edable
+                    discount.save()
+            return Response()
+
+        except Exception as e:
+            print("error in deactivate of discount", e)
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ManageOpeningHours(viewsets.ModelViewSet):
@@ -355,7 +460,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
     UPDATEable: is_active, id_document
     """
 
-    permission_classes = [permissions.IsAuthenticated, IsVendor, IsVendorOfCarrier]
+    permission_classes = [permissions.IsAuthenticated, IsVendor, IsVendorOfObject]
     serializer_class = CarrierSerializer
     parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
     http_method_names = ["delete", "get", "patch"]
@@ -528,7 +633,7 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     """This enables a vendor to see past orders it completed successfully."""
 
     serializer_class = VOrderSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
     # ordering
     filter_backends = [
         filters.OrderingFilter,
@@ -553,7 +658,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
     returns {"estimated":integer}
     """
 
-    permission_classes = [permissions.IsAuthenticated, IsVendorOfOrder]
+    permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
 
     def get(self, *args, **kwargs):
         # ------------------ estimating only this order distance and reach time

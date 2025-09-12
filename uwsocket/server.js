@@ -24,7 +24,8 @@ const redisSub = createClient({
 })
 await redisPub.connect();
 await redisSub.connect();
-
+// default ttl for order
+const orderStatusTTL = 2 * 60 * 60 // 2 hours 
 
 
 // sockets mapping
@@ -121,7 +122,7 @@ app.ws("/*", {
                             type: "SUBSCRIBED",
                         }));
                         const type = latestStatus.type
-                        const data  =  latestStatus.data
+                        const data = latestStatus.data
                         ws.send(JSON.stringify({
                             type: type,
                             data: data
@@ -130,19 +131,8 @@ app.ws("/*", {
 
                     else {
                         console.log("it did not exist")
-                        const orderId = data.orderId;
-                        const key = `order:${orderId}:status`;
-
-                        const payload = {
-                            status: "INITIAL",
-                            data: null
-                        };
-                        
-                        const jsonData = JSON.stringify(payload);
-                        await redisPub.set(key, jsonData);
-
                         ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', data: null }))
-                        
+
                     }
                     break
                 }
@@ -199,7 +189,7 @@ app.ws("/*", {
                     };
 
                     const jsonData = JSON.stringify(payload);
-                    await redisPub.set(key, jsonData);
+                    await redisPub.set(key, jsonData, { EX: orderStatusTTL });
 
                     console.log("order status saved in server accepted", jsonData);
 
@@ -220,7 +210,7 @@ app.ws("/*", {
                     };
 
                     const jsonData = JSON.stringify(payload);
-                    await redisPub.set(key, jsonData);
+                    await redisPub.set(key, jsonData, { EX: orderStatusTTL });
 
                     console.log("order status saved in server rejected", jsonData);
 
@@ -236,7 +226,7 @@ app.ws("/*", {
                     const key = `order:${orderId}:status`;
 
                     const payload = {
-                        status: "BUYER_FINALIZED",
+                        type: "BUYER_FINALIZED",
                         data
                     };
 
@@ -247,19 +237,13 @@ app.ws("/*", {
 
                     redisPub.publish(
                         `pub:order:${orderId}`,
-                        JSON.stringify({ type: "BUYER_FINALIZED", data: payload })
+                        JSON.stringify({ type: "BUYER_FINALIZED", data: data })
                     );
                     break;
                 }
 
-                case "ORDER_UPDATE":{
-                    console.log("order updated", data);
-                    redisPub.publish(
-                        `pub:order:${orderId}`,
-                        JSON.stringify({ type: "ORDER_UPDATE", data: data })
-                    );
-                    break;
-                }
+
+
 
 
                 default:

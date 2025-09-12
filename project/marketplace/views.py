@@ -42,7 +42,7 @@ from rest_framework import filters, status, views, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from api.permissions import IsBuyer, IsHavingFavlist
+from api.permissions import IsHavingFavlist
 from django.core.cache import cache
 from .utils import BoughtTogetherRecommender
 from django.db.models import Avg

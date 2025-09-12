@@ -244,10 +244,12 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
 
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
-    final_price = serializers.SerializerMethodField("get_final_price")
-    min_price = MyDecimalField()
-    vendor_name = serializers.SerializerMethodField("get_vendor_name")
-    discount = serializers.SerializerMethodField("get_discount")
+    # original price
+    min_price = serializers.SerializerMethodField("get_min_price")
+    # discounted price
+    final_price = serializers.ReadOnlyField(source="min_price")
+    vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
+    discount = serializers.ReadOnlyField(source="discount.amount")
 
     class Meta:
         model = Food
@@ -255,11 +257,11 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "id",
             "name",
             "image",
+            "min_price",
             "discount",
             "final_price",
             "vendor",
             "vendor_name",
-            "min_price",
             "category",
             "reach_time",
             "distance",
@@ -274,17 +276,15 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             else obj.min_price
         )
 
-    def get_discount(self, obj):
-        return obj.discount.amount if hasattr(obj, "discount") else None
-
-    def get_vendor_name(self, obj):
-        return obj.vendor.vendor_name
-
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
     def get_distance(self, obj):
         return obj.distance if hasattr(obj, "distance") else None
+
+    def get_min_price(self,obj):
+        """returns original value of min_price"""
+        return (obj.min_price / (100 - obj.discount.amount)) * 100
 
 
 class RatingSerializer(serializers.ModelSerializer):

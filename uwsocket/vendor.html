@@ -161,7 +161,7 @@
             const new_order_data = message_data.data.data;
             console.log("new order data", new_order_data)
             // subscrigin to order room for further communicaiton
-            const data = { orderId: new_order_data.id, subscriber: vendor_id }
+            const data = { orderId: new_order_data.id }
             ws.send(JSON.stringify({ type: "SUBSCRIBE_ORDER", data }))
 
             // rendering order details
@@ -209,8 +209,9 @@
             )
         }
         
-        else if (message_type == "BUYER_FINALIZED"){
-            return
+        else if (message_type == "ORDER_CANCELLED"){
+            const orderId = message_data.orderId
+            console.log("order cancelled",orderId)
         }
     }
 

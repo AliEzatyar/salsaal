@@ -64,7 +64,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """overriding this method to create order items from cart and calc totals"""
-
         data = dict(
             request.data
         )  # auto json to dict since restframework request object
@@ -79,71 +78,91 @@ class OrderViewSet(viewsets.ModelViewSet):
         data["vendor"] = vendor_id
 
         # -------------   assigning the serializer value and creating order
-        serializer = self.get_serializer(data=data)
-        if Order.objects.filter(
-            user=request.user, status=ORDER_STATUS_CHOICES[1][1], vendor__id=vendor_id
-        ).exists():
-            # prevent duplicate order if user has one 'waiting' order already
-            return Response(
-                {"detail": "order_already_in_process"}, status=status.HTTP_403_FORBIDDEN
-            )
+        try:
+            serializer = self.get_serializer(data=data)
+            if Order.objects.filter(
+                user=request.user,
+                status=ORDER_STATUS_CHOICES[1][1],
+                vendor__id=vendor_id,
+            ).exists():
+                # prevent duplicate order if user has one 'waiting' order already
+                return Response(
+                    {"detail": "order_already_in_process"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
-        serializer.is_valid(raise_exception=True)  # validating data
-        self.perform_create(serializer)  # creating the order
-        order = serializer.instance  # getting newly created order object by serializer
-        OrderItem.objects.filter(
-            order=order
-        ).delete()  # flush previous items and recreate new items
-        pks = []
-        # ----------------------- creating order item objects
-        for item in CartItem.objects.filter(cart=cart).select_related("food__vendor"):
-            OrderItem.objects.create(
-                order=order,
-                food=item.food,
-                vendor=item.food.vendor,
-                quantity=item.quantity,
-                price=item.get_price_after_discount,
+            serializer.is_valid(raise_exception=True)  # validating data
+            self.perform_create(serializer)  # creating the order
+            order = (
+                serializer.instance
+            )  # getting newly created order object by serializer
+            OrderItem.objects.filter(
+                order=order
+            ).delete()  # flush previous items and recreate new items
+            pks = []
+            # ----------------------- creating order item objects
+            for item in CartItem.objects.filter(cart=cart).select_related(
+                "food__vendor"
+            ):
+                OrderItem.objects.create(
+                    order=order,
+                    food=item.food,
+                    vendor=item.food.vendor,
+                    quantity=item.quantity,
+                    price=item.price,
+                )
+                pks.append(item.food.id)
+            # flushing the cart
+            # cart.items.all().delete()
+            # ------------------------ feeding recommender
+            recommender = BoughtTogetherRecommender()
+            recommender.update_together_bought(pks)
+            order.calculate_total_price()  # setting total price field value
+            order.set_total_items()  # setting total items amount field value
+            # ------------------------- creating the notification object
+            profile = request.user.profile
+            activate(profile.pf_lang)
+            safe_data = json.loads(
+                json.dumps(
+                    serializer.data, cls=DjangoJSONEncoder
+                )  # Converts Decimal -> float
             )
-            pks.append(item.food.id)
-        # flushing the cart
-        # cart.items.all().delete()
-        # ------------------------ feeding recommender
-        recommender = BoughtTogetherRecommender()
-        recommender.update_together_bought(pks)
-        order.calculate_total_price()  # setting total price field value
-        order.set_total_items()  # setting total items amount field value
-        # ------------------------- creating the notification object
-        profile = request.user.profile
-        activate(profile.pf_lang)
-        safe_data = json.loads(
-            json.dumps(
-                serializer.data, cls=DjangoJSONEncoder
-            )  # Converts Decimal -> float
-        )
-        notf = Notification.objects.create(
-            title=_("you have a new order!"),
-            type="NEW_ORDER",
-            data=safe_data,
-            receiver=order.vendor.user,
-        )
-        deactivate()
-        # ----- sending notification to vendors room using redis
-        r.publish(
-            f"pub:vendor:{order.vendor.id}",
-            json.dumps(
+            notf = Notification.objects.create(
+                title=_("you have a new order!"),
+                type="NEW_ORDER",
+                data=safe_data,
+                receiver=order.vendor.user,
+            )
+            deactivate()
+            # ----- sending notification to vendors room using redis
+            r.publish(
+                f"pub:vendor:{order.vendor.id}",
+                json.dumps(
+                    {
+                        "type": "NEW_ORDER",
+                        "data": NotificationSerializer(notf).data,
+                    }  # vendor app should extract order id and subscribe to --order room
+                ),
+            )
+            response = Response(
                 {
-                    "type": "NEW_ORDER",
-                    "data": NotificationSerializer(notf).data,
-                }  # vendor app should extract order id and subscribe to --order room
-            ),
-        )
-        response = Response(
-            {
-                "order_id": order.id
-            },  # buyer account uses to subscribe to -order room for further things
-            status=status.HTTP_201_CREATED,
-        )
-        return response
+                    "order_id": order.id
+                },  # buyer account uses to subscribe to -order room for further things
+                status=status.HTTP_201_CREATED,
+            )
+            return response
+        except Exception as e:
+            print("error in creating order", e)
+            waiting_orders = Order.objects.filter(
+                user=request.user,
+                status=ORDER_STATUS_CHOICES[1][1],
+                vendor__id=vendor_id,
+            )
+            for order in waiting_orders:
+                waiting_orders.delete()
+            return Response(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @action(detail=False, methods=["delete"], url_path="cancel")
     def cancel(self, request):
@@ -155,6 +174,26 @@ class OrderViewSet(viewsets.ModelViewSet):
         print("cacnelling", orders)
         for order in orders:
             order.cancel_order()
+        notf = Notification.objects.create(
+            title=_("order has been cancelled by buyer!"),
+            type="ORDER_CANCELLED",
+            data={},
+            receiver=order.vendor.user,
+        )
+        deactivate()
+        # ----- sending notification to vendors room using redis
+        r.publish(
+            f"pub:vendor:{order.vendor.id}",
+            json.dumps(
+                {
+                    "type": "ORDER_CANCELLED",
+                    "data": {"orderId": order.id},
+                }  # vendor app should extract order id and subscribe to --order room
+            ),
+        )
+        # ----- deleting vendor status in redis
+        key = f"order:${order.id}:status"
+        r.delete(key)
         return Response(status=status.HTTP_200_OK)
 
     def get_serializer_context(self):
@@ -252,6 +291,7 @@ class AcceptRejectOrderView(views.APIView):
 
 class ReOrder(views.APIView):
     permission_classes = [permissions.IsAuthenticated, IsBuyer]
+
     def get(self, *args, **kwargs):
         data = self.request.query_params
         order_id = data.get("order_id", None)

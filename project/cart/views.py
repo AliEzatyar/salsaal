@@ -146,7 +146,9 @@ class CartApiView(views.APIView):
                     price=size,
                     defaults={"quantity": quantity},
                 )
-                return Response(status=status.HTTP_200_OK)
+                return Response(
+                    {"cart_count": cart.calculate_total_items()}, status=status.HTTP_200_OK
+                )
 
             else:
                 return Response(
