@@ -27,6 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in foodion secret!
 SECRET_KEY = config("SECRET_KEY", cast=str)
+DUMMY_SECRET = config("DUMMY_SECRET", cast=str)
 
 # SECURITY WARNING: don't run with debug turned on in foodion!
 DEBUG = True
@@ -221,4 +222,3 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 
 APPEND_SLASH = False
-

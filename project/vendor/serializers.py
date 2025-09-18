@@ -5,7 +5,7 @@ from django.utils import timezone
 from marketplace.models import Discount, Food
 from marketplace.serializers import DiscountedFoodSerializerMany, FoodSerializerLessDetail
 from vendor.utils import to_af_weekday
-from .models import OpeningHour, Vendor
+from .models import OpeningHour, Promotion, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS
 
@@ -170,6 +170,13 @@ class DiscountSerializer(serializers.ModelSerializer):
         model = Discount
         fields = ["id", "vendor", "amount", "deadline", "foods"]
         read_only_fields = ["id"]
+
+    
+class PromotionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Promotion 
+        fields =["image"]
+           
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):

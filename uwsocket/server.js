@@ -115,12 +115,13 @@ app.ws("/*", {
                     subscribeToRoom(ws, room); // always subscribe
                     if (exists) {
                         console.log("exists");
-                        var latestStatus = await redisPub.get(key);
-                        latestStatus = JSON.parse(latestStatus)
                         ws.send(JSON.stringify({
                             ok: true,
                             type: "SUBSCRIBED",
                         }));
+                        // sending latest status 
+                        var latestStatus = await redisPub.get(key);
+                        latestStatus = JSON.parse(latestStatus)
                         const type = latestStatus.type
                         const data = latestStatus.data
                         ws.send(JSON.stringify({
@@ -137,7 +138,6 @@ app.ws("/*", {
                     break
                 }
                 case "UNSUBSCRIBE_ORDER": {
-
                     let room = `order:${data.orderId}`;
                     console.log("unsubscribed from order", data.orderId)
                     ws.unsubscribe(room);
@@ -148,6 +148,7 @@ app.ws("/*", {
                     console.log("subscribed to carrier ", data.carrierId)
                     let room = `carrier:${data.carrierId}`;
                     subscribeToRoom(ws, room);
+                    const last_carrier_location = redisPub.hGetAll(`carrier_last_${data.carrierId}`)
                     ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', room }))
                     break;
                 }
@@ -168,13 +169,14 @@ app.ws("/*", {
 
                 case "CARRIER_LOCATION": {
                     const { lat, lon, carrierId, ts } = data;
-                    redisPub.geoAdd("carrier_location", {
-                        longitude: lon.toString(),
-                        latitude: lat.toString(),
-                        member: carrierId.toString()   // must be "member" not "carrierId"
-                    });
+                    // redisPub.geoAdd("carrier_location", {
+                    //     longitude: lon.toString(),
+                    //     latitude: lat.toString(),
+                    //     member: carrierId.toString()   // must be "member" not "carrierId"
+                    // });
                     redisPub.hSet(`carrier_last_${carrierId}`, { latitude: lat, longitude: lon, ts });
-                    redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", lat, lon, ts }));
+                    redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", data:{latitude:lat, longitude:lon, ts} }));
+                    console.log("carrier location sent out of uwsocket...",lat,"----",lon)
                     break
 
                 }
@@ -205,7 +207,7 @@ app.ws("/*", {
                     const key = `order:${orderId}:status`;
 
                     const payload = {
-                        status: "VENDOR_REJECTED",
+                        type: "VENDOR_REJECTED",
                         data: null
                     };
 
@@ -216,35 +218,10 @@ app.ws("/*", {
 
                     redisPub.publish(
                         `pub:order:${orderId}`,
-                        JSON.stringify({ type: "VENDOR_REJECTED", data: payload })
+                        JSON.stringify({ type: "VENDOR_REJECTED", data: data })
                     );
                     break;
                 }
-
-                case "BUYER_FINALIZED": {
-                    const orderId = data.orderId;
-                    const key = `order:${orderId}:status`;
-
-                    const payload = {
-                        type: "BUYER_FINALIZED",
-                        data
-                    };
-
-                    const jsonData = JSON.stringify(payload);
-                    await redisPub.set(key, jsonData);
-
-                    console.log("order status saved in server buyer finalized", jsonData);
-
-                    redisPub.publish(
-                        `pub:order:${orderId}`,
-                        JSON.stringify({ type: "BUYER_FINALIZED", data: data })
-                    );
-                    break;
-                }
-
-
-
-
 
                 default:
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));

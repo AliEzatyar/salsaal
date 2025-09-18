@@ -9,9 +9,6 @@ from .models import User
 def create_full_prof(sender, instance, created: bool, **kwargs):
     """this signal creates user profile, cart and favlist"""
     if created: 
-        # creating fav list
-        fav_list = FavList(user=instance)
-        fav_list.save()
         # creating the cart
         Cart.objects.get_or_create(user=instance)
 

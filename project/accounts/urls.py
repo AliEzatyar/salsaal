@@ -19,5 +19,6 @@ urlpatterns = [
         views.LoginApiView.as_view(), name="login"
     ),
     path("refresh-token/", views.RoleTokenRefreshView.as_view()),
+    path("upsert-device-token/",views.UpsertDeviceToken.as_view()),
     path("", include(router.urls)),
 ]

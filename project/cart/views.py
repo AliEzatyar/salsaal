@@ -135,6 +135,10 @@ class CartApiView(views.APIView):
         try:
             food = Food.objects.get(pk=food_id)
             if food and food.is_available:
+                # replacing cart vendor with new vendor
+                if not cart.is_empty() and cart.get_vendor() != food.vendor:
+                    cart.clear()
+
                 if not size in food.prices:
                     size = food.min_price
                 if not quantity:
@@ -147,7 +151,8 @@ class CartApiView(views.APIView):
                     defaults={"quantity": quantity},
                 )
                 return Response(
-                    {"cart_count": cart.calculate_total_items()}, status=status.HTTP_200_OK
+                    {"cart_count": cart.calculate_total_items()},
+                    status=status.HTTP_200_OK,
                 )
 
             else:

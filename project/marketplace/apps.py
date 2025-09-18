@@ -6,5 +6,5 @@ class MarketplaceConfig(AppConfig):
     name = 'marketplace'
 
     def ready(self):
-        from . import tasks
+        from vendor import tasks
         return super().ready()

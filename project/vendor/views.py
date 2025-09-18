@@ -1,7 +1,12 @@
 from datetime import datetime
 import json
 from marketplace.models import Discount, Food
-from api.permissions import IsVendor, IsVendorOfObject, IsVendorOfObject
+from api.permissions import (
+    IsOrderPreparingState,
+    IsVendor,
+    IsVendorOfObject,
+    IsVendorOfObject,
+)
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order, OrderItem
 from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
@@ -16,11 +21,12 @@ from accounts.models import (
 )
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
-from accounts.utils import OTP_VERIFY_CARRIER, send_otp
+from accounts.utils import OTP_VERIFY_CARRIER, generate_otp, send_otp
 from marketplace.utils import estimate_travel_time_graphhopper, haversine_distance
 from cart.models import Cart
 from carrier.utils import get_carrier_key
-from marketplace.tasks import deactivate_discounts
+from live.models import Notification
+from live.utils import send_notification
 from vendor.models import OpeningHour
 from .serializers import (
     DiscountSerializer,
@@ -28,7 +34,7 @@ from .serializers import (
     VendorSerializerDetailed,
 )
 from marketplace.backends import FoodFilterSet, VOrderFilterSet
-from marketplace.serializers import FoodSerializerDetail
+from marketplace.serializers import VFoodSerializerDetail
 from api.permissions import IsVendorApproved, IsVendorOfObject
 from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
@@ -44,7 +50,10 @@ from rest_framework import parsers, serializers
 from .utils import get_vendor_carriers_key, r, revert_discount, apply_discount
 from django.utils.translation import gettext as _
 from rest_framework.decorators import action
-
+from rest_framework.exceptions import PermissionDenied
+from django.utils.translation import deactivate as deactivate_language
+from django.utils.translation import activate as activate_language
+from live.utils import send_notification
 
 # Create your views here.
 
@@ -115,8 +124,12 @@ class ConvertToVendorAPIView(views.APIView):
 class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     """this class enables CRUD operations on foods of a vendor"""
 
-    serializer_class = FoodSerializerDetail
-    permission_classes = [permissions.IsAuthenticated, IsVendorOfObject, IsVendorApproved]
+    serializer_class = VFoodSerializerDetail
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsVendorOfObject,
+        IsVendorApproved,
+    ]
     # ordering
     filter_backends = [
         filters.OrderingFilter,
@@ -156,11 +169,15 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         data = request.data
         ids = data.get("ids", None)
         amount = data.get("amount", None)
+        days_to_expire = data.get("days", None)
         vendor_id = request.user.vendor.id
 
-        if not (ids and amount):
+        if not (ids and amount and days_to_expire):
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
+        if not type(days_to_expire) == int:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        deadline = tz.now() + tz.timedelta(days=days_to_expire)
+        data["deadline"] = deadline
         data["vendor"] = self.request.user.vendor.id
         ser = DiscountSerializer(data=data)
         ser.is_valid(raise_exception=True)
@@ -170,10 +187,11 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 {"detail": "discount_already_exists"}, status=status.HTTP_409_CONFLICT
             )
 
-        foods = Food.objects.filter(id__in=ids,vendor__id=vendor_id).select_related(
+        foods = Food.objects.filter(id__in=ids, vendor__id=vendor_id).select_related(
             "vendor__user", "discount"
         )
         # rejecting discount on other vendors fooditems, and upserting
+
         with transaction.atomic():
             discount = ser.save()
             for food in foods:
@@ -196,13 +214,13 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         * this view considers 3 scenarios:
             1- updating discount amount and updating food prices accordingly
             2- adding new foods to discount and updating prices accordingly
-            3- removing discount from foods  
-        
+            3- removing discount from foods
+
         """
         data = request.data
         pre_discount = self.get_object()
         new_ids = data.get("ids", None)
-        pre_ids = set(pre_discount.foods.values_list("pk",flat=True))
+        pre_ids = set(pre_discount.foods.values_list("pk", flat=True))
         vendor_id = request.user.vendor.id
         if not new_ids:
             return Response(
@@ -219,7 +237,8 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
             .exists()
         ):
             return Response(
-                {"detail": "discount_already_exists_with_this_amount"}, status=status.HTTP_409_CONFLICT
+                {"detail": "discount_already_exists_with_this_amount"},
+                status=status.HTTP_409_CONFLICT,
             )
         # ----------- removing discounts from previous food items and finding new foods
         # set operations
@@ -263,14 +282,16 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
             )
 
             # ---------------- adding discount on new foods and updatin their price
-            foods_to_add_discount = vendor_foods.filter(
-                id__in=ids_foods_to_add_discount
-            ).select_related("discount").only("id", "min_price", "prices", "discount")
-            for food in new_foods_to_set_discount:
+            foods_to_add_discount = (
+                vendor_foods.filter(id__in=ids_foods_to_add_discount)
+                .select_related("discount")
+                .only("id", "min_price", "prices", "discount")
+            )
+            for food in foods_to_add_discount:
                 print("discount added...", food.id)
                 # applying discount to all prices of food
-                if food.discount !=None:
-                    revert_discount(food,food.discount.amount)
+                if food.discount != None:
+                    revert_discount(food, food.discount.amount)
                 apply_discount(food, new_discount_amount)
                 food.discount = new_discount
             Food.objects.bulk_update(
@@ -307,6 +328,8 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                     Food.objects.bulk_update(foods, ["min_price", "prices"])
                     discount.is_active = edable
                     discount.save()
+                else:
+                    print("no changes in discount...")
             return Response()
 
         except Exception as e:
@@ -415,6 +438,7 @@ class AddCarrierAPIView(views.APIView):
             otp.delete()
             carrier_user_account.cart.delete()
             carrier_user_account.save()
+            # --------------- re-balancing carriers status of vendor
             # increasing carrier's count for vendor
             vendor_carriers_key = get_vendor_carriers_key(vendor.id)
             f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
@@ -664,9 +688,14 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         # ------------------ estimating only this order distance and reach time
         request_data = self.request.query_params
         new_order_id = request_data.get("order_id", None)
+        accepted = request_data.get("is_accepted",None)
         if not new_order_id:
             return Response(
                 {"detail": "provide_new_order_id"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if accepted == None:
+            return Response(
+                {"detail": "provide_accepted"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
             order = (
@@ -676,111 +705,278 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                 )
                 .first()
             )
-            # check if the vendor owns this order
-            self.check_object_permissions(self.request, order)
-            # ------------------ estimateing travel time for new order
-            vendor = self.request.user.vendor
-            user_location = order.user.profile.location
-            user_location = (user_location.y, user_location.x)  # as lat,lon
-            vendor_location = vendor.user_profile.location
-            vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
-            estimated, distance_km = estimate_travel_time_graphhopper(
-                vendor_location, user_location
-            )
+            if order:
+                # if vendor has rejected order, no calculation, just notify user
+                if accepted == False:
+                    order.cancel_order()
+                    activate_language(self.request.user.profile.pf_lang)
+                    notf = Notification.objects.create(
+                        title=_("Order Rejected"),
+                        description=_("sorry! your order has been rejected by restuarant!"),
+                        type="VENDOR_REJECTED",
+                        data={},
+                        receiver=order.vendor.user,
+                    )
+                    deactivate_language()
+                    r.publish(
+                        f"pub:order:{order.id}",
+                        json.dumps(
+                            {
+                                "type": "VENDOR_REJECTED",
+                                "data": {"orderId": order.id},
+                            }  # vendor app should extract order id and subscribe to --order room
+                        ),
+                    )
+                    # ----- sending notification to vendors room using redis
+                    send_notification(order.user.id,notf.title,body=notf.description)
 
-            # ----------------- getting total free carriers and total preparing orders
-            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
-            _3_hours_ago = tz.now() - tz.timedelta(hours=3)
-            preparing_orders_count = Order.objects.filter(
-                vendor=vendor,
-                status=ORDER_STATUS_CHOICES[2][0],  # preparing
-                created_at__gte=_3_hours_ago,
-            ).count()
+                    return Response(
+                    {
+                        "message": "order_order_rejected_by_vendor"
+                    }
+                    )
+                else:
+                    # check if the vendor owns this order
+                    self.check_object_permissions(self.request, order)
+                    # ------------------ estimateing travel time for new order
+                    vendor = self.request.user.vendor
+                    user_location = order.user.profile.location
+                    user_location = (user_location.y, user_location.x)  # as lat,lon
+                    vendor_location = vendor.user_profile.location
+                    vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
+                    estimated, distance_km = estimate_travel_time_graphhopper(
+                        vendor_location, user_location
+                    )
 
-            free_carriers_count = r.hget(vendor_carriers_key, "f_c_c")
-            total_carriers_count = r.hget(vendor_carriers_key, "total_c_c")
-            print(
-                "free carriers--",
-                free_carriers_count,
-                "\ntotal carriers---",
-                total_carriers_count,
-                "estiated before conditions",
-                estimated,
-                "\npreparing_orders_count",
-                preparing_orders_count,
-            )
-            if free_carriers_count:
-                free_carriers_count = int(json.loads(free_carriers_count))
-            else:
-                free_carriers_count = vendor.carriers.count()
-                r.hset(vendor_carriers_key, "f_c_c", free_carriers_count)
+                    # ----------------- getting total free carriers and total preparing orders
+                    vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+                    _3_hours_ago = tz.now() - tz.timedelta(hours=3)
+                    preparing_orders_count = Order.objects.filter(
+                        vendor=vendor,
+                        status=ORDER_STATUS_CHOICES[2][0],  # preparing
+                        created_at__gte=_3_hours_ago,
+                    ).count()
 
-            if total_carriers_count:
-                total_carriers_count = int(json.loads(total_carriers_count))
-            else:
-                total_carriers_count = vendor.carriers.count()
-                r.hset(vendor_carriers_key, "total_c_c", total_carriers_count)
-            total_time = estimated
-            print("estimated....", estimated, total_carriers_count, free_carriers_count)
-            # ----------------- applying conditions and finalizing estimation of time  ...
-            if preparing_orders_count <= total_carriers_count:
-                print("in first condition")
-                if preparing_orders_count < free_carriers_count:
+                    free_carriers_count = r.hget(vendor_carriers_key, "f_c_c")
+                    total_carriers_count = r.hget(vendor_carriers_key, "total_c_c")
+                    print(
+                        "free carriers--",
+                        free_carriers_count,
+                        "\ntotal carriers---",
+                        total_carriers_count,
+                        "estiated before conditions",
+                        estimated,
+                        "\npreparing_orders_count",
+                        preparing_orders_count,
+                    )
+                    if free_carriers_count:
+                        free_carriers_count = int(json.loads(free_carriers_count))
+                    else:
+                        free_carriers_count = vendor.carriers.count()
+                        r.hset(vendor_carriers_key, "f_c_c", free_carriers_count)
+
+                    if total_carriers_count:
+                        total_carriers_count = int(json.loads(total_carriers_count))
+                    else:
+                        total_carriers_count = vendor.carriers.count()
+                        r.hset(vendor_carriers_key, "total_c_c", total_carriers_count)
                     total_time = estimated
-                elif preparing_orders_count >= free_carriers_count:
-                    print("preparing greater than free count")
-                    total_time = estimated + 20
-            elif preparing_orders_count > total_carriers_count:
-                print("in second condition")
-                if free_carriers_count == 0:
-                    total_time = (
-                        estimated
-                        + (20 * round(preparing_orders_count / total_carriers_count))
-                        + 10
-                    )
-                else:
-                    total_time = estimated + (
-                        20 * round(preparing_orders_count / total_carriers_count)
-                    )
-            # calculating preparation time
-            prep_time = 0
-            for item in order.items.all():
-                if item.food.is_ready_type:
-                    today = tz.now().date()
-                    # combine today's date with both times
-                    ready_dt = datetime.combine(today, item.food.ready_time)
-                    now_dt = datetime.combine(today, tz.now().time())
-                    delta = ready_dt - now_dt
-                    minutes = delta.total_seconds() / 60
-                    if minutes > 0:
-                        if prep_time < minutes:
-                            prep_time = minutes
-                else:
-                    if prep_time < item.food.duration:
-                        prep_time = item.food.duration
-            print(prep_time, "max preparation time")
+                    print("estimated....", estimated, total_carriers_count, free_carriers_count)
+                    # ----------------- applying conditions and finalizing estimation of time  ...
+                    if preparing_orders_count <= total_carriers_count:
+                        print("in first condition")
+                        if preparing_orders_count < free_carriers_count:
+                            total_time = estimated
+                        elif preparing_orders_count >= free_carriers_count:
+                            print("preparing greater than free count")
+                            total_time = estimated + 20
+                    elif preparing_orders_count > total_carriers_count:
+                        print("in second condition")
+                        if free_carriers_count == 0:
+                            total_time = (
+                                estimated
+                                + (20 * round(preparing_orders_count / total_carriers_count))
+                                + 10
+                            )
+                        else:
+                            total_time = estimated + (
+                                20 * round(preparing_orders_count / total_carriers_count)
+                            )
+                    # calculating preparation time
+                    prep_time = 0
+                    for item in order.items.all():
+                        if item.food.is_ready_type:
+                            today = tz.now().date()
+                            # combine today's date with both times
+                            ready_dt = datetime.combine(today, item.food.ready_time)
+                            now_dt = datetime.combine(today, tz.now().time())
+                            delta = ready_dt - now_dt
+                            minutes = delta.total_seconds() / 60
+                            if minutes > 0:
+                                if prep_time < minutes:
+                                    prep_time = minutes
+                        else:
+                            if prep_time < item.food.duration:
+                                prep_time = item.food.duration
+                    print(prep_time, "max preparation time")
 
-            # ------------------ calculating delivery fee ----------------/---------------------
-            delivery_cost = None
-            v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
-            v_mfcfd = vendor.mfcfd  # vendor's minimum food count free delivery
-            if (
-                vendor.mfcfd
-                and vendor.mfdd > 0
-                and distance_km < v_mfdd
-                and order.total_items > v_mfcfd
-            ):
-                delivery_cost = 0
-            else:
-                delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
+                    # ------------------ calculating delivery fee ----------------/---------------------
+                    delivery_cost = None
+                    v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
+                    v_mfcfd = vendor.mfcfd  # vendor's minimum food count free delivery
+                    if (
+                        vendor.mfcfd
+                        and vendor.mfdd > 0
+                        and distance_km < v_mfdd
+                        and order.total_items > v_mfcfd
+                    ):
+                        delivery_cost = 0
+                    else:
+                        delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
 
-            return Response(
-                {
-                    "estimated": round(total_time),
-                    "delivery_cost": delivery_cost,
-                    "preparation_time": round(prep_time),
-                }
-            )
+                    return Response(
+                        {
+                            "estimated": round(total_time),
+                            "delivery_cost": delivery_cost,
+                            "preparation_time": round(prep_time),
+                        }
+                    )
         except Exception as e:
             print("error in order time calculation view\n", e, "\n", e.args)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class SetOrderStateCarrying(views.APIView):
+    """
+    THis view enables a vendor(only) to choose an order and set it
+    in carrying state. Besides, this view generates an OTP valid for 1 Day
+    """
+
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsVendorOfObject,
+        IsOrderPreparingState,
+    ]
+
+    def post(self, *args, **kwargs):
+        """vendor sets order status -carrying- and generates an OTP"""
+        data = self.request.data
+        order_id = data.get("order_id")
+        carrier_id = data.get("carrier_id")
+        try:
+            order = Order.objects.get(id=order_id)
+            carrier = Carrier.objects.get(pk=carrier_id)
+
+            if (
+                carrier.vendor != self.request.user.vendor
+            ):  # vendor should own this carrier
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            if carrier.status == CARRIER_STATUS_CHOICES[1][0]:  # carreri busy
+                return Response(
+                    {"detail": "carrier_busy"}, status=status.HTTP_409_CONFLICT
+                )
+            #  vendor should own this order
+            self.check_object_permissions(self.request, order)
+            # if payment is online and not paid, not allowed
+            # if order.is_credit:
+            #     if not order.paid:
+            #         return Response({"detail": "payment not completed"}, status=400)
+
+            # setting order carrier to requesting carrier
+            order.carrier = carrier
+            carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
+            # generating otp
+            # otp = generate_otp()
+            # UserOtp.objects.create(user=order.user,otp=otp)
+            # setting order in carrying state
+            order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
+            order.save()
+            # order.otp = otp
+            carrier.save()
+            # setting carrier live status in redis
+            carrier_key = get_carrier_key(carrier_id)
+            vendor_location = self.request.user.profile.location
+            vendor_location = (vendor_location.y, vendor_location.x)
+            order_user = order.user
+            customer_location = order_user.profile.location
+            customer_location = (customer_location.y, customer_location.x)
+            city = self.request.user.profile.city
+            city = str(city).lower()
+            carrier_return_estimate = 2 * estimate_travel_time_graphhopper(
+                vendor_location, customer_location
+            )
+            r.set(
+                carrier_key,
+                json.dumps(
+                    {
+                        "return_estimate": carrier_return_estimate,
+                        "location": vendor_location,
+                        "destination": customer_location,
+                    }
+                ),
+            )
+            # ---------------- updating vendor's carriers in redis
+            vendor = self.request.user.vendor
+            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+            b_c_c = r.hget(vendor_carriers_key, "b_c_c")
+            if b_c_c:
+                b_c_c = json.loads(b_c_c)
+            else:
+                b_c_c = 0
+                r.hset(vendor_carriers_key, "b_c_c", b_c_c)
+
+            b_c_c = int(b_c_c) + 1  # increase it by one
+
+            r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
+            f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
+            f_c_c = int(f_c_c) - 1
+            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+            # ---------------------- creating notification for customer
+            profile = order.user.profile
+
+            activate_language(profile.pf_lang)
+            notf = Notification.objects.create(
+                title=_("Order set as carrying"),
+                type="ORDER_SET_CARRYING",
+                receiver=order.user,
+                data={"order_id": order.id, "carrier_id": carrier_id},
+            )
+            deactivate_language()
+            # ---------------------- sending notification to customer, add FCM/APNs later
+            r.publish(
+                f"pub:user:{order.user.id}",
+                json.dumps(
+                    {
+                        "type": "ORDER_SET_CARRYING",
+                        "data": {"order_id": order.id, "carrier_id": carrier_id},
+                    }  # customer app should extract order id and subscribe it for live tracking
+                ),
+            )
+            send_notification(
+                order.user.id, notf.title, body=notf.description, data=str(notf.data)
+            )
+            print("notification sent to customer", f"pub:user:{order.user.id}")
+            # --------------------- sending notification to carrier's room
+            r.publish(
+                f"pub:carrier:{carrier_id}",
+                json.dumps(
+                    {
+                        "type": "ORDER_SET_CARRYING",
+                        "data": {"order_id": order.id, "carrier_id": carrier_id},
+                    }  # carrier app subscribes to order room either from notfications part or any and live tracking starts
+                ),
+            )
+            # response
+            return Response(
+                {"message": "order_set_carrying"},
+                status=status.HTTP_200_OK,
+                # vendor app can/is subscribe to order room and track order live
+            )
+
+        except Order.DoesNotExist:
+            return Response(
+                {"detail": "no such order"}, status=status.HTTP_403_FORBIDDEN
+            )
+        except PermissionDenied as pd:
+            print(pd, pd.args)
+            return Response({"detail": "not_allowed"}, status=status.HTTP_403_FORBIDDEN)

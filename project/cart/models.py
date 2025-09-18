@@ -37,8 +37,6 @@ class Cart(models.Model):
     def clear(self):
         self.items.all().delete()
 
-    def __str__(self):
-        return f"Cart <{self.user.full_name}>"
 
     def is_empty(self):
         count = self.items.count()
@@ -46,6 +44,8 @@ class Cart(models.Model):
             return False
         return True
 
+    def __str__(self):
+        return f"Cart <{self.user.full_name}>"
 
 class CartItem(models.Model):
     uuid = models.UUIDField(

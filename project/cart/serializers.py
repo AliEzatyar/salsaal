@@ -8,7 +8,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField(source="food.name")
     subtotal = serializers.SerializerMethodField("get_subtotal")
     price = MyDecimalField(read_only=True)
-    image = serializers.SerializerMethodField("get_image_url")
+    image = serializers.ReadOnlyField(source="food.image_url")
     food_id = serializers.ReadOnlyField(source="food.id")
 
     class Meta:
@@ -18,9 +18,6 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     def get_subtotal(self, obj):
         return obj.get_total_price()
-
-    def get_image_url(self, obj):
-        return obj.food.image.url if obj.food.image else None
 
 
 class CartSerializer(serializers.ModelSerializer):

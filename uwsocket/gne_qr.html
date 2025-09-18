@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>QR Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        #qrcode {
+            margin-top: 20px;
+        }
+
+        input {
+            margin: 5px;
+            padding: 8px;
+        }
+
+        button {
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Generate QR Code with order_id & otp</h2>
+
+    <label>order ID:</label>
+    <input type="text" id="order_id" placeholder="Enter order_id"><br>
+
+    <label>OTP:</label>
+    <input type="text" id="otp" placeholder="Enter otp"><br>
+
+    <button onclick="generateQRCode()">Generate QR</button>
+
+    <div id="qrcode"></div>
+
+    <!-- QRCode.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+    <script>
+        const SECRET_KEY = CryptoJS.enc.Utf8.parse("hello@@@@@afghan"); // 16 bytes
+        const IV = CryptoJS.enc.Utf8.parse("\0".repeat(16)); // 16 null bytes
+
+        function encryptt(id) {
+            const encrypted = CryptoJS.AES.encrypt(
+                id.toString(),
+                SECRET_KEY,
+                {
+                    iv: IV,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                }
+            );
+            return encrypted.ciphertext.toString(CryptoJS.enc.Base64);
+        }
+
+        function decryptt(base64Cipher) {
+            const decrypted = CryptoJS.AES.decrypt(
+                { ciphertext: CryptoJS.enc.Base64.parse(base64Cipher) },
+                SECRET_KEY,
+                {
+                    iv: IV,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                }
+            );
+            return decrypted.toString(CryptoJS.enc.Utf8);
+        }
+
+        // --------------------- generating qr code -----------------------
+        function generateQRCode() {
+            // clear old QR
+            document.getElementById("qrcode").innerHTML = "";
+
+            const orderId = document.getElementById("order_id").value;
+            const otp = document.getElementById("otp").value;
+
+            if (!orderId || !otp) {
+                alert("Please enter both order_id and otp");
+                return;
+            }
+
+            // Put data into JSON format
+            const qrData = JSON.stringify({ id: encryptt(orderId), pass: encryptt(otp) });
+
+            // Generate QR code
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrData,
+                width: 200,
+                height: 200
+            });
+        }
+    </script>
+</body>
+
+</html>

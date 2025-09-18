@@ -17,19 +17,19 @@ from marketplace.backends import (
     FoodFilterSet,
     VendorFilterSet,
 )
-from vendor.models import Vendor
+from vendor.models import Promotion, Vendor
 from vendor.serializers import (
+    PromotionSerializer,
     VendorSerializerMany,
     AbstractVendorSerializer,
     PublicVendorSerializer,
     VendorSerializerWithFoodImages,
 )
 from marketplace.serializers import (
-    CFoodSerializerDetail,
+    CVFoodSerializerDetail,
     CategoryVendorFoodsSerializer,
     CategoryVendorSerializer,
     DiscountedFoodSerializerMany,
-    FavItemSerializer,
     FoodSerializerLessDetail,
     FoodSerializerMany,
     RatingSerializer,
@@ -52,7 +52,7 @@ from .utils import StandardResultSetPagination, DEFAULT_H3_RESOLUTION, r
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import gettext as _
 import time
-from django.utils.timezone import datetime
+from django.db.models import Count, Sum, F, FloatField, ExpressionWrapper
 
 """Marketplace API Views"""
 
@@ -62,6 +62,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     This view  handles representation of foods to normal users.
     For food detail, this view requires user location and city from client app.
     """
+
     permission_classes = [IsAuthenticated]
     serializer_class = FoodSerializerMany
     # django-filter
@@ -109,7 +110,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 float(lon),
             )
             # serializer for the item
-            serializer = CFoodSerializerDetail(instance=obj)
+            serializer = CVFoodSerializerDetail(instance=obj)
             # listing and serializing recommended foods
             recommender = BoughtTogetherRecommender()
             suggestion_ids = recommender.suggest_foods_for([obj.id])
@@ -178,19 +179,23 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             )
             .prefetch_related("opening_hours")
         )
-        city_foods = Food.objects.filter(
-            is_available=True, vendor__user_profile__city=city
-        ).select_related("discount","vendor").only(
-            "id",
-            "name",
-            "image",
-            "discount",
-            "vendor",
-            "min_price",
-            "category",
-            "likes",
+        city_foods = (
+            Food.objects.filter(is_available=True, vendor__user_profile__city=city)
+            .select_related("discount", "vendor")
+            .only(
+                "id",
+                "name",
+                "image",
+                "discount",
+                "vendor",
+                "min_price",
+                "category",
+                "likes",
+            )
         )
-
+        # promotions
+        promotions = Promotion.objects.filter(city=city)
+        promotion_serializer = PromotionSerializer(promotions,many=True)
         # discounted foods
         foods_key = f"city:{city}:dis_foods"
         discounted_foods_ids = cache.get(foods_key, None)
@@ -238,7 +243,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             distance_reach_time(top_vendors, lat, lon, "vendor")
             top_vendors_ser = VendorSerializerMany(top_vendors, many=True)
             top_vendors = top_vendors_ser.data
-            cache.set(key,top_vendors,3600)
+            cache.set(key, top_vendors, 3600)
 
         print(time.time() - now, "seconds")
         # final response
@@ -247,6 +252,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 "cart_count": user_cart_items_count,
                 "notf_count": user_notf_count,
                 "categories": categories,
+                "promotions":promotion_serializer.data,
                 "discounted_foods": discounted_foods_ser.data,
                 "local_vendors": local_vendors_ser.data,
                 "cheapest_vendors": cheapest_vendors_ser.data,
@@ -254,7 +260,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             }
         )
 
-    @action(detail=False, methods=["get"],url_path="home-categories")
+    @action(detail=False, methods=["get"], url_path="home-categories")
     def categories(self, request):
         """this endpoint returns available categories for normal users"""
         cat_key = "home_categories"
@@ -479,7 +485,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             return paginator.get_paginated_response(ser.data)
         return Response(top_vendors)
 
-    @action(detail=False, methods=["get"],url_name="all_vendors_in_city", url_path="all-vendors-in-city")
+    @action(
+        detail=False,
+        methods=["get"],
+        url_name="all_vendors_in_city",
+        url_path="all-vendors-in-city",
+    )
     def all_vendors_in_city(self, request):
         """this returns all active vendors in the city"""
         request_data = request.query_params
@@ -971,12 +982,47 @@ class RatingViewSet(viewsets.ModelViewSet):
         try:
             ct = ContentType.objects.get_for_model(Vendor)
             query_set = Rating.objects.filter(
-                content_type=ct, object_id=int(object_id), enabled=True
+                content_type=ct, object_id=int(object_id),enabled=True
             ).order_by("-rating")
+            query_set = Rating.objects.all().order_by("-rating")
             return query_set
         except:
             # if any problem, no rating is returned
             return Rating.objects.none()
+
+    @action(detail=False, methods=["get"], url_path="vendor-ratings-initial")
+    def rating_initial(self, *args, **kwargs):
+        object_id = self.request.query_params.get("obj_id", None)
+        qs = self.get_queryset()
+        vendor_name = None
+        # print(object_id)
+        if object_id:
+            
+            vendor = Vendor.objects.filter(id=object_id).only("vendor_name").first()
+            if vendor:
+                vendor_name = vendor.vendor_name
+            
+        ratings = (
+            qs.values("rating").annotate(num_rating=Count("id")).order_by("-rating")
+        )
+        total_ratings = qs.count()
+        avg_rating = qs.aggregate(average_rating=Avg("rating"))["average_rating"]
+        total_reviews = qs.exclude(comment=None).count()
+        star_percentages = {
+            rating["rating"]: (rating["num_rating"] / total_ratings) * 100
+            for rating in ratings
+        }
+        # print(total_ratings, total_reviews, star_percentages)
+        return Response(
+            {
+                "vendor_name":vendor_name,
+                "total_ratings": total_ratings,
+                "total_reviews": total_reviews,
+                "average_rating":avg_rating,
+                "star_percentages": star_percentages,
+                
+            }
+        )
 
     def create(self, request, *args, **kwargs):
         """overriden, obj_id, type"""
@@ -986,6 +1032,7 @@ class RatingViewSet(viewsets.ModelViewSet):
         obj_id = data.get("obj_id")
         liked_foods = data.get("liked_foods", None)
         rating_data = data.get("rating")
+        print(data)
         if not obj_id or not type(obj_id) == int:
             return Response(
                 {"detail": "provide_id"},
@@ -1007,7 +1054,7 @@ class RatingViewSet(viewsets.ModelViewSet):
         # handling update
         if previous:
             # prviously exists, performing update
-            previous.comment = rating_data["comment"]
+            previous.comment = rating_data.get("comment",None)
             previous.rating = rating_data["rating"]
             previous.enabled = True
             previous.save()
@@ -1161,19 +1208,19 @@ class PublicVendorDetail(views.APIView):
             )
 
 
-class FavListViewset(viewsets.ModelViewSet):
-    """THis viewset handles CRUD of Fav List"""
+# class FavListViewset(viewsets.ModelViewSet):
+#     """THis viewset handles CRUD of Fav List"""
 
-    serializer_class = FavItemSerializer
-    permission_classes = [IsAuthenticated, IsHavingFavlist]
+#     serializer_class = FavItemSerializer
+#     permission_classes = [IsAuthenticated, IsHavingFavlist]
 
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context["favlist"] = self.request.user.favlist.id
-        return context
+#     def get_serializer_context(self):
+#         context = super().get_serializer_context()
+#         context["favlist"] = self.request.user.favlist.id
+#         return context
 
-    def get_queryset(self):
-        return FavItem.objects.filter(favlist=self.request.user.favlist)
+#     def get_queryset(self):
+#         return FavItem.objects.filter(favlist=self.request.user.favlist)
 
 
 class ListVendorFoods(views.APIView):
@@ -1267,4 +1314,3 @@ class FoodsByCategory(generics.ListAPIView):
             vendor.distance = distance
             vendor.reach_time = round(distance_to_travel_time(distance), 0)
         return vendors
-

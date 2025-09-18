@@ -5,6 +5,7 @@ from accounts.utils import send_notification
 from marketplace.models import Rating
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.indexes import GinIndex
+from django.utils.timezone import now
 
 # Create your models here.
 VENDOR_TYPES = [
@@ -36,7 +37,7 @@ class Vendor(models.Model):
     )
     vendor_name = models.CharField(max_length=60, unique=True, db_index=True)
     vendor_license = models.ImageField(upload_to="vendor/license/")
-    vendor_type = models.PositiveSmallIntegerField(choices=VENDOR_TYPES,default=1)
+    vendor_type = models.PositiveSmallIntegerField(choices=VENDOR_TYPES, default=1)
     image = models.ImageField(upload_to="vendor/image/")
     logo = models.ImageField(upload_to="vendor/logo/")
     is_approved = models.BooleanField(default=False, db_index=True)
@@ -106,6 +107,21 @@ class Vendor(models.Model):
                     send_notification(self.user.email, title, template, context)
         return super(Vendor, self).save(*args, **kwargs)
 
+    @property
+    def image_url(self):
+        try:
+            return self.image.url
+        except ValueError:
+            print("vendor has no image")
+            return None
+
+    @property
+    def logo_url(self):
+        try:
+            return self.logo.url
+        except ValueError:
+            return None
+
 
 HOURS = [(i + add, i + add) for i in range(24) for add in (0,)]
 WEEKDAYS = [
@@ -130,3 +146,15 @@ class OpeningHour(models.Model):
 
     def __str__(self):
         return self.weekday + "-" + str(self.start_hour) + "-" + str(self.end_hour)
+
+
+class Promotion(models.Model):
+    """this model resembles promotional images at home page """
+    image = models.ImageField(upload_to="promotions/")
+    city = models.CharField(default="kabul", max_length=20)
+    start_date = models.DateTimeField(default=now())
+    end_date = models.DateTimeField(default=now())
+    is_active = models.BooleanField(default=False)
+    cost_per_day = models.PositiveSmallIntegerField(default=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)

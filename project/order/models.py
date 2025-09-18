@@ -38,7 +38,7 @@ class Order(models.Model):
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
     )
-    is_credit = models.CharField(default=True)
+    is_credit = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=2)
@@ -80,6 +80,7 @@ class Order(models.Model):
         else:
             vendors = ",".join(vendors)
         return vendors
+    
 
     def cancel_order(self):
         """reseting food order"""

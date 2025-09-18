@@ -1,6 +1,7 @@
 from celery import shared_task
 from marketplace.models import Discount, Food
 from django.utils import timezone as tz
+from vendor.models import Vendor
 from vendor.utils import revert_discount
 from django.db.transaction import atomic
 
@@ -26,3 +27,12 @@ def deactivate_discounts():
         )
     return "Discounts Deactivated!"
 
+
+@shared_task
+def reset_vendor_carriers_in_redis():
+    """
+    this task resets f_c_c, b_c_c and total_c_c in redis for all vendors
+    """
+    print("revert carrier's status")
+    vendors = Vendor.objects.all()        
+    return "Carrier's reset!"

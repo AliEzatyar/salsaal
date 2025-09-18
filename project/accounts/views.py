@@ -9,7 +9,7 @@ from django.db.utils import IntegrityError
 from .utils import OTP_LOGIN, OTP_VERIFY_PHONE
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
-from .serializers import RoleTokenRefreshSeriaizer, UserProfileCreationSerializer
+from .serializers import DeviceSerializer, RoleTokenRefreshSeriaizer, UserProfileCreationSerializer
 from rest_framework import permissions
 from rest_framework import generics
 from rest_framework import views, viewsets
@@ -215,19 +215,19 @@ class LoginApiView(views.APIView):
 class RoleTokenRefreshView(TokenRefreshView):
     serializer_class = RoleTokenRefreshSeriaizer
 
-class UpsertFcm(views.APIView):
+
+class UpsertDeviceToken(views.APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
-        device_token = data.get("token",None)
-        if not device_token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        
-        # updating 
-        user_device = request.user.device                   
-        return super().post(request, *args, **kwargs)
-    
-    
+        if request.user.devices:
+            ser = DeviceSerializer(request.user.devices.last(),data=data,partial=True)
+        else:
+            ser = DeviceSerializer(data)
+        if ser.is_valid(raise_exception=True):
+            ser.validated_data["user"] = request.user
+            ser.save()
+        return Response()
+
+
 def jwtks_view(request):
     return HttpResponse(settings.SIMPLE_JWT["VERIFYING_KEY"], content_type="text/plain")
-
-

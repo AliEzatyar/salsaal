@@ -147,13 +147,8 @@ class UserProfile(g_models.Model):
 
 
 class Device(models.Model):
-    PLATFORM_CHOICES = (
-        ("ios", "ios"), 
-        ("android", "android"),
-    )
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE,related_name="devices")
     token = models.CharField(max_length=255, unique=True)
-    platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     
 

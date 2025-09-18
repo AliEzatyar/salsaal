@@ -125,33 +125,7 @@
             const orderId = message_data.data.orderId
             console.log(final)
 
-            document.getElementById("carrying").style.display = "block"
-            document.getElementById("setCarrying").onclick = (e) => {
-                // setting order as carrying state
-                const setOrderCarryingUrl = domain + "/api/vendor/set-order-state-carrying/"
-                const headersOrderCarrying = new Headers()
-                headersOrderCarrying.append("Authorization", vendor_token)
-                headersOrderCarrying.append("Content-Type", "application/json")
-                const optionsOrderCarrying = {
-                    method: "POST",
-                    headers: headersOrderCarrying,
-                    body: JSON.stringify({ carrier_id: 14, order_id: orderId }),
-                    redirect: "follow"
-                };
-                fetch(setOrderCarryingUrl, optionsOrderCarrying).then((response) => {
-                    response.text()
-                }).then(
-                    result => {
-                        console.log(result, "result of set as carrying....")
-                        if (ws.readyState) {
-                            const data = { carrierId: 14 }
-                            console.log("subscribing data before sending")
-                            ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
-                            console.log("subscribed to carrier's  room")
-                        }
-                    })
-            }
-
+            
         }
         else if (message_type == "CARRIER_LOCATION") {
             console.log("location data received ", message_data.data)
@@ -160,8 +134,9 @@
             console.log("new order has been created",)
             const new_order_data = message_data.data.data;
             console.log("new order data", new_order_data)
+            const orderId = new_order_data.id
             // subscrigin to order room for further communicaiton
-            const data = { orderId: new_order_data.id }
+            const data = { orderId: orderId}
             ws.send(JSON.stringify({ type: "SUBSCRIBE_ORDER", data }))
 
             // rendering order details
@@ -207,6 +182,34 @@
 
                 }
             )
+            // set as carrying button 
+            document.getElementById("carrying").style.display = "block"
+            document.getElementById("setCarrying").onclick = (e) => {
+                // setting order as carrying state
+                const setOrderCarryingUrl = domain + "/api/vendor/set-order-state-carrying/"
+                const headersOrderCarrying = new Headers()
+                headersOrderCarrying.append("Authorization", vendor_token)
+                headersOrderCarrying.append("Content-Type", "application/json")
+                const optionsOrderCarrying = {
+                    method: "POST",
+                    headers: headersOrderCarrying,
+                    body: JSON.stringify({ carrier_id: 14, order_id: orderId }),
+                    redirect: "follow"
+                };
+                fetch(setOrderCarryingUrl, optionsOrderCarrying).then((response) => {
+                    response.text()
+                }).then(
+                    result => {
+                        console.log(result, "result of set as carrying....")
+                        if (ws.readyState) {
+                            const data = { carrierId: 14 }
+                            console.log("subscribing data before sending")
+                            ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
+                            console.log("subscribed to carrier's  room")
+                        }
+                    })
+            }
+
         }
         
         else if (message_type == "ORDER_CANCELLED"){

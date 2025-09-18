@@ -8,7 +8,6 @@
     ws.onopen = (e) => {
         console.log("openend")
         if (ws.readyState) {
-
             const data = { carrierId: carrierId }
             ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
             hasSubscribed = true;
@@ -20,19 +19,33 @@
     // here, carrier either reads notifications 
     ws.onmessage = (e) => {
         const data = JSON.parse(e.data)
-        setInterval(() => {
-            console.log("ping...")
-            ws.send(JSON.stringify({ type: "PING", data: { x: 2 } }))
-        }, 3000)
-        if (data.type == "NOTIFICATION") {
+        if (data.type == "ORDER_SET_CARRYING") {
             const notf = data.data;
-            if (notf.type == "ORDER_SET_CARRYING") {
-                setInterval(() => {
-                    console.log("carrier has a delivery task!")
-                    ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data: { lat: 34.524, lon: 65.234, carrierId: carrierId, ts: Date.now().toString() } }))
-                }, 3000)
+            // Starting point: Kabul center
+            let lat = 34.50270163248377;
+            let lon = 69.09456045582719;
+
+            // Step size in degrees (≈10m)
+            const latStep = 100 / 111320; // ~0.0000898
+            const lonStep = 100 / (111320 * Math.cos(lat * Math.PI / 180)); // ~0.0001087
+
+            function moveRandomly() {
+                // Random step in N/S and E/W
+                const dLat = (Math.random() * 2 - 1) * latStep;
+                const dLon = (Math.random() * 2 - 1) * lonStep;
+
+                lat += dLat;
+                lon += dLon;
+
+                return { latt: lat.toFixed(6), lonn: lon.toFixed(6) };
             }
 
+            // Run every 2 seconds
+            setInterval(() => {
+                const { latt, lonn } = moveRandomly();
+                console.log(`Lat: ${lat}, Lon: ${lon}`);
+                ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data: { lat: latt, lon: lonn, carrierId: carrierId, ts: Date.now().toString() } }))
+            }, 5000)
         }
 
     }

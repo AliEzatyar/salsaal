@@ -35,7 +35,7 @@
                 const addToCartUrl = domain + "/api/cart/"
                 const addToCartHeaders = new Headers();
                 addToCartHeaders.append("Authorization", client_token)
-                const raw = "{\"id\":14,\"quantity\":4,\"size\":400}";
+                const raw = "{\"id\":41,\"quantity\":4,\"size\":400}";
                 addToCartHeaders.append("Content-Type", "application/json")
 
 
@@ -72,9 +72,10 @@
                                 const orderId = result.order_id;
                                 // subscribing to order room for further communication
                                 if (ws.readyState) {
-                                    const data = { orderId: orderId, subscriber: customer_id }
+                                    const data = { orderId: orderId}
                                     ws.send(JSON.stringify({ type: "SUBSCRIBE_ORDER", data }))
                                     console.log("cusotmer socket subscribed to order")
+
                                 }
                             })
                             .catch((error) => console.error(error));
@@ -88,21 +89,20 @@
 
     ws.onmessage = (e) => {
         console.log("message came to customer", e)
-        const message_data = JSON.parse(e.data)
-        const message_type = message_data.type;
+        const message = JSON.parse(e.data)
+        const message_type = message.type;
         if (message_type == "VENDOR_ACCEPTED") { // order communication between vendor and customer
-            if (message_data.data.final){
+            if (message.data.final){
                 return
             }
-            console.log("vendor accepeted", message_data.data)
+            console.log("vendor accepeted", message.data)
             // setting order as accepted
-            const acceptOrderUrl = domain + "/api/order/ar-order/"
+            const acceptOrderUrl = domain + "/api/order/user-orders/ar-order/"
             const acceptOrderHeaders = new Headers()
             acceptOrderHeaders.append("Authorization", client_token)
             acceptOrderHeaders.append("Content-Type", "application/json")
             let payload = JSON.stringify({
-                "order_id": message_data.data.data.orderId,
-                "accepted": true,
+                "order_id": message.data.orderId,
                 "payment_type": "cash_on_delivery"
             })
             const acceptOrderOptions = {
@@ -116,23 +116,24 @@
                 .then((response) => response.text())
                 .then((result) => {
                     console.log(result, "result of order set as a/r")
-                    // ws.send(JSON.stringify({type:"BUYER_FINALIZED",data:{payment_type:"cash_on_delivery",orderId:message_data.data.orderId}}))
+                    // ws.send(JSON.stringify({type:"BUYER_FINALIZED",data:{payment_type:"cash_on_delivery",orderId:message.data.orderId}}))
                 })
         }
         else if (message_type == "CARRIER_LOCATION") {
-            console.log("location data received ", message_data.data)
+            console.log("location data received ", message.data)
         }
         else if (message_type == "NOTIFICATION") {
             console.log("notification came to user")
-            const notf = message_data.data
-            if (notf.type == "ORDER_SET_CARRYING"){
-                console.log("order is set as carrying")
-                if (ws.readyState) {
-                    const data = { carrierId: notf.data.carrier_id }
-                    console.log("subscribing data before sending")
-                    ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
-                    console.log("subscribed to carrier's room ")
-                }
+            const notf = message.data
+            
+        }
+        else if (message_type == "ORDER_SET_CARRYING") {
+            console.log("order is set as carrying")
+            if (ws.readyState) {
+                const data = { carrierId: message.data.carrier_id }
+                console.log("subscribing data before sending")
+                ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
+                console.log("subscribed to carrier's room ")
             }
         }
 

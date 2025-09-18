@@ -23,6 +23,15 @@ class Category(models.Model):
         verbose_name_plural = "categories"
         ordering = ["-created_at"]
 
+    @property
+    def icon_url(self):
+        try:
+            return self.icon.url
+        except ValueError:
+            print("category has no icon")
+            return None
+
+
     def __str__(self):
         return self.name
 
@@ -127,6 +136,13 @@ class Food(models.Model):
 
         return super().save(*args, **kwargs)
 
+    @property
+    def image_url(self):
+        try:
+            return self.image.url
+        except ValueError:
+            print("food has no image")
+            return None
 
     def __str__(self):
         return self.name

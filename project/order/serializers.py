@@ -4,9 +4,9 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 from rest_framework import serializers
-
 from carrier.serializers import CarrierSerializer
 from marketplace.serializers import MyDecimalField
+from carrier.utils import encrypt_32
 from .models import Order, OrderItem
 from accounts.models import User
 
@@ -14,10 +14,12 @@ from accounts.models import User
 class COrderItemSerializerMany(ModelSerializer):
     subtotal = serializers.SerializerMethodField("get_subtotal")
     food_name = serializers.SerializerMethodField("get_food_name")
-
+    price = MyDecimalField()
+    image = serializers.ReadOnlyField(source="food.image_url")
+    id = serializers.ReadOnlyField(source="food.id")
     class Meta:
         model = OrderItem
-        fields = ["id", "food_name", "quantity", "price", "subtotal"]
+        fields = ["id", "food_name", "quantity", "price", "subtotal","image"]
         read_only_fields = ["__all__"]
 
     def get_subtotal(self, obj):
@@ -30,7 +32,9 @@ class COrderItemSerializerMany(ModelSerializer):
 class COrderItemSerializer(ModelSerializer):
     subtotal = serializers.SerializerMethodField("get_subtotal")
     food_name = serializers.SerializerMethodField("get_food_name")
-    image = serializers.ReadOnlyField(source="food.image.url")
+    image = serializers.ReadOnlyField(source="food.image_url")
+    price = MyDecimalField()
+
     class Meta:
         model = OrderItem
         fields = ["image", "food_name", "quantity", "price", "subtotal"]
@@ -42,17 +46,15 @@ class COrderItemSerializer(ModelSerializer):
     def get_food_name(self, obj):
         return obj.food_name
 
-    def get_image_url(self, obj):
-        return obj.food.image.url
 
 
 class COrderSerializer(ModelSerializer):
     user = PrimaryKeyRelatedField(read_only=True)
     items = COrderItemSerializerMany(many=True, read_only=True)
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
-    vendor_image = serializers.ReadOnlyField(source="vendor.image.url")
+    vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
     total_price = MyDecimalField(read_only=True)
-    
+    carrier_name =  serializers.ReadOnlyField(source="carrier.user.full_name")
     class Meta:
         model = Order
         fields = [
@@ -65,7 +67,8 @@ class COrderSerializer(ModelSerializer):
             "is_credit",
             "created_at",
             "total_items",
-            "carrier",
+            "carrier", # for live tracking if needed
+            "carrier_name", # may be null
             "vendor",
             "vendor_name",
             "items",
@@ -84,9 +87,11 @@ class COrderSerializer(ModelSerializer):
         return 
 
 class COrderSerializerLessDetail(ModelSerializer):
-    vendor_image = serializers.ReadOnlyField(source="vendor.image.url")
+    vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
     total_price = MyDecimalField(read_only=True)
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
+    # items_pair = serializers.SerializerMethodField("get_items")
+    items = COrderItemSerializerMany(many=True, read_only=True)
 
     class Meta:
         model = Order
@@ -100,9 +105,14 @@ class COrderSerializerLessDetail(ModelSerializer):
             "carrier",
             "vendor_image",
             "vendor_name",
+            # "items_pair",
+            "items"
             
         ]
 
+    # def get_items(self,obj):
+    #     """this is used in orders list for review """
+    #     return [(item.food.id,item.food.name) for item in obj.items.all()]
 
 class VOrderItemSerializer(ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name")
@@ -159,13 +169,15 @@ class VOrderSerializer(ModelSerializer):
 
 
 class CarrierOrderSerializer(ModelSerializer):
-    customer_name = SerializerMethodField("get_customer_name")
+    customer_name = serializers.ReadOnlyField(source="user.full_name")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     total_price = MyDecimalField(read_only=True)
-
+    id = serializers.SerializerMethodField("get_id")
+    otp = serializers.SerializerMethodField("get_otp")
     class Meta:
         model = Order
         fields = [
+            "id",
             "customer_name",
             "total_items",
             "total_price",
@@ -175,8 +187,12 @@ class CarrierOrderSerializer(ModelSerializer):
             "created_at",
             "user",
             "vendor",
+            "otp"
         ]
-        read_only_fields = ["created_at", "user"]
+        read_only_fields = ["__all__"]
 
-    def get_customer_name(self, obj):
-        return obj.user.first_name + obj.user.last_name
+    def get_id(self,obj):
+        return encrypt_32(obj.id)
+        
+    def get_otp(self,obj):
+        return encrypt_32(obj.otp)

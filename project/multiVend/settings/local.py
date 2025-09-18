@@ -17,7 +17,7 @@ DATABASES = {
 }
 
 SECRET_KEY = config("SECRET_KEY", cast=str)
-
+DUMMY_SECRET = config("DUMMY_SECRET", cast=str)
 # Redis as its own
 REDIS_HOST = config("REDIS_HOST")
 REDIS_PORT = config("REDIS_PORT", cast=int)
@@ -95,7 +95,7 @@ SIMPLE_JWT = {
 }
 
 
-# Firebase cloud messageing                      
+# Firebase cloud messageing
 import firebase_admin
 from firebase_admin import credentials, messaging
 

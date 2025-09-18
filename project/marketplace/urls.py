@@ -15,7 +15,7 @@ router.register(r"v-search", views.VendorSearchViewset, basename="vendor-search"
 
 router.register(r"ratings", views.RatingViewSet, basename="rating")
 
-router.register(r"fav-list", views.FavListViewset, basename="fav-list")
+# router.register(r"fav-list", views.FavListViewset, basename="fav-list")
 
 
 urlpatterns = [
@@ -27,6 +27,7 @@ urlpatterns = [
     path("foods-by-category/", views.FoodsByCategory.as_view()),
     path("like-food-item/", views.LikeFood.as_view()),
     path("like-vendor/", views.LikeVendor.as_view()),
+    
     
     # full search
 ]

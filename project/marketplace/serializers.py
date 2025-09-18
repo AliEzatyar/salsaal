@@ -1,15 +1,12 @@
 from decimal import InvalidOperation
 import json
-from zoneinfo import ZoneInfo
 from rest_framework import serializers
-from vendor.utils import to_af_weekday
 from vendor.models import OpeningHour, Vendor
 from marketplace.models import Category, FavItem, FavList, Food, Rating
 from rest_framework import serializers
 from decimal import InvalidOperation
 import json
 from django.db.utils import IntegrityError
-from django.utils import timezone
 from django.conf import settings
 from django.db import transaction, IntegrityError
 from rest_framework.exceptions import ValidationError
@@ -61,15 +58,15 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ["id", "name", "icon"]
 
 
-class FoodSerializerDetail(serializers.ModelSerializer):
+class VFoodSerializerDetail(serializers.ModelSerializer):
     """this serializer is used for vendor-only CRUD"""
 
-    category_name = serializers.SerializerMethodField("get_category_name")
+    category_name = serializers.ReadOnlyField(source="category.name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
     is_available = serializers.BooleanField(default=True)
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-
+    image = serializers.ReadOnlyField(source="image_url")
     class Meta:
         model = Food
         fields = [
@@ -101,11 +98,8 @@ class FoodSerializerDetail(serializers.ModelSerializer):
             "vendor",
         ]
 
-    def get_category_name(self, obj):
-        return obj.category.name
-
     def create(self, validated_data):
-        """setting the vendor and min price for the food + preventing duplicates+ handling multiple images"""
+        """setting the vendor and min price for the food + preventing duplicates"""
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
         validated_data["min_price"] = min([x for x in validated_data["prices"]])
         name = validated_data.get("name")
@@ -134,7 +128,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """
-        preventing duplicate foodname and updating images if provided any.
+        preventing duplicate foodname.
         """
         try:
             with transaction.atomic():
@@ -143,7 +137,7 @@ class FoodSerializerDetail(serializers.ModelSerializer):
                 name = validated_data.get("name")
                 if name:
                     existing = (
-                        Food.objects.filter(name=name, vendor=instance.vendor)
+                        Food.objects.filter(name__iexact=name, vendor=instance.vendor)
                         .exclude(pk=self.instance.pk)
                         .exists()
                     )
@@ -155,6 +149,10 @@ class FoodSerializerDetail(serializers.ModelSerializer):
         return instance
 
     def validate(self, attrs):
+        """
+        overriden to validate if food is ready type or fast food
+        if its fast food, it should have duration, else, it should have ready_time which is an hour
+        """
         is_ready_type = attrs.get("is_ready_type")
         if is_ready_type:
             if not attrs.get("ready_time"):
@@ -169,15 +167,17 @@ class FoodSerializerDetail(serializers.ModelSerializer):
                     "fast_food_must_have_cooking_duration"
                 )
             attrs["ready_time"] = None
-        return attrs
+
+        return super().validate(attrs)
 
 
-class CFoodSerializerDetail(serializers.ModelSerializer):
+class CVFoodSerializerDetail(serializers.ModelSerializer):
+    """used for category"""
     category_name = serializers.SerializerMethodField("get_category_name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
-
+    image = serializers.ReadOnlyField(source="image_url")
     class Meta:
         model = Food
         fields = [
@@ -211,6 +211,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
     min_price = MyDecimalField()
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
+    image = serializers.ReadOnlyField(source="image_url")
 
     class Meta:
         model = Food
@@ -250,6 +251,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     final_price = serializers.ReadOnlyField(source="min_price")
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     discount = serializers.ReadOnlyField(source="discount.amount")
+    image = serializers.ReadOnlyField(source="image_url")
 
     class Meta:
         model = Food
@@ -282,7 +284,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     def get_distance(self, obj):
         return obj.distance if hasattr(obj, "distance") else None
 
-    def get_min_price(self,obj):
+    def get_min_price(self, obj):
         """returns original value of min_price"""
         return (obj.min_price / (100 - obj.discount.amount)) * 100
 
@@ -290,10 +292,10 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
 class RatingSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField("get_user_name")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-
+    
     class Meta:
         model = Rating
-        fields = ["id", "user", "user_name", "comment", "created_at", "rating"]
+        fields = ["id", "user_name", "comment", "created_at", "rating"]
         read_only_fields = ["id", "created_at", "user"]
 
     def get_user_name(self, obj):
@@ -309,46 +311,10 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "start_hour", "end_hour", "weekday", "is_holdiay"]
 
 
-class FavItemSerializer(serializers.ModelSerializer):
-    food_name = serializers.SerializerMethodField("get_food_name", read_only=True)
-    picture = serializers.SerializerMethodField("get_food_picture", read_only=True)
-
-    class Meta:
-        model = FavItem
-        fields = ["id", "food", "food_name", "picture"]
-        read_only_fields = ["picture", "food_name"]
-
-    def create(self, validated_data):
-        favlist = FavList.objects.filter(id=self.context["favlist"]).first()
-        exists = favlist.items.filter(food=validated_data["food"]).exists()
-        if exists:
-            raise serializers.ValidationError(detail="already_exists")
-        if not favlist:
-            raise serializers.ValidationError(detail="no_fav_list")
-        validated_data["favlist"] = favlist
-        return super().create(validated_data)
-
-    def get_food_name(self, obj):
-        return obj.food.name
-
-    def get_food_picture(self, obj):
-        return obj.food.image.url
-
-
-class FavListSerializer(serializers.ModelSerializer):
-    user_name = serializers.SerializerMethodField("get_user_name", read_only=True)
-
-    class Meta:
-        model = FavList
-        fields = ["user", "user_name"]
-        read_only_fields = ["user_name"]
-
-    def get_user_name(self, obj):
-        return obj.user.full_name
-
 
 class FoodSerializerLessDetail(serializers.ModelSerializer):
     min_price = MyDecimalField(read_only=True)
+    image = serializers.ReadOnlyField(source="image_url")
 
     class Meta:
         model = Food

@@ -4,7 +4,7 @@ from .models import Notification
 
 
 class NotificationSerializer(ModelSerializer):
-    date_time = SerializerMethodField("get_date_time")
+    created_at = SerializerMethodField("get_created_at")
 
     class Meta:
         model = Notification
@@ -13,11 +13,11 @@ class NotificationSerializer(ModelSerializer):
             "type",
             "data",
             "is_read",
-            "date_time",
+            "created_at",
             "target_id",
-            "target_obj_type",
+            "description",
         ]
         read_only_fields = ["__all__"]
 
-    def get_date_time(self, obj):
-        return str(obj.date_time.astimezone(ZoneInfo("Asia/Kabul")))
+    def get_created_at(self, obj):
+        return str(obj.created_at.astimezone(ZoneInfo("Asia/Kabul")))

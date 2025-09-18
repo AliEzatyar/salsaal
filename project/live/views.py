@@ -12,9 +12,11 @@ class NotificationReadApiView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        Notification.objects.filter(
-            receiver=self.request.user, is_read=False
-        ).update(is_read=True)
-        user_notf = Notification.objects.filter(receiver=self.request.user).order_by("-date_time")
-        notf_ser = NotificationSerializer(user_notf[:15], many=True)
-        return Response(notf_ser.data)
+        notfs = Notification.objects.filter(
+            receiver=self.request.user
+        )[:30]
+        notf_ser = NotificationSerializer(notfs, many=True)
+        data = notf_ser.data
+        ids = notfs.values_list("id",flat=True)
+        Notification.objects.filter(id__in=ids).update(is_read=True)
+        return Response(data)
