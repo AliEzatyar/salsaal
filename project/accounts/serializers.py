@@ -42,7 +42,7 @@ class UserCreationSerializer(ModelSerializer):
 class UserProfileSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ["picture", "city", "address", "lattitude", "longitude"]
+        fields = ["picture", "city", "address", "latitude", "longitude"]
 
     def update(self, instance, validated_data):
         pic = validated_data.get("picture", None)
@@ -63,7 +63,7 @@ class UserProfileSerializer(ModelSerializer):
 class UserProfileCreationSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ["pf_lang", "country", "city", "lattitude", "longitude", "address"]
+        fields = ["pf_lang", "country", "city", "latitude", "longitude", "address"]
 
     def save(self, **kwargs):
         return super().save(**kwargs)

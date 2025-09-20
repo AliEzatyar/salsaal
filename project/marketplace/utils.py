@@ -172,9 +172,9 @@ def distance_reach_time(qs, lat, lon, typ="food"):
         distance = round(
             haversine_distance(
                 (
-                    obj.vendor.user_profile.lattitude
+                    obj.vendor.user_profile.latitude
                     if typ == "food"
-                    else obj.user_profile.lattitude
+                    else obj.user_profile.latitude
                 ),
                 (
                     obj.vendor.user_profile.longitude

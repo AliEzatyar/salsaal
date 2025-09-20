@@ -10,8 +10,8 @@ if (navigator.geolocation) {
 
             // Populate input fields
             console.log()
-            if (!document.getElementById("id_lattitude").value) {
-                document.getElementById("id_lattitude").value = latitude;
+            if (!document.getElementById("id_latitude").value) {
+                document.getElementById("id_latitude").value = latitude;
             }
             if (!document.getElementById("id_longtitiude").value) {
                 document.getElementById("id_longtitiude").value = longitude;

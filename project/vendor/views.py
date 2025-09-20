@@ -712,10 +712,13 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     activate_language(self.request.user.profile.pf_lang)
                     notf = Notification.objects.create(
                         title=_("Order Rejected"),
-                        description=_("sorry! your order has been rejected by restuarant!"),
+                        description=_(
+                            "sorry! your order has been rejected by restuarant!"
+                        ),
                         type="VENDOR_REJECTED",
                         data={},
                         receiver=order.vendor.user,
+                        target_id=order.id,
                     )
                     deactivate_language()
                     r.publish(
@@ -871,7 +874,7 @@ class SetOrderStateCarrying(views.APIView):
                 carrier.vendor != self.request.user.vendor
             ):  # vendor should own this carrier
                 return Response(status=status.HTTP_403_FORBIDDEN)
-            if carrier.status == CARRIER_STATUS_CHOICES[1][0]:  # carreri busy
+            if carrier.status == CARRIER_STATUS_CHOICES[1][0]:  # carrerir busy
                 return Response(
                     {"detail": "carrier_busy"}, status=status.HTTP_409_CONFLICT
                 )
@@ -882,66 +885,67 @@ class SetOrderStateCarrying(views.APIView):
             #     if not order.paid:
             #         return Response({"detail": "payment not completed"}, status=400)
 
-            # setting order carrier to requesting carrier
-            order.carrier = carrier
-            carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
-            # generating otp
-            # otp = generate_otp()
-            # UserOtp.objects.create(user=order.user,otp=otp)
-            # setting order in carrying state
-            order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
-            order.save()
-            # order.otp = otp
-            carrier.save()
-            # setting carrier live status in redis
-            carrier_key = get_carrier_key(carrier_id)
-            vendor_location = self.request.user.profile.location
-            vendor_location = (vendor_location.y, vendor_location.x)
-            order_user = order.user
-            customer_location = order_user.profile.location
-            customer_location = (customer_location.y, customer_location.x)
-            city = self.request.user.profile.city
-            city = str(city).lower()
-            carrier_return_estimate = 2 * estimate_travel_time_graphhopper(
-                vendor_location, customer_location
-            )
-            r.set(
-                carrier_key,
-                json.dumps(
-                    {
-                        "return_estimate": carrier_return_estimate,
-                        "location": vendor_location,
-                        "destination": customer_location,
-                    }
-                ),
-            )
-            # ---------------- updating vendor's carriers in redis
-            vendor = self.request.user.vendor
-            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
-            b_c_c = r.hget(vendor_carriers_key, "b_c_c")
-            if b_c_c:
-                b_c_c = json.loads(b_c_c)
-            else:
-                b_c_c = 0
-                r.hset(vendor_carriers_key, "b_c_c", b_c_c)
+            with transaction.atomic():
+                # ----------------  making necessary things atomic
+                order.carrier = carrier
+                carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
+                UserOtp.objects.create(user=order.user,otp=order.otp)
+                # setting order in carrying state
+                order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
+                # order.otp = otp
+                carrier.save()
+                # setting carrier live status in redis
+                order_user = order.user
+                customer_location = order_user.profile.location
+                customer_location = (customer_location.y, customer_location.x)
+                order.destination = str(customer_location[0])+","+str(customer_location[1])
+                order.save()
+                # estimation
+                vendor_location = (vendor_location.y, vendor_location.x)
+                vendor_location = self.request.user.profile.location
+                carrier_return_estimate = 2 * estimate_travel_time_graphhopper(
+                    vendor_location, customer_location
+                )
+                carrier_key = get_carrier_key(carrier_id)
+                r.set(
+                    carrier_key,
+                    json.dumps(
+                        {
+                            "return_estimate": carrier_return_estimate,
+                            "location": vendor_location,
+                            "destination": customer_location,
+                        }
+                    ),
+                )
+                # ---------------- updating vendor's carriers in redis
+                vendor = self.request.user.vendor
+                vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+                b_c_c = r.hget(vendor_carriers_key, "b_c_c")
+                if b_c_c:
+                    b_c_c = json.loads(b_c_c)
+                else:
+                    b_c_c = 0
+                    r.hset(vendor_carriers_key, "b_c_c", b_c_c)
 
-            b_c_c = int(b_c_c) + 1  # increase it by one
+                b_c_c = int(b_c_c) + 1  # increase it by one
 
-            r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
-            f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
-            f_c_c = int(f_c_c) - 1
-            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
-            # ---------------------- creating notification for customer
-            profile = order.user.profile
+                r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
+                f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
+                f_c_c = int(f_c_c) - 1
+                r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+                # ---------------------- creating notification for customer
+                profile = order.user.profile
 
-            activate_language(profile.pf_lang)
-            notf = Notification.objects.create(
-                title=_("Order set as carrying"),
-                type="ORDER_SET_CARRYING",
-                receiver=order.user,
-                data={"order_id": order.id, "carrier_id": carrier_id},
-            )
-            deactivate_language()
+                activate_language(profile.pf_lang)
+                notf = Notification.objects.create(
+                    title=_("Order set as carrying"),
+                    type="ORDER_SET_CARRYING",
+                    receiver=order.user,
+                    data={"order_id": order.id, "carrier_id": carrier_id},
+                    target_id=order.id,
+                )
+                deactivate_language()
+                # -------------------- atomic end ----------------
             # ---------------------- sending notification to customer, add FCM/APNs later
             r.publish(
                 f"pub:user:{order.user.id}",
@@ -957,6 +961,7 @@ class SetOrderStateCarrying(views.APIView):
             )
             print("notification sent to customer", f"pub:user:{order.user.id}")
             # --------------------- sending notification to carrier's room
+            
             r.publish(
                 f"pub:carrier:{carrier_id}",
                 json.dumps(
@@ -980,3 +985,7 @@ class SetOrderStateCarrying(views.APIView):
         except PermissionDenied as pd:
             print(pd, pd.args)
             return Response({"detail": "not_allowed"}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            print("error in set order as carrying",e)
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            

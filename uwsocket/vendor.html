@@ -146,7 +146,9 @@
             renderOrder(new_order_data, orderContainer);
 
             //--------------------  calculating order reach time
-            const esimateOrderTimeUrl = domain + "/api/vendor/estimate-order-time/?order_id=" + new_order_data.id
+            var esimateOrderTimeUrl = domain + "/api/vendor/estimate-order-time/?order_id=" 
+            esimateOrderTimeUrl += new_order_data.id
+            esimateOrderTimeUrl += "&is_accepted=true" 
             const headersTimeEstimate = new Headers()
             headersTimeEstimate.append("Authorization", vendor_token)
             headersTimeEstimate.append("Content-Type", "application/json")

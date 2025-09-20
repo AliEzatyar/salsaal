@@ -58,7 +58,7 @@ class CustomFoodOrdering(OrderingFilter):
             for food in queryset:
                 distance = round(
                     haversine_distance(
-                        food.vendor.user_profile.lattitude,
+                        food.vendor.user_profile.latitude,
                         food.vendor.user_profile.longitude,
                         lat,
                         lon,

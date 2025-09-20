@@ -119,7 +119,7 @@ class UserProfile(g_models.Model):
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15)
-    lattitude = models.CharField(max_length=20)
+    latitude = models.CharField(max_length=20)
     longitude = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -131,12 +131,12 @@ class UserProfile(g_models.Model):
 
     def save(self, *args, **kwargs):
         """overriding to set location point automatically"""
-        if self.lattitude and self.longitude:
+        if self.latitude and self.longitude:
             self.location = Point(
-                float(self.longitude), float(self.lattitude), srid=4326
+                float(self.longitude), float(self.latitude), srid=4326
             )
             self.h3_id = h3_latlng_to_cell(
-                float(self.lattitude), float(self.longitude), DEFAULT_H3_RESOLUTION
+                float(self.latitude), float(self.longitude), DEFAULT_H3_RESOLUTION
             )
             self.city = str(self.city).lower()
 
@@ -154,11 +154,11 @@ class Device(models.Model):
 
 
 class UserOtp(models.Model):
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         "accounts.User",
         on_delete=models.CASCADE,
     )
-    otp = models.CharField(max_length=6)
+    otp = models.CharField(max_length=8)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):

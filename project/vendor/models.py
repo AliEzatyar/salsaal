@@ -152,8 +152,8 @@ class Promotion(models.Model):
     """this model resembles promotional images at home page """
     image = models.ImageField(upload_to="promotions/")
     city = models.CharField(default="kabul", max_length=20)
-    start_date = models.DateTimeField(default=now())
-    end_date = models.DateTimeField(default=now())
+    start_date = models.DateTimeField(default=now)
+    end_date = models.DateTimeField(default=now)
     is_active = models.BooleanField(default=False)
     cost_per_day = models.PositiveSmallIntegerField(default=10)
     created_at = models.DateTimeField(auto_now_add=True)

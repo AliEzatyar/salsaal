@@ -103,9 +103,9 @@ app.ws("/*", {
     message: async (ws, message, isBinary) => {
         try {
             // setting message type like notification or location and its related data
-            console.log("message.......", Buffer.from(message).toString())
+            // console.log("message.......", Buffer.from(message).toString())
             const { type, data } = JSON.parse(Buffer.from(message).toString());
-            console.log("message came from client to channel", type, data)
+            // console.log("message came from client to channel", type, data)
             switch (type) {
                 case "SUBSCRIBE_ORDER": {
                     console.log("subscribed to order ", data.orderId)
@@ -148,8 +148,12 @@ app.ws("/*", {
                     console.log("subscribed to carrier ", data.carrierId)
                     let room = `carrier:${data.carrierId}`;
                     subscribeToRoom(ws, room);
-                    const last_carrier_location = redisPub.hGetAll(`carrier_last_${data.carrierId}`)
-                    ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', room }))
+                    var lastCarrierLocation = await redisPub.hGetAll(`carrier_last_${data.carrierId}`)
+                    ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED' }))
+                    if (lastCarrierLocation.latitude && lastCarrierLocation.longitude) {
+                        console.log("sending locaiotn", lastCarrierLocation.latitude)
+                        ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data: { lat: lastCarrierLocation.latitude, lon: lastCarrierLocation.longitude,  ts: Date.now().toString() } }))
+                    }
                     break;
                 }
                 case "UNSUBSCRIBE_CARRIER": {
@@ -169,14 +173,8 @@ app.ws("/*", {
 
                 case "CARRIER_LOCATION": {
                     const { lat, lon, carrierId, ts } = data;
-                    // redisPub.geoAdd("carrier_location", {
-                    //     longitude: lon.toString(),
-                    //     latitude: lat.toString(),
-                    //     member: carrierId.toString()   // must be "member" not "carrierId"
-                    // });
                     redisPub.hSet(`carrier_last_${carrierId}`, { latitude: lat, longitude: lon, ts });
-                    redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", data:{latitude:lat, longitude:lon, ts} }));
-                    console.log("carrier location sent out of uwsocket...",lat,"----",lon)
+                    redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", data: { latitude: lat, longitude: lon, ts } }));
                     break
 
                 }
@@ -192,9 +190,6 @@ app.ws("/*", {
 
                     const jsonData = JSON.stringify(payload);
                     await redisPub.set(key, jsonData, { EX: orderStatusTTL });
-
-                    console.log("order status saved in server accepted", jsonData);
-
                     redisPub.publish(
                         `pub:order:${orderId}`,
                         JSON.stringify({ type: "VENDOR_ACCEPTED", data: data })
@@ -245,9 +240,9 @@ app.ws("/*", {
 // this is where messages come from django or any server connected to redis and call redis.publish
 // sending messages comming from redis publisher to all clients connected to its room
 redisSub.pSubscribe("pub:*", (message, channel) => {
-    console.log("message come to redis subsciber")
+    // console.log("message come to redis subsciber")
     const room = channel.replace(/^pub:/, "");
-    console.log(room)
+    // console.log(room)
     app.publish(room, message)
 });
 

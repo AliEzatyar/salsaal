@@ -6,7 +6,13 @@ from .serializers import (
     COrderSerializerLessDetail,
 )
 from cart.models import CartItem
-from .models import VALID_PAYMENT_TYPES, Order, OrderItem, ORDER_STATUS_CHOICES
+from .models import (
+    VALID_PAYMENT_TYPES,
+    Order,
+    OrderItem,
+    ORDER_STATUS_CHOICES,
+    MAX_PREPARING_ORDERS_COUNT,
+)
 from rest_framework.decorators import action
 from rest_framework import viewsets, views, status, permissions
 from rest_framework.response import Response
@@ -80,14 +86,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         )  # auto json to dict since restframework request object
         # updating user's location to latest area
         print("data", data)
-        lat = data.get("lat", None)
-        lon = data.get("lon", None)
+        lat = data.get("latitude", None)
+        lon = data.get("longitude", None)
         if lat and lon:
-            print("user sent location in order creation")
             user_profile = request.user.profile
-            user_profile.location = Point(
-                float(self.longitude), float(self.lattitude), srid=4326
-            )
+            user_profile.latitude = str(lat)
+            user_profile.longitude = str(lon)
             user_profile.save()
             print("user locaiton updated")
 
@@ -97,102 +101,110 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response(
                 {"detail": "cart_empty"}, status=status.HTTP_400_BAD_REQUEST
             )
-        vendor_id = CartItem.objects.filter(cart=cart).last().food.vendor.id
-        print(vendor_id, CartItem.objects.filter(cart=cart).last().food.id)
-        data["vendor"] = vendor_id
-
-        # -------------   assigning the serializer value and creating order
-        # try:
-        serializer = self.get_serializer(data=data)
-        if Order.objects.filter(
-            user=request.user,
-            status=ORDER_STATUS_CHOICES[1][1],
-            vendor__id=vendor_id,
-        ).exists():
-            # prevent duplicate order if user has one 'waiting' order already
-            return Response(
-                {"detail": "order_already_in_process"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        serializer.is_valid(raise_exception=True)  # validating data
-        with atomic():
-            self.perform_create(serializer)  # creating the order
-            order = serializer.instance
-            OrderItem.objects.filter(
-                order=order
-            ).delete()  # flush previous items and recreate new items
-            pks = []
-            # ----------------------- creating order item objects
-            for item in CartItem.objects.filter(cart=cart).select_related(
-                "food__vendor"
+        try:
+            # -------------------- preventing multiple orders
+            previous_waiting_orders = Order.objects.filter(
+                user=request.user,
+                status=ORDER_STATUS_CHOICES[1][1], # waiting
+                vendor__id=vendor_id,
+            ).exists()
+            previouse_preparing_orders_count = Order.objects.filter(
+                user=request.user,
+                status=ORDER_STATUS_CHOICES[2][0],
+                vendor__id = vendor_id
+            ).count()
+            if (
+                previous_waiting_orders
+                or previouse_preparing_orders_count > MAX_PREPARING_ORDERS_COUNT
             ):
-                OrderItem.objects.create(
-                    order=order,
-                    food=item.food,
-                    vendor=item.food.vendor,
-                    quantity=item.quantity,
-                    price=item.price,
+                # prevent duplicate order if user has one 'waiting' order already
+                return Response(
+                    {"detail": "order_already_in_process"},
+                    status=status.HTTP_403_FORBIDDEN,
                 )
-                pks.append(item.food.id)
+            # --------------- validating and creating order
+            vendor_id = CartItem.objects.filter(cart=cart).last().food.vendor.id
+            data["vendor"] = vendor_id
+            serializer = self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)  # validating data
+            with atomic():
+                self.perform_create(serializer)  # creating the order
+                order = serializer.instance
+                OrderItem.objects.filter(
+                    order=order
+                ).delete()  # flush previous items and recreate new items
+                pks = [] # this list feeds recommender
+                # ----------------------- creating order item objects
+                for item in CartItem.objects.filter(cart=cart).select_related(
+                    "food__vendor"
+                ):
+                    OrderItem.objects.create(
+                        order=order,
+                        food=item.food,
+                        vendor=item.food.vendor,
+                        quantity=item.quantity,
+                        price=item.price,
+                    )
+                    pks.append(item.food.id)
 
-            order.calculate_total_price()  # setting total price field value
-            order.set_total_items()  # setting total items amount field value
-            # ------------------------- creating the notification object
-            profile = request.user.profile
-            activate(profile.pf_lang)
-            safe_data = json.loads(
-                json.dumps(
-                    serializer.data, cls=DjangoJSONEncoder
-                )  # Converts Decimal -> float
-            )
-            notf = Notification.objects.create(
-                title=_("you have a new order!"),
-                type="NEW_ORDER",
-                data=safe_data,
-                receiver=order.vendor.user,
-                description=_(""),
-            )
-            deactivate()
-            # ----- sending notification to vendors room using redis
-            send_notification(
-                order.vendor.user.id,
-                notf.title,
-                body=notf.description,
-                data=safe_data,
-            )
-            r.publish(
-                f"pub:vendor:{order.vendor.id}",
-                json.dumps(
-                    {
-                        "type": "NEW_ORDER",
-                        "data": NotificationSerializer(notf).data,
-                    }  # vendor app should extract order id and subscribe to --order room
-                ),
-            )
+                order.calculate_total_price()  # setting total price field value
+                order.set_total_items()  # setting total items amount field value
+                # ------------------------- creating the notification object
+                profile = request.user.profile
+                activate(profile.pf_lang)
+                safe_data = json.loads(
+                    json.dumps(
+                        serializer.data, cls=DjangoJSONEncoder
+                    )  # Converts Decimal -> float
+                )
+                notf = Notification.objects.create(
+                    title=_("you have a new order!"),
+                    type="NEW_ORDER",
+                    data=safe_data,
+                    receiver=order.vendor.user,
+                    description=None,
+                    target_id=order.id,
+                )
+                deactivate()
+                # ----- sending notification to vendor's room 
+                send_notification(
+                    order.vendor.user.id,
+                    notf.title,
+                    body=notf.description,
+                    data=safe_data,
+                )
+                r.publish(
+                    f"pub:vendor:{order.vendor.id}",
+                    json.dumps(
+                        {
+                            "type": "NEW_ORDER",
+                            "data": NotificationSerializer(notf).data,
+                        }  # vendor app should extract order id and subscribe to --order room
+                    ),
+                )
 
-        # ------------------------ feeding recommender
-        recommender = BoughtTogetherRecommender()
-        recommender.update_together_bought(pks)
-        response = Response(
-            {
-                "order_id": order.id
-            },  # buyer account uses to subscribe to -order room for further things
-            status=status.HTTP_201_CREATED,
-        )
-        return response
-        # except Exception as e:
-        #     print("error in creating order", e)
-        #     waiting_orders = Order.objects.filter(
-        #         user=request.user,
-        #         status=ORDER_STATUS_CHOICES[1][1],
-        #         vendor__id=vendor_id,
-        #     )
-        #     for order in waiting_orders:
-        #         waiting_orders.delete()
-        #     return Response(
-        #         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        #     )
+            # ------------------------ feeding recommender
+            recommender = BoughtTogetherRecommender()
+            recommender.update_together_bought(pks)
+            response = Response(
+                {
+                    "order_id": order.id
+                },  # buyer account uses to subscribe to -order room for further things
+                status=status.HTTP_201_CREATED,
+            )
+            return response
+        except Exception as e:
+            print("error in creating order", e)
+            waiting_orders = Order.objects.filter(
+                user=request.user,
+                status=ORDER_STATUS_CHOICES[1][1],
+                vendor__id=vendor_id,
+            )
+            for order in waiting_orders:
+                waiting_orders.delete()
+            return Response(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @action(detail=False, methods=["delete"], url_path="cancel")
     def cancel(self, request):
@@ -201,33 +213,34 @@ class OrderViewSet(viewsets.ModelViewSet):
             user=request.user,
             status__in=[ORDER_STATUS_CHOICES[1][1], ORDER_STATUS_CHOICES[2][1]],
         )
-        print("cacnelling", orders)
         if len(orders) > 0:
-            for order in orders:
-                order.cancel_order()
-            activate(request.user.profile.pf_lang)
-            notf = Notification.objects.create(
-                title=_("order has been cancelled by buyer!"),
-                type="ORDER_CANCELLED",
-                data={},
-                receiver=order.vendor.user,
-            )
-            deactivate()
-            # ----- sending notification to vendors room using redis
-            send_notification(order.vendor.user.id,notf.title,body=notf.description)
+            with atomic():            
+                for order in orders:
+                    order.cancel_order()
+                activate(request.user.profile.pf_lang)
+                notf = Notification.objects.create(
+                    title=_("order has been cancelled by buyer!"),
+                    type="ORDER_CANCELLED",
+                    data={},
+                    receiver=order.vendor.user,
+                    target_id=order.id,
+                )
+                deactivate()
+                # ----- sending notification to vendors room using redis
+                send_notification(order.vendor.user.id, notf.title, body=notf.description)
 
-            r.publish(
-                f"pub:vendor:{order.vendor.id}",
-                json.dumps(
-                    {
-                        "type": "ORDER_CANCELLED",
-                        "data": {"orderId": order.id},
-                    }  # vendor app should extract order id and subscribe to --order room
-                ),
-            )
-            # ----- deleting vendor status in redis
-            key = f"order:${order.id}:status"
-            r.delete(key)
+                r.publish(
+                    f"pub:vendor:{order.vendor.id}",
+                    json.dumps(
+                        {
+                            "type": "ORDER_CANCELLED",
+                            "data": {"orderId": order.id},
+                        }  # vendor app should extract order id and subscribe to --order room
+                    ),
+                )
+                # ----- deleting vendor status in redis
+                key = f"order:${order.id}:status"
+                r.delete(key)
         return Response(status=status.HTTP_200_OK)
 
     def get_serializer_context(self):
@@ -253,8 +266,8 @@ class AcceptRejectOrderView(views.APIView):
             self.check_object_permissions(self.request, order)
             # only 'waiting' order can be set to preparing
             if not order.status in [
-                ORDER_STATUS_CHOICES[1][0], # waiting
-                ORDER_STATUS_CHOICES[2][0], # preparing
+                ORDER_STATUS_CHOICES[1][0],  # waiting
+                ORDER_STATUS_CHOICES[2][0],  # preparing
             ]:
 
                 print("order  not wiaing preparing or waiting......", order_id)
@@ -288,6 +301,7 @@ class AcceptRejectOrderView(views.APIView):
                 type="ORDER_SET_PREPARING",
                 data={},
                 receiver=order.vendor.user,
+                target_id=order.id,
             )
             deactivate_language()
             # sendig order updates to vendor
@@ -327,7 +341,6 @@ class SetOrderStateDelivered(views.APIView):
         try:
             order_id = int(decrypt_32(order_id))
             otp = int(decrypt_32(input_OTP))
-            print("decrypted", order_id, otp)
             order = Order.objects.get(id=order_id)
             # check if the customer owns this order
             self.check_object_permissions(self.request, order)
@@ -340,50 +353,53 @@ class SetOrderStateDelivered(views.APIView):
             if OTP.is_expired(expire=FOOD_DELIVERY_OTP_EXPIRATION):
                 return Response({"detail": "otp_expired"}, status=400)
 
-            # setting order in submited state and carrier in free state
-            order.status = ORDER_STATUS_CHOICES[4][1]  # delivered
-            order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
-            order.carrier.save()
-            order.paid = True
-            # OTP.delete()
-            order.save()
-            # ---------------- updating vendor's carriers in redis
-            vendor = order.vendor
-            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
-            b_c_c = r.hget(vendor_carriers_key, "b_c_c")  # busy carriers count
-            b_c_c = int(b_c_c) - 1  # decrementing busy carrier's count
-            r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
-            f_c_c = r.hget(vendor_carriers_key, "f_c_c")
-            f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
-            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
-            # --------------- creating notification of order delivery for vendor
-            profile = vendor.user.profile
-            activate_language(profile.pf_lang)
-            # notification for customer
-            Notification.objects.create(
-                title=_("Order Delivered"),
-                description=_("Your order has been delivered successfully."),
-                type="ORDER_DELIVERED",
-                receiver=order.user,
-            )
-            # notificaiton for vendor + send by websocket
-            notf_vendor = Notification.objects.create(
-                title=_("Order Delivered"),
-                description=_(f"Order {order_id} delivered successfully."),
-                type="ORDER_DELIVERED",
-                receiver=order.vendor.user,
-                data={"order_id": order_id},
-            )
-            deactivate_language()
-            r.publish(
-                f"pub:vendor:{vendor.id}",
-                json.dumps(
-                    {
-                        "type": "NOTIFICATION",
-                        "data": NotificationSerializer(notf_vendor).data,
-                    }
-                ),
-            )
+            with atomic():
+                # setting order in submited state and carrier in free state
+                order.status = ORDER_STATUS_CHOICES[4][1]  # delivered
+                order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
+                order.carrier.save()
+                order.paid = True
+                OTP.delete()
+                order.save()
+                # ---------------- updating vendor's carriers in redis
+                vendor = order.vendor
+                vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+                b_c_c = r.hget(vendor_carriers_key, "b_c_c")  # busy carriers count
+                b_c_c = int(b_c_c) - 1  # decrementing busy carrier's count
+                r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
+                f_c_c = r.hget(vendor_carriers_key, "f_c_c")
+                f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
+                r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+                # --------------- creating notification of order delivery for vendor
+                profile = vendor.user.profile
+                activate_language(profile.pf_lang)
+                # notification for customer
+                Notification.objects.create(
+                    title=_("Order Delivered"),
+                    description=_("Your order has been delivered successfully."),
+                    type="ORDER_DELIVERED",
+                    receiver=order.user,
+                    target_id=order.id,
+                )
+                # notificaiton for vendor + send by websocket
+                notf_vendor = Notification.objects.create(
+                    title=_("Order Delivered"),
+                    description=_(f"Order {order_id} delivered successfully."),
+                    type="ORDER_DELIVERED",
+                    receiver=order.vendor.user,
+                    data={"order_id": order_id},
+                    target_id=order.id,
+                )
+                deactivate_language()
+                r.publish(
+                    f"pub:vendor:{vendor.id}",
+                    json.dumps(
+                        {
+                            "type": "ORDER_UPDATE",
+                            "data": NotificationSerializer(notf_vendor).data,
+                        }
+                    ),
+                )
 
             return Response(
                 status=status.HTTP_202_ACCEPTED,

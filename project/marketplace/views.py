@@ -104,7 +104,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             # decoding location data
             lat, lon = geohash.decode(location)
             distance = distance_calculator(
-                float(vendor_profile.lattitude),
+                float(vendor_profile.latitude),
                 float(vendor_profile.longitude),
                 float(lat),
                 float(lon),
@@ -322,7 +322,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 # continue
                 distance = round(
                     distance_calculator(
-                        f.vendor.user_profile.lattitude,
+                        f.vendor.user_profile.latitude,
                         f.vendor.user_profile.longitude,
                         lat,
                         lon,
@@ -369,7 +369,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         for vendor in vendors:
             distance = round(
                 distance_calculator(
-                    vendor.user_profile.lattitude,
+                    vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,
                     lon,
@@ -411,7 +411,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         for vendor in vendors:
             distance = round(
                 distance_calculator(
-                    vendor.user_profile.lattitude,
+                    vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,
                     lon,
@@ -458,7 +458,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             for vendor in top_vendors:
                 distance = round(
                     distance_calculator(
-                        vendor.user_profile.lattitude,
+                        vendor.user_profile.latitude,
                         vendor.user_profile.longitude,
                         lat,
                         lon,
@@ -532,7 +532,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         for vendor in vendors:
             distance = round(
                 distance_calculator(
-                    vendor.user_profile.lattitude,
+                    vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,
                     lon,
@@ -1045,7 +1045,6 @@ class RatingViewSet(viewsets.ModelViewSet):
         if liked_foods:
             for f in liked_foods:
                 try:
-                    print("food like...")
                     food = Food.objects.get(id=f)
                     food.likes += 1
                     food.save()
@@ -1170,7 +1169,7 @@ class PublicVendorDetail(views.APIView):
                         )
                         distance = round(
                             distance_calculator(
-                                obj.user_profile.lattitude,
+                                obj.user_profile.latitude,
                                 obj.user_profile.longitude,
                                 lat,
                                 lon,
@@ -1304,7 +1303,7 @@ class FoodsByCategory(generics.ListAPIView):
         for vendor in vendors:
             distance = round(
                 distance_calculator(
-                    vendor.user_profile.lattitude,
+                    vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,
                     lon,

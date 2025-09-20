@@ -17,6 +17,7 @@ ORDER_STATUS_CHOICES = [
     ("carrying", "carrying"),
     ("delivered", "delivered"),
 ]
+MAX_PREPARING_ORDERS_COUNT = 1
 
 VALID_PAYMENT_TYPES = [
     ("cash_on_delivery", "cash_on_delivery"),

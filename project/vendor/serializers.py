@@ -337,4 +337,4 @@ class AbstractVendorSerializer(serializers.ModelSerializer):
         read_only_fields = ["__all__"]
 
     def get_location(self, obj):
-        return (float(obj.user_profile.lattitude), float(obj.user_profile.longitude))
+        return (float(obj.user_profile.latitude), float(obj.user_profile.longitude))

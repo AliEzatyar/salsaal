@@ -19,7 +19,7 @@
     // here, carrier either reads notifications 
     ws.onmessage = (e) => {
         const data = JSON.parse(e.data)
-        if (data.type == "ORDER_SET_CARRYING") {
+        // if (data.type == "ORDER_SET_CARRYING") {
             const notf = data.data;
             // Starting point: Kabul center
             let lat = 34.50270163248377;
@@ -48,7 +48,7 @@
             }, 5000)
         }
 
-    }
+    // }
     ws.onclose = (e) => {
         console.log("websocket closed")
     }
