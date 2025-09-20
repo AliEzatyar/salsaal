@@ -17,12 +17,14 @@ ORDER_STATUS_CHOICES = [
     ("carrying", "carrying"),
     ("delivered", "delivered"),
 ]
+
 MAX_PREPARING_ORDERS_COUNT = 1
 
 VALID_PAYMENT_TYPES = [
     ("cash_on_delivery", "cash_on_delivery"),
     ("hesab_pay", "hesab_pay"),
     ("debit_card", "debit_card"),
+    ("reward_payment","reward_payment")
 ]
 
 
@@ -81,7 +83,6 @@ class Order(models.Model):
         else:
             vendors = ",".join(vendors)
         return vendors
-    
 
     def cancel_order(self):
         """reseting food order"""
@@ -125,3 +126,12 @@ class OrderItem(models.Model):
     @property
     def food_name(self):
         return self.food.name
+
+
+class Reward(models.Model):
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="rewards")
+    vendor = models.ForeignKey(
+        "vendor.Vendor", on_delete=models.CASCADE, related_name="rewards"
+    )
+    amount = models.FloatField(default=0)
+    

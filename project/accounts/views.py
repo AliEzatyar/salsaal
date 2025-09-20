@@ -6,10 +6,17 @@ from accounts.serializers import (
     UserDetailSerializer,
 )
 from django.db.utils import IntegrityError
+
+from order.models import Reward
 from .utils import OTP_LOGIN, OTP_VERIFY_PHONE
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
-from .serializers import DeviceSerializer, RoleTokenRefreshSeriaizer, UserProfileCreationSerializer
+from .serializers import (
+    DeviceSerializer,
+    RewardSerializer,
+    RoleTokenRefreshSeriaizer,
+    UserProfileCreationSerializer,
+)
 from rest_framework import permissions
 from rest_framework import generics
 from rest_framework import views, viewsets
@@ -51,6 +58,15 @@ class UserViewset(viewsets.ModelViewSet):
         """limiting queryset to only  one instance"""
         new_qs = User.objects.filter(id=self.request.user.id)
         return new_qs
+
+
+class UserRewardsViewset(viewsets.ReadOnlyModelViewSet):
+    """this view lists user's rewards"""
+    serializer_class = RewardSerializer
+
+    def get_queryset(self):
+        qs = Reward.objects.filter(user=self.request.user)
+        return qs
 
 
 class LoginApiView(views.APIView):
@@ -220,7 +236,7 @@ class UpsertDeviceToken(views.APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         if request.user.devices:
-            ser = DeviceSerializer(request.user.devices.last(),data=data,partial=True)
+            ser = DeviceSerializer(request.user.devices.last(), data=data, partial=True)
         else:
             ser = DeviceSerializer(data)
         if ser.is_valid(raise_exception=True):

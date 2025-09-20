@@ -1,5 +1,6 @@
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
+from vendor.models import Vendor
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
     COrderSerializer,
@@ -12,6 +13,7 @@ from .models import (
     OrderItem,
     ORDER_STATUS_CHOICES,
     MAX_PREPARING_ORDERS_COUNT,
+    Reward,
 )
 from rest_framework.decorators import action
 from rest_framework import viewsets, views, status, permissions
@@ -85,7 +87,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             request.data
         )  # auto json to dict since restframework request object
         # updating user's location to latest area
-        print("data", data)
         lat = data.get("latitude", None)
         lon = data.get("longitude", None)
         if lat and lon:
@@ -102,28 +103,28 @@ class OrderViewSet(viewsets.ModelViewSet):
                 {"detail": "cart_empty"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            # -------------------- preventing multiple orders
+            vendor_id = CartItem.objects.filter(cart=cart).last().food.vendor.id
+            # -------------------- deleting waiting orders
             previous_waiting_orders = Order.objects.filter(
                 user=request.user,
-                status=ORDER_STATUS_CHOICES[1][1], # waiting
-                vendor__id=vendor_id,
-            ).exists()
+                status=ORDER_STATUS_CHOICES[1][1],  # waiting
+            )
+            if len(previous_waiting_orders) > 0:
+                previous_waiting_orders.delete()
+            
+            # preventing new order if it exceeds max preparing orders limit for user 
             previouse_preparing_orders_count = Order.objects.filter(
                 user=request.user,
                 status=ORDER_STATUS_CHOICES[2][0],
-                vendor__id = vendor_id
+                vendor__id=vendor_id,
             ).count()
-            if (
-                previous_waiting_orders
-                or previouse_preparing_orders_count > MAX_PREPARING_ORDERS_COUNT
-            ):
+            if  previouse_preparing_orders_count > MAX_PREPARING_ORDERS_COUNT:
                 # prevent duplicate order if user has one 'waiting' order already
                 return Response(
                     {"detail": "order_already_in_process"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
             # --------------- validating and creating order
-            vendor_id = CartItem.objects.filter(cart=cart).last().food.vendor.id
             data["vendor"] = vendor_id
             serializer = self.get_serializer(data=data)
             serializer.is_valid(raise_exception=True)  # validating data
@@ -133,7 +134,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 OrderItem.objects.filter(
                     order=order
                 ).delete()  # flush previous items and recreate new items
-                pks = [] # this list feeds recommender
+                pks = []  # this list feeds recommender
                 # ----------------------- creating order item objects
                 for item in CartItem.objects.filter(cart=cart).select_related(
                     "food__vendor"
@@ -149,6 +150,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
                 order.calculate_total_price()  # setting total price field value
                 order.set_total_items()  # setting total items amount field value
+                
                 # ------------------------- creating the notification object
                 profile = request.user.profile
                 activate(profile.pf_lang)
@@ -166,12 +168,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                     target_id=order.id,
                 )
                 deactivate()
-                # ----- sending notification to vendor's room 
+                # ----- sending notification to vendor's room
                 send_notification(
                     order.vendor.user.id,
                     notf.title,
                     body=notf.description,
-                    data=safe_data,
+                    data={"order_id": order.id},
                 )
                 r.publish(
                     f"pub:vendor:{order.vendor.id}",
@@ -189,19 +191,16 @@ class OrderViewSet(viewsets.ModelViewSet):
             response = Response(
                 {
                     "order_id": order.id
-                },  # buyer account uses to subscribe to -order room for further things
+                },  # buyer account uses to subscribe to `order` room for further things
                 status=status.HTTP_201_CREATED,
             )
             return response
         except Exception as e:
             print("error in creating order", e)
-            waiting_orders = Order.objects.filter(
+            Order.objects.filter(
                 user=request.user,
                 status=ORDER_STATUS_CHOICES[1][1],
-                vendor__id=vendor_id,
-            )
-            for order in waiting_orders:
-                waiting_orders.delete()
+            ).delete()
             return Response(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
@@ -214,7 +213,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             status__in=[ORDER_STATUS_CHOICES[1][1], ORDER_STATUS_CHOICES[2][1]],
         )
         if len(orders) > 0:
-            with atomic():            
+            with atomic():
                 for order in orders:
                     order.cancel_order()
                 activate(request.user.profile.pf_lang)
@@ -227,7 +226,9 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
                 deactivate()
                 # ----- sending notification to vendors room using redis
-                send_notification(order.vendor.user.id, notf.title, body=notf.description)
+                send_notification(
+                    order.vendor.user.id, notf.title, body=notf.description
+                )
 
                 r.publish(
                     f"pub:vendor:{order.vendor.id}",
@@ -275,7 +276,7 @@ class AcceptRejectOrderView(views.APIView):
                     {"detail", "order_not_waiting_state"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            # order accepted -> set as preparing, send notification
+            # checking if payment type is correct 
             payment_type = data.get("payment_type", None)
             if not payment_type or not payment_type in [
                 i[0] for i in VALID_PAYMENT_TYPES
@@ -284,6 +285,43 @@ class AcceptRejectOrderView(views.APIView):
                     {"detail": "invalid_payment_type"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            # ------------checking if payment is reward + incrementing reward amount
+            existing_reward = Reward.objects.filter(
+                vendor__id=order.vendor.id, user=self.request.user
+            ).first()
+            # payment type others -> increment reward 
+            if payment_type != VALID_PAYMENT_TYPES[3][0]:
+                if existing_reward:
+                    print("reward existed before")
+                    existing_reward.amount += round(
+                        (order.vendor.reward_percentage * float(order.total_price))
+                        / 100
+                    )
+                else:
+                    if order.vendor.reward_percentage > 0:
+                        print("creating new reward")
+                        reward_to_add = round(
+                            (order.vendor.reward_percentage * float(order.total_price))
+                            / 100
+                        )
+                        Reward.objects.create(
+                            vendor=order.vendor,
+                            user=self.request.user,
+                            amount=reward_to_add,
+                        )
+            # payment type `reward` -> deduct reward 
+            else: 
+                # deducting reward and setting as paid
+                if not existing_reward or existing_reward.amount < float(order.total_price):
+                    return Response(
+                        {"detail": "ineffecient_amount"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                existing_reward -= float(order.total_price)
+                order.paid = True
+                existing_reward.save()
+                
+            # -------------- setting order payment type 
             order.payment_type = payment_type
             order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
             order.save()
@@ -293,6 +331,7 @@ class AcceptRejectOrderView(views.APIView):
                 "order_id": order_id,
             }
             self.request.user.cart.clear()
+            
             # creating notification for the user
             activate_language(self.request.user.profile.pf_lang)
             Notification.objects.create(
@@ -304,6 +343,7 @@ class AcceptRejectOrderView(views.APIView):
                 target_id=order.id,
             )
             deactivate_language()
+            
             # sendig order updates to vendor
             r.publish(
                 f"pub:order:{order.id}",
@@ -366,7 +406,9 @@ class SetOrderStateDelivered(views.APIView):
                 vendor_carriers_key = get_vendor_carriers_key(vendor.id)
                 b_c_c = r.hget(vendor_carriers_key, "b_c_c")  # busy carriers count
                 b_c_c = int(b_c_c) - 1  # decrementing busy carrier's count
-                r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
+                r.hset(
+                    vendor_carriers_key, "b_c_c", b_c_c
+                )  # updating busy carriers count
                 f_c_c = r.hget(vendor_carriers_key, "f_c_c")
                 f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
                 r.hset(vendor_carriers_key, "f_c_c", f_c_c)

@@ -59,6 +59,7 @@ class Vendor(models.Model):
         default=3
     )  # delivery fee per km AFS
     is_available = models.BooleanField(default=True)
+    reward_percentage = models.FloatField(default=0)
 
     class Meta:
 
@@ -149,7 +150,12 @@ class OpeningHour(models.Model):
 
 
 class Promotion(models.Model):
-    """this model resembles promotional images at home page """
+    """this model resembles promotional images at home page"""
+
+    vendor = models.ForeignKey(
+        "vendor.Vendor", on_delete=models.CASCADE, null=True, blank=True
+    )
+    link = models.TextField(blank=True,null=True)
     image = models.ImageField(upload_to="promotions/")
     city = models.CharField(default="kabul", max_length=20)
     start_date = models.DateTimeField(default=now)

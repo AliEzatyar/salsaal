@@ -2,6 +2,8 @@ from marketplace.utils import r as r
 from decouple import config
 from accounts.models import Device
 from pyfcm import FCMNotification
+from firebase_admin import messaging
+
 
 def is_user_online(user_id):
     return r.exists(f"user:{user_id}")  # returns 1 if online, 0 if offline
@@ -9,7 +11,7 @@ def is_user_online(user_id):
 
 def send_notification(user_id, title, body, data=None):
     # Check if user is online via Redis
-    print("user",user_id, "title",title,"body",body,"data",data)
+    print("user", user_id, "title", title, "body", body, "data", data)
     if is_user_online(id):
         print("user is online")
         return "Sent via WebSocket"
@@ -27,11 +29,19 @@ fcm = FCMNotification(service_account_file=fcm_api_key)
 
 
 def send_fcm(token, title, body, data=None):
+    android_cfg = {
+        "priority": "high",  # wrapper will translate to android priority
+        "notification": {
+            "channel_id": "high_importance_channel",  # MUST match Android channel id
+            "sound": "default",
+        },
+    }
+
     result = fcm.notify(
-        token,
-        title,
-        body,
-        data or {},
+        fcm_token=token,
+        notification_title=title,
+        notification_body=body,
+        data_payload={k: str(v) for k, v in (data or {}).items()},
+        android_config=android_cfg,
     )
     return result
-

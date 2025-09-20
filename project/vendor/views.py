@@ -688,7 +688,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         # ------------------ estimating only this order distance and reach time
         request_data = self.request.query_params
         new_order_id = request_data.get("order_id", None)
-        accepted = request_data.get("is_accepted",None)
+        accepted = request_data.get("is_accepted", None)
         if not new_order_id:
             return Response(
                 {"detail": "provide_new_order_id"}, status=status.HTTP_400_BAD_REQUEST
@@ -730,14 +730,14 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             }  # vendor app should extract order id and subscribe to --order room
                         ),
                     )
-                    # ----- sending notification to vendors room using redis
-                    send_notification(order.user.id,notf.title,body=notf.description)
-
-                    return Response(
-                    {
-                        "message": "order_order_rejected_by_vendor"
-                    }
+                    send_notification(
+                        order.user.id,
+                        notf.title,
+                        body=notf.description,
+                        data={"order_id": order.id},
                     )
+
+                    return Response({"message": "order_order_rejected_by_vendor"})
                 else:
                     # check if the vendor owns this order
                     self.check_object_permissions(self.request, order)
@@ -784,7 +784,12 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         total_carriers_count = vendor.carriers.count()
                         r.hset(vendor_carriers_key, "total_c_c", total_carriers_count)
                     total_time = estimated
-                    print("estimated....", estimated, total_carriers_count, free_carriers_count)
+                    print(
+                        "estimated....",
+                        estimated,
+                        total_carriers_count,
+                        free_carriers_count,
+                    )
                     # ----------------- applying conditions and finalizing estimation of time  ...
                     if preparing_orders_count <= total_carriers_count:
                         print("in first condition")
@@ -798,12 +803,18 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         if free_carriers_count == 0:
                             total_time = (
                                 estimated
-                                + (20 * round(preparing_orders_count / total_carriers_count))
+                                + (
+                                    20
+                                    * round(
+                                        preparing_orders_count / total_carriers_count
+                                    )
+                                )
                                 + 10
                             )
                         else:
                             total_time = estimated + (
-                                20 * round(preparing_orders_count / total_carriers_count)
+                                20
+                                * round(preparing_orders_count / total_carriers_count)
                             )
                     # calculating preparation time
                     prep_time = 0
@@ -889,7 +900,7 @@ class SetOrderStateCarrying(views.APIView):
                 # ----------------  making necessary things atomic
                 order.carrier = carrier
                 carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
-                UserOtp.objects.create(user=order.user,otp=order.otp)
+                UserOtp.objects.create(user=order.user, otp=order.otp)
                 # setting order in carrying state
                 order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
                 # order.otp = otp
@@ -898,11 +909,14 @@ class SetOrderStateCarrying(views.APIView):
                 order_user = order.user
                 customer_location = order_user.profile.location
                 customer_location = (customer_location.y, customer_location.x)
-                order.destination = str(customer_location[0])+","+str(customer_location[1])
+                order.destination = (
+                    str(customer_location[0]) + "," + str(customer_location[1])
+                )
                 order.save()
                 # estimation
+                vendor = self.request.user.vendor
+                vendor_location = vendor.user.profile.location
                 vendor_location = (vendor_location.y, vendor_location.x)
-                vendor_location = self.request.user.profile.location
                 carrier_return_estimate = 2 * estimate_travel_time_graphhopper(
                     vendor_location, customer_location
                 )
@@ -918,7 +932,6 @@ class SetOrderStateCarrying(views.APIView):
                     ),
                 )
                 # ---------------- updating vendor's carriers in redis
-                vendor = self.request.user.vendor
                 vendor_carriers_key = get_vendor_carriers_key(vendor.id)
                 b_c_c = r.hget(vendor_carriers_key, "b_c_c")
                 if b_c_c:
@@ -929,7 +942,9 @@ class SetOrderStateCarrying(views.APIView):
 
                 b_c_c = int(b_c_c) + 1  # increase it by one
 
-                r.hset(vendor_carriers_key, "b_c_c", b_c_c)  # updating busy carriers count
+                r.hset(
+                    vendor_carriers_key, "b_c_c", b_c_c
+                )  # updating busy carriers count
                 f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
                 f_c_c = int(f_c_c) - 1
                 r.hset(vendor_carriers_key, "f_c_c", f_c_c)
@@ -945,23 +960,28 @@ class SetOrderStateCarrying(views.APIView):
                     target_id=order.id,
                 )
                 deactivate_language()
+
                 # -------------------- atomic end ----------------
-            # ---------------------- sending notification to customer, add FCM/APNs later
-            r.publish(
-                f"pub:user:{order.user.id}",
-                json.dumps(
-                    {
-                        "type": "ORDER_SET_CARRYING",
-                        "data": {"order_id": order.id, "carrier_id": carrier_id},
-                    }  # customer app should extract order id and subscribe it for live tracking
-                ),
-            )
-            send_notification(
-                order.user.id, notf.title, body=notf.description, data=str(notf.data)
-            )
+                # ---------------------- sending notification to customer
+                r.publish(
+                    f"pub:user:{order.user.id}",
+                    json.dumps(
+                        {
+                            "type": "ORDER_SET_CARRYING",
+                            "data": {"order_id": order.id, "carrier_id": carrier_id},
+                        }  # customer app should extract order id and subscribe it for live tracking
+                    ),
+                )
+                send_notification(
+                    order.user.id,
+                    notf.title,
+                    body=notf.description,
+                    data={"order_id": order.id},
+                )
+
             print("notification sent to customer", f"pub:user:{order.user.id}")
             # --------------------- sending notification to carrier's room
-            
+
             r.publish(
                 f"pub:carrier:{carrier_id}",
                 json.dumps(
@@ -986,6 +1006,5 @@ class SetOrderStateCarrying(views.APIView):
             print(pd, pd.args)
             return Response({"detail": "not_allowed"}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
-            print("error in set order as carrying",e)
+            print("error in set order as carrying", e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            

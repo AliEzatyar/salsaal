@@ -1,4 +1,5 @@
 from rest_framework.serializers import ModelSerializer, ValidationError
+from order.models import Reward
 from vendor.models import Vendor
 from .models import Device, User, UserProfile, CUSTOMER
 from rest_framework_simplejwt.serializers import (
@@ -100,12 +101,10 @@ class UserDetailSerializer(ModelSerializer):
 
 class DeviceSerializer(ModelSerializer):
     """this is used to save device token for out-of-app notifications"""
+
     class Meta:
         model = Device
-        fields = [
-            "user",
-            "token"
-        ]
+        fields = ["user", "token"]
 
 
 class VendorCreateSerializer(ModelSerializer):
@@ -141,3 +140,12 @@ class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
         data["access"] = str(access)
         data["refresh"] = str(refresh)
         return data
+
+
+class RewardSerializer(ModelSerializer):
+    vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
+
+    class Meta:
+        model = Reward
+        fields = ["amount", "vendor_name", "vendor"]
+        read_only_fields = ["__all__"]

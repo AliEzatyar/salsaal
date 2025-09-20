@@ -173,11 +173,12 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
 
 class CVFoodSerializerDetail(serializers.ModelSerializer):
     """used for category"""
-    category_name = serializers.SerializerMethodField("get_category_name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
     min_price = MyDecimalField(read_only=True)
     vendor_name = serializers.SerializerMethodField("get_vendor_name")
     image = serializers.ReadOnlyField(source="image_url")
+    category_name = serializers.ReadOnlyField(source="category.name")
+
     class Meta:
         model = Food
         fields = [
@@ -197,9 +198,6 @@ class CVFoodSerializerDetail(serializers.ModelSerializer):
         ]
         read_only_fields = ["__all__"]
 
-    def get_category_name(self, obj):
-        return obj.category.name
-
     def get_vendor_name(self, obj):
         return obj.vendor.vendor_name
 
@@ -212,6 +210,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
     image = serializers.ReadOnlyField(source="image_url")
+    category_name = serializers.ReadOnlyField(source="category.name")
 
     class Meta:
         model = Food
@@ -228,6 +227,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "reach_time",
             "distance",
             "likes",
+            "category_name",
         ]
 
     def get_vendor_name(self, obj):
@@ -252,6 +252,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     discount = serializers.ReadOnlyField(source="discount.amount")
     image = serializers.ReadOnlyField(source="image_url")
+    category_name = serializers.ReadOnlyField(source="category.name")
 
     class Meta:
         model = Food
@@ -268,6 +269,7 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "reach_time",
             "distance",
             "likes",
+            "category_name",
         ]
         read_only_fields = ["__all__"]
 
@@ -309,7 +311,6 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
         model = OpeningHour
         fields = ["start_hour", "end_hour", "weekday", "is_holiday"]
         read_only_fields = ["id", "start_hour", "end_hour", "weekday", "is_holdiay"]
-
 
 
 class FoodSerializerLessDetail(serializers.ModelSerializer):

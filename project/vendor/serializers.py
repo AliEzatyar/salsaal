@@ -171,12 +171,12 @@ class DiscountSerializer(serializers.ModelSerializer):
         fields = ["id", "vendor", "amount", "deadline", "foods"]
         read_only_fields = ["id"]
 
-    
+
 class PromotionSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Promotion 
-        fields =["image"]
-           
+        fields = ["image", "vendor","link"]
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
@@ -202,6 +202,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "mfcfd",
             "min_order_price",
             "delivery_fee_km",
+            "reward_percentage",
             "vendor_type"
         ]
         read_only_fields = [
