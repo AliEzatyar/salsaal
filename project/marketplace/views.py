@@ -134,13 +134,13 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         # categories
         now = time.time()
         cat_key = "home_categories"
-        categories = cache.get(cat_key)
-        if not categories:
-            # cach miss
-            categories = Category.objects.filter(show_on_home=True)
-            ser = CategorySerializer(categories, many=True)
-            categories = ser.data
-            cache.set(cat_key, categories, timeout=24 * 3600)
+        # categories = cache.get(cat_key)
+        # if not categories:
+        #     # cach miss
+        categories = Category.objects.filter(show_on_home=True)
+        ser = CategorySerializer(categories, many=True)
+        categories = ser.data
+        # cache.set(cat_key, categories, timeout= 10 * 60)
         # general info
         request_data = request.query_params
         city = request_data.get("city", None)

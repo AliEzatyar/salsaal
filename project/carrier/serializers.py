@@ -1,9 +1,14 @@
 from rest_framework import serializers
+from .utils import encrypt_32
+from marketplace.serializers import MyDecimalField
+from order.models import Order
 from .models import Carrier
+
 
 class CarrierSerializer(serializers.ModelSerializer):
     vendor = serializers.PrimaryKeyRelatedField(read_only=True)
-    name = serializers.SerializerMethodField("get_carrier_name")
+    name = serializers.ReadOnlyField(source="user.full_name")
+
     class Meta:
         model = Carrier
         fields = [
@@ -13,11 +18,50 @@ class CarrierSerializer(serializers.ModelSerializer):
             "user",
             "user_profile",
             "id_document",
-            "name"
+            "name",
         ]
-        read_only_fields= ["id","user","user_profile","email","vendor","name"]
-        
+        read_only_fields = ["id", "user", "user_profile", "email", "vendor", "name"]
 
-    def get_carrier_name(self,obj):
-        return obj.user.get_full_name()
-    
+
+class CarrierOrderSerializer(serializers.ModelSerializer):
+    customer_name = serializers.ReadOnlyField(source="user.full_name")
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+    total_price = MyDecimalField(read_only=True)
+    id = serializers.SerializerMethodField("get_id")
+    otp = serializers.SerializerMethodField("get_otp")
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "customer_name",
+            "total_items",
+            "total_price",
+            "delivery_cost",
+            "status",
+            "paid",
+            "is_credit",
+            "created_at",
+            "user",
+            # "vendor",
+            "otp",
+        ]
+        read_only_fields = ["__all__"]
+
+    def get_id(self, obj):
+        return encrypt_32(obj.id)
+
+    def get_otp(self, obj):
+        return encrypt_32(obj.otp)
+
+class CarrierOrderSerializerMany(serializers.ModelSerializer):
+    customer_name = serializers.ReadOnlyField(source="user.full_name")
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "customer_name",
+            "paid",
+            "created_at",
+        ]
+        read_only_fields = ["__all__"]

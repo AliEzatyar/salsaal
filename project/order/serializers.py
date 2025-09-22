@@ -167,32 +167,3 @@ class VOrderSerializer(ModelSerializer):
     def get_customer_name(self, obj):
         return obj.user.first_name + obj.user.last_name
 
-
-class CarrierOrderSerializer(ModelSerializer):
-    customer_name = serializers.ReadOnlyField(source="user.full_name")
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    total_price = MyDecimalField(read_only=True)
-    id = serializers.SerializerMethodField("get_id")
-    otp = serializers.SerializerMethodField("get_otp")
-    class Meta:
-        model = Order
-        fields = [
-            "id",
-            "customer_name",
-            "total_items",
-            "total_price",
-            "status",
-            "paid",
-            "is_credit",
-            "created_at",
-            "user",
-            "vendor",
-            "otp"
-        ]
-        read_only_fields = ["__all__"]
-
-    def get_id(self,obj):
-        return encrypt_32(obj.id)
-        
-    def get_otp(self,obj):
-        return encrypt_32(obj.otp)

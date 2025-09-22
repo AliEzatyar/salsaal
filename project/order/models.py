@@ -24,7 +24,7 @@ VALID_PAYMENT_TYPES = [
     ("cash_on_delivery", "cash_on_delivery"),
     ("hesab_pay", "hesab_pay"),
     ("debit_card", "debit_card"),
-    ("reward_payment","reward_payment")
+    ("reward_payment", "reward_payment"),
 ]
 
 
@@ -37,6 +37,7 @@ class Order(models.Model):
         max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
     )
     total_price = models.DecimalField(default=0, max_digits=6, decimal_places=1)
+    delivery_cost = models.DecimalField(default=0,max_digits=4,decimal_places=1)
     paid = models.BooleanField(default=False)
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
@@ -62,7 +63,7 @@ class Order(models.Model):
         ordering = ["-created_at"]
 
     def calculate_total_price(self):
-        self.total_price = sum(item.subtotal for item in self.items.all())
+        self.total_price = sum(item.subtotal for item in self.items.all()) + self.delivery_cost
         self.save()
 
     def set_total_items(self):
@@ -129,9 +130,16 @@ class OrderItem(models.Model):
 
 
 class Reward(models.Model):
-    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="rewards")
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="rewards"
+    )
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, related_name="rewards"
     )
     amount = models.FloatField(default=0)
+
+    def save(self, *args, **kwargs):
+        if self.amount and self.amount > 500:
+            self.amount = 500
+        super().save(*args, **kwargs)
     

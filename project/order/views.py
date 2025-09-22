@@ -111,14 +111,14 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
             if len(previous_waiting_orders) > 0:
                 previous_waiting_orders.delete()
-            
-            # preventing new order if it exceeds max preparing orders limit for user 
+
+            # preventing new order if it exceeds max preparing orders limit for user
             previouse_preparing_orders_count = Order.objects.filter(
                 user=request.user,
                 status=ORDER_STATUS_CHOICES[2][0],
                 vendor__id=vendor_id,
             ).count()
-            if  previouse_preparing_orders_count > MAX_PREPARING_ORDERS_COUNT:
+            if previouse_preparing_orders_count > MAX_PREPARING_ORDERS_COUNT:
                 # prevent duplicate order if user has one 'waiting' order already
                 return Response(
                     {"detail": "order_already_in_process"},
@@ -150,7 +150,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
                 order.calculate_total_price()  # setting total price field value
                 order.set_total_items()  # setting total items amount field value
-                
+
                 # ------------------------- creating the notification object
                 profile = request.user.profile
                 activate(profile.pf_lang)
@@ -262,6 +262,7 @@ class AcceptRejectOrderView(views.APIView):
         order_id = data.get("order_id", None)
         event_data = None
         try:
+            
             order = Order.objects.get(id=order_id)
             # check if this user owns the order
             self.check_object_permissions(self.request, order)
@@ -276,7 +277,7 @@ class AcceptRejectOrderView(views.APIView):
                     {"detail", "order_not_waiting_state"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            # checking if payment type is correct 
+            # checking if payment type is correct
             payment_type = data.get("payment_type", None)
             if not payment_type or not payment_type in [
                 i[0] for i in VALID_PAYMENT_TYPES
@@ -289,49 +290,66 @@ class AcceptRejectOrderView(views.APIView):
             existing_reward = Reward.objects.filter(
                 vendor__id=order.vendor.id, user=self.request.user
             ).first()
-            # payment type others -> increment reward 
-            if payment_type != VALID_PAYMENT_TYPES[3][0]:
-                if existing_reward:
-                    print("reward existed before")
-                    existing_reward.amount += round(
-                        (order.vendor.reward_percentage * float(order.total_price))
-                        / 100
-                    )
-                else:
-                    if order.vendor.reward_percentage > 0:
-                        print("creating new reward")
-                        reward_to_add = round(
+            # payment type other than reward -> increment reward
+            with atomic():
+                if payment_type != VALID_PAYMENT_TYPES[3][0]:
+                    if existing_reward:
+                        print("reward existed before")
+                        existing_reward.amount += round(
                             (order.vendor.reward_percentage * float(order.total_price))
                             / 100
                         )
-                        Reward.objects.create(
-                            vendor=order.vendor,
-                            user=self.request.user,
-                            amount=reward_to_add,
+                        existing_reward.save()
+                    else:
+                        if order.vendor.reward_percentage > 0:
+                            print("creating new reward")
+                            reward_to_add = round(
+                                (order.vendor.reward_percentage * float(order.total_price))
+                                / 100
+                            )
+                            Reward.objects.create(
+                                vendor=order.vendor,
+                                user=self.request.user,
+                                amount=reward_to_add,
+                            )
+                # payment type `reward` -> deduct reward
+                else:
+                    print("type reward paymnet")
+                    # deducting reward and setting as paid
+                    if not existing_reward or existing_reward.amount < float(
+                        order.total_price
+                    ):
+                        return Response(
+                            {
+                                "detail": "ineffecient_amount",
+                            },
+                            status=status.HTTP_403_FORBIDDEN,
                         )
-            # payment type `reward` -> deduct reward 
-            else: 
-                # deducting reward and setting as paid
-                if not existing_reward or existing_reward.amount < float(order.total_price):
-                    return Response(
-                        {"detail": "ineffecient_amount"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-                existing_reward -= float(order.total_price)
-                order.paid = True
-                existing_reward.save()
-                
-            # -------------- setting order payment type 
-            order.payment_type = payment_type
-            order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
-            order.save()
-            event_data = {
-                "accepted": True,
-                "payment_type": payment_type,
-                "order_id": order_id,
-            }
-            self.request.user.cart.clear()
-            
+                    existing_reward.amount -= float(order.total_price)
+                    order.paid = True
+                    existing_reward.save()
+
+                # -------------- setting order payment type
+                order.payment_type = payment_type
+                order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
+                order.save()
+                event_data = {
+                    "accepted": True,
+                    "payment_type": payment_type,
+                    "order_id": order_id,
+                }
+                self.request.user.cart.clear()
+                # sendig order updates to vendor
+                r.publish(
+                    f"pub:order:{order.id}",
+                    json.dumps(
+                        {
+                            "type": "ORDER_UPDATE",
+                            "data": event_data,
+                        }
+                    ),
+                )
+
             # creating notification for the user
             activate_language(self.request.user.profile.pf_lang)
             Notification.objects.create(
@@ -343,17 +361,7 @@ class AcceptRejectOrderView(views.APIView):
                 target_id=order.id,
             )
             deactivate_language()
-            
-            # sendig order updates to vendor
-            r.publish(
-                f"pub:order:{order.id}",
-                json.dumps(
-                    {
-                        "type": "ORDER_UPDATE",
-                        "data": event_data,
-                    }
-                ),
-            )
+
             return Response()
 
         except Order.DoesNotExist:

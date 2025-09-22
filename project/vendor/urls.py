@@ -10,14 +10,14 @@ app_name = "vendor"
 router = DefaultRouter()
 
 router.register(
-    r"vendor-foods", views.VendorFoodsManageViewSet, basename="vendor-foods"
-)
-router.register(
-    r"manage-discount", views.ManageDiscountViewSet, basename="manage-discount"
+    r"manage-foods", views.VendorFoodsManageViewSet, basename="manage-foods"
 )
 # managing carriers as vendor
 router.register(
     r"manage-carriers", views.ManageCarrierViewSet, basename="manage-carriers"
+)
+router.register(
+    r"manage-discount", views.ManageDiscountViewSet, basename="manage-discount"
 )
 router.register(
     r"manage-opening-hours", views.ManageOpeningHours, basename="manage-opening-hours"
@@ -31,10 +31,6 @@ urlpatterns = [
         "vendor-details/",
         views.VendorAPIView.as_view(),
     ),
-    # path(
-    #     "ar-order/",
-    #     # views.AcceptRejectOrderView.as_view(),
-    # ),
     path(
         "convert-to-vendor/",
         views.ConvertToVendorAPIView.as_view(),

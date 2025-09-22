@@ -816,7 +816,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                                 20
                                 * round(preparing_orders_count / total_carriers_count)
                             )
-                    # calculating preparation time
+                    # ------------------- calculating preparation time
                     prep_time = 0
                     for item in order.items.all():
                         if item.food.is_ready_type:
@@ -847,7 +847,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         delivery_cost = 0
                     else:
                         delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
-
+                    # adding delivery cost to total price of order
+                    order.delivery_cost = delivery_cost
+                    order.save()
                     return Response(
                         {
                             "estimated": round(total_time),
@@ -958,6 +960,7 @@ class SetOrderStateCarrying(views.APIView):
                     receiver=order.user,
                     data={"order_id": order.id, "carrier_id": carrier_id},
                     target_id=order.id,
+                    description = _("Your order is being carried, click to live track.")
                 )
                 deactivate_language()
 
