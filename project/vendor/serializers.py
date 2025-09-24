@@ -56,26 +56,6 @@ class VendorSerializerMany(serializers.ModelSerializer):
             return True
         return False
 
-    # def get_is_open(self, obj):
-    #     """this checks whether the vendor obj has any opening hour right now"""
-    #     now = timezone.now()  # utc now
-    #     index = now.weekday()  # utc weekday
-    #     weekday = to_af_weekday(index=index)  # afg weekday
-    #     now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-    #     is_open = False
-    #     today_open_hour = obj.opening_hours.filter(weekday=weekday).first()
-    #     # closed today either always or vendor sets unavailable for some reasons
-    #     if not today_open_hour or not obj.is_available:
-    #         is_open = "closed_today"
-    #     # already closed
-    #     elif today_open_hour.end_hour < now_af:
-    #         is_open = "already_closed"
-    #     # open
-    #     elif today_open_hour.start_hour < now_af and today_open_hour.end_hour > now_af:
-    #         is_open = "yes"
-    #     else:
-    #         is_open = today_open_hour.start_hour
-    #     return is_open
 
 
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
@@ -119,27 +99,6 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
         if today_open_hour:
             return True
         return False
-
-    # def get_is_open(self, obj):
-    #     """this checks whether the vendor obj has any opening hour right now"""
-    #     now = timezone.now()  # utc now
-    #     index = now.weekday()  # utc weekday
-    #     weekday = to_af_weekday(index=index)  # afg weekday
-    #     now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-    #     is_open = False
-    #     today_open_hour = obj.opening_hours.filter(weekday=weekday).first()
-    #     # closed today either always or vendor sets unavailable for some reasons
-    #     if not today_open_hour or not obj.is_available:
-    #         is_open = "closed_today"
-    #     # already closed
-    #     elif today_open_hour.end_hour < now_af:
-    #         is_open = "already_closed"
-    #     # open
-    #     elif today_open_hour.start_hour < now_af and today_open_hour.end_hour > now_af:
-    #         is_open = "yes"
-    #     else:
-    #         is_open = today_open_hour.start_hour
-    #     return is_open
 
 
 class OpeningHourSerializer(serializers.ModelSerializer):
@@ -248,7 +207,8 @@ class PublicVendorSerializer(serializers.ModelSerializer):
 
     location = serializers.SerializerMethodField("get_location")  # read only
     is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
-    discounted_foods = serializers.SerializerMethodField("get_discounted_foods")
+    # discounted_foods = serializers.SerializerMethodField("get_discounted_foods")
+    discounted_foods = DiscountedFoodSerializerMany(many=True,read_only=True)
     featured_items = serializers.SerializerMethodField(
         "get_featured_items"
     )
@@ -304,11 +264,11 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             return True
         return False
 
-    def get_discounted_foods(self,obj):
-        discounted = getattr(obj,"discounted_foods")
-        if discounted:
-            return DiscountedFoodSerializerMany(discounted,many=True).data
-        return
+    # def get_discounted_foods(self,obj):
+    #     discounted = getattr(obj,"discounted_foods")
+    #     if discounted:
+    #         return DiscountedFoodSerializerMany(discounted,many=True).data
+    #     return
 
     def get_featured_items(self, obj):
         featured = getattr(obj, "featured_items")

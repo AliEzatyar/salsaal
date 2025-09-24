@@ -6,8 +6,17 @@ from .models import Category, Food, Rating, FavItem, FavList, Discount
 
 class FoodAdmin(admin.ModelAdmin):
     model = Food
-    list_display = ["id","name", "vendor", "is_available", "min_price", "image","category"]
-    list_editable = ["is_available"]
+    list_display = [
+        "id",
+        "name",
+        "vendor",
+        "description",
+        "is_available",
+        "min_price",
+        "category",
+        "image",
+    ]
+    list_editable = ["is_available","description"]
     list_filter = ["is_available", "vendor"]
     search_fields = ["category__name", "vendor__vendor_name"]
 
@@ -20,7 +29,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 class RatingAdmin(admin.ModelAdmin):
     model = Rating
-    list_display = ["user", "related_obj", "rating"]
+    list_display = ["user", "related_obj", "rating","modified_at"]
 
 
 class FavlistAdmin(admin.ModelAdmin):
@@ -31,8 +40,6 @@ class FavlistAdmin(admin.ModelAdmin):
 class FavlistItemAdmin(admin.ModelAdmin):
     model = FavItem
     list_display = ["favlist", "food"]
-
-
 
 
 class DiscountAdmin(admin.ModelAdmin):

@@ -95,7 +95,7 @@ class CustomFoodSearch(SearchFilter):
             .annotate(similarity=TrigramSimilarity("name", search_param))
             .filter(similarity__gte=0.2)
             .select_related("vendor__user_profile")
-            .order_by("-similarity")
+            .order_by("-similarity")[:20]
         )
         print(foods)
         return foods

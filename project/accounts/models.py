@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from h3 import latlng_to_cell as h3_latlng_to_cell
 
 from marketplace.utils import DEFAULT_H3_RESOLUTION
+
 ADMIN = 0
 REST = 1
 CUSTOMER = 2
@@ -55,8 +56,9 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
-    uuid = models.UUIDField(default=uuid4,db_index=True, unique=True, editable=False, null=True)
-
+    uuid = models.UUIDField(
+        default=uuid4, db_index=True, unique=True, editable=False, null=True
+    )
 
     objects = UserManager()
 
@@ -118,13 +120,13 @@ class UserProfile(g_models.Model):
     country = models.CharField(max_length=20, default="AF")
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
-    city = models.CharField(max_length=15)
+    city = models.CharField(max_length=15,db_index=True)
     latitude = models.CharField(max_length=20)
     longitude = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
-    h3_id = models.CharField(max_length=55,blank=True,null=True)
+    h3_id = models.CharField(max_length=55, blank=True, null=True, db_index=True)
 
     def __str__(self):
         return str(self.user)
@@ -147,10 +149,11 @@ class UserProfile(g_models.Model):
 
 
 class Device(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE,related_name="devices")
+    user = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="devices"
+    )
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
 
 
 class UserOtp(models.Model):
@@ -169,6 +172,6 @@ class NoUserOtp(models.Model):
     phone_number = models.CharField(max_length=12)
     otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):
         return timezone.now() > self.created_at + timezone.timedelta(minutes=expire)

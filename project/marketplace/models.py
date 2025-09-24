@@ -161,6 +161,7 @@ class Rating(models.Model):
     content_type = models.ForeignKey(
         "contenttypes.ContentType", on_delete=models.CASCADE, null=True
     )
+    modified_at = models.DateTimeField(auto_now=True)
     object_id = models.IntegerField(null=True)
     related_obj = GenericForeignKey("content_type", "object_id")
     enabled = models.BooleanField(default=True)

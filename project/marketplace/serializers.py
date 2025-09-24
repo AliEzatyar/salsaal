@@ -316,7 +316,7 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
 class FoodSerializerLessDetail(serializers.ModelSerializer):
     min_price = MyDecimalField(read_only=True)
     image = serializers.ReadOnlyField(source="image_url")
-
+    category_name = serializers.ReadOnlyField(source="category.name")
     class Meta:
         model = Food
         fields = [
@@ -326,6 +326,8 @@ class FoodSerializerLessDetail(serializers.ModelSerializer):
             "image",
             "vendor",
             "likes",
+            "category_name",
+            "description"
         ]
 
 
@@ -340,10 +342,18 @@ class CategoryVendorSerializer(serializers.ModelSerializer):
     foods = FoodSerializerLessDetail(many=True, read_only=True)
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
-
+    
     class Meta:
         model = Vendor
-        fields = ["vendor_name", "distance", "reach_time", "avg_rating", "foods"]
+        fields = [
+            "id",
+            "vendor_name",
+            "avg_rating",
+            "foods",
+            "rating_count",
+            "distance",
+            "reach_time",
+        ]
 
     def get_distance(self, obj):
         return obj.distance if hasattr(obj, "distance") else None

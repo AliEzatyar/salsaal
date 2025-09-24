@@ -163,6 +163,7 @@ class LoginApiView(views.APIView):
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
         elif typ == "new_user":
+            print(self.request.data,"______")
             # ----------------- creating user account + sending tokens
             # verifying otp
             try:
