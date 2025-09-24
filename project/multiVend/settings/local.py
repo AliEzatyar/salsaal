@@ -103,3 +103,4 @@ from firebase_admin import credentials, messaging
 # It's better to load this path from Django settings or environment variables for production
 cred = credentials.Certificate(config("FIREBASE_SERVICE_ACCOUNT_KEY"))
 firebase_admin.initialize_app(cred)
+FCM_API_KEY = config("FIREBASE_SERVICE_ACCOUNT_KEY")

@@ -1,9 +1,7 @@
-from marketplace.utils import r as r
-from decouple import config
+from marketplace.utils import r 
 from accounts.models import Device
 from pyfcm import FCMNotification
-from firebase_admin import messaging
-
+from django.conf import settings
 
 def is_user_online(user_id):
     return r.exists(f"user:{user_id}")  # returns 1 if online, 0 if offline
@@ -24,7 +22,7 @@ def send_notification(user_id, title, body, data=None):
         print("notification sent via fcm")
 
 
-fcm_api_key = config("FIREBASE_SERVICE_ACCOUNT_KEY")
+fcm_api_key = settings.FCM_API_KEY
 fcm = FCMNotification(service_account_file=fcm_api_key)
 
 

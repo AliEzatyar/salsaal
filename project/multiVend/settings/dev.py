@@ -90,3 +90,6 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
 }
+
+
+FCM_API_KEY = env.get("FIREBASE_SERVICE_ACCOUNT_KEY")

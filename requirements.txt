@@ -28,3 +28,6 @@ h3[python]
 boto3
 django-storages
 cryptography
+pycryptodome
+pyfcm
+firebase_admin
