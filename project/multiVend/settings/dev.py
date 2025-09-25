@@ -93,3 +93,6 @@ SIMPLE_JWT = {
 
 
 FCM_API_KEY = env.get("FIREBASE_SERVICE_ACCOUNT_KEY")
+
+# AES encryption in order delivery
+DUMMY_SECRET = env.get("DUMMY_SECRET")
