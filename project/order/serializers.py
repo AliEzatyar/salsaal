@@ -4,7 +4,6 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 from rest_framework import serializers
-from carrier.serializers import CarrierSerializer
 from marketplace.serializers import MyDecimalField
 from carrier.utils import encrypt_32
 from .models import Order, OrderItem

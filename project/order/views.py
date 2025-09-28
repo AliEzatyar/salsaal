@@ -169,7 +169,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
                 deactivate()
                 # ----- sending notification to vendor's room
-                send_notification(
+                send_notification.delay(
                     order.vendor.user.id,
                     notf.title,
                     body=notf.description,
@@ -226,7 +226,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
                 deactivate()
                 # ----- sending notification to vendors room using redis
-                send_notification(
+                send_notification.delay(
                     order.vendor.user.id, notf.title, body=notf.description
                 )
 

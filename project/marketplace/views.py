@@ -7,7 +7,7 @@ from .utils import (
     BestVendorsCounter,
     distance_reach_time,
     distance_to_travel_time,
-    haversine_distance as distance_calculator,
+    haversine_distance 
 )
 from marketplace.backends import (
     CustomFoodOrdering,
@@ -42,7 +42,6 @@ from rest_framework import filters, status, views, viewsets, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from api.permissions import IsHavingFavlist
 from django.core.cache import cache
 from .utils import BoughtTogetherRecommender
 from django.db.models import Avg
@@ -52,8 +51,7 @@ from .utils import StandardResultSetPagination, DEFAULT_H3_RESOLUTION, r
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import gettext as _
 import time
-from django.db.models import Count, Sum, F, FloatField, ExpressionWrapper
-from django.db.models import Window, F
+from django.db.models import Count, Window, F
 from django.db.models.functions import RowNumber
 """Marketplace API Views"""
 
@@ -105,7 +103,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             # decoding location data
 
             lat, lon = geohash.decode(location)
-            distance = distance_calculator(
+            distance = haversine_distance(
                 float(vendor_profile.latitude),
                 float(vendor_profile.longitude),
                 float(lat),
@@ -244,31 +242,25 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         # filter in db for existing nearby  open city vendors
         local_vendors = city_vendors.filter(
             user_profile__h3_id__in=nearest_h3s,
-        ).select_related("user_profile")[:5]
+        ).select_related("user_profile")[:10]
         distance_reach_time(local_vendors, lat, lon, "vendor")
         local_vendors_ser = VendorSerializerMany(local_vendors, many=True)
 
         # cheapest vendors
         cheapest_vendors = city_vendors.annotate(
             avg_price=Avg("foods__min_price")
-        ).order_by("avg_price")
+        ).order_by("avg_price")[:10]
         distance_reach_time(cheapest_vendors, lat, lon, "vendor")
         cheapest_vendors_ser = VendorSerializerMany(cheapest_vendors, many=True)
 
         # top vendors
-        key = f"top_vendors:{city}:city"
-        # getting top ratings from cache
-        top_vendors = cache.get(key, None)
-        if not top_vendors:
-            # cache miss
-            counter = BestVendorsCounter(city)
-            top = counter.read_counts(10)
-            top_vendors = city_vendors.filter(id__in=top).order_by("-avg_rating")[:10]
-            # adding distance property to each vendor
-            distance_reach_time(top_vendors, lat, lon, "vendor")
-            top_vendors_ser = VendorSerializerMany(top_vendors, many=True)
-            top_vendors = top_vendors_ser.data
-            cache.set(key, top_vendors, 3600)
+        counter = BestVendorsCounter(city)
+        top = counter.read_counts(10)        
+        top_vendors = city_vendors.filter(id__in=top).order_by("-avg_rating")[:10]
+        # adding distance property to each vendor
+        distance_reach_time(top_vendors, lat, lon, "vendor")
+        top_vendors_ser = VendorSerializerMany(top_vendors, many=True)
+        top_vendors = top_vendors_ser.data
         print(time.time() - now, "seconds")
         # final response
         return Response(
@@ -345,7 +337,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             for f in discounted_foods_final:
                 # continue
                 distance = round(
-                    distance_calculator(
+                    haversine_distance(
                         f.vendor.user_profile.latitude,
                         f.vendor.user_profile.longitude,
                         lat,
@@ -388,11 +380,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         vendors = Vendor.objects.filter(
             id__in=city_vendors_ids,
             user_profile__h3_id__in=nearest_h3s,
-        ).select_related("user_profile")[:5]
+        ).select_related("user_profile")[:10]
         # adding distance property to each vendor
         for vendor in vendors:
             distance = round(
-                distance_calculator(
+                haversine_distance(
                     vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,
@@ -429,12 +421,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         vendors = (
             Vendor.objects.filter(id__in=city_vendors_ids)
             .annotate(avg_price=Avg("foods__min_price"))
-            .order_by("avg_price")
+            .order_by("avg_price")[:10]
         )
         # adding distance property to each vendor
         for vendor in vendors:
             distance = round(
-                distance_calculator(
+                haversine_distance(
                     vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,
@@ -468,46 +460,17 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         except (TypeError, ValueError):
             return Response({"detail": "invalid_location"}, status=400)
 
-        key = f"top_vendors:{city}:city"
-        # getting top ratings from cache
-        top_vendors = cache.get(key, None)
-        if not top_vendors:
-            # cache miss
-            counter = BestVendorsCounter(city)
-            top = counter.read_counts(10)
-            top_vendors = Vendor.objects.filter(
-                is_approved=True, user_profile__city=city, id__in=top
-            ).order_by("-avg_rating")[:10]
-            # adding distance property to each vendor
-            for vendor in top_vendors:
-                distance = round(
-                    distance_calculator(
-                        vendor.user_profile.latitude,
-                        vendor.user_profile.longitude,
-                        lat,
-                        lon,
-                    ),
-                    1,
-                )
-                vendor.distance = distance
-                vendor.reach_time = round(distance_to_travel_time(distance), 1)
-            # paginating and sending the result
-            paginator = StandardResultSetPagination()
-            qs = paginator.paginate_queryset(top_vendors, request)
-            ser = VendorSerializerMany(qs, many=True)
-            if len(top_vendors) > 1:
-                cache.set(
-                    key,
-                    {
-                        "count": paginator.page.paginator.count,
-                        "next": paginator.get_next_link(),
-                        "previous": paginator.get_previous_link(),
-                        "results": ser.data,
-                    },
-                    1 * 3600,
-                )
-            return paginator.get_paginated_response(ser.data)
-        return Response(top_vendors)
+        counter = BestVendorsCounter(city)
+        top = counter.read_counts(10)
+        top_vendors = Vendor.objects.filter(
+            is_approved=True, user_profile__city=city, id__in=top
+        ).order_by("-avg_rating")[:10]
+        distance_reach_time(top_vendors,lat,lon,"vendor")
+        # paginating and sending the result
+        paginator = StandardResultSetPagination(10)
+        qs = paginator.paginate_queryset(top_vendors, request)
+        ser = VendorSerializerMany(qs, many=True)
+        return paginator.get_paginated_response(ser.data)
 
     @action(
         detail=False,
@@ -558,7 +521,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         )
         for vendor in vendors:
             distance = round(
-                distance_calculator(
+                haversine_distance(
                     vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,
@@ -586,7 +549,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         request_data = request.query_params
         city = request_data.get("city", None)
         location = request_data.get("location", None)
-        print(request_data, "data on nearby on map")
         if not city:
             return Response({"detail": "provide_a_correct_city"}, status=400)
         city = str(city).lower()
@@ -598,11 +560,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             lat = float(request.user.profile.latitude)
             lon = float(request.user.profile.longitude)
             city = request.user.profile.city
-
+        now = time.time()
         city_vendors_ids = self.get_city_vendors(city)
         # finding near areas of the user up to 10 hexagons long -> 3.5km
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-        nearest_h3s = h3.grid_disk(user_h3, 14)
+        nearest_h3s = h3.grid_disk(user_h3, 20)
         # filter in db for existing nearby  open city vendors
         vendors = (
             Vendor.objects.filter(
@@ -613,7 +575,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             .only("vendor_name", "id", "user_profile")
         )
         ser = AbstractVendorSerializer(vendors, many=True)
-        print("response to map", ser.data)
+        print(time.time()-now," seconds")
         return Response(ser.data)
 
     def get_city_vendors(self, city):
@@ -941,7 +903,7 @@ class PublicVendorDetail(views.APIView):
 
                 # -------------- setting distance+reach+increment_of_counter
                 distance = round(
-                    distance_calculator(
+                    haversine_distance(
                         vendor.user_profile.latitude,
                         vendor.user_profile.longitude,
                         lat,
@@ -1080,7 +1042,7 @@ class FoodsByCategory(generics.ListAPIView):
         lat, lon = geohash.decode(user_location)
         for vendor in local_vendors_matching_category:
             distance = round(
-                distance_calculator(
+                haversine_distance(
                     vendor.user_profile.latitude,
                     vendor.user_profile.longitude,
                     lat,

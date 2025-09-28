@@ -5,7 +5,7 @@ from .models import Promotion, Vendor, OpeningHour
 # Register your models here.
 class VendAdmin(admin.ModelAdmin):
     model = Vendor
-    list_display = ["vendor_name", "is_approved", "created_at", "modified_at"]
+    list_display = ["id","vendor_name", "is_approved", "created_at", "modified_at"]
     list_editable = ["is_approved"]
 
 
@@ -19,7 +19,7 @@ class PromotionAdmin(admin.ModelAdmin):
 # Register your models here.
 class HourAdmin(admin.ModelAdmin):
     model = OpeningHour
-    list_display = ["start_hour", "end_hour", "weekday"]
+    list_display = ["id","start_hour", "end_hour", "weekday"]
 
 
 admin.site.register(OpeningHour,HourAdmin)

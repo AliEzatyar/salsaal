@@ -16,6 +16,7 @@ def get_carrier_key(id):
 
 
 def encrypt_32(order_id: str) -> str:
+    order_id = str(order_id)
     cipher = AES.new(SECRET, AES.MODE_CBC, IV)
     encrypted_bytes = cipher.encrypt(pad(order_id.encode("utf-8"), AES.block_size))
     return base64.b64encode(encrypted_bytes).decode("utf-8")

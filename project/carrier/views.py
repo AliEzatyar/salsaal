@@ -15,6 +15,7 @@ from accounts.models import (
 )
 from django.utils.translation import gettext as _
 
+from marketplace.utils import StandardResultSetPagination
 from .serializers import CarrierOrderSerializerMany, CarrierOrderSerializer
 
 # Create your views here.
@@ -43,14 +44,21 @@ class CarrierOrderApiView(views.APIView):
                     carrier=self.request.user.carrier,
                     created_at__gte=dj_tz.now() - expire_minutes,
                 )
+                .prefetch_related("items")
                 .last()
             )
+            current_order_data = None
+            carrier_vendor_name = self.request.user.carrier.vendor.vendor_name
             if order:
                 # check if carrier is of order's vendor
                 self.check_object_permissions(self.request, order)
                 ser = CarrierOrderSerializer(instance=order)
-                return Response(ser.data, status=status.HTTP_200_OK)
-            return Response(status=status.HTTP_404_NOT_FOUND)
+                current_order_data = ser.data
+            data = {
+                "current_order": current_order_data,
+                "vendor_name": carrier_vendor_name,
+            }
+            return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             print(e, "eroror", e.args)
             return Response(status.HTTP_501_NOT_IMPLEMENTED)
@@ -66,10 +74,12 @@ class DeliveredOrdersApiView(views.APIView):
                 carrier=self.request.user.carrier,
             )
             .select_related("user")
-            .only("id", "user", "paid", "created_at") # should match serializer fields
+            .only("id", "user", "paid", "created_at")  # should match serializer fields
         )
-        ser = CarrierOrderSerializerMany(orders, many=True)
-        return Response(ser.data,status=status.HTTP_200_OK)
+        pg = StandardResultSetPagination(10)
+        page_orders = pg.paginate_queryset(orders, self.request)
+        ser = CarrierOrderSerializerMany(page_orders, many=True)
+        return pg.get_paginated_response(ser.data)
 
 
 def run_script(request, which=None):

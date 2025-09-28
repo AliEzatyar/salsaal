@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from order.serializers import COrderItemSerializer
 from .utils import encrypt_32
 from marketplace.serializers import MyDecimalField
 from order.models import Order
@@ -29,7 +31,7 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
     total_price = MyDecimalField(read_only=True)
     id = serializers.SerializerMethodField("get_id")
     otp = serializers.SerializerMethodField("get_otp")
-
+    items = COrderItemSerializer(many=True)
     class Meta:
         model = Order
         fields = [
@@ -43,7 +45,7 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
             "is_credit",
             "created_at",
             "user",
-            # "vendor",
+            "items",
             "otp",
         ]
         read_only_fields = ["__all__"]

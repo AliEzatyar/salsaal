@@ -97,6 +97,7 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
             weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
         ).exists()
         if today_open_hour:
+            print("today open")
             return True
         return False
 
@@ -157,8 +158,8 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "avg_rating",
             "rating_count",
             "opening_hours",
-            "mfdd",
-            "mfcfd",
+            "mfdd", # max free delivery distance
+            "mfcfd",  # min food count free delivery
             "min_order_price",
             "delivery_fee_km",
             "reward_percentage",

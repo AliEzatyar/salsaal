@@ -5,7 +5,8 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.core.exceptions import PermissionDenied
-from .models import CUSTOMER, NoUserOtp, UserOtp
+from .models import CUSTOMER, NoUserOtp, User, UserOtp
+from celery import shared_task
 import random
 
 
@@ -25,7 +26,7 @@ def send_log_email(amount, type_=None):
 
 def generate_otp(length=6):
     if length == 8:
-        return random.randint(10000000,99999999)
+        return random.randint(10000000, 99999999)
     return random.randint(100000, 999999)
 
 
@@ -35,49 +36,61 @@ OTP_VERIFY_CARRIER = 3
 OTP_LOGIN = 4
 
 
-def send_otp(user=None, phone_number=None, typ=OTP_VERIFY_PHONE,**kwargs):
+@shared_task(bind=True, max_retries=5, default_retry_delay=10)
+def send_otp(self, otp=None, user_id=None, phone_number=None, typ=OTP_VERIFY_PHONE, **kwargs):
     """
     sends otp using email
     """
-    otp = generate_otp()
-    if not user:
-        # no-user otp for sign up
-        if not phone_number:
-            return
-        
-        # deleting previous
-        NoUserOtp.objects.filter(phone_number=phone_number).delete()
-        # creating new one
-        NoUserOtp.objects.create(otp=otp, phone_number=phone_number)
-        mail_body = render_to_string(
-            "accounts/emails/account_verification.html",
-            {"otp": otp},
-        )
+    try:
+        print("--------------------")
+        if not user_id:
+            # no-user otp for sign up
+            if not phone_number:
+                return "no phone number provided for sending otp"
 
-    else:
-        do = "activate your account"
-        question = ""
+            # deleting previous
+            NoUserOtp.objects.filter(phone_number=phone_number).delete()
+            # creating new one
+            NoUserOtp.objects.create(otp=otp, phone_number=phone_number)
+            mail_body = render_to_string(
+                "accounts/emails/account_verification.html",
+                {"otp": otp},
+            )
 
-        if typ == OTP_FORGOT_PASSWORD:
-            # forgot password
-            do = "reset your password"
-        elif typ == OTP_VERIFY_CARRIER:
-            # verify carrier
-            do = "add your account to carriers list"
-            question = f"Are you working in {kwargs['vendor_name']}, if yes,"
-        elif typ == OTP_LOGIN:
-            do = "login to your account"
-        mail_body = render_to_string(
-            "accounts/emails/account_verification.html",
-            {"user": user, "question": question, "otp": otp, "do": do},
+        else:
+            print("======================")
+            do = "activate your account"
+            question = ""
+
+            if typ == OTP_FORGOT_PASSWORD:
+                # forgot password
+                do = "reset your password"
+            elif typ == OTP_VERIFY_CARRIER:
+                # verify carrier
+                do = "add your account to carriers list"
+                question = f"Are you working in {kwargs['vendor_name']}, if yes,"
+            elif typ == OTP_LOGIN:
+                do = "login to your account"
+            mail_body = render_to_string(
+                "accounts/emails/account_verification.html",
+                {"user": user_id, "question": question, "otp": otp, "do": do},
+            )
+            # removing previous otp if existing
+            user = User.objects.get(id=user_id)
+            UserOtp.objects.filter(user__id=user_id).delete()
+            # creating new otp
+            UserOtp.objects.create(user=user, otp=otp)
+        mail = EmailMessage(
+            subject="HI",
+            to=["tareeqshah5@gmail.com", "wahidiali859@gmail.com"],
+            body=mail_body,
         )
-        # removing previous otp if existing
-        UserOtp.objects.filter(user=user).delete()
-        # creating new otp
-        UserOtp.objects.create(user=user, otp=otp)
-    mail = EmailMessage(subject="HI", to=["tareeqshah5@gmail.com","wahidiali859@gmail.com"], body=mail_body)
-    mail.send()
-    return otp
+        mail.send()
+        return "OTP sending successful!"
+    except Exception as exc:
+        print("otp sending not successful", exc)
+        self.retry(exc)
+
 
 def send_forgot_email(request, user, template=None):
     current_site = get_current_site(request)

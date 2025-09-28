@@ -8,7 +8,7 @@ from accounts.serializers import (
 from django.db.utils import IntegrityError
 
 from order.models import Reward
-from .utils import OTP_LOGIN, OTP_VERIFY_PHONE
+from .utils import OTP_LOGIN, OTP_VERIFY_PHONE, generate_otp
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
 from .serializers import (
@@ -26,17 +26,6 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from marketplace.utils import r
 
 """Account API Views"""
-
-
-class RegisterUser(generics.CreateAPIView):
-    serializer_class = UserCreationSerializer
-    queryset = User.objects.all()
-    permission_classes = [permissions.AllowAny]
-
-    def perform_create(self, serializer):
-        user = serializer.save()
-        # sending the otp by email
-        send_otp(self.request, user, typ=1)
 
 
 class UserViewset(viewsets.ModelViewSet):
@@ -85,21 +74,23 @@ class LoginApiView(views.APIView):
                 {"detail": "invalid_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            # if user already exists with this phone number
+            # ------- if user already exists with this phone number
             user = User.objects.get(phone_number=phone_number)
-            send_otp(user=user, typ=OTP_LOGIN)
+            otp = generate_otp()
+            send_otp.delay(otp=otp,user_id=user.id, typ=OTP_LOGIN)
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
             )
         except User.DoesNotExist:
-            # new user
-            send_otp(typ=OTP_VERIFY_PHONE, phone_number=phone_number)
+            # -------- if its a new user
+            otp = generate_otp()
+            send_otp.delay(otp,typ=OTP_VERIFY_PHONE, phone_number=phone_number)
             return Response(
                 {"type": "new_user", "message": "otp_sent"}, status=status.HTTP_200_OK
             )
         except Exception as e:
-            print(e.args, e, "exception in patc of logi")
+            print(e.args, e, "exception in login")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def post(self, *args, **kwargs):
@@ -163,24 +154,24 @@ class LoginApiView(views.APIView):
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
         elif typ == "new_user":
-            print(self.request.data,"______")
-            # ----------------- creating user account + sending tokens
-            # verifying otp
+            # ----------------- creating user account
             try:
+                # ----- preventing auto retries
                 tries = r.get(f"user:{phone_number}:tries")
                 r.incrby(f"user:{phone_number}:tries", 1)
-
                 if tries and int(tries) > 3:
                     return Response(
                         {"detail": "max_attempts_reached"},
                         status=status.HTTP_403_FORBIDDEN,
                     )
+                # ----- verifying otp
                 saved_otp = NoUserOtp.objects.get(otp=otp)
                 if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
                     return Response(
                         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
                     )
 
+                # ----- validating user data and creating new account
                 new_user_data = data.get("user_data", None)
                 if not new_user_data:
                     return Response(
@@ -193,8 +184,6 @@ class LoginApiView(views.APIView):
                         {"detail": "provide_full_name"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-                # creating user
-                # validating data
                 ser = UserCreationSerializer(
                     data={"phone_number": phone_number, "full_name": full_name}
                 )
@@ -202,13 +191,12 @@ class LoginApiView(views.APIView):
                 user = User(
                     phone_number=phone_number, is_active=True, full_name=full_name
                 )
-                # creating profile
                 user.role = CUSTOMER
                 user.save()
-                # removing otp
+                # ------ creating user profile
                 ser = UserProfileCreationSerializer(data=new_user_data)
                 ser.is_valid(raise_exception=True)
-                profile = ser.save(user=user)
+                # ------ removing otp and generating access token for new user
                 r.delete(f"user:{phone_number}:tries")
                 saved_otp.delete()
                 refresh = RefreshToken.for_user(user)
@@ -235,6 +223,7 @@ class RoleTokenRefreshView(TokenRefreshView):
 
 class UpsertDeviceToken(views.APIView):
     def post(self, request, *args, **kwargs):
+        print("saving user device...")
         data = request.data
         if request.user.devices:
             ser = DeviceSerializer(request.user.devices.last(), data=data, partial=True)

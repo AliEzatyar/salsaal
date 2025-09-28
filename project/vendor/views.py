@@ -391,7 +391,8 @@ class AddCarrierAPIView(views.APIView):
     http_method_names = ["post", "patch"]
 
     def post(self, *args, **kwargs):
-        """this method verifies the phone_number entered and sends OTP"""
+        """this method verifies the phone_number and sends OTP, no carrier creation"""
+        # ---- authorization and validation
         data = self.request.data
         phone_number = data.get("phone_number")
         account = User.objects.filter(phone_number=phone_number).first()
@@ -404,17 +405,19 @@ class AddCarrierAPIView(views.APIView):
         elif account.role == CARRIER:
             raise serializers.ValidationError({"detail": "already_exists"})
 
-        # sending otp
-        send_otp(
-            account,
-            phone_number,
-            OTP_VERIFY_CARRIER,
-            vendor_name=self.request.user.vendor.vendor_name,
+        # ----- sending otp to user's phone number
+        otp = generate_otp()
+        send_otp.delay(
+            otp=otp,
+            user_id=account.id,
+            phone_number=phone_number,
+            typ=OTP_VERIFY_CARRIER,
+            vendor_name=self.request.user.vendor.vendor_name, # extra data
         )
         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
     def patch(self, *args, **kwargs):
-        """verifies the otp and converts the phone_number-account to carrier account"""
+        """verifies the otp and converts to carrier account"""
         data = self.request.data
         phone_number = data.get("phone_number")
         otp = data.get("otp")
@@ -730,7 +733,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             }  # vendor app should extract order id and subscribe to --order room
                         ),
                     )
-                    send_notification(
+                    send_notification.delay(
                         order.user.id,
                         notf.title,
                         body=notf.description,
@@ -975,12 +978,12 @@ class SetOrderStateCarrying(views.APIView):
                         }  # customer app should extract order id and subscribe it for live tracking
                     ),
                 )
-                send_notification(
-                    order.user.id,
-                    notf.title,
-                    body=notf.description,
-                    data={"order_id": order.id},
-                )
+            send_notification.delay(
+                order.user.id,
+                notf.title,
+                body=notf.description,
+                data={"order_id": order.id},
+            )
 
             print("notification sent to customer", f"pub:user:{order.user.id}")
             # --------------------- sending notification to carrier's room

@@ -5,7 +5,7 @@ app_name = "carrier"
 
 
 urlpatterns = [
-    path("running-order/", views.CarrierOrderApiView.as_view()),
+    path("current-order/", views.CarrierOrderApiView.as_view()),
     path("delivered-orders/", views.DeliveredOrdersApiView.as_view()),
     path("run-script/<str:which>/", views.run_script),
 ]
