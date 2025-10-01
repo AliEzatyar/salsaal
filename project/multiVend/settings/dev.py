@@ -94,5 +94,9 @@ SIMPLE_JWT = {
 
 FCM_API_KEY = env.get("FIREBASE_SERVICE_ACCOUNT_KEY")
 
-# AES encryption in order delivery
+# AES encryption in order delivery token
 DUMMY_SECRET = env.get("DUMMY_SECRET")
+
+# zego cloud
+ZEGOCLOUD_APP_ID = env.get("ZEGOCLOUD_APP_ID")
+ZEGOCLOUD_SERVER_SECRET = env.get("ZEGOCLOUD_SERVER_SECRET")

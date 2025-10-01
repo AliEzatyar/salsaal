@@ -35,7 +35,7 @@ function verifyJWT(token) {
     try {
         return jwt.verify(token, JWT_PUBLIC_KEY, { "algorithms": "RS256" })
     } catch (error) {
-        console.log(error)
+        console.log(error)  
         return null
     }
 }
@@ -103,7 +103,7 @@ app.ws("/*", {
     message: async (ws, message, isBinary) => {
         try {
             // setting message type like notification or location and its related data
-            // console.log("message.......", Buffer.from(message).toString())
+            console.log("message.......", Buffer.from(message).toString())
             const { type, data } = JSON.parse(Buffer.from(message).toString());
             // console.log("message came from client to channel", type, data)
             switch (type) {

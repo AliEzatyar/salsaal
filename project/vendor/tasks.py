@@ -1,9 +1,15 @@
 from celery import shared_task
 from marketplace.models import Discount, Food
+from marketplace.utils import r
 from django.utils import timezone as tz
+from carrier.models import CARRIER_STATUS_CHOICES
+from order.models import ORDER_STATUS_CHOICES, Order
 from vendor.models import Vendor
-from vendor.utils import revert_discount
+from vendor.utils import get_vendor_carriers_key, revert_discount
 from django.db.transaction import atomic
+from json import loads as j_loads
+from json import dumps as j_dumps
+
 
 @shared_task
 def say_hello():
@@ -13,26 +19,37 @@ def say_hello():
 
 @shared_task
 def deactivate_discounts():
-    discounts = Discount.objects.filter(deadline__lte=tz.now()).prefetch_related("foods")
+    discounts = Discount.objects.filter(deadline__lte=tz.now()).prefetch_related(
+        "foods"
+    )
     # resetting foods prices to original
-    with atomic():    
+    with atomic():
         for dis in discounts:
-            discount_foods = dis.foods.only("id","min_price","prices")
+            discount_foods = dis.foods.only("id", "min_price", "prices")
             for food in discount_foods:
-                print("discount cleared by celery...",food.id)
+                print("discount cleared by celery...", food.id)
                 food = revert_discount(food, dis.amount)
             Food.objects.bulk_update(discount_foods, ["prices", "min_price"])
-        discounts.update(
-            is_active=False
-        )
+        discounts.update(is_active=False)
     return "Discounts Deactivated!"
 
 
-@shared_task
-def reset_vendor_carriers_in_redis():
+# @shared_task
+def reset_vendors_carriers_in_redis():
     """
     this task resets f_c_c, b_c_c and total_c_c in redis for all vendors
     """
-    print("revert carrier's status")
-    vendors = Vendor.objects.all()        
+    print("revert carriers status for all vendors")
+    
+    vendors = Vendor.objects.all().prefetch_related("carriers")
+    for vendor in vendors:
+        if Order.objects.filter(vendor=vendor,status=ORDER_STATUS_CHOICES[3][0]).exists():
+            print("carr")
+            continue
+        vendor_carriers_key = get_vendor_carriers_key()
+        vendor.carriers.update(status=CARRIER_STATUS_CHOICES[0][0])
+        total_carriers_count = j_loads(r.hget(vendor_carriers_key, "total_c_c"))
+        r.hset(vendor_carriers_key, "f_c_c", total_carriers_count)  # all free
+        r.hset(vendor_carriers_key, "b_c_c", 0)  # no busy carriers
+
     return "Carrier's reset!"

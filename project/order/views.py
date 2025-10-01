@@ -262,7 +262,6 @@ class AcceptRejectOrderView(views.APIView):
         order_id = data.get("order_id", None)
         event_data = None
         try:
-            
             order = Order.objects.get(id=order_id)
             # check if this user owns the order
             self.check_object_permissions(self.request, order)
@@ -290,9 +289,9 @@ class AcceptRejectOrderView(views.APIView):
             existing_reward = Reward.objects.filter(
                 vendor__id=order.vendor.id, user=self.request.user
             ).first()
-            # payment type other than reward -> increment reward
             with atomic():
-                if payment_type != VALID_PAYMENT_TYPES[3][0]:
+                # payment type other than reward -> increment reward
+                if payment_type != VALID_PAYMENT_TYPES[2][0]:
                     if existing_reward:
                         print("reward existed before")
                         existing_reward.amount += round(
@@ -304,7 +303,10 @@ class AcceptRejectOrderView(views.APIView):
                         if order.vendor.reward_percentage > 0:
                             print("creating new reward")
                             reward_to_add = round(
-                                (order.vendor.reward_percentage * float(order.total_price))
+                                (
+                                    order.vendor.reward_percentage
+                                    * float(order.total_price)
+                                )
                                 / 100
                             )
                             Reward.objects.create(
@@ -331,6 +333,16 @@ class AcceptRejectOrderView(views.APIView):
 
                 # -------------- setting order payment type
                 order.payment_type = payment_type
+                # Online Payment
+                if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
+                    payment_id = data.get("payment_id", None)
+                    if not payment_id:
+                        return Response(
+                            {"detail": "no_payment_id"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    order.payment_id = payment_id
+                    order.paid = True
                 order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
                 order.save()
                 event_data = {

@@ -1050,6 +1050,7 @@ class FoodsByCategory(generics.ListAPIView):
                 ),
                 1,
             )
+            print(distance)
             vendor.distance = distance
             vendor.reach_time = round(distance_to_travel_time(distance), 0)
         return local_vendors_matching_category

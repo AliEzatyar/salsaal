@@ -1,7 +1,6 @@
 from django.conf import settings as s
 from redis import Redis
-
-r = Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
+from marketplace.utils import r
 
 
 def to_af_weekday(index):

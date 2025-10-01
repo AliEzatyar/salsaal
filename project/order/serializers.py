@@ -63,7 +63,6 @@ class COrderSerializer(ModelSerializer):
             "total_price",
             "paid",
             "payment_id",
-            "is_credit",
             "created_at",
             "total_items",
             "carrier", # for live tracking if needed
@@ -75,7 +74,6 @@ class COrderSerializer(ModelSerializer):
             "payment_type",
             "vendor_image"
         ]
-        # read_only_fields= ["paid","user","total_price","created_at","total_items","carrier","vendor","items","is_credit"]
         read_only_fields = ["__all__"]
 
     def create(self, validated_data):

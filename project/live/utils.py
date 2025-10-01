@@ -4,6 +4,11 @@ from pyfcm import FCMNotification
 from django.conf import settings
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
+import hmac
+import hashlib
+import base64
+import time
+import json
 
 def is_user_online(user_id):
     return r.exists(f"user:{user_id}")  # returns 1 if online, 0 if offline
@@ -59,3 +64,43 @@ def send_fcm(token, title, body, data=None):
         android_config=android_cfg,
     )
     return result
+
+
+def generate_token_for_call(user_id: str, effective_time_in_seconds: int = 3600):
+    """
+    Generate ZEGOCLOUD token using ServerSecret.
+    :param user_id: The user ID to authorize
+    :param effective_time_in_seconds: Expiry time (default 1 hour)
+    """
+    app_id = settings.ZEGOCLOUD_APP_ID
+    server_secret = settings.ZEGOCLOUD_SERVER_SECRET
+
+    create_time = int(time.time())
+    expire_time = create_time + effective_time_in_seconds
+
+    payload = {
+        "app_id": app_id,
+        "user_id": user_id,
+        "create_time": create_time,
+        "expire_time": expire_time,
+    }
+
+    # Convert payload to JSON string
+    payload_str = json.dumps(payload, separators=(",", ":"))
+
+    # Sign using HMAC-SHA256
+    signature = hmac.new(
+        server_secret.encode("utf-8"),
+        payload_str.encode("utf-8"),
+        hashlib.sha256,
+    ).digest()
+
+    token = base64.b64encode(signature).decode("utf-8")
+
+    return {
+        "app_id": app_id,
+        "user_id": user_id,
+        "expire_time": expire_time,
+        "create_time":create_time,
+        "token": token,
+    }

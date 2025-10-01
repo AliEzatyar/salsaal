@@ -7,6 +7,9 @@ from django.contrib.auth import get_user_model
 from marketplace.models import Food
 from accounts.utils import generate_otp
 from vendor.models import Vendor
+from django.contrib.gis.db import models as g_models
+from django.db.models import Q
+
 
 User = get_user_model()
 
@@ -23,7 +26,6 @@ MAX_PREPARING_ORDERS_COUNT = 1
 VALID_PAYMENT_TYPES = [
     ("cash_on_delivery", "cash_on_delivery"),
     ("hesab_pay", "hesab_pay"),
-    ("debit_card", "debit_card"),
     ("reward_payment", "reward_payment"),
 ]
 
@@ -42,7 +44,6 @@ class Order(models.Model):
     payment_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
     )
-    is_credit = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=2)
@@ -53,7 +54,7 @@ class Order(models.Model):
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, related_name="orders"
     )
-    destination = models.CharField(max_length=40, default="null,null")
+    destination = g_models.PointField(null=True, blank=True, srid=4326)
     payment_type = models.CharField(
         max_length=60, choices=VALID_PAYMENT_TYPES, default=VALID_PAYMENT_TYPES[0][0]
     )
@@ -61,6 +62,7 @@ class Order(models.Model):
     class Meta:
         indexes = [models.Index(fields=["-created_at"])]
         ordering = ["-created_at"]
+
 
     def calculate_total_price(self):
         self.total_price = sum(item.subtotal for item in self.items.all()) + self.delivery_cost
@@ -142,4 +144,3 @@ class Reward(models.Model):
         if self.amount and self.amount > 500:
             self.amount = 500
         super().save(*args, **kwargs)
-    

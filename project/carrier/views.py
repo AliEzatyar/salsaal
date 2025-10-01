@@ -48,7 +48,7 @@ class CarrierOrderApiView(views.APIView):
                 .last()
             )
             current_order_data = None
-            carrier_vendor_name = self.request.user.carrier.vendor.vendor_name
+            carrier_vendor = self.request.user.carrier.vendor
             if order:
                 # check if carrier is of order's vendor
                 self.check_object_permissions(self.request, order)
@@ -56,11 +56,15 @@ class CarrierOrderApiView(views.APIView):
                 current_order_data = ser.data
             data = {
                 "current_order": current_order_data,
-                "vendor_name": carrier_vendor_name,
+                "vendor": {
+                    "name": carrier_vendor.vendor_name,
+                    "image": carrier_vendor.image.url,
+                    "address": carrier_vendor.user_profile.address,
+                },
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
-            print(e, "eroror", e.args)
+            print(e, "eroror", e.args)  
             return Response(status.HTTP_501_NOT_IMPLEMENTED)
 
 

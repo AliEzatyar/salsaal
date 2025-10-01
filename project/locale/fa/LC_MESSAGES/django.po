@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-19 00:00+0000\n"
+"POT-Creation-Date: 2025-09-28 21:13+0430\n"
 "PO-Revision-Date: 2025-09-19 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Persian\n"
@@ -11,43 +11,47 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: order/views.py:150
+#: order/views.py:163
 msgid "you have a new order!"
 msgstr "شما سفارش جدید دارید!"
 
-#: order/views.py:211
+#: order/views.py:221
 msgid "order has been cancelled by buyer!"
 msgstr "مشتری سفارش را لغو کرد"
 
-#: order/views.py:288
+#: order/views.py:355
 msgid "Order Set Preparing"
 msgstr "سفارش در حال آماده سازی"
 
-#: order/views.py:289
+#: order/views.py:356
 msgid "your order is being prepared"
 msgstr "سفارش شما در حال آماده شدن است."
 
-#: order/views.py:367 order/views.py:375
+#: order/views.py:427 order/views.py:435
 msgid "Order Delivered"
 msgstr "تحویل شد"
 
-#: order/views.py:368
+#: order/views.py:428
 msgid "Your order has been delivered successfully."
 msgstr "سفارش شما موفقانه تحویل شد."
 
-#: order/views.py:376
+#: order/views.py:436
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "سفارش {order_id} موفقانه تحویل شد."
 
-#: vendor/views.py:714
+#: vendor/views.py:718
 msgid "Order Rejected"
 msgstr "سفارش رد شد"
 
-#: vendor/views.py:716
+#: vendor/views.py:720
 msgid "sorry! your order has been rejected by restuarant!"
 msgstr "متاسفیم! سفارش شما توسط رستورانت قبول نشد."
 
-#: vendor/views.py:943
+#: vendor/views.py:960
 msgid "Order set as carrying"
 msgstr "سفارش در حال انتقال"
+
+#: vendor/views.py:965
+msgid "Your order is being carried, click to live track."
+msgstr "سفارش شما در حال انتقال است. برای مشاهده کلیک کنید."

@@ -41,6 +41,7 @@ from rest_framework.response import Response
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch
 from django.utils import timezone as tz
 from django.db import transaction
+from django.contrib.gis.geos import Point
 
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
@@ -390,7 +391,7 @@ class AddCarrierAPIView(views.APIView):
     permission_classes = [permissions.IsAuthenticated, IsVendor]
     http_method_names = ["post", "patch"]
 
-    def post(self, *args, **kwargs):
+    def patch(self, *args, **kwargs):
         """this method verifies the phone_number and sends OTP, no carrier creation"""
         # ---- authorization and validation
         data = self.request.data
@@ -416,7 +417,7 @@ class AddCarrierAPIView(views.APIView):
         )
         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
-    def patch(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         """verifies the otp and converts to carrier account"""
         data = self.request.data
         phone_number = data.get("phone_number")
@@ -914,9 +915,7 @@ class SetOrderStateCarrying(views.APIView):
                 order_user = order.user
                 customer_location = order_user.profile.location
                 customer_location = (customer_location.y, customer_location.x)
-                order.destination = (
-                    str(customer_location[0]) + "," + str(customer_location[1])
-                )
+                order.destination = Point(float(customer_location[1]), float(customer_location[0]), srid=4326)
                 order.save()
                 # estimation
                 vendor = self.request.user.vendor

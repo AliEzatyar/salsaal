@@ -12,8 +12,6 @@
             ws.send(JSON.stringify({ type: "SUBSCRIBE_CARRIER", data }))
             hasSubscribed = true;
             console.log("socket subscribed to carrier")
-
-
         }
     }
     // here, carrier either reads notifications 
@@ -44,7 +42,7 @@
             setInterval(() => {
                 const { latt, lonn } = moveRandomly();
                 console.log(`Lat: ${lat}, Lon: ${lon}`);
-                ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data: { lat: latt, lon: lonn, carrierId: carrierId, ts: Date.now().toString() } }))
+                ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data: { latitude: latt, longitude: lonn, carrierId: carrierId, ts: Date.now().toString() } }))
             }, 5000)
         }
 

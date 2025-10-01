@@ -32,6 +32,10 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField("get_id")
     otp = serializers.SerializerMethodField("get_otp")
     items = COrderItemSerializer(many=True)
+    # customer_profile = serializers.ReadOnlyField(source="user.profile.picture.url")
+    customer_profile = serializers.SerializerMethodField("get_customer_picture")
+    destination = serializers.SerializerMethodField("get_destination")
+
     class Meta:
         model = Order
         fields = [
@@ -42,28 +46,43 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
             "delivery_cost",
             "status",
             "paid",
-            "is_credit",
             "created_at",
             "user",
             "items",
             "otp",
+            "destination",
+            "customer_profile",
         ]
         read_only_fields = ["__all__"]
 
     def get_id(self, obj):
         return encrypt_32(obj.id)
 
+    def get_customer_picture(self, obj):
+        # print(obj.user.profile.picture.file)
+        # print(hasattr(obj.user.profile.picture, "file"))
+        return (
+            obj.user.profile.picture.url
+            if obj.user.profile.picture
+            else None
+        )
+    def get_destination(self,obj):
+        return reversed(list(obj.destination))
+
     def get_otp(self, obj):
         return encrypt_32(obj.otp)
 
+
 class CarrierOrderSerializerMany(serializers.ModelSerializer):
     customer_name = serializers.ReadOnlyField(source="user.full_name")
+    total_price = MyDecimalField(read_only=True)
+
     class Meta:
         model = Order
         fields = [
             "id",
             "customer_name",
-            "paid",
+            "total_price",
             "created_at",
         ]
         read_only_fields = ["__all__"]
