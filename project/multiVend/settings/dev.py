@@ -53,6 +53,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # Celery settings
 CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
 CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+DJANGO_CELERY_BEAT_MAX_LOOP_INTERVAL = 50  # every 50 seconds, jobs re-taken from db
 
 # Celery Beat for periodic tasks
 INSTALLED_APPS += ["django_celery_beat", "storages"]

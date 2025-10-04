@@ -10,7 +10,6 @@ from .models import Carrier
 class CarrierSerializer(serializers.ModelSerializer):
     vendor = serializers.PrimaryKeyRelatedField(read_only=True)
     name = serializers.ReadOnlyField(source="user.full_name")
-
     class Meta:
         model = Carrier
         fields = [

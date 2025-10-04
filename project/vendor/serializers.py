@@ -147,17 +147,16 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         model = Vendor
         fields = [
             "id",
+            "user",
+            "user_profile",
+            "is_approved",
+            "created_at",
+            "avg_rating",
+            # must fields while converting
             "vendor_name",
             "vendor_license",
             "image",
             "logo",
-            "is_approved",
-            "user",
-            "user_profile",
-            "created_at",
-            "avg_rating",
-            "rating_count",
-            "opening_hours",
             "mfdd", # max free delivery distance
             "mfcfd",  # min food count free delivery
             "min_order_price",
@@ -171,8 +170,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "user_profile",
             "is_approved",
             "created_at",
-            "rating",
-            "opening_hours",
+            "avg_rating",
         ]
 
     def update(self, instance, validated_data):

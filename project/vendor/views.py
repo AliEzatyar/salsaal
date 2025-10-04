@@ -413,7 +413,7 @@ class AddCarrierAPIView(views.APIView):
             user_id=account.id,
             phone_number=phone_number,
             typ=OTP_VERIFY_CARRIER,
-            vendor_name=self.request.user.vendor.vendor_name, # extra data
+            vendor_name=self.request.user.vendor.vendor_name,  # extra data
         )
         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
@@ -498,13 +498,36 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         queryset = Carrier.objects.filter(vendor=self.request.user.vendor)
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        """overriden to add total carriers and free carriers amount"""
+        try:
+            vendor_carriers_key = get_vendor_carriers_key(self.request.user.vendor.id)
+            total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
+            f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
+            b_c_c = json.loads(r.hget(vendor_carriers_key, "b_c_c"))
+
+            # serializing and sending response
+            queryset = self.filter_queryset(self.get_queryset())
+            ser = self.get_serializer(queryset, many=True)
+            return Response(
+                {
+                    "total_carriers": total_c_c,
+                    "free_carriers": f_c_c,
+                    "busy_carriers": b_c_c,
+                    "carriers": ser.data,
+                }
+            )
+        except Exception as e:
+            print("error in list carriers", e)
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def get_serializer_context(self):
         context = super(ManageCarrierViewSet, self).get_serializer_context()
         context["vendor"] = self.request.user.vendor.id
         return context
 
     def perform_destroy(self, instance):
-        """converting to a normal user"""
+        """converting a carrier to a normal user"""
         user = instance.user
         instance.delete()
         user.role = CUSTOMER
@@ -522,8 +545,11 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
 
 
 class CarriersNow(views.APIView):
-    """this view returns list of vendor carriers sorted by
-    nearst to farthest ones from vendor location"""
+    """
+    this view returns list of vendor carriers sorted by
+    nearst to farthest ones from vendor location
+    it is used when assigning carriers for order delivery task
+    """
 
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
@@ -677,7 +703,7 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         queryset = Order.objects.filter(vendor=self.request.user.vendor)
         return queryset
-
+    
 
 class CalculateOrderTimeAndDeliveryCost(views.APIView):
     """
@@ -915,7 +941,9 @@ class SetOrderStateCarrying(views.APIView):
                 order_user = order.user
                 customer_location = order_user.profile.location
                 customer_location = (customer_location.y, customer_location.x)
-                order.destination = Point(float(customer_location[1]), float(customer_location[0]), srid=4326)
+                order.destination = Point(
+                    float(customer_location[1]), float(customer_location[0]), srid=4326
+                )
                 order.save()
                 # estimation
                 vendor = self.request.user.vendor
@@ -962,7 +990,7 @@ class SetOrderStateCarrying(views.APIView):
                     receiver=order.user,
                     data={"order_id": order.id, "carrier_id": carrier_id},
                     target_id=order.id,
-                    description = _("Your order is being carried, click to live track.")
+                    description=_("Your order is being carried, click to live track."),
                 )
                 deactivate_language()
 

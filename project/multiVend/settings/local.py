@@ -53,9 +53,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 # Celery settings
-CELERY_BROKER_URL = "redis://localhost:6379/0"  # or use RabbitMQ
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-
+# Celery settings
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+DJANGO_CELERY_BEAT_MAX_LOOP_INTERVAL = 10 # every 10 seconds, jobs re-taken from db
 # Celery Beat for periodic tasks
 INSTALLED_APPS += ["django_celery_beat", "storages"]
 

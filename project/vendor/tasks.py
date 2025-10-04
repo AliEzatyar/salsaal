@@ -34,7 +34,7 @@ def deactivate_discounts():
     return "Discounts Deactivated!"
 
 
-# @shared_task
+@shared_task
 def reset_vendors_carriers_in_redis():
     """
     this task resets f_c_c, b_c_c and total_c_c in redis for all vendors
@@ -44,11 +44,16 @@ def reset_vendors_carriers_in_redis():
     vendors = Vendor.objects.all().prefetch_related("carriers")
     for vendor in vendors:
         if Order.objects.filter(vendor=vendor,status=ORDER_STATUS_CHOICES[3][0]).exists():
-            print("carr")
+            print("order in carrying, no reset for this vendor ",vendor.id)
             continue
-        vendor_carriers_key = get_vendor_carriers_key()
+        vendor_carriers_key = get_vendor_carriers_key(vendor.id)
         vendor.carriers.update(status=CARRIER_STATUS_CHOICES[0][0])
-        total_carriers_count = j_loads(r.hget(vendor_carriers_key, "total_c_c"))
+        total_carriers_count = 0
+        if r.hget(vendor_carriers_key, "total_c_c"):
+            total_carriers_count = j_loads(r.hget(vendor_carriers_key, "total_c_c"))
+        else:
+            total_carriers_count  = vendor.carriers.all().count()
+            print("total initialized for vendor", vendor.id)
         r.hset(vendor_carriers_key, "f_c_c", total_carriers_count)  # all free
         r.hset(vendor_carriers_key, "b_c_c", 0)  # no busy carriers
 

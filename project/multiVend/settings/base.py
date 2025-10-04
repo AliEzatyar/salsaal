@@ -135,7 +135,10 @@ PASSWORD_RESET_TIMEOUT_DAYS = 1
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"  #
+TIME_ZONE = "Asia/Kabul"
+USE_TZ = True
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = "Asia/Kabul"
 
 USE_I18N = True
 
@@ -151,7 +154,6 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, "locale"),
 ]
 
-USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)

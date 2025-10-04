@@ -184,6 +184,7 @@ class LoginApiView(views.APIView):
                         {"detail": "provide_full_name"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+                # serializing data for validation only not creation
                 ser = UserCreationSerializer(
                     data={"phone_number": phone_number, "full_name": full_name}
                 )

@@ -4,7 +4,7 @@ from .models import Order, OrderItem
 class OrderAdmin(admin.ModelAdmin):
     model = Order
     list_display = ["id","status","user","total_price"]
-
+    list_editable = ["status"]
 
 class OrderItemAdmin(admin.ModelAdmin):
     model = OrderItem
