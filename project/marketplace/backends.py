@@ -82,22 +82,33 @@ class CustomFoodSearch(SearchFilter):
         """overriden for custom search"""
         request_data = request.query_params
         city = request_data.get("city", None)
-        print(request, request_data)
         if not city:
             return Food.objects.none()
         city = str(city).lower()
         search_param = request_data.get(self.search_param)
-        # if search param value is void
+        # if search param value is void and no discount is searchd
         if not search_param or not search_param.strip():
             return queryset.none()
-        foods = (
-            Food.objects.filter(vendor__user_profile__city=city)
-            .annotate(similarity=TrigramSimilarity("name", search_param))
-            .filter(similarity__gte=0.2)
-            .select_related("vendor__user_profile")
-            .order_by("-similarity")[:20]
-        )
-        print(foods)
+        """
+            Here is subtle case to consider, 
+            django orm does not allow filter after a qs is limited or [:n]
+            so when discounted flag is true in request header, we don't limit it.
+        """
+        if request_data.get("discounted"):
+            foods = (
+                Food.objects.filter(vendor__user_profile__city=city)
+                .annotate(similarity=TrigramSimilarity("name", search_param))
+                .filter(similarity__gte=0.2)
+                .select_related("vendor__user_profile")
+            )
+        else:
+            foods = (
+                Food.objects.filter(vendor__user_profile__city=city)
+                .annotate(similarity=TrigramSimilarity("name", search_param))
+                .filter(similarity__gte=0.2)
+                .select_related("vendor__user_profile")
+                .order_by("-similarity")[:20]
+            )
         return foods
 
 
@@ -191,7 +202,7 @@ class CustomVendorSearch(SearchFilter):
         search_param = request_data.get(self.search_param)
         location = request_data.get("location", None)
         city = request_data.get("city", None)
-        max_distance = request_data.get("max_distance",None)
+        max_distance = request_data.get("max_distance", None)
         if not (location and city):
             return queryset.none()
         city = str(city).lower()

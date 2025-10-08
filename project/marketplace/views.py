@@ -136,7 +136,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         cat_key = "home_categories"
         categories = cache.get(cat_key)
         if not categories:
-            #     # cach miss
+             # cach miss
             categories = Category.objects.filter(show_on_home=True)
             ser = CategorySerializer(categories, many=True)
             categories = ser.data
@@ -219,14 +219,14 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         promotions = Promotion.objects.filter(city=city)
         promotion_serializer = PromotionSerializer(promotions, many=True)
         # discounted foods
-        foods_key = f"city:{city}:dis_foods"
-        discounted_foods_ids = cache.get(foods_key, None)
+        dis_foods_key = f"city:{city}:dis_foods"
+        discounted_foods_ids = cache.get(dis_foods_key, None)
         if not discounted_foods_ids:
             discounted_foods_ids = city_foods.filter(
-                discount__is_active=True, discount__vendor__user_profile__city=city
+                discount__is_active=True, 
             ).values_list("id", flat=True)
 
-            cache.set(foods_key, discounted_foods_ids, 10 * 60)
+            cache.set(dis_foods_key, discounted_foods_ids, 10 * 60)
         discounted_foods_final = city_foods.filter(
             id__in=discounted_foods_ids
         ).select_related("vendor__user_profile")
@@ -488,7 +488,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         if not city:
             return Response({"detail": "provide_a_correct_city"}, status=400)
         city = str(city).lower()
-
+        print("request ot all vendors.....")
         if not location:
             return Response({"detail": "location_data_needed"}, status=400)
         try:
@@ -598,7 +598,7 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     this viewset enables a user search for a fooditem
     the result is filtered by the user's city.
     """
-
+    pagination_class = StandardResultSetPagination
     serializer_class = FoodSerializerMany
     queryset = Food.objects.filter(is_available=True)
     # django-filter

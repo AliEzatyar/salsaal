@@ -6,7 +6,7 @@ from accounts.serializers import (
     UserDetailSerializer,
 )
 from django.db.utils import IntegrityError
-
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from order.models import Reward
 from .utils import OTP_LOGIN, OTP_VERIFY_PHONE, generate_otp
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -24,7 +24,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenRefreshView
 from marketplace.utils import r
-
+from django.utils import timezone
+from datetime import timedelta
 """Account API Views"""
 
 
@@ -133,6 +134,8 @@ class LoginApiView(views.APIView):
                     )
                 # finding user
                 user = User.objects.get(phone_number=phone_number)
+                user.token_valid_after = timezone.now() - timedelta(seconds=10)
+                user.save()
                 refresh = RefreshToken.for_user(user)
                 saved_otp.delete()
                 r.delete(f"user:{phone_number}:tries")

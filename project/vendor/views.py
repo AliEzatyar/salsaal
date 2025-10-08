@@ -916,6 +916,7 @@ class SetOrderStateCarrying(views.APIView):
             if (
                 carrier.vendor != self.request.user.vendor
             ):  # vendor should own this carrier
+                print("does not sdfjsdlfj")
                 return Response(status=status.HTTP_403_FORBIDDEN)
             if carrier.status == CARRIER_STATUS_CHOICES[1][0]:  # carrerir busy
                 return Response(

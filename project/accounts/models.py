@@ -61,7 +61,7 @@ class User(AbstractBaseUser):
     )
 
     objects = UserManager()
-
+    token_valid_after = models.DateTimeField(default=timezone.now)
     ROLE_CHOICES = [
         (ADMIN, "Admin"),
         (REST, "Resturant"),

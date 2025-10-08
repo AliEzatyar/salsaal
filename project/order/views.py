@@ -1,3 +1,4 @@
+import time
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
 from vendor.models import Vendor
@@ -113,12 +114,31 @@ class OrderViewSet(viewsets.ModelViewSet):
                 previous_waiting_orders.delete()
 
             # preventing new order if it exceeds max preparing orders limit for user
+            count = r.get(f"user:{request.user.id}:waiting")
+            print(count,"redis count before increment")
+            if count:
+                count = json.loads(count)
+            else:
+                count = 0
+            if count >= 1:
+                return Response(
+                    {"detail": "order_already_in_process"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            r.incrby(f"user:{request.user.id}:waiting", 1)
+        
             previouse_preparing_orders_count = Order.objects.filter(
                 user=request.user,
-                status=ORDER_STATUS_CHOICES[2][0],
+                status__in=(
+                    ORDER_STATUS_CHOICES[2][0],
+                    ORDER_STATUS_CHOICES[1][0],
+                    ORDER_STATUS_CHOICES[3][0],
+                ),
                 vendor__id=vendor_id,
             ).count()
+            print(previouse_preparing_orders_count, "$$$$$-------waiting amount")
             if previouse_preparing_orders_count > MAX_PREPARING_ORDERS_COUNT:
+                r.delete(f"user:{request.user.id}:waiting")
                 # prevent duplicate order if user has one 'waiting' order already
                 return Response(
                     {"detail": "order_already_in_process"},
@@ -184,6 +204,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                         }  # vendor app should extract order id and subscribe to --order room
                     ),
                 )
+                r.delete(f"user:{request.user.id}:waiting")
 
             # ------------------------ feeding recommender
             recommender = BoughtTogetherRecommender()

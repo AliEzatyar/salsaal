@@ -101,7 +101,7 @@ app.ws("/*", {
     },
     // this messages only come from client web sockets, e.g. mobil apps + web browsers
     message: async (ws, message, isBinary) => {
-        try {
+        
             // setting message type like notification or location and its related data
             console.log("message.......", Buffer.from(message).toString())
             const { type, data } = JSON.parse(Buffer.from(message).toString());
@@ -148,7 +148,7 @@ app.ws("/*", {
                     console.log("subscribed to carrier ", data.carrierId)
                     let room = `carrier:${data.carrierId}`;
                     subscribeToRoom(ws, room);
-                    var lastCarrierLocation = await redisPub.hGetAll(`carrier_last_${data.carrierId}`)
+                    var lastCarrierLocation = await redisPub.get(`carrier_last_${data.carrierId}`)
                     ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED' }))
                     if (lastCarrierLocation.latitude && lastCarrierLocation.longitude) {
                         console.log("sending locaiotn", lastCarrierLocation.latitude)
@@ -172,9 +172,11 @@ app.ws("/*", {
                 }
 
                 case "CARRIER_LOCATION": {
-                    const { lat, lon, carrierId, ts } = data;
-                    redisPub.hSet(`carrier_last_${carrierId}`, { latitude: lat, longitude: lon, ts });
-                    redisPub.publish(`pub:carrier:${carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", data: { latitude: lat, longitude: lon, ts } }));
+                    console.log("carrier location", data)
+                    console.log(data.latitude)
+                    redisPub.set(`carrier_last_${data.carrierId}`, JSON.stringify({ latitude: data.latitude, longitude: data.longitude }));
+                    redisPub.publish(`pub:carrier:${data.carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", data: { latitude: data.latitude, longitude: data.longitude } }));
+                    console.log('send')
                     break
 
                 }
@@ -222,10 +224,7 @@ app.ws("/*", {
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));
             }
 
-        } catch (error) {
-            console.log(error)
-            ws.send(JSON.stringify({ ok: false, error: "BAD_PAYLOAD" }));
-        }
+         
     },
 
     close: (ws) => {

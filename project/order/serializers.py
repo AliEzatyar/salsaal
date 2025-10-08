@@ -46,7 +46,6 @@ class COrderItemSerializer(ModelSerializer):
         return obj.food_name
 
 
-
 class COrderSerializer(ModelSerializer):
     user = PrimaryKeyRelatedField(read_only=True)
     items = COrderItemSerializerMany(many=True, read_only=True)
@@ -54,6 +53,7 @@ class COrderSerializer(ModelSerializer):
     vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
     total_price = MyDecimalField(read_only=True)
     carrier_name =  serializers.ReadOnlyField(source="carrier.user.full_name")
+    carrier =serializers.ReadOnlyField(source="carrier.user.id")
     class Meta:
         model = Order
         fields = [
@@ -89,6 +89,7 @@ class COrderSerializerLessDetail(ModelSerializer):
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     # items_pair = serializers.SerializerMethodField("get_items")
     items = COrderItemSerializerMany(many=True, read_only=True)
+    carrier = serializers.ReadOnlyField(source="carrier.user.id")
 
     class Meta:
         model = Order
@@ -163,4 +164,3 @@ class VOrderSerializer(ModelSerializer):
 
     def get_customer_name(self, obj):
         return obj.user.first_name + obj.user.last_name
-

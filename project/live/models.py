@@ -8,6 +8,7 @@ NOTIFICATION_TARGET_TYPES = [
     ("vendor", "vendor"),
     ("reward", "reward"),
     ("other", "other"),
+
 ]
 
 class Notification(models.Model):
