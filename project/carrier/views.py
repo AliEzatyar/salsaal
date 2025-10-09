@@ -10,7 +10,7 @@ from api.permissions import (
     IsCarrierOfVendor,
 )
 from order.models import Order, ORDER_STATUS_CHOICES
-from accounts.models import (
+from order.models import (
     ORDER_DELIVERY_OTP_EXPIRATION,
 )
 from django.utils.translation import gettext as _
