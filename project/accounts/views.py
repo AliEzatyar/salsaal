@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponse
-from accounts.models import CUSTOMER, NoUserOtp, User, UserOtp
+from accounts.models import CUSTOMER, OTP_RETRY_DELAY, NoUserOtp, User, UserOtp
 from accounts.serializers import (
     UserCreationSerializer,
     UserDetailSerializer,
@@ -8,7 +8,7 @@ from accounts.serializers import (
 from django.db.utils import IntegrityError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from order.models import Reward
-from .utils import OTP_LOGIN, OTP_VERIFY_PHONE, generate_otp
+from .utils import OTP_LOGIN, OTP_VERIFY_PHONE, generate_otp, get_user_otp_tries_key
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
 from .serializers import (
@@ -116,9 +116,11 @@ class LoginApiView(views.APIView):
             # -------------------------------- sending tokens
             try:
                 # verifying otp
-                tries = r.get(f"user:{phone_number}:tries")
-                r.incrby(f"user:{phone_number}:tries", 1)
-                if tries and int(tries) > 3:
+                otp_tries_key = get_user_otp_tries_key(phone_number)
+                tries = r.get(otp_tries_key)
+                r.incrby(otp_tries_key, 1)
+                if tries and int(tries) > 5:
+                    r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 10 minutes delay
                     return Response(
                         {"detail": "max_attempts_reached"},
                         status=status.HTTP_403_FORBIDDEN,
@@ -138,7 +140,7 @@ class LoginApiView(views.APIView):
                 user.save()
                 refresh = RefreshToken.for_user(user)
                 saved_otp.delete()
-                r.delete(f"user:{phone_number}:tries")
+                r.delete(otp_tries_key)
 
                 return Response(
                     {"access": str(refresh.access_token), "refresh": str(refresh)},
@@ -160,9 +162,11 @@ class LoginApiView(views.APIView):
             # ----------------- creating user account
             try:
                 # ----- preventing auto retries
-                tries = r.get(f"user:{phone_number}:tries")
-                r.incrby(f"user:{phone_number}:tries", 1)
-                if tries and int(tries) > 3:
+                otp_tries_key = get_user_otp_tries_key(phone_number)
+                tries = r.get(otp_tries_key)
+                r.incrby(otp_tries_key, 1)
+                if tries and int(tries) > 5:
+                    r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
                     return Response(
                         {"detail": "max_attempts_reached"},
                         status=status.HTTP_403_FORBIDDEN,
@@ -201,7 +205,7 @@ class LoginApiView(views.APIView):
                 ser = UserProfileCreationSerializer(data=new_user_data)
                 ser.is_valid(raise_exception=True)
                 # ------ removing otp and generating access token for new user
-                r.delete(f"user:{phone_number}:tries")
+                r.delete(otp_tries_key)
                 saved_otp.delete()
                 refresh = RefreshToken.for_user(user)
                 return Response(
@@ -227,7 +231,6 @@ class RoleTokenRefreshView(TokenRefreshView):
 
 class UpsertDeviceToken(views.APIView):
     def post(self, request, *args, **kwargs):
-        print("saving user device...")
         data = request.data
         if request.user.devices:
             ser = DeviceSerializer(request.user.devices.last(), data=data, partial=True)
@@ -235,6 +238,7 @@ class UpsertDeviceToken(views.APIView):
             ser = DeviceSerializer(data)
         if ser.is_valid(raise_exception=True):
             ser.validated_data["user"] = request.user
+            print("saving user device...")
             ser.save()
         return Response()
 

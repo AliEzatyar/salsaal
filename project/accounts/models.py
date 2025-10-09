@@ -17,7 +17,7 @@ CARRIER = 3
 DEFAULT_OTP_EXPIRATION = 10  # minutes
 FOOD_DELIVERY_OTP_EXPIRATION = 3 * 60  # 3 hours
 CARRIER_ADD_OTP_EXPIRATION = 1440
-
+OTP_RETRY_DELAY = 600
 
 # Create your models here.
 class UserManager(BaseUserManager):
@@ -120,7 +120,7 @@ class UserProfile(g_models.Model):
     country = models.CharField(max_length=20, default="AF")
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
-    city = models.CharField(max_length=15,db_index=True)
+    city = models.CharField(max_length=15, db_index=True)
     latitude = models.CharField(max_length=20)
     longitude = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -157,11 +157,8 @@ class Device(models.Model):
 
 
 class UserOtp(models.Model):
-    user = models.ForeignKey(
-        "accounts.User",
-        on_delete=models.CASCADE,
-    )
-    otp = models.CharField(max_length=8)
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, db_index=True)
+    otp = models.CharField(max_length=8, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):
@@ -170,7 +167,7 @@ class UserOtp(models.Model):
 
 class NoUserOtp(models.Model):
     phone_number = models.CharField(max_length=12)
-    otp = models.CharField(max_length=6)
+    otp = models.CharField(max_length=6, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):

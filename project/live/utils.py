@@ -55,14 +55,17 @@ def send_fcm(token, title, body, data=None):
             "sound": "default",
         },
     }
-
-    result = fcm.notify(
-        fcm_token=token,
-        notification_title=title,
-        notification_body=body,
-        data_payload={k: str(v) for k, v in (data or {}).items()},
-        android_config=android_cfg,
-    )
+    try:
+        result = fcm.notify(
+            fcm_token=token,
+            notification_title=title,
+            notification_body=body,
+            data_payload={k: str(v) for k, v in (data or {}).items()},
+            android_config=android_cfg,
+        )
+    except Exception as e:
+        print("error in fcm sending notification, token",token)
+        print(e)
     return result
 
 

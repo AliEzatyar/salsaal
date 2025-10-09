@@ -11,7 +11,7 @@ from api.permissions import (
 )
 from order.models import Order, ORDER_STATUS_CHOICES
 from accounts.models import (
-    FOOD_DELIVERY_OTP_EXPIRATION,
+    ORDER_DELIVERY_OTP_EXPIRATION,
 )
 from django.utils.translation import gettext as _
 
@@ -36,7 +36,7 @@ class CarrierOrderApiView(views.APIView):
         """
         try:
             expire_minutes = dj_tz.timedelta(
-                minutes=FOOD_DELIVERY_OTP_EXPIRATION
+                minutes=ORDER_DELIVERY_OTP_EXPIRATION
             )  # 3 hours
             order = (
                 Order.objects.filter(

@@ -1,6 +1,6 @@
-import time
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
+from order.utils import get_order_delivery_tries_key
 from vendor.models import Vendor
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
@@ -9,7 +9,10 @@ from .serializers import (
 )
 from cart.models import CartItem
 from .models import (
+    MAX_ORDER_DELIVERY_TRIES_COUNT,
+    ORDER_DELIVERY_ATTEPMTS_DELAY,
     VALID_PAYMENT_TYPES,
+    ORDER_DELIVERY_OTP_EXPIRATION,
     Order,
     OrderItem,
     ORDER_STATUS_CHOICES,
@@ -32,8 +35,7 @@ from rest_framework.exceptions import PermissionDenied
 from api.permissions import IsBuyer, IsOrderCarryingState
 from accounts.models import (
     UserOtp,
-    FOOD_DELIVERY_OTP_EXPIRATION,
-)
+    )
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
 from django.contrib.gis.geos import Point
@@ -115,7 +117,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
             # preventing new order if it exceeds max preparing orders limit for user
             count = r.get(f"user:{request.user.id}:waiting")
-            print(count,"redis count before increment")
+            print(count, "redis count before increment")
             if count:
                 count = json.loads(count)
             else:
@@ -126,7 +128,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN,
                 )
             r.incrby(f"user:{request.user.id}:waiting", 1)
-        
+
             previouse_preparing_orders_count = Order.objects.filter(
                 user=request.user,
                 status__in=(
@@ -417,22 +419,32 @@ class SetOrderStateDelivered(views.APIView):
         """carrier sets order status -delivered-"""
         data = self.request.data
         order_id = data.get("id")
-        input_OTP = data.get("pass")
+        input_otp = data.get("pass")
         print(data)
         try:
             order_id = int(decrypt_32(order_id))
-            otp = int(decrypt_32(input_OTP))
+            otp = int(decrypt_32(input_otp))
             order = Order.objects.get(id=order_id)
             # check if the customer owns this order
             self.check_object_permissions(self.request, order)
             # check if otp is correct
             self.request.user.cart.items.all().delete()
             user = order.user
-            OTP = UserOtp.objects.filter(user=user, otp=otp).first()
-            if not OTP:
-                return Response({"detail": "otp_incorrect"}, status=400)
-            if OTP.is_expired(expire=FOOD_DELIVERY_OTP_EXPIRATION):
-                return Response({"detail": "otp_expired"}, status=400)
+            otp = UserOtp.objects.filter(user=user, otp=otp).first()
+            # setting max tries
+            order_delivery_tries_key = get_order_delivery_tries_key(order_id)
+            tries = r.get(order_delivery_tries_key)
+            r.incrby(order_delivery_tries_key, 1)
+            if (
+                tries > MAX_ORDER_DELIVERY_TRIES_COUNT
+                or not otp
+                or otp.is_expired(expire=ORDER_DELIVERY_OTP_EXPIRATION)
+            ):
+                r.expire(order_delivery_tries_key, ORDER_DELIVERY_ATTEPMTS_DELAY)
+                return Response(
+                    {"detail": "otp_invalid_or_expired"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
             with atomic():
                 # setting order in submited state and carrier in free state
@@ -440,7 +452,7 @@ class SetOrderStateDelivered(views.APIView):
                 order.carrier.status = CARRIER_STATUS_CHOICES[0][0]  # free
                 order.carrier.save()
                 order.paid = True
-                OTP.delete()
+                otp.delete()
                 order.save()
                 # ---------------- updating vendor's carriers in redis
                 vendor = order.vendor

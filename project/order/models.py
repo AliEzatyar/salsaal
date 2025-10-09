@@ -23,6 +23,13 @@ ORDER_STATUS_CHOICES = [
 
 MAX_PREPARING_ORDERS_COUNT = 1
 
+MAX_ORDER_DELIVERY_TRIES_COUNT = 10
+
+ORDER_DELIVERY_ATTEPMTS_DELAY = 600 
+
+ORDER_DELIVERY_OTP_EXPIRATION = 3 * 60  # 3 hours
+
+
 VALID_PAYMENT_TYPES = [
     ("cash_on_delivery", "cash_on_delivery"),
     ("hesab_pay", "hesab_pay"),

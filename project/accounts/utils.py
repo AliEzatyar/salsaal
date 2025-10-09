@@ -120,3 +120,7 @@ def user_test(user):
     if user.role != CUSTOMER:
         raise PermissionDenied
     return True
+
+
+def get_user_otp_tries_key(phone_number):
+    return f"user:{phone_number}:tries"

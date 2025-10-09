@@ -1,0 +1,15 @@
+alembic
+cryptography
+fastapi
+fastapi-cache2
+h3
+psycopg2-binary
+pydantic
+pydantic_core
+PyJWT
+python-dateutil
+python-geohash
+redis
+SQLAlchemy
+starlette
+uvicorn
