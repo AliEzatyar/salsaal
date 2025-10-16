@@ -112,10 +112,10 @@ class COrderSerializerLessDetail(ModelSerializer):
     #     """this is used in orders list for review """
     #     return [(item.food.id,item.food.name) for item in obj.items.all()]
 
-class VOrderItemSerializer(ModelSerializer):
+class VOrderItemSerializerDetail(ModelSerializer):
     food_name = serializers.SerializerMethodField("get_food_name")
     total_price = serializers.SerializerMethodField("get_total_price")
-
+    
     class Meta:
         model = OrderItem
         fields = ["food_name", "quantity", "total_price"]
@@ -125,6 +125,7 @@ class VOrderItemSerializer(ModelSerializer):
 
     def get_total_price(self, obj):
         return obj.subtotal
+
 
 class VOrderSerializerLessDetail(ModelSerializer):
     total_price = MyDecimalField(read_only=True)
@@ -142,8 +143,8 @@ class VOrderSerializerLessDetail(ModelSerializer):
 
 class VOrderSerializer(ModelSerializer):
     customer_name = SerializerMethodField("get_customer_name")
-    items = VOrderItemSerializer(read_only=True, many=True)
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
+    items = VOrderItemSerializerDetail(read_only=True, many=True)
+    # created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
     total_price = MyDecimalField(read_only=True)
 
     class Meta:
@@ -163,4 +164,4 @@ class VOrderSerializer(ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
     def get_customer_name(self, obj):
-        return obj.user.first_name + obj.user.last_name
+        return obj.user.full_name

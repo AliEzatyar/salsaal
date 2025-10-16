@@ -28,7 +28,7 @@ class Category(models.Model):
         try:
             return self.icon.url
         except ValueError:
-            print("category has no icon")
+            print("error: category has no icon")
             return None
 
 
@@ -141,7 +141,7 @@ class Food(models.Model):
         try:
             return self.image.url
         except ValueError:
-            print("food has no image")
+            print("error: food has no image")
             return None
 
     def __str__(self):

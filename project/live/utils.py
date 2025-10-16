@@ -17,6 +17,7 @@ def is_user_online(user_id):
 def send_notification(self,user_id, title, body, data=None):
     """sends notification in background-task mode"""
     try:
+        print("sending notification started...")
         # Check if user is online via Redis
         print("user", user_id, "title", title, "body", body, "data", data)
         if is_user_online(id):

@@ -64,7 +64,7 @@ class CarrierOrderApiView(views.APIView):
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
-            print(e, "eroror", e.args)  
+            print("error in carrier order view", e)  
             return Response(status.HTTP_501_NOT_IMPLEMENTED)
 
 

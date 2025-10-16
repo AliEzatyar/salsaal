@@ -42,7 +42,6 @@ def send_otp(self, otp=None, user_id=None, phone_number=None, typ=OTP_VERIFY_PHO
     sends otp using email
     """
     try:
-        print("--------------------")
         if not user_id:
             # no-user otp for sign up
             if not phone_number:
@@ -58,7 +57,6 @@ def send_otp(self, otp=None, user_id=None, phone_number=None, typ=OTP_VERIFY_PHO
             )
 
         else:
-            print("======================")
             do = "activate your account"
             question = ""
 
@@ -87,10 +85,10 @@ def send_otp(self, otp=None, user_id=None, phone_number=None, typ=OTP_VERIFY_PHO
         )
         mail.send()
         return "OTP sending successful!"
-    except Exception as exc:
-        print("otp sending not successful", exc)
-        self.retry(exc)
-
+    except Exception as e:
+        # retry after 10 seconds
+        delay = min(60 * 2 ** self.request.retries, 3600)
+        raise self.retry(exc=e, countdown=delay)
 
 def send_forgot_email(request, user, template=None):
     current_site = get_current_site(request)

@@ -96,7 +96,7 @@ class Order(models.Model):
 
     def cancel_order(self):
         """reseting food order"""
-        print("status", self.status)
+        print("status before cancelling order", self.status)
         if self.status not in [
             ORDER_STATUS_CHOICES[1][1],
             ORDER_STATUS_CHOICES[2][1],

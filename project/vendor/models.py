@@ -1,11 +1,15 @@
 from uuid import uuid4
 from django.db import models
-from accounts.models import User, UserProfile
+from accounts.models import DEFAULT_CITY, User, UserProfile
 from accounts.utils import send_notification
 from marketplace.models import Rating
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.indexes import GinIndex
 from django.utils.timezone import now
+from django.contrib.gis.db import models as g_models
+from django.contrib.gis.geos import Point
+from h3 import latlng_to_cell as h3_latlng_to_cell
+from marketplace.utils import DEFAULT_H3_RESOLUTION
 
 # Create your models here.
 VENDOR_TYPES = [
@@ -60,6 +64,11 @@ class Vendor(models.Model):
     )  # delivery fee per km AFS
     is_available = models.BooleanField(default=True)
     reward_percentage = models.FloatField(default=0)
+    latitude = models.CharField(max_length=20)
+    longitude = models.CharField(max_length=20)
+    location = g_models.PointField(null=True, blank=True, srid=4326)
+    h3_id = models.CharField(max_length=55, blank=True)
+    city = models.CharField(max_length=15, db_index=True)
 
     class Meta:
 
@@ -90,7 +99,8 @@ class Vendor(models.Model):
         self.save()
 
     def save(self, *args, **kwargs):
-        """overriding to send approved email"""
+        """overriding to send approve email and save location"""
+        # admin updates this vendor
         if self.pk != None:
             # update happend
             obj = Vendor.objects.get(pk=self.pk)
@@ -106,6 +116,17 @@ class Vendor(models.Model):
                     # approved notification email sending
                     title = "We Are Sorry, Your Shop Is Not Approved!"
                     send_notification.delay(self.user.email, title, template, context)
+
+        # user update/saves this vendor
+        if self.latitude and self.longitude:
+            print("vendor location saved.....")
+            self.location = Point(
+                float(self.longitude), float(self.latitude), srid=4326
+            )
+            self.h3_id = h3_latlng_to_cell(
+                float(self.latitude), float(self.longitude), DEFAULT_H3_RESOLUTION
+            )
+            
         return super(Vendor, self).save(*args, **kwargs)
 
     @property
@@ -155,7 +176,7 @@ class Promotion(models.Model):
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, null=True, blank=True
     )
-    link = models.TextField(blank=True,null=True)
+    link = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to="promotions/")
     city = models.CharField(default="kabul", max_length=20)
     start_date = models.DateTimeField(default=now)

@@ -1,12 +1,12 @@
+from datetime import timedelta
 from uuid import uuid4
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
+from h3 import latlng_to_cell as h3_latlng_to_cell
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from h3 import latlng_to_cell as h3_latlng_to_cell
-
 from marketplace.utils import DEFAULT_H3_RESOLUTION
 
 ADMIN = 0
@@ -18,6 +18,15 @@ DEFAULT_OTP_EXPIRATION = 10  # minutes
 FOOD_DELIVERY_OTP_EXPIRATION = 3 * 60  # 3 hours
 CARRIER_ADD_OTP_EXPIRATION = 1440
 OTP_RETRY_DELAY = 600
+DEFAULT_CITY = "kabul"
+
+def get_token_valid_after():
+    """
+    this helper is used to get default token valid after datetime,
+    it is also used in login and sign up to update token validation
+    """
+    return timezone.now() - timedelta(seconds=5)
+
 
 # Create your models here.
 class UserManager(BaseUserManager):
@@ -61,7 +70,7 @@ class User(AbstractBaseUser):
     )
 
     objects = UserManager()
-    token_valid_after = models.DateTimeField(default=timezone.now)
+    token_valid_after = models.DateTimeField(default=get_token_valid_after)
     ROLE_CHOICES = [
         (ADMIN, "Admin"),
         (REST, "Resturant"),

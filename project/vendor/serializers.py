@@ -8,6 +8,8 @@ from vendor.utils import to_af_weekday
 from .models import OpeningHour, Promotion, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS
+from rest_framework.serializers import ValidationError
+
 
 WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 
@@ -55,7 +57,6 @@ class VendorSerializerMany(serializers.ModelSerializer):
         if today_open_hour:
             return True
         return False
-
 
 
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
@@ -162,7 +163,10 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "min_order_price",
             "delivery_fee_km",
             "reward_percentage",
-            "vendor_type"
+            "vendor_type",
+            "latitude",
+            "longitude",
+            "city"
         ]
         read_only_fields = [
             "id",
@@ -175,6 +179,14 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """overriding to apply user profile update together with vendor"""
+        # custom location validation
+        latitude, longitude = validated_data["latitude"], validated_data["longitude"]
+        try:
+            float(latitude)
+            float(longitude)
+        except:
+            print("lat and lon invalid", latitude, longitude, "--")
+            raise ValidationError("provide_correct_lat_lon")
         # updating user profile if provided
         user_profile_data = validated_data.pop("user_profile", None)
         if user_profile_data:
@@ -195,6 +207,13 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         user_profile = user.profile
         user.role = REST
         user.save()
+        latitude, longitude = validated_data["latitude"], validated_data["longitude"]
+        try:
+            float(latitude)
+            float(longitude)
+        except:
+            print("lat and lon invalid",latitude,longitude,"--")
+            raise ValidationError("provide_correct_lat_lon")
         validated_data["user"] = user
         validated_data["user_profile"] = user_profile
 
@@ -289,12 +308,8 @@ class AbstractVendorSerializer(serializers.ModelSerializer):
     used in vendors on map.
     """
 
-    location = serializers.SerializerMethodField("get_location")
-
     class Meta:
         model = Vendor
         fields = ["id", "location", "vendor_name","vendor_type"]
         read_only_fields = ["__all__"]
 
-    def get_location(self, obj):
-        return (float(obj.user_profile.latitude), float(obj.user_profile.longitude))

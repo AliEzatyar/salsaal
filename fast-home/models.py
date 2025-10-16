@@ -98,7 +98,6 @@ class UserProfile(Base):
 
     user = relationship("User", back_populates="profile")
     vendor = relationship("Vendor", back_populates="user_profile", uselist=False)
-    # ❌ removed `notifications` (wrong relation target)
 
 
 # ------------------ VENDOR MODELS ------------------

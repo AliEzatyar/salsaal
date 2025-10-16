@@ -157,8 +157,8 @@ def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
 
 
 class StandardResultSetPagination(PageNumberPagination):
-    page_size = 5
-    def __init__(self, page_size=5):
+    page_size = 10
+    def __init__(self, page_size=10):
         super().__init__()
         self.page_size = page_size
 
@@ -168,18 +168,22 @@ def is_user_online(user_id):
 
 
 def distance_reach_time(qs, lat, lon, typ="food"):
+    """
+    this utility function calculates rough distance using haversine formula
+    typ is either food or vendor
+    """
     for obj in qs:
         distance = round(
             haversine_distance(
                 (
-                    obj.vendor.user_profile.latitude
+                    obj.vendor.latitude
                     if typ == "food"
-                    else obj.user_profile.latitude
+                    else obj.latitude
                 ),
                 (
-                    obj.vendor.user_profile.longitude
+                    obj.vendor.longitude
                     if typ == "food"
-                    else obj.user_profile.longitude
+                    else obj.longitude
                 ),
                 lat,
                 lon,

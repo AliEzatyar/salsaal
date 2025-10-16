@@ -35,7 +35,7 @@ from rest_framework.exceptions import PermissionDenied
 from api.permissions import IsBuyer, IsOrderCarryingState
 from accounts.models import (
     UserOtp,
-    )
+)
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
 from django.contrib.gis.geos import Point
@@ -97,7 +97,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             user_profile.latitude = str(lat)
             user_profile.longitude = str(lon)
             user_profile.save()
-            print("user locaiton updated")
+            print("order view: user locaiton updated")
 
         cart = request.user.cart
         # setting vendor id
@@ -434,6 +434,10 @@ class SetOrderStateDelivered(views.APIView):
             # setting max tries
             order_delivery_tries_key = get_order_delivery_tries_key(order_id)
             tries = r.get(order_delivery_tries_key)
+            if tries:
+                tries = json.loads(tries)
+            else:
+                tries = 0
             r.incrby(order_delivery_tries_key, 1)
             if (
                 tries > MAX_ORDER_DELIVERY_TRIES_COUNT

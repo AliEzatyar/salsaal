@@ -84,7 +84,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             return Food.objects.none()
         city = str(city).lower()
         return Food.objects.filter(
-            is_available=True, vendor__user_profile__city=city
+            is_available=True, vendor__city=city
         ).select_related("vendor__user_profile")
 
     @action(detail=True, methods=["get"], url_path="food-item-detail")
@@ -96,16 +96,15 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         data = request.query_params
         city = self.request.query_params.get("city", None)
         city = str(city).lower()
-
         location = data.get("location", None)
-        vendor_profile = obj.vendor.user_profile
+        vendor = obj.vendor
         try:
             # decoding location data
 
             lat, lon = geohash.decode(location)
             distance = haversine_distance(
-                float(vendor_profile.latitude),
-                float(vendor_profile.longitude),
+                float(vendor.latitude),
+                float(vendor.longitude),
                 float(lat),
                 float(lon),
             )
@@ -140,9 +139,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             categories = Category.objects.filter(show_on_home=True)
             ser = CategorySerializer(categories, many=True)
             categories = ser.data
-            # print("Cache miss of cates", categories )
             cache.set(cat_key, categories, timeout=10 * 60)
-        # print(categories)
         # general info
         request_data = request.query_params
         city = request_data.get("city", None)
@@ -202,7 +199,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             .prefetch_related("opening_hours")
         )
         city_foods = (
-            Food.objects.filter(is_available=True, vendor__user_profile__city=city)
+            Food.objects.filter(is_available=True, vendor__city=city)
             .select_related("discount", "vendor")
             .only(
                 "id",
@@ -241,7 +238,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         nearest_h3s = h3.grid_disk(user_h3, 10)
         # filter in db for existing nearby  open city vendors
         local_vendors = city_vendors.filter(
-            user_profile__h3_id__in=nearest_h3s,
+            h3_id__in=nearest_h3s,
         ).select_related("user_profile")[:10]
         distance_reach_time(local_vendors, lat, lon, "vendor")
         local_vendors_ser = VendorSerializerMany(local_vendors, many=True)
@@ -314,7 +311,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         if not all_discounts_in_city:
             all_discounts_in_city = Discount.objects.filter(
                 is_active=True,
-                vendor__user_profile__city=city,
+                vendor__city=city,
             ).values_list("id", flat=True)
             # print(all_discounts_in_city, "this is discounts ids")
             cache.set(key, all_discounts_in_city, 10 * 60)
@@ -338,8 +335,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 # continue
                 distance = round(
                     haversine_distance(
-                        f.vendor.user_profile.latitude,
-                        f.vendor.user_profile.longitude,
+                        f.vendor.latitude,
+                        f.vendor.longitude,
                         lat,
                         lon,
                     ),
@@ -379,14 +376,14 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         # filter in db for existing nearby  open city vendors
         vendors = Vendor.objects.filter(
             id__in=city_vendors_ids,
-            user_profile__h3_id__in=nearest_h3s,
+            h3_id__in=nearest_h3s,
         ).select_related("user_profile")[:10]
         # adding distance property to each vendor
         for vendor in vendors:
             distance = round(
                 haversine_distance(
-                    vendor.user_profile.latitude,
-                    vendor.user_profile.longitude,
+                    vendor.latitude,
+                    vendor.longitude,
                     lat,
                     lon,
                 ),
@@ -427,8 +424,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         for vendor in vendors:
             distance = round(
                 haversine_distance(
-                    vendor.user_profile.latitude,
-                    vendor.user_profile.longitude,
+                    vendor.latitude,
+                    vendor.longitude,
                     lat,
                     lon,
                 ),
@@ -463,7 +460,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         counter = BestVendorsCounter(city)
         top = counter.read_counts(10)
         top_vendors = Vendor.objects.filter(
-            is_approved=True, user_profile__city=city, id__in=top
+            is_approved=True, city=city, id__in=top
         ).order_by("-avg_rating")[:10]
         distance_reach_time(top_vendors,lat,lon,"vendor")
         # paginating and sending the result
@@ -522,8 +519,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         for vendor in vendors:
             distance = round(
                 haversine_distance(
-                    vendor.user_profile.latitude,
-                    vendor.user_profile.longitude,
+                    vendor.latitude,
+                    vendor.longitude,
                     lat,
                     lon,
                 ),
@@ -569,7 +566,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         vendors = (
             Vendor.objects.filter(
                 id__in=city_vendors_ids,
-                user_profile__h3_id__in=nearest_h3s,
+                h3_id__in=nearest_h3s,
             )
             .select_related("user_profile")
             .only("vendor_name", "id", "user_profile")
@@ -586,7 +583,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         if not city_vendors:
             # cache miss
             vendors_dict = Vendor.objects.filter(
-                is_approved=True, user_profile__city=city
+                is_approved=True, city=city
             ).values_list("id", flat=True)
             city_vendors = list(vendors_dict)
             cache.set(f"city:{city}:vendors", city_vendors, 3600 * 1)
@@ -861,7 +858,7 @@ class PublicVendorDetail(views.APIView):
                 vendor_in_cache = cache.get(self.vendor_detail_key(vendor_id))
                 lat, lon = geohash.decode(user_location)
                 vendor = Vendor.objects.get(
-                    is_approved=True, id=vendor_id, user_profile__city=city
+                    is_approved=True, id=vendor_id,city=city
                 )
                 # vendor is in cache
                 if vendor_in_cache:
@@ -904,8 +901,8 @@ class PublicVendorDetail(views.APIView):
                 # -------------- setting distance+reach+increment_of_counter
                 distance = round(
                     haversine_distance(
-                        vendor.user_profile.latitude,
-                        vendor.user_profile.longitude,
+                        vendor.latitude,
+                        vendor.longitude,
                         lat,
                         lon,
                     ),
@@ -1012,8 +1009,8 @@ class FoodsByCategory(generics.ListAPIView):
 
         local_vendors_matching_category = (
             Vendor.objects.filter(
-                user_profile__city=city,
-                user_profile__h3_id__in=nearest_h3s,
+                city=city,
+                h3_id__in=nearest_h3s,
                 foods__category__id=category_id,
                 is_approved=True,
             )
@@ -1043,8 +1040,8 @@ class FoodsByCategory(generics.ListAPIView):
         for vendor in local_vendors_matching_category:
             distance = round(
                 haversine_distance(
-                    vendor.user_profile.latitude,
-                    vendor.user_profile.longitude,
+                    vendor.latitude,
+                    vendor.longitude,
                     lat,
                     lon,
                 ),

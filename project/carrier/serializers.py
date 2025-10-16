@@ -58,8 +58,6 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
         return encrypt_32(obj.id)
 
     def get_customer_picture(self, obj):
-        # print(obj.user.profile.picture.file)
-        # print(hasattr(obj.user.profile.picture, "file"))
         return (
             obj.user.profile.picture.url
             if obj.user.profile.picture

@@ -28,7 +28,7 @@ def register_periodic_tasks():
 
     if not created:
         # Update if already exists
-        print("already existed")
+        print("task already existed")
         task.crontab = revert_carriers_schedule
         task.enabled = True
         task.save()
@@ -47,7 +47,7 @@ def register_periodic_tasks():
     )
 
     if not created:
-        print("already exists")
+        print("task already exists")
         deactivate_discount_task.interval = deactivate_discount_schedule
         deactivate_discount_task.save()
     # ------------------------------ delete notifications  --------------------------------------

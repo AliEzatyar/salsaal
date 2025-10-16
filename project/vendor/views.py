@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 import json
 from marketplace.models import Discount, Food
 from api.permissions import (
@@ -22,7 +23,11 @@ from accounts.models import (
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
 from accounts.utils import OTP_VERIFY_CARRIER, generate_otp, send_otp
-from marketplace.utils import estimate_travel_time_graphhopper, haversine_distance
+from marketplace.utils import (
+    StandardResultSetPagination,
+    estimate_travel_time_graphhopper,
+    haversine_distance,
+)
 from cart.models import Cart
 from carrier.utils import get_carrier_key
 from live.models import Notification
@@ -40,7 +45,7 @@ from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch
 from django.utils import timezone as tz
-from django.db import transaction
+from django.db.transaction import atomic
 from django.contrib.gis.geos import Point
 
 from dateutil.parser import parser as date_parser
@@ -80,6 +85,7 @@ class VendorAPIView(views.APIView):
         """enables vendor and related userprofile update"""
         data = self.request.data
         vendor = self.request.user.vendor
+        print("data came to vendor update view", data)
         vendor_serializer = VendorSerializerDetailed(vendor, data=data, partial=True)
         vendor_serializer.is_valid(raise_exception=True)
         vendor_serializer.save()
@@ -107,18 +113,26 @@ class ConvertToVendorAPIView(views.APIView):
         user = self.request.user
         if user.role in (REST, CARRIER, ADMIN):
             return Response(
-                {"detail": "user is not allowed to convert to vendor"},
+                {"detail": "not_allowed"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-
         data = self.request.data
+        print("data came in covert-to-vendor", data)
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         ser.is_valid(raise_exception=True)
-        vendor = ser.save()
-        user.cart.delete()
-        # setting vendor's carriers in redis
-        vendor_carriers_key = get_vendor_carriers_key(vendor.id)
-        r.hset(vendor_carriers_key, mapping={"f_c_c": 0, "b_c_c": 0, "total_c_c": 0})
+        with atomic():
+            try:
+                vendor = ser.save()
+                user.cart.delete()
+                # setting vendor's carriers in redis
+                vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+                r.hset(
+                    vendor_carriers_key,
+                    mapping={"f_c_c": 0, "b_c_c": 0, "total_c_c": 0},
+                )
+            except:
+                print("error in convert-to-vendor")
+                raise Exception()
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
@@ -193,7 +207,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         )
         # rejecting discount on other vendors fooditems, and upserting
 
-        with transaction.atomic():
+        with atomic():
             discount = ser.save()
             for food in foods:
                 if food.discount != None:
@@ -251,7 +265,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         # pre foods ids that need  discount update
         ids_foods_to_update_discount = set.intersection(new_ids, pre_ids)
         vendor_foods = Food.objects.filter(vendor__id=vendor_id)
-        with transaction.atomic():
+        with atomic():
             # new discount
             new_discount = ser.save()
             # -------------  updating prices of foods having this discount already
@@ -259,7 +273,6 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 id__in=ids_foods_to_update_discount
             ).only("id", "min_price", "prices", "discount")
             for food in foods_to_update_discount:
-                print("discount updated...", food.id)
                 # reverting food prices to original ones
                 revert_discount(food, pre_discount_amount)
                 # applying discount to all prices of food
@@ -324,7 +337,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 for food in foods:
                     revert_discount(food, discount.amount)
             # bulk update
-            with transaction.atomic():
+            with atomic():
                 if edable in (True, False):
                     Food.objects.bulk_update(foods, ["min_price", "prices"])
                     discount.is_active = edable
@@ -556,12 +569,13 @@ class CarriersNow(views.APIView):
     def get(self, *args, **kwargs):
         carriers = Carrier.objects.filter(
             vendor__id=self.request.user.vendor.id, is_active=True
-        )
+        ).only("id", "status", "name")
         live_vendor_carriers = []  # final list being returned
         for carrier in carriers:
             try:
                 carrier_key = get_carrier_key(carrier.id)
                 carrier_live_data = json.loads(r.get(carrier_key))
+
                 carrier_current_location = carrier_live_data["location"]
                 vendor_location = self.request.user.profile.location
                 vendor_location = (vendor_location.y, vendor_location.x)
@@ -572,19 +586,23 @@ class CarriersNow(views.APIView):
                         * 1000
                     )  # rough estimate, no maps used, meters
                     if distance_m > 200:  # if carrier is far from the resturant
-                        time = estimate_travel_time_graphhopper(
-                            carrier_current_location, vendor_location
+                        time = int(
+                            estimate_travel_time_graphhopper(
+                                carrier_current_location, vendor_location
+                            )
                         )
                 else:  # carrier is busy and has not reached to customer yet
                     customer_location = carrier_live_data["destination"]
-                    time = estimate_travel_time_graphhopper(
-                        carrier_current_location, customer_location
+                    time = int(
+                        estimate_travel_time_graphhopper(
+                            carrier_current_location, customer_location
+                        )
                     )
-                details = {"name": carrier.name, "return_time": time}
+                details = {"id": carrier.id, "name": carrier.name, "return_time": time}
                 live_vendor_carriers.append(details)
             except Exception as e:
                 print("error occured while fetching live carrier status", e, e.args)
-                details = {"name": carrier.name, "return_time": 0}
+                details = {"id": carrier.id, "name": carrier.name, "return_time": 0}
                 live_vendor_carriers.append(details)
 
         live_vendor_carriers.sort(
@@ -686,6 +704,7 @@ class VendorRevenueView(views.APIView):
 class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     """This enables a vendor to see past orders it completed successfully."""
 
+    pagination_class = StandardResultSetPagination
     serializer_class = VOrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
     # ordering
@@ -701,9 +720,38 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     filterset_class = VOrderFilterSet
 
     def get_queryset(self):
+        """only vendor's order"""
         queryset = Order.objects.filter(vendor=self.request.user.vendor)
         return queryset
-    
+
+    @action(detail=False, methods=["get"], url_path="abstract")
+    def abstract_order_detail(self, request):
+        queryset = self.get_queryset()
+        today_orders = queryset.filter(created_at__date=tz.now().date())
+        # details
+        today_sale_amount = today_orders.aggregate(total=Sum("total_price"))
+        pending_orders_count = today_orders.filter(
+            status=ORDER_STATUS_CHOICES[1][0]
+        ).count()
+        preparing_orders_count = today_orders.filter(
+            status=ORDER_STATUS_CHOICES[2][0]
+        ).count()
+        carrying_orders_count = today_orders.filter(
+            status=ORDER_STATUS_CHOICES[3][0]
+        ).count()
+        delivered_orders_count = today_orders.filter(
+            status=ORDER_STATUS_CHOICES[4][0]
+        ).count()
+        return Response(
+            {
+                "total_sale": today_sale_amount["total"],
+                "pending_orders": pending_orders_count,
+                "preparing_orders": preparing_orders_count,
+                "carryting_orders": carrying_orders_count,
+                "delivered_orders": delivered_orders_count,
+            }
+        )
+
 
 class CalculateOrderTimeAndDeliveryCost(views.APIView):
     """
@@ -775,7 +823,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     vendor = self.request.user.vendor
                     user_location = order.user.profile.location
                     user_location = (user_location.y, user_location.x)  # as lat,lon
-                    vendor_location = vendor.user_profile.location
+                    vendor_location = vendor.location
                     vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
                     estimated, distance_km = estimate_travel_time_graphhopper(
                         vendor_location, user_location
@@ -929,7 +977,7 @@ class SetOrderStateCarrying(views.APIView):
             #     if not order.paid:
             #         return Response({"detail": "payment not completed"}, status=400)
 
-            with transaction.atomic():
+            with atomic():
                 # ----------------  making necessary things atomic
                 order.carrier = carrier
                 carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy

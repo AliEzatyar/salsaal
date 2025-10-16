@@ -21,6 +21,7 @@ from marketplace.utils import (
 from multiVend.country.info import DEFAULT_SEARCH_DISTANCE
 from vendor.models import Vendor
 from django.contrib.postgres.search import TrigramSimilarity
+from django.utils.timezone import now
 
 
 class FoodFilterSet(django_filters.FilterSet):
@@ -58,8 +59,8 @@ class CustomFoodOrdering(OrderingFilter):
             for food in queryset:
                 distance = round(
                     haversine_distance(
-                        food.vendor.user_profile.latitude,
-                        food.vendor.user_profile.longitude,
+                        food.vendor.latitude,
+                        food.vendor.longitude,
                         lat,
                         lon,
                     ),
@@ -96,14 +97,14 @@ class CustomFoodSearch(SearchFilter):
         """
         if request_data.get("discounted"):
             foods = (
-                Food.objects.filter(vendor__user_profile__city=city)
+                Food.objects.filter(vendor__city=city)
                 .annotate(similarity=TrigramSimilarity("name", search_param))
                 .filter(similarity__gte=0.2)
                 .select_related("vendor__user_profile")
             )
         else:
             foods = (
-                Food.objects.filter(vendor__user_profile__city=city)
+                Food.objects.filter(vendor__city=city)
                 .annotate(similarity=TrigramSimilarity("name", search_param))
                 .filter(similarity__gte=0.2)
                 .select_related("vendor__user_profile")
@@ -116,16 +117,19 @@ class VOrderFilterSet(django_filters.FilterSet):
     """this class customizes filtering of orders to vendors"""
 
     status = django_filters.CharFilter(method="filter_by_status")
-    date_range = django_filters.CharFilter(method="filter_by_date_range")
     created_at = django_filters.DateFilter(method="filter_by_date")
+    start = django_filters.IsoDateTimeFilter(field_name="created_at", lookup_expr="gte")
+    end = django_filters.IsoDateTimeFilter(field_name="created_at", lookup_expr="lte")
 
     class Meta:
         model = Order
-        fields = ["status", "date_range", "created_at"]
+        fields = ["status", "start", "end", "created_at"]
+
+    def filter_queryset(self, queryset):
+        return super().filter_queryset(queryset)
 
     def filter_by_status(self, queryset, name, value):
-        """filters by status"""
-
+        """returns orders by status"""
         # if incorrect filtering option is requested -> []
         if not value in ([val[0] for val in ORDER_STATUS_CHOICES]):
             return Order.objects.none()
@@ -133,41 +137,29 @@ class VOrderFilterSet(django_filters.FilterSet):
         if value == "cancelled":
             return queryset.filter(status=ORDER_STATUS_CHOICES[0][0])
 
-        if value == "waiting":
-            return queryset.filter(status=ORDER_STATUS_CHOICES[1][0])
+        elif value == "waiting":
+            today = now()
+            return queryset.filter(
+                created_at__date=today.date(), status=ORDER_STATUS_CHOICES[1][0]
+            )
+        elif value == "preparing":
+            today = now()
+            return queryset.filter(
+                created_at__date=today.date(), status=ORDER_STATUS_CHOICES[2][0]
+            )
 
-        if value == "preparing":
-            return queryset.filter(status=ORDER_STATUS_CHOICES[2][0])
-
-        if value == "carrying":
-            return queryset.filter(status=ORDER_STATUS_CHOICES[3][0])
-
-        if value == "delivered":
+        elif value == "carrying":
+            today = now()
+            return queryset.filter(
+                created_at__date=today.date(), status=ORDER_STATUS_CHOICES[3][0]
+            )
+        elif value == "delivered":
             return queryset.filter(status=ORDER_STATUS_CHOICES[4][0])
-
-    def filter_by_date_range(self, queryset, name, value):
-        today = now().date()
-        try:
-            if value == "today":
-                return queryset.filter(created_at__date=today)
-            elif value == "yesterday":
-                return queryset.filter(created_at__date=today - timedelta(days=1))
-            elif value == "last_week":
-                return queryset.filter(created_at__date__gte=today - timedelta(days=7))
-            elif "to" in value:
-                # range
-                start, end = str(value).split("to")
-                start, end = datetime.strptime(start, "%Y-%m-%d"), datetime.strptime(
-                    end, "%Y-%m-%d"
-                )
-                return queryset.filter(created_at__date__range=(start, end))
-            else:
-                # if incorrect filtering option is requested -> []
-                return Order.objects.none()
-        except:
+        else:
             return Order.objects.none()
 
     def filter_by_date(self, queryset, name, value):
+        """return orders on a specifc date"""
         try:
             return queryset.filter(created_at__date=value)
         except:
@@ -175,6 +167,11 @@ class VOrderFilterSet(django_filters.FilterSet):
 
 
 class CustomVendorOrdering(OrderingFilter):
+    """
+    this ordering class sorts vendors by distance
+    used in marketplace/VendorSearchViewset
+    """
+
     ordering_fields = ["avg_rating", "rating_count", "reach_time", "distance"]
     ordering = ["-avg_rating"]  # default
     ordering_param = "sort_by"
@@ -193,6 +190,9 @@ class CustomVendorOrdering(OrderingFilter):
 
 
 class CustomVendorSearch(SearchFilter):
+    """
+    this search filter class is used in marketplace/VendorSearchViewset
+    """
     search_param = "query"
 
     def filter_queryset(self, request, queryset, view):
@@ -218,10 +218,10 @@ class CustomVendorSearch(SearchFilter):
         # searching for vendors nearby at max distance
         if search_param:
             vendors = (
-                Vendor.objects.filter(user_profile__city=city)
+                Vendor.objects.filter(city=city)
                 .annotate(similarity=TrigramSimilarity("vendor_name", search_param))
                 .filter(similarity__gt=0.2)
-                .annotate(distance=Distance("user_profile__location", location))
+                .annotate(distance=Distance("location", location))
                 .filter(
                     distance__lte=(
                         D(km=max_distance)
@@ -235,8 +235,8 @@ class CustomVendorSearch(SearchFilter):
             return vendors
         # return vendors in city
         vendors = (
-            Vendor.objects.filter(user_profile__city=city)
-            .annotate(distance=Distance("user_profile__location", location))
+            Vendor.objects.filter(city=city)
+            .annotate(distance=Distance("location", location))
             .filter(
                 distance__lte=(
                     D(km=max_distance)

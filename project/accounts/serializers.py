@@ -29,14 +29,11 @@ class UserCreationSerializer(ModelSerializer):
         if phone_number:
             okay = True
             if not phone_number.startswith("+"):
-                print("no pluys sign")
                 okay = False
             if not phone_number[1:].isnumeric():
-                print("second validation ")
                 okay = False
             if not okay:
                 raise ValidationError({"detail": "phone_invalid"})
-        print("validation ended")
         return attrs
 
 
@@ -65,6 +62,16 @@ class UserProfileCreationSerializer(ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ["pf_lang", "country", "city", "latitude", "longitude", "address"]
+
+    def create(self, validated_data):
+        latitude, longitude = validated_data["latitude"], validated_data["longitude"]
+        try:
+            float(latitude)
+            float(longitude)
+        except:
+            print("lat and lon invalid",latitude,longitude,"--")
+            raise ValidationError("provide_correct_lat_lon")
+        return super().create(validated_data)
 
     def save(self, **kwargs):
         return super().save(**kwargs)

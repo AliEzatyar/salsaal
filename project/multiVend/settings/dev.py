@@ -1,6 +1,8 @@
 from multiVend.settings.base import *
 from os import environ as env
 
+
+
 ALLOWED_HOSTS = ["*"]
 
 DATABASES = {
@@ -101,3 +103,5 @@ DUMMY_SECRET = env.get("DUMMY_SECRET")
 # zego cloud
 ZEGOCLOUD_APP_ID = env.get("ZEGOCLOUD_APP_ID")
 ZEGOCLOUD_SERVER_SECRET = env.get("ZEGOCLOUD_SERVER_SECRET")
+
+

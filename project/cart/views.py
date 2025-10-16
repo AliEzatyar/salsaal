@@ -89,7 +89,7 @@ class CartApiView(views.APIView):
                 {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            print(e)
+            print("error in cart api view",e)
             return Response(
                 {"detail": "unknown_error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -164,7 +164,7 @@ class CartApiView(views.APIView):
                 {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            print(e)
+            print("error in cart view",e)
             return Response(
                 {"detail": "unknown_error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

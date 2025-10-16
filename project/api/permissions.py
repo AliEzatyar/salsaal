@@ -37,13 +37,12 @@ class IsOrderCarryingState(BasePermission):
 
     def has_object_permission(self, request, view, order_obj):
         if order_obj.status != ORDER_STATUS_CHOICES[3][0]:
-            print("not in carrying mode")
+            print("order not in carrying mode")
             return False
         return True
 
 
 class IsVendor(BasePermission):
-    """check whether a user is a vendor or not"""
 
     def has_permission(self, request, view):
         if not hasattr(request.user, "vendor") or request.user.role != REST:
@@ -52,17 +51,17 @@ class IsVendor(BasePermission):
 
 
 class IsVendorOfObject(BasePermission):
+    """check whether a user is a vendor or not"""
+
     def has_permission(self, request, view):
         if not hasattr(request.user, "vendor") or request.user.role != REST:
-            print("user not vendor")
+            print("user is not vendor")
             raise PermissionDenied(detail="user_not_vendor")
-        print("user vendor TRUE")
         return True
 
     def has_object_permission(self, request, view, obj):
-        print("order vendor is the same")
+        print("vendor owns this ")
         return obj.vendor == request.user.vendor
-
 
 
 class IsBuyer(BasePermission):
@@ -76,7 +75,6 @@ class IsBuyer(BasePermission):
         """checks whether the requesting user owns the order"""
         print("do user own order?", obj.user == request.user)
         return obj.user == request.user
-
 
 
 class IsHavingCart(BasePermission):

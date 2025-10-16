@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponse
-from accounts.models import CUSTOMER, OTP_RETRY_DELAY, NoUserOtp, User, UserOtp
+from accounts.models import CUSTOMER, OTP_RETRY_DELAY, NoUserOtp, User, UserOtp, get_token_valid_after
 from accounts.serializers import (
     UserCreationSerializer,
     UserDetailSerializer,
@@ -26,6 +26,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from marketplace.utils import r
 from django.utils import timezone
 from datetime import timedelta
+from django.db.transaction import atomic
 """Account API Views"""
 
 
@@ -91,7 +92,7 @@ class LoginApiView(views.APIView):
                 {"type": "new_user", "message": "otp_sent"}, status=status.HTTP_200_OK
             )
         except Exception as e:
-            print(e.args, e, "exception in login")
+            print("exception in login",e)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def post(self, *args, **kwargs):
@@ -116,31 +117,31 @@ class LoginApiView(views.APIView):
             # -------------------------------- sending tokens
             try:
                 # verifying otp
-                otp_tries_key = get_user_otp_tries_key(phone_number)
-                tries = r.get(otp_tries_key)
-                r.incrby(otp_tries_key, 1)
-                if tries and int(tries) > 5:
-                    r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 10 minutes delay
-                    return Response(
-                        {"detail": "max_attempts_reached"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
+                # otp_tries_key = get_user_otp_tries_key(phone_number)
+                # tries = r.get(otp_tries_key)
+                # r.incrby(otp_tries_key, 1)
+                # if tries and int(tries) > 5:
+                #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 10 minutes delay
+                #     return Response(
+                #         {"detail": "max_attempts_reached"},
+                #         status=status.HTTP_403_FORBIDDEN,
+                #     )
 
-                saved_otp = UserOtp.objects.get(otp=otp)
-                if (
-                    saved_otp.is_expired()
-                    or saved_otp.user.phone_number != phone_number
-                ):
-                    return Response(
-                        {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-                    )
-                # finding user
+                # saved_otp = UserOtp.objects.get(otp=otp)
+                # if (
+                #     saved_otp.is_expired()
+                #     or saved_otp.user.phone_number != phone_number
+                # ):
+                #     return Response(
+                #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                #     )
+                # # finding user
                 user = User.objects.get(phone_number=phone_number)
-                user.token_valid_after = timezone.now() - timedelta(seconds=10)
-                user.save()
+                user.token_valid_after = get_token_valid_after()
+                # user.save()
                 refresh = RefreshToken.for_user(user)
-                saved_otp.delete()
-                r.delete(otp_tries_key)
+                # saved_otp.delete()
+                # r.delete(otp_tries_key)
 
                 return Response(
                     {"access": str(refresh.access_token), "refresh": str(refresh)},
@@ -155,63 +156,67 @@ class LoginApiView(views.APIView):
                     {"detail": "no_user_found"}, status=status.HTTP_404_NOT_FOUND
                 )
             except Exception as e:
-                print("error in login", e, e.args)
+                print("exception in login", e, e.args)
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
         elif typ == "new_user":
             # ----------------- creating user account
             try:
-                # ----- preventing auto retries
-                otp_tries_key = get_user_otp_tries_key(phone_number)
-                tries = r.get(otp_tries_key)
-                r.incrby(otp_tries_key, 1)
-                if tries and int(tries) > 5:
-                    r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
-                    return Response(
-                        {"detail": "max_attempts_reached"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-                # ----- verifying otp
-                saved_otp = NoUserOtp.objects.get(otp=otp)
-                if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-                    return Response(
-                        {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-                    )
+                with atomic():
 
-                # ----- validating user data and creating new account
-                new_user_data = data.get("user_data", None)
-                if not new_user_data:
-                    return Response(
-                        {"detail": "provide_user_data"},
-                        status=status.HTTP_400_BAD_REQUEST,
+                    # ----- preventing auto retries
+                    # otp_tries_key = get_user_otp_tries_key(phone_number)
+                    # tries = r.get(otp_tries_key)
+                    # r.incrby(otp_tries_key, 1)
+                    # if tries and int(tries) > 5:
+                    #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
+                    #     return Response(
+                    #         {"detail": "max_attempts_reached"},
+                    #         status=status.HTTP_403_FORBIDDEN,
+                    #     )
+                    # # ----- verifying otp
+                    # saved_otp = NoUserOtp.objects.get(otp=otp)
+                    # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+                    #     return Response(
+                    #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                    #     )
+
+                    # ----- validating user data and creating new account
+                    new_user_data = data.get("user_data", None)
+                    if not new_user_data:
+                        return Response(
+                            {"detail": "provide_user_data"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    full_name = new_user_data.get("full_name", None)
+                    if not full_name:
+                        return Response(
+                            {"detail": "provide_full_name"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    # serializing data for validation only not creation
+                    ser = UserCreationSerializer(
+                        data={"phone_number": phone_number, "full_name": full_name}
                     )
-                full_name = new_user_data.get("full_name", None)
-                if not full_name:
-                    return Response(
-                        {"detail": "provide_full_name"},
-                        status=status.HTTP_400_BAD_REQUEST,
+                    ser.is_valid(raise_exception=True)
+                    user = User(
+                        phone_number=phone_number, is_active=True, full_name=full_name
                     )
-                # serializing data for validation only not creation
-                ser = UserCreationSerializer(
-                    data={"phone_number": phone_number, "full_name": full_name}
-                )
-                ser.is_valid(raise_exception=True)
-                user = User(
-                    phone_number=phone_number, is_active=True, full_name=full_name
-                )
-                user.role = CUSTOMER
-                user.save()
-                # ------ creating user profile
-                ser = UserProfileCreationSerializer(data=new_user_data)
-                ser.is_valid(raise_exception=True)
-                # ------ removing otp and generating access token for new user
-                r.delete(otp_tries_key)
-                saved_otp.delete()
-                refresh = RefreshToken.for_user(user)
-                return Response(
-                    {"access": str(refresh.access_token), "refresh": str(refresh)},
-                    status=status.HTTP_200_OK,
-                )
+                    user.role = CUSTOMER
+                    user.token_valid_after = get_token_valid_after()
+                    user.save()
+                    # ------ creating user profile
+                    ser = UserProfileCreationSerializer(data=new_user_data)
+                    ser.is_valid(raise_exception=True)
+                    profile = ser.save(user=user)
+                    # ------ removing otp and generating access token for new user
+                    # r.delete(otp_tries_key)
+                    # saved_otp.delete()
+                    refresh = RefreshToken.for_user(user)
+                    return Response(
+                        {"access": str(refresh.access_token), "refresh": str(refresh)},
+                        status=status.HTTP_200_OK,
+                    )
             except IntegrityError:
                 return Response(
                     {"detail": "user_already_exists"},
@@ -238,7 +243,7 @@ class UpsertDeviceToken(views.APIView):
             ser = DeviceSerializer(data)
         if ser.is_valid(raise_exception=True):
             ser.validated_data["user"] = request.user
-            print("saving user device...")
+            print("saving user device...",data)
             ser.save()
         return Response()
 
