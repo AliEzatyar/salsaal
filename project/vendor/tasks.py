@@ -8,7 +8,6 @@ from vendor.models import Vendor
 from vendor.utils import get_vendor_carriers_key, revert_discount
 from django.db.transaction import atomic
 from json import loads as j_loads
-from json import dumps as j_dumps
 
 
 @shared_task
@@ -40,11 +39,13 @@ def reset_vendors_carriers_in_redis():
     this task resets f_c_c, b_c_c and total_c_c in redis for all vendors
     """
     print("revert carriers status for all vendors")
-    
+
     vendors = Vendor.objects.all().prefetch_related("carriers")
     for vendor in vendors:
-        if Order.objects.filter(vendor=vendor,status=ORDER_STATUS_CHOICES[3][0]).exists():
-            print("order in carrying, no reset for this vendor ",vendor.id)
+        if Order.objects.filter(
+            vendor=vendor, status=ORDER_STATUS_CHOICES[3][0]
+        ).exists():
+            print("order in carrying, no reset for this vendor ", vendor.id)
             continue
         vendor_carriers_key = get_vendor_carriers_key(vendor.id)
         vendor.carriers.update(status=CARRIER_STATUS_CHOICES[0][0])
@@ -52,9 +53,16 @@ def reset_vendors_carriers_in_redis():
         if r.hget(vendor_carriers_key, "total_c_c"):
             total_carriers_count = j_loads(r.hget(vendor_carriers_key, "total_c_c"))
         else:
-            total_carriers_count  = vendor.carriers.all().count()
+            total_carriers_count = vendor.carriers.all().count()
             print("total initialized for vendor", vendor.id)
         r.hset(vendor_carriers_key, "f_c_c", total_carriers_count)  # all free
         r.hset(vendor_carriers_key, "b_c_c", 0)  # no busy carriers
 
     return "Carrier's reset!"
+
+
+@shared_task
+def disable_vendors():
+    """this task marks all vendors disabled at 11:59 PM"""
+    Vendor.objects.all().update(is_available=False)
+    

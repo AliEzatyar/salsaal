@@ -85,7 +85,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         city = str(city).lower()
         return Food.objects.filter(
             is_available=True, vendor__city=city
-        ).select_related("vendor__user_profile")
+        ).select_related("vendor")
 
     @action(detail=True, methods=["get"], url_path="food-item-detail")
     def item_detail(self, request, pk):
@@ -226,23 +226,23 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             cache.set(dis_foods_key, discounted_foods_ids, 10 * 60)
         discounted_foods_final = city_foods.filter(
             id__in=discounted_foods_ids
-        ).select_related("vendor__user_profile")
+        ).select_related("vendor")
         distance_reach_time(discounted_foods_final, lat, lon)
         discounted_foods_ser = DiscountedFoodSerializerMany(
             discounted_foods_final, many=True
         )
 
         # local vendors
-
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
         nearest_h3s = h3.grid_disk(user_h3, 10)
         # filter in db for existing nearby  open city vendors
         local_vendors = city_vendors.filter(
             h3_id__in=nearest_h3s,
         ).select_related("user_profile")[:10]
+        
         distance_reach_time(local_vendors, lat, lon, "vendor")
         local_vendors_ser = VendorSerializerMany(local_vendors, many=True)
-
+        
         # cheapest vendors
         cheapest_vendors = city_vendors.annotate(
             avg_price=Avg("foods__min_price")
@@ -327,23 +327,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             cache.set(foods_key, discounted_foods_ids, 10 * 60)
         discounted_foods_final = Food.objects.filter(
             id__in=discounted_foods_ids
-        ).select_related("vendor__user_profile")
+        ).select_related("vendor")
         try:
             """here can be an error due to long distance of user and vendor,
             since h3 library does not work for a big distance"""
-            for f in discounted_foods_final:
-                # continue
-                distance = round(
-                    haversine_distance(
-                        f.vendor.latitude,
-                        f.vendor.longitude,
-                        lat,
-                        lon,
-                    ),
-                    1,
-                )
-                f.distance = distance
-                f.reach_time = round(distance_to_travel_time(distance), 1)
+            distance_reach_time(discounted_foods_final,lat,lon)
         except:
             pass
         # paginating and sending the result

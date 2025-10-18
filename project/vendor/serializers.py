@@ -17,7 +17,7 @@ WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 class VendorSerializerMany(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
     reach_time = serializers.SerializerMethodField("get_reach_time")
-    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
+    is_open_now = serializers.ReadOnlyField(source="is_available")  # read only
 
     class Meta:
         model = Vendor
@@ -65,7 +65,7 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
     distance = serializers.SerializerMethodField("get_distance")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     foods = FoodSerializerLessDetail(many=True, read_only=True)
-    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
+    is_open_now = serializers.ReadOnlyField(source="is_available")  # read only
 
     class Meta:
         model = Vendor
@@ -194,6 +194,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             for attr, value in user_profile_data.items():
                 setattr(existing_user_profile, attr, value)
             existing_user_profile.save()
+        instance.city = str(instance.city).lower()
 
         # updating vendor itself
         for attr, value in validated_data.items():
@@ -211,21 +212,18 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         try:
             float(latitude)
             float(longitude)
+            validated_data["city"] = str(validated_data["city"]).lower()
         except:
             print("lat and lon invalid",latitude,longitude,"--")
-            raise ValidationError("provide_correct_lat_lon")
+            raise ValidationError("provide_correct_lat_lon_city")
         validated_data["user"] = user
         validated_data["user_profile"] = user_profile
-
         return super().create(validated_data)
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details, used in public vendor detail"""
-
-    location = serializers.SerializerMethodField("get_location")  # read only
-    is_open_now = serializers.SerializerMethodField("get_is_open")  # read only
-    # discounted_foods = serializers.SerializerMethodField("get_discounted_foods")
+    is_open_now = serializers.ReadOnlyField(source="is_available")  # read only
     discounted_foods = DiscountedFoodSerializerMany(many=True,read_only=True)
     featured_items = serializers.SerializerMethodField(
         "get_featured_items"
@@ -259,11 +257,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["__all__"]
 
-    def get_location(self, obj):
-        """adds vendor location"""
-        if obj.get_location():
-            return obj.get_location().tuple  # json does not support point object
-
     def get_categories(self,obj):
         categories = getattr(obj,"categories")
         return categories
@@ -281,12 +274,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         if today_open_hour:
             return True
         return False
-
-    # def get_discounted_foods(self,obj):
-    #     discounted = getattr(obj,"discounted_foods")
-    #     if discounted:
-    #         return DiscountedFoodSerializerMany(discounted,many=True).data
-    #     return
 
     def get_featured_items(self, obj):
         featured = getattr(obj, "featured_items")
@@ -312,4 +299,3 @@ class AbstractVendorSerializer(serializers.ModelSerializer):
         model = Vendor
         fields = ["id", "location", "vendor_name","vendor_type"]
         read_only_fields = ["__all__"]
-

@@ -2,12 +2,11 @@ from decimal import InvalidOperation
 import json
 from rest_framework import serializers
 from vendor.models import OpeningHour, Vendor
-from marketplace.models import Category, FavItem, FavList, Food, Rating
+from marketplace.models import Category, Food, Rating
 from rest_framework import serializers
 from decimal import InvalidOperation
 import json
 from django.db.utils import IntegrityError
-from django.conf import settings
 from django.db import transaction, IntegrityError
 from rest_framework.exceptions import ValidationError
 
@@ -246,11 +245,10 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
     # original price
-    min_price = serializers.SerializerMethodField("get_min_price")
+    original_price = serializers.SerializerMethodField("get_original_price")
     # discounted price
-    final_price = serializers.ReadOnlyField(source="min_price")
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
-    discount = serializers.ReadOnlyField(source="discount.amount")
+    discount_amount = serializers.ReadOnlyField(source="discount.amount")
     image = serializers.ReadOnlyField(source="image_url")
     category_name = serializers.ReadOnlyField(source="category.name")
 
@@ -260,9 +258,9 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
             "id",
             "name",
             "image",
-            "min_price",
-            "discount",
-            "final_price",
+            "original_price", # original price before discount
+            "min_price", # current price after discount
+            "discount_amount", 
             "vendor",
             "vendor_name",
             "category",
@@ -273,20 +271,13 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
         ]
         read_only_fields = ["__all__"]
 
-    def get_final_price(self, obj):
-        return (
-            obj.min_price * (100 - obj.discount.amount) / 100
-            if hasattr(obj, "discount")
-            else obj.min_price
-        )
-
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
     def get_distance(self, obj):
         return obj.distance if hasattr(obj, "distance") else None
 
-    def get_min_price(self, obj):
+    def get_original_price(self, obj):
         """returns original value of min_price"""
         return (obj.min_price / (100 - obj.discount.amount)) * 100
 

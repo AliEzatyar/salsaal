@@ -119,7 +119,12 @@ class ConvertToVendorAPIView(views.APIView):
         data = self.request.data
         print("data came in covert-to-vendor", data)
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
+        # try:
         ser.is_valid(raise_exception=True)
+        # except Exception as e:
+        # print("eroroororo", e)
+        print("no eroor in covernt to endor", data)
+
         with atomic():
             try:
                 vendor = ser.save()
@@ -602,7 +607,12 @@ class CarriersNow(views.APIView):
                 live_vendor_carriers.append(details)
             except Exception as e:
                 print("error occured while fetching live carrier status", e, e.args)
-                details = {"id": carrier.id, "name": carrier.name, "return_time": 0}
+                details = {
+                    "id": carrier.id,
+                    "name": carrier.name,
+                    "return_time": 0,
+                    "image": carrier.user_profile.picture,
+                }
                 live_vendor_carriers.append(details)
 
         live_vendor_carriers.sort(
@@ -725,11 +735,17 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     @action(detail=False, methods=["get"], url_path="abstract")
-    def abstract_order_detail(self, request):
+    def abstract_orders_detail(self, request):
         queryset = self.get_queryset()
         today_orders = queryset.filter(created_at__date=tz.now().date())
+        # mark vendor as active
+        vendor = self.request.user.vendor
+        vendor.is_available = True
+        vendor.save()
         # details
-        today_sale_amount = today_orders.aggregate(total=Sum("total_price"))
+        today_sale_amount = today_orders.filter(
+            status=ORDER_STATUS_CHOICES[4][0]
+        ).aggregate(total=Sum("total_price"))
         pending_orders_count = today_orders.filter(
             status=ORDER_STATUS_CHOICES[1][0]
         ).count()
@@ -767,14 +783,8 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         request_data = self.request.query_params
         new_order_id = request_data.get("order_id", None)
         accepted = request_data.get("is_accepted", None)
-        if not new_order_id:
-            return Response(
-                {"detail": "provide_new_order_id"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        if accepted == None:
-            return Response(
-                {"detail": "provide_accepted"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        if not new_order_id or not accepted:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
             order = (
                 Order.objects.filter(id=new_order_id)
@@ -785,7 +795,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
             )
             if order:
                 # if vendor has rejected order, no calculation, just notify user
-                if accepted == False:
+                if bool(accepted) == False:
                     order.cancel_order()
                     activate_language(self.request.user.profile.pf_lang)
                     notf = Notification.objects.create(
@@ -805,7 +815,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             {
                                 "type": "VENDOR_REJECTED",
                                 "data": {"orderId": order.id},
-                            }  # vendor app should extract order id and subscribe to --order room
+                            }
                         ),
                     )
                     send_notification.delay(
@@ -817,13 +827,14 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
 
                     return Response({"message": "order_order_rejected_by_vendor"})
                 else:
+                    # vendor accepted order
                     # check if the vendor owns this order
                     self.check_object_permissions(self.request, order)
                     # ------------------ estimateing travel time for new order
                     vendor = self.request.user.vendor
                     user_location = order.user.profile.location
                     user_location = (user_location.y, user_location.x)  # as lat,lon
-                    vendor_location = vendor.location
+                    vendor_location = vendor.user_profile.location
                     vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
                     estimated, distance_km = estimate_travel_time_graphhopper(
                         vendor_location, user_location
@@ -840,16 +851,6 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
 
                     free_carriers_count = r.hget(vendor_carriers_key, "f_c_c")
                     total_carriers_count = r.hget(vendor_carriers_key, "total_c_c")
-                    print(
-                        "free carriers--",
-                        free_carriers_count,
-                        "\ntotal carriers---",
-                        total_carriers_count,
-                        "estiated before conditions",
-                        estimated,
-                        "\npreparing_orders_count",
-                        preparing_orders_count,
-                    )
                     if free_carriers_count:
                         free_carriers_count = int(json.loads(free_carriers_count))
                     else:
@@ -862,12 +863,6 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         total_carriers_count = vendor.carriers.count()
                         r.hset(vendor_carriers_key, "total_c_c", total_carriers_count)
                     total_time = estimated
-                    print(
-                        "estimated....",
-                        estimated,
-                        total_carriers_count,
-                        free_carriers_count,
-                    )
                     # ----------------- applying conditions and finalizing estimation of time  ...
                     if preparing_orders_count <= total_carriers_count:
                         print("in first condition")
@@ -927,12 +922,18 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
                     # adding delivery cost to total price of order
                     order.delivery_cost = delivery_cost
+                    total_cost = float(order.total_price) + float(order.delivery_cost)
+                    total_time = round(float(prep_time) + float(estimated))
                     order.save()
                     return Response(
                         {
-                            "estimated": round(total_time),
+                            "estimation": round(total_time),
                             "delivery_cost": delivery_cost,
                             "preparation_time": round(prep_time),
+                            "order_cost": round(order.total_price),
+                            "total_cost": round(total_cost),
+                            "order_id": order.id,
+                            "total_time": total_time,
                         }
                     )
         except Exception as e:

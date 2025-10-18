@@ -1,29 +1,27 @@
 from math import sin, cos, radians, sqrt, atan2
-from os import environ
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 from json import dumps as j_dumps, loads as j_loads
-
+from config import AWS_STORAGE_BUCKET_NAME, s3
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
-from models import Cart  # your autoloaded Cart model
+from models import Cart
 from database import engine, metadata
+from sqlalchemy import Table
 
 # Autoload CartItem once (not ORM-mapped, just table reflection)
 cart_item_table = metadata.tables.get("cart_cartitem")
 if cart_item_table is None:
-    from sqlalchemy import Table
-
     cart_item_table = Table("cart_cartitem", metadata, autoload_with=engine)
 
 
 DEFAULT_AVG_SPEED = 5
-REDIS_URL = environ.get("REDIS_URL")
+
 
 redis = aioredis.from_url(
-    REDIS_URL, encoding="utf-8", decode_responses=True
+    "redis://localhost:6379/2", encoding="utf-8", decode_responses=True
 )
 FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
@@ -50,10 +48,8 @@ class BestVendorsCounter:
     async def read_counts(self, max_results: int = 5):
         """Returns IDs of most viewed vendors in the city."""
         top = await self.redis.zrange(self.top_vendors_key, 0, -1, desc=True)
-        top = top[:max_results] # top vendors ids
+        top = top[:max_results]  # top vendors ids
         return [int(x) for x in top]
-
-
 
 
 def get_total_cart_items(user_id: int) -> int:
@@ -99,16 +95,8 @@ def distance_reach_time(qs, lat, lon, typ="food"):
     for obj in qs:
         distance = round(
             haversine_distance(
-                (
-                    obj.vendor.latitude
-                    if typ == "food"
-                    else obj.latitude
-                ),
-                (
-                    obj.vendor.longitude
-                    if typ == "food"
-                    else obj.longitude
-                ),
+                (obj.vendor.latitude if typ == "food" else obj.latitude),
+                (obj.vendor.longitude if typ == "food" else obj.longitude),
                 lat,
                 lon,
             ),
@@ -116,5 +104,38 @@ def distance_reach_time(qs, lat, lon, typ="food"):
         )
         if typ == "food":
             obj.discount_amount = obj.discount.amount
+            obj.original_price = (obj.min_price / (100 - obj.discount.amount)) * 100
+            obj.vendor_name = obj.vendor_of.vendor_name
+            obj.category_name = obj.category_of.name
         obj.distance = distance
         obj.reach_time = round(distance_to_travel_time(distance))
+
+
+def generate_image_url(key: str):
+    """
+    this utility generates the s3 url of an image
+    key is the image short-address saved by django.
+    """
+    url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": AWS_STORAGE_BUCKET_NAME, "Key": key},
+    )
+    return url
+
+
+def set_image_url_to_scalars(qs, keyword="image"):
+    """
+    this utility sets s3 url to a collection of orm instances
+    django by saves the partial address of image in database not full url,
+    temporary urls should be generated using s3
+    """
+    if keyword == "vendor":
+        for item in qs:
+            item.image = generate_image_url(item.image)
+            item.logo = generate_image_url(item.logo)
+    elif keyword == "picture":
+        for item in qs:
+            item.picture = generate_image_url(item.picture)
+    elif keyword == "image":
+        for item in qs:
+            item.image = generate_image_url(item.image)

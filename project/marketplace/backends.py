@@ -100,14 +100,14 @@ class CustomFoodSearch(SearchFilter):
                 Food.objects.filter(vendor__city=city)
                 .annotate(similarity=TrigramSimilarity("name", search_param))
                 .filter(similarity__gte=0.2)
-                .select_related("vendor__user_profile")
+                .select_related("vendor")
             )
         else:
             foods = (
                 Food.objects.filter(vendor__city=city)
                 .annotate(similarity=TrigramSimilarity("name", search_param))
                 .filter(similarity__gte=0.2)
-                .select_related("vendor__user_profile")
+                .select_related("vendor")
                 .order_by("-similarity")[:20]
             )
         return foods

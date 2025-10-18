@@ -16,15 +16,30 @@ from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 from uuid import uuid4
 from database import Base, engine, metadata
+from sqlalchemy.orm import synonym
+from sqlalchemy import Table
+
+Base = declarative_base()
 
 # load existing tables if needed
-from sqlalchemy import Table
 
 
 class Promotion(Base):
     """loads promotion table from db and enables ORM operations"""
 
-    __table__ = Table("vendor_promotion", metadata, autoload_with=engine)
+    __tablename__ = "vendor_promotion"
+    id = Column(Integer, primary_key=True)
+    vendor_id = Column(Integer, ForeignKey("vendor_vendor.id"))
+    link = Column(String(60))
+    image = Column(String(60))
+    city = Column(String(60))
+    start_date = Column(DateTime)
+    end_date = Column(DateTime)
+    is_active = Column(Boolean)
+    cost_per_day = Column(Integer)
+    created_at = Column(DateTime)
+    modified_at = Column(DateTime)
+    vendor = synonym("vendor_id")
 
 
 class Cart(Base):
@@ -36,10 +51,15 @@ class Cart(Base):
 class Category(Base):
     """loads category table from db and enables ORM operations"""
 
-    __table__ = Table("marketplace_category", metadata, autoload_with=engine)
+    __tablename__ = "marketplace_category"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(60))
+    show_on_home = Column(Boolean, default=False)
+    icon = Column(String)
+    description = Column(String)
+    created_at = Column(DateTime)
+    foods = relationship("Food", back_populates="category_of")
 
-
-Base = declarative_base()
 
 # Many-to-many association for Vendor <-> OpeningHour
 vendor_opening_hours = Table(
@@ -130,11 +150,17 @@ class Vendor(Base):
 
     user = relationship("User", back_populates="vendor")
     user_profile = relationship("UserProfile", back_populates="vendor")
-    foods = relationship("Food", back_populates="vendor")
+    foods = relationship("Food", back_populates="vendor_of")
     discounts = relationship("Discount", back_populates="vendor")
     opening_hours = relationship(
         "OpeningHour", secondary=vendor_opening_hours, back_populates="vendors"
     )
+    city = Column(String(20))
+    latitude = Column(String(60))
+    longitude = Column(String(60))
+    location = Column(String(60))
+    h3_id = Column(String(60))
+    is_open_now = synonym("is_available")
 
 
 # ------------------ FOOD & DISCOUNT MODELS ------------------
@@ -163,8 +189,10 @@ class Food(Base):
     is_ready_type = Column(Boolean, default=False)
     ready_time = Column(Time, nullable=True)
     duration = Column(SmallInteger, nullable=True)
-
-    vendor = relationship("Vendor", back_populates="foods")
+    vendor = synonym("vendor_id")
+    vendor_of = relationship("Vendor", back_populates="foods")
+    category_of = relationship("Category", back_populates="foods")
+    category = synonym("category_id")
     discount = relationship("Discount", back_populates="foods")
 
 
@@ -178,7 +206,6 @@ class Discount(Base):
     deadline = Column(DateTime)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime)
-
     vendor = relationship("Vendor", back_populates="discounts")
     foods = relationship("Food", back_populates="discount")
 

@@ -6,7 +6,9 @@ from typing import List, Optional
 class CategorySchema(BaseModel):
     id: int
     name: str
+    icon: str
     model_config = ConfigDict(from_attributes=True)
+
 
 class VendorBase(BaseModel):
     id: int
@@ -16,12 +18,12 @@ class VendorBase(BaseModel):
     image: Optional[str] = None
     logo: Optional[str] = None
     vendor_type: Optional[int] = None
+    is_open_now: bool
 
 
 class VendorOut(VendorBase):
     distance: Optional[float] = None
     reach_time: Optional[int] = None  # e.g., in minutes
-    is_open_now: Optional[bool] = None
 
     class Config:
         orm_mode = True
@@ -33,7 +35,7 @@ class FoodSchema(BaseModel):
 
 
 class PromotionSchema(BaseModel):
-    id: int
+    vendor: Optional[int]
     image: str
     link: str
 
@@ -42,16 +44,16 @@ class DiscountedFoodsSchema(BaseModel):
     id: int
     name: str
     image: str
-    min_price: Decimal
+    original_price: Optional[int]
     discount_amount: Optional[int]
+    min_price: Decimal
+    vendor: int
+    vendor_name: str
+    category: int
     reach_time: Optional[int]
     distance: Optional[float]
-    # "final_price",
-    # "vendor",
-    # "vendor_name",
-    # "category",
-    # "likes",
-    # "category_name",
+    likes: int
+    category_name: str
 
 
 class ListCategorySchema(BaseModel):
@@ -62,4 +64,4 @@ class ListCategorySchema(BaseModel):
     discounted_foods: List[DiscountedFoodsSchema]
     local_vendors: List[VendorOut]
     cheapest_vendors: List[VendorOut]
-    top_vendors : List[VendorOut]
+    top_vendors: List[VendorOut]

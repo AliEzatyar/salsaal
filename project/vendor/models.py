@@ -127,6 +127,7 @@ class Vendor(models.Model):
                 float(self.latitude), float(self.longitude), DEFAULT_H3_RESOLUTION
             )
             
+            
         return super(Vendor, self).save(*args, **kwargs)
 
     @property

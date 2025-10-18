@@ -28,10 +28,39 @@ def register_periodic_tasks():
 
     if not created:
         # Update if already exists
-        print("task already existed")
+        print("reset carriers task already existed")
         task.crontab = revert_carriers_schedule
         task.enabled = True
         task.save()
+
+    # ------------------------------ disbale vendors task-----------------------------------------
+    # creating the crontab schedule
+    disable_vendors_schedule, created = CrontabSchedule.objects.get_or_create(
+        minute="0",
+        hour="1",
+        day_of_week="*",
+        day_of_month="*",
+        month_of_year="*",
+        timezone="Asia/Kabul",  # important
+    )
+
+    # creating the periodic task
+    task, created = PeriodicTask.objects.get_or_create(
+        name="Disabling Vendors",  # Unique name
+        task="vendor.tasks.disable_vendors",  # path to task
+        defaults={
+            "crontab": disable_vendors_schedule,
+            "args": json.dumps([]),  # optional
+        },
+    )
+
+    if not created:
+        # Update if already exists
+        print("disbale-vendor task already existed")
+        task.crontab = disable_vendors_schedule
+        task.enabled = True
+        task.save()
+
     # ------------------------- discount revert task- interval  --------------------------------------
     deactivate_discount_schedule, created = IntervalSchedule.objects.get_or_create(
         every=1, period=IntervalSchedule.HOURS
@@ -47,7 +76,7 @@ def register_periodic_tasks():
     )
 
     if not created:
-        print("task already exists")
+        print("deactivate-discount task already exists")
         deactivate_discount_task.interval = deactivate_discount_schedule
         deactivate_discount_task.save()
     # ------------------------------ delete notifications  --------------------------------------
@@ -65,6 +94,6 @@ def register_periodic_tasks():
     )
 
     if not created:
-        print("already exists")
+        print("delete notification task already exists")
         delete_notifications_task.interval = delete_notifications_schedule
         delete_notifications_task.save()
