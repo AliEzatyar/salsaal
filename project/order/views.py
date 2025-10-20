@@ -1,10 +1,10 @@
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
 from order.utils import get_order_delivery_tries_key
-from vendor.models import Vendor
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
     COrderSerializer,
+    VOrderSerializer,
     COrderSerializerLessDetail,
 )
 from cart.models import CartItem
@@ -38,7 +38,6 @@ from accounts.models import (
 )
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
-from django.contrib.gis.geos import Point
 from live.utils import send_notification
 
 """Order API Views"""
@@ -138,7 +137,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 ),
                 vendor__id=vendor_id,
             ).count()
-            print(previouse_preparing_orders_count, "$$$$$-------waiting amount")
             if previouse_preparing_orders_count > MAX_PREPARING_ORDERS_COUNT:
                 r.delete(f"user:{request.user.id}:waiting")
                 # prevent duplicate order if user has one 'waiting' order already
@@ -198,11 +196,11 @@ class OrderViewSet(viewsets.ModelViewSet):
                     data={"order_id": order.id},
                 )
                 r.publish(
-                    f"pub:vendor:{order.vendor.id}",
+                    f"pub:vendor:{order.vendor.user.id}",
                     json.dumps(
                         {
                             "type": "NEW_ORDER",
-                            "data": NotificationSerializer(notf).data,
+                            "data": safe_data,
                         }  # vendor app should extract order id and subscribe to --order room
                     ),
                 )

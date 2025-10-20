@@ -15,8 +15,6 @@ router.register(r"v-search", views.VendorSearchViewset, basename="vendor-search"
 
 router.register(r"ratings", views.RatingViewSet, basename="rating")
 
-# router.register(r"fav-list", views.FavListViewset, basename="fav-list")
-
 
 urlpatterns = [
     path("", include(router.urls)),

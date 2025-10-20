@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Food, Rating, FavItem, FavList, Discount
+from .models import Category, Food, Rating, Discount
 
 # Register your models here.
 
@@ -32,14 +32,6 @@ class RatingAdmin(admin.ModelAdmin):
     list_display = ["user", "related_obj", "rating","modified_at"]
 
 
-class FavlistAdmin(admin.ModelAdmin):
-    model = FavList
-    list_display = ["user"]
-
-
-class FavlistItemAdmin(admin.ModelAdmin):
-    model = FavItem
-    list_display = ["favlist", "food"]
 
 
 class DiscountAdmin(admin.ModelAdmin):
@@ -47,8 +39,6 @@ class DiscountAdmin(admin.ModelAdmin):
     list_display = ["id", "vendor", "deadline", "is_active","amount"]
 
 
-admin.site.register(FavList, FavlistAdmin)
-admin.site.register(FavItem, FavlistItemAdmin)
 admin.site.register(Discount, DiscountAdmin)
 
 admin.site.register(Rating, RatingAdmin)

@@ -25,6 +25,7 @@ from carrier.serializers import CarrierSerializer
 from accounts.utils import OTP_VERIFY_CARRIER, generate_otp, send_otp
 from marketplace.utils import (
     StandardResultSetPagination,
+    distance_to_travel_time,
     estimate_travel_time_graphhopper,
     haversine_distance,
 )
@@ -53,7 +54,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotAcceptable
 from api.permissions import IsVendorOfObject
 from rest_framework import parsers, serializers
-from .utils import get_vendor_carriers_key, r, revert_discount, apply_discount
+from .utils import get_vendor_carriers_key, get_vendor_status, r, revert_discount, apply_discount
 from django.utils.translation import gettext as _
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -119,10 +120,10 @@ class ConvertToVendorAPIView(views.APIView):
         data = self.request.data
         print("data came in covert-to-vendor", data)
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
-        # try:
-        ser.is_valid(raise_exception=True)
-        # except Exception as e:
-        # print("eroroororo", e)
+        try:
+            ser.is_valid(raise_exception=True)
+        except Exception as e:
+            print("eroroororo", e)
         print("no eroor in covernt to endor", data)
 
         with atomic():
@@ -135,9 +136,8 @@ class ConvertToVendorAPIView(views.APIView):
                     vendor_carriers_key,
                     mapping={"f_c_c": 0, "b_c_c": 0, "total_c_c": 0},
                 )
-            except:
-                print("error in convert-to-vendor")
-                raise Exception()
+            except Exception as e:
+                print("error in convert-to-vendor", e)
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
@@ -572,41 +572,60 @@ class CarriersNow(views.APIView):
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
     def get(self, *args, **kwargs):
-        carriers = Carrier.objects.filter(
-            vendor__id=self.request.user.vendor.id, is_active=True
-        ).only("id", "status", "name")
+        carriers = (
+            Carrier.objects.filter(
+                vendor__id=self.request.user.vendor.id, is_active=True,status=CARRIER_STATUS_CHOICES[0][0]
+            )
+            .select_related("user_profile", "user")
+            .only("id", "status", "name", "user_profile", "user")
+        )
         live_vendor_carriers = []  # final list being returned
         for carrier in carriers:
             try:
-                carrier_key = get_carrier_key(carrier.id)
-                carrier_live_data = json.loads(r.get(carrier_key))
-
-                carrier_current_location = carrier_live_data["location"]
                 vendor_location = self.request.user.profile.location
                 vendor_location = (vendor_location.y, vendor_location.x)
+                carrier_status_key = get_carrier_key(carrier.id)
+                carrier_data_raw = r.get(carrier_status_key)
+                carrier_live_data = None
+                if carrier_data_raw:
+                    carrier_live_data = json.loads(carrier_data_raw)
+                else:
+                    carrier_live_data = {
+                        "return_estimate": 0,
+                        "location": vendor_location,
+                        "destination": vendor_location,
+                    }
+
+                carrier_current_location = carrier_live_data["location"]
                 time = 0
+
                 if carrier.status == CARRIER_STATUS_CHOICES[0][0]:  # if carrier is free
-                    distance_m = (
-                        haversine_distance(*vendor_location, *carrier_current_location)
-                        * 1000
-                    )  # rough estimate, no maps used, meters
-                    if distance_m > 200:  # if carrier is far from the resturant
-                        time = int(
-                            estimate_travel_time_graphhopper(
-                                carrier_current_location, vendor_location
-                            )
-                        )
-                else:  # carrier is busy and has not reached to customer yet
-                    customer_location = carrier_live_data["destination"]
-                    time = int(
-                        estimate_travel_time_graphhopper(
-                            carrier_current_location, customer_location
-                        )
+                    # rough estimate, no maps used, meters
+                    distance_km = haversine_distance(
+                        *vendor_location, *carrier_current_location
                     )
-                details = {"id": carrier.id, "name": carrier.name, "return_time": time}
+                    if (
+                        distance_km > 0.2
+                    ):  # if carrier distance is > 200m is far from the resturant
+                        time = int(distance_to_travel_time(distance_km))
+                else:  # carrier is busy and has not reached to customer yet, take customer location
+                    customer_location = carrier_live_data["destination"]
+                    distance_km = haversine_distance(
+                        *vendor_location, *customer_location
+                    )
+                    time = int(distance_to_travel_time(distance_km))
+                details = {
+                    "id": carrier.id,
+                    "name": carrier.name,
+                    "return_time": time,
+                    "profile": (
+                        carrier.user_profile.picture.url
+                        if carrier.user_profile.picture
+                        else None
+                    ),
+                }
                 live_vendor_carriers.append(details)
             except Exception as e:
-                print("error occured while fetching live carrier status", e, e.args)
                 details = {
                     "id": carrier.id,
                     "name": carrier.name,
@@ -738,10 +757,12 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
     def abstract_orders_detail(self, request):
         queryset = self.get_queryset()
         today_orders = queryset.filter(created_at__date=tz.now().date())
-        # mark vendor as active
         vendor = self.request.user.vendor
-        vendor.is_available = True
-        vendor.save()
+        is_available = get_vendor_status(vendor.id) 
+        if not is_available:    
+            # only change db once per day
+            vendor.is_available = True
+            vendor.save()
         # details
         today_sale_amount = today_orders.filter(
             status=ORDER_STATUS_CHOICES[4][0]

@@ -171,23 +171,3 @@ class Rating(models.Model):
         return [i for i in range(self.rating)]
 
 
-class FavList(models.Model):
-    user = models.OneToOneField(
-        "accounts.User", on_delete=models.CASCADE, related_name="favlist"
-    )
-
-    def total_items(self):
-        return self.items.count()
-
-    def __str__(self):
-        return f"FavList <{self.user.full_name}>"
-
-
-class FavItem(models.Model):
-    favlist = models.ForeignKey(
-        "marketplace.FavList", on_delete=models.CASCADE, related_name="items"
-    )
-    food = models.ForeignKey(
-        "marketplace.Food", on_delete=models.CASCADE, related_name="+"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)

@@ -145,7 +145,8 @@ class VOrderFilterSet(django_filters.FilterSet):
         elif value == "preparing":
             today = now()
             return queryset.filter(
-                created_at__date=today.date(), status=ORDER_STATUS_CHOICES[2][0]
+                # created_at__date=today.date(),
+                status=ORDER_STATUS_CHOICES[2][0]
             )
 
         elif value == "carrying":

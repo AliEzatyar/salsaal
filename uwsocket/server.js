@@ -184,7 +184,7 @@ app.ws("/*", {
                 case "VENDOR_ACCEPTED": {
                     const orderId = data.orderId;
                     const key = `order:${orderId}:status`;
-
+                    console.log(key)
                     const payload = {
                         type: "VENDOR_ACCEPTED",
                         data: data
@@ -196,6 +196,12 @@ app.ws("/*", {
                         `pub:order:${orderId}`,
                         JSON.stringify({ type: "VENDOR_ACCEPTED", data: data })
                     );
+                    // -------- unsubscribing vendor from this order-----------
+                    setTimeout(()=>{
+                        let room = `order:${data.orderId}`;
+                        console.log("unsubscribed from order", orderId)
+                        ws.unsubscribe(room);
+                    },2000)
                     break;
                 }
 
@@ -210,19 +216,24 @@ app.ws("/*", {
 
                     const jsonData = JSON.stringify(payload);
                     await redisPub.set(key, jsonData, { EX: orderStatusTTL });
-
                     console.log("order status saved in server rejected", jsonData);
-
                     redisPub.publish(
                         `pub:order:${orderId}`,
                         JSON.stringify({ type: "VENDOR_REJECTED", data: data })
                     );
+                    // -------- unsubscribing vendor from this order-----------
+                    setTimeout(() => {
+                        let room = `order:${data.orderId}`;
+                        console.log("unsubscribed from order", orderId)
+                        ws.unsubscribe(room);
+                    }, 2000)
                     break;
                 }
 
                 default:
+                    console.log("unkow type", )
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));
-            }
+                }
 
          
     },

@@ -80,6 +80,7 @@ class Vendor(models.Model):
                 opclasses=["gin_trgm_ops"],
             ),
         ]
+        
 
     def get_location(self):
         """returns the location of the vendor"""
@@ -111,11 +112,11 @@ class Vendor(models.Model):
                 if self.is_approved:
                     # approved notification email sending
                     title = "Congratulations! Your Shop Has Been Approved By Salsaal E-Commerce."
-                    send_notification.delay(self.user.email, title, template, context)
+                    send_notification(self.user.email, title, template, context)
                 else:
                     # approved notification email sending
                     title = "We Are Sorry, Your Shop Is Not Approved!"
-                    send_notification.delay(self.user.email, title, template, context)
+                    send_notification(self.user.email, title, template, context)
 
         # user update/saves this vendor
         if self.latitude and self.longitude:

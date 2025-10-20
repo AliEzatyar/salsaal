@@ -44,21 +44,6 @@ class VendorSerializerMany(serializers.ModelSerializer):
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
-    def get_is_open(self, obj):
-        """this checks whether the vendor obj has any opening hour right now"""
-        now = timezone.now()  # utc now
-        index = now.weekday()  # utc weekday
-        weekday = to_af_weekday(index=index)  # afg weekday
-        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-        # is_open = False
-        today_open_hour = obj.opening_hours.filter(
-            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
-        ).exists()
-        if today_open_hour:
-            return True
-        return False
-
-
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
     """this provides vendor detail with its foods in `All Venodrs` part"""
 
@@ -87,20 +72,6 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
 
-    def get_is_open(self, obj):
-        """this checks whether the vendor obj has any opening hour right now"""
-        now = timezone.now()  # utc now
-        index = now.weekday()  # utc weekday
-        weekday = to_af_weekday(index=index)  # afg weekday
-        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-        # is_open = False
-        today_open_hour = obj.opening_hours.filter(
-            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
-        ).exists()
-        if today_open_hour:
-            print("today open")
-            return True
-        return False
 
 
 class OpeningHourSerializer(serializers.ModelSerializer):
@@ -232,6 +203,7 @@ class PublicVendorSerializer(serializers.ModelSerializer):
     reach_time = serializers.SerializerMethodField("get_reach_time")
     categories_count = serializers.IntegerField(read_only=True)
     distance = serializers.SerializerMethodField("get_distance")
+    location = serializers.SerializerMethodField("get_location")
 
     class Meta:
         model = Vendor
@@ -261,19 +233,6 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         categories = getattr(obj,"categories")
         return categories
 
-    def get_is_open(self, obj):
-        """this checks whether the vendor obj has any opening hour right now"""
-        now = timezone.now()  # utc now
-        index = now.weekday()  # utc weekday
-        weekday = to_af_weekday(index=index)  # afg weekday
-        now_af = now.astimezone(ZoneInfo("Asia/Kabul")).hour  # covert to af now
-        # is_open = False
-        today_open_hour = obj.opening_hours.filter(
-            weekday=weekday, start_hour__lte=now_af, end_hour__gt=now_af
-        ).exists()
-        if today_open_hour:
-            return True
-        return False
 
     def get_featured_items(self, obj):
         featured = getattr(obj, "featured_items")
@@ -288,14 +247,25 @@ class PublicVendorSerializer(serializers.ModelSerializer):
         # obj.distance is a Distance object; convert to km/miles/etc.
         return obj.distance if hasattr(obj, "distance") else None
 
+    def get_location(self, obj):
+        if obj.location:
+            return [obj.location.y, obj.location.x]
+        return
+
 
 class AbstractVendorSerializer(serializers.ModelSerializer):
     """
     this serializer has id, location, vendor_name
     used in vendors on map.
     """
+    location = serializers.SerializerMethodField("get_location")
 
     class Meta:
         model = Vendor
         fields = ["id", "location", "vendor_name","vendor_type"]
         read_only_fields = ["__all__"]
+
+    def get_location(self,obj):
+        if obj.location:
+            return [obj.location.y,obj.location.x]
+        return 

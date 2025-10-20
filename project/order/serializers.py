@@ -16,9 +16,10 @@ class COrderItemSerializerMany(ModelSerializer):
     price = MyDecimalField()
     image = serializers.ReadOnlyField(source="food.image_url")
     id = serializers.ReadOnlyField(source="food.id")
+
     class Meta:
         model = OrderItem
-        fields = ["id", "food_name", "quantity", "price", "subtotal","image"]
+        fields = ["id", "food_name", "quantity", "price", "subtotal", "image"]
         read_only_fields = ["__all__"]
 
     def get_subtotal(self, obj):
@@ -52,8 +53,10 @@ class COrderSerializer(ModelSerializer):
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
     total_price = MyDecimalField(read_only=True)
-    carrier_name =  serializers.ReadOnlyField(source="carrier.user.full_name")
-    carrier =serializers.ReadOnlyField(source="carrier.user.id")
+    carrier_name = serializers.ReadOnlyField(source="carrier.user.full_name")
+    carrier = serializers.ReadOnlyField(source="carrier.user.id")
+    customer_name = serializers.ReadOnlyField(source="user.full_name")
+
     class Meta:
         model = Order
         fields = [
@@ -65,14 +68,15 @@ class COrderSerializer(ModelSerializer):
             "payment_id",
             "created_at",
             "total_items",
-            "carrier", # for live tracking if needed
-            "carrier_name", # may be null
+            "carrier",  # for live tracking if needed
+            "carrier_name",  # may be null
             "vendor",
             "vendor_name",
             "items",
             "otp",
             "payment_type",
-            "vendor_image"
+            "vendor_image",
+            "customer_name",
         ]
         read_only_fields = ["__all__"]
 
@@ -80,10 +84,13 @@ class COrderSerializer(ModelSerializer):
         validated_data["user"] = User.objects.get(id=self.context["user"])
         return super().create(validated_data)
 
-    def get_image_url(self,obj):
-        return 
 
 class COrderSerializerLessDetail(ModelSerializer):
+    """
+    this serializer is used by customer  order objects
+    less
+    """
+
     vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
     total_price = MyDecimalField(read_only=True)
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
@@ -103,28 +110,14 @@ class COrderSerializerLessDetail(ModelSerializer):
             "carrier",
             "vendor_image",
             "vendor_name",
-            # "items_pair",
-            "items"
-            
+            "items",
         ]
 
-    # def get_items(self,obj):
-    #     """this is used in orders list for review """
-    #     return [(item.food.id,item.food.name) for item in obj.items.all()]
 
 class VOrderItemSerializerDetail(ModelSerializer):
-    food_name = serializers.SerializerMethodField("get_food_name")
-    total_price = serializers.SerializerMethodField("get_total_price")
-    
     class Meta:
         model = OrderItem
-        fields = ["food_name", "quantity", "total_price"]
-
-    def get_food_name(self, obj):
-        return obj.food_name
-
-    def get_total_price(self, obj):
-        return obj.subtotal
+        fields = ["food_name", "quantity", "subtotal", "price"]
 
 
 class VOrderSerializerLessDetail(ModelSerializer):
@@ -144,9 +137,8 @@ class VOrderSerializerLessDetail(ModelSerializer):
 class VOrderSerializer(ModelSerializer):
     customer_name = SerializerMethodField("get_customer_name")
     items = VOrderItemSerializerDetail(read_only=True, many=True)
-    # created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
     total_price = MyDecimalField(read_only=True)
-
+    destination = SerializerMethodField("get_destination")
     class Meta:
         model = Order
         fields = [
@@ -160,8 +152,14 @@ class VOrderSerializer(ModelSerializer):
             "created_at",
             "carrier",
             "items",
+            "destination",
         ]
         read_only_fields = ["id", "created_at"]
 
     def get_customer_name(self, obj):
         return obj.user.full_name
+
+    def get_destination(self,obj):
+        if obj.destination:
+            return [obj.destination.y, obj.destination.x]
+        return

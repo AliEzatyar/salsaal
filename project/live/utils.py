@@ -56,6 +56,7 @@ def send_fcm(token, title, body, data=None):
             "sound": "default",
         },
     }
+    result = None
     try:
         result = fcm.notify(
             fcm_token=token,

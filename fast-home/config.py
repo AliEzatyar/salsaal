@@ -1,4 +1,3 @@
-from os import environ as env
 import boto3
 from decouple import config
 

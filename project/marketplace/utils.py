@@ -3,8 +3,10 @@ import redis
 from django.conf import settings as s
 from os import environ as env
 import requests as req
-
 from rest_framework.pagination import PageNumberPagination
+import geohash
+from rest_framework.response import Response
+
 
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
 DEFAULT_H3_RESOLUTION = 9
@@ -117,7 +119,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
 
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
+    
     return R * c  # distance in kilometers
 
 
@@ -153,6 +155,7 @@ def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
 
 
 def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
+    """distance in km"""
     return distance * 1000 / (avg_speed) / 60
 
 
@@ -192,3 +195,23 @@ def distance_reach_time(qs, lat, lon, typ="food"):
         )
         obj.distance = distance
         obj.reach_time = round(distance_to_travel_time(distance), 1)
+
+
+def get_user_info(request):
+    """
+    this utility method extracts user info from request object, if not
+    provided, takes from user profile"""
+    request_data = request.query_params
+    city = request_data.get("city", None)
+    location = request_data.get("location", None)
+    if not city or not location:
+        return Response(status=400)
+    try:
+        # decoding location
+        lat, lon = geohash.decode(location)
+    except:
+        lat = float(request.user.profile.latitude)
+        lon = float(request.user.profile.longitude)
+        city = request.user.profile.city
+    city = str(city).lower()
+    return (city, lat, lon)
