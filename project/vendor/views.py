@@ -10,7 +10,6 @@ from api.permissions import (
 )
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order, OrderItem
-from multiVend.settings.base import PUBLIC_PLATFORM_ITEM_COMMISSION_FEE
 from accounts.models import (
     ADMIN,
     CARRIER,
@@ -33,6 +32,7 @@ from cart.models import Cart
 from carrier.utils import get_carrier_key
 from live.models import Notification
 from live.utils import send_notification
+from multiVend.country.info import PLATFORM_SHARE
 from vendor.models import OpeningHour
 from .serializers import (
     DiscountSerializer,
@@ -650,26 +650,31 @@ class CarriersNow(views.APIView):
 
 
 class VendorSalesView(views.APIView):
-    """THis view returns vendor revenue from different aspects"""
+    """THis view returns vendor sales from different aspects"""
 
     permission_classes = [IsVendor, permissions.IsAuthenticated]
 
     def get(self, *args, **kwargs):
-        """this method returns monthly, weekly and today's revenue"""
+        """
+            returns:
+            * today total sales
+            * this month total sales
+            * this month per-day sales 
+            * this month top-sale food 
+            * this month platform share 
+        """
         now = time.time()
-        data = self.request.query_params
         vendor = self.request.user.vendor
-        vendor_foods  = Food.objects.filter(vendor=vendor)
         this_year = tz.now().year
         this_month = tz.now().month
         this_year_orders = Order.objects.filter(
             status="delivered", vendor=vendor, created_at__year=this_year
-        ).prefetch_related("foods")
-        # --------------- this month revenue
+        )
+        # --------------- this month sales
         this_month_orders = this_year_orders.filter(created_at__month=this_month)
-        this_month_total_sales = this_month_orders.aggregate(total=Sum("total_price"))
+        this_month_total_sales = this_month_orders.aggregate(total=Sum("total_price"))["total"]
         today_orders = this_month_orders.filter(created_at__date=tz.now().date())
-        today_total_sales = today_orders.aggregate(total=Sum("total_price"))
+        today_total_sales = today_orders.aggregate(total=Sum("total_price"))["total"]
         # --------------- per day chart
         per_day_sales_qs = (
             this_month_orders.annotate(day=ExtractDay("created_at"))
@@ -690,18 +695,21 @@ class VendorSalesView(views.APIView):
             {"food": food["food__name"], "total_sale": int(food["total_sale"])}
             for food in per_food_sales_qs
         ]
-        print(time.time()- now)
+        # --------------------- platform share
+        platform_share = (this_month_total_sales or 0) * PLATFORM_SHARE
+        print("elapsed time:",time.time()- now)
         return Response(
             {
                 "monthly_sale_amount": this_month_total_sales or 0,
-                "today_sale_amount": today_total_sales["total"] or 0,
+                "today_sale_amount": today_total_sales or 0,
                 "month_sales_per_day": per_day_dict,
-                "top_sale_foods": per_food_dict
+                "top_sale_foods": per_food_dict,
+                "platform_share" : platform_share
             }
         )
     def post(self, *args, **kwargs):
         """
-        This method returns vendor revenue in custom range
+        This method returns vendor sales in custom range
         date format:
             "YYYY-MM-DDTHH:MM:SSZ" --- utc
              //     //  /   //  +4:30 AF
@@ -729,15 +737,14 @@ class VendorSalesView(views.APIView):
             created_at__gte=start_date,
             created_at__lte=end_date,
         )
-        total_revenue = orders.annotate(
+        total_sales = orders.annotate(
             vendor_earning=ExpressionWrapper(
-                F("total_price")
-                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
+                F("total_price"),
                 output_field=DecimalField(),
             )
         ).aggregate(total=Sum("vendor_earning"))
 
-        return Response({"total-revenue": total_revenue["total"]})
+        return Response({"total-sales": total_sales["total"]})
 
 
 class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
