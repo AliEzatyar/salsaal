@@ -1,14 +1,14 @@
 from rest_framework.serializers import ModelSerializer, ValidationError
 from order.models import Reward
 from vendor.models import Vendor
-from .models import Device, User, UserProfile, CUSTOMER
+from .models import Device, User, UserProfile, CUSTOMER, get_token_valid_after
 from rest_framework_simplejwt.serializers import (
     TokenObtainPairSerializer,
     TokenRefreshSerializer,
 )
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-
+from rest_framework_simplejwt.state import token_backend
+from rest_framework_simplejwt.settings import api_settings
 
 class UserCreationSerializer(ModelSerializer):
     class Meta:
@@ -132,21 +132,18 @@ class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
-
+    """
+    overriden to invalidate pre-access tokens 
+    when getting new access token with refresh token
+    """
     def validate(self, attrs):
-        # validates whether the refresh tokem is correct
-        data = super().validate(attrs)
-        # create refresh object using the entered refresh token
-        refresh = RefreshToken(data["refresh"])
-        # create new access object, add user_id and role to it assign it instead of older one in data
-        access = AccessToken()
-        access["user_id"] = refresh["user_id"]
-        role = User.objects.get(id=access["user_id"]).role
-        access["role"] = role  # fallback
-        # re-assiging the access token which contains role
-        data["access"] = str(access)
-        data["refresh"] = str(refresh)
-        return data
+        # validates whether the refresh token is correct and generates new access token
+        tokens = super().validate(attrs)
+        decoded_access = token_backend.decode(tokens["access"])
+        user = User.objects.get(id=int(decoded_access["user_id"]))
+        user.token_valid_after = get_token_valid_after()
+        user.save()
+        return tokens
 
 
 class RewardSerializer(ModelSerializer):

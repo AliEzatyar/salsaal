@@ -28,7 +28,7 @@ def send_notification(self,user_id, title, body, data=None):
         devices = Device.objects.filter(user__id=user_id)
         if not devices.exists():
             print("use has no registered device")
-            return "NoDevice"
+            return f"NoDevice{user_id}"
         for device in devices:
             try:
                 print("user device android")

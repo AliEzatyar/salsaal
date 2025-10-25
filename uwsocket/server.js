@@ -9,7 +9,7 @@ const PORT = process.env.SERVER_PORT || 3000;
 
 const djangoServerUrl = process.env.DJANGO_SERVER_URL
 const redisUrl = process.env.REDIS_URL
-console.log(redisUrl, "thi-----redis-url")
+// console.log(redisUrl, "thi-----redis-url")
 // getting public key for verifying user's jwt tokens
 const res = await fetch(djangoServerUrl + "/jwtks/");
 const JWT_PUBLIC_KEY = await res.text();

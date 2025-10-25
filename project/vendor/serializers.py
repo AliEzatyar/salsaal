@@ -151,10 +151,11 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """overriding to apply user profile update together with vendor"""
         # custom location validation
-        latitude, longitude = validated_data["latitude"], validated_data["longitude"]
+        latitude, longitude = validated_data.get("latitude",None), validated_data.get("longitude",None)
         try:
-            float(latitude)
-            float(longitude)
+            if latitude & longitude:
+                float(latitude)
+                float(longitude)
         except:
             print("lat and lon invalid", latitude, longitude, "--")
             raise ValidationError("provide_correct_lat_lon")

@@ -2,7 +2,6 @@ from multiVend.settings.base import *
 from os import environ as env
 
 
-
 ALLOWED_HOSTS = ["*"]
 
 DATABASES = {
@@ -92,6 +91,8 @@ SIMPLE_JWT = {
     "VERIFYING_KEY": open(BASE_DIR.parent / "public.pem").read(),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 
@@ -103,5 +104,3 @@ DUMMY_SECRET = env.get("DUMMY_SECRET")
 # zego cloud
 ZEGOCLOUD_APP_ID = env.get("ZEGOCLOUD_APP_ID")
 ZEGOCLOUD_SERVER_SECRET = env.get("ZEGOCLOUD_SERVER_SECRET")
-
-

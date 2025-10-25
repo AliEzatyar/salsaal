@@ -1,6 +1,6 @@
 from datetime import datetime
-import time
 import json
+import time
 from marketplace.models import Discount, Food
 from api.permissions import (
     IsOrderPreparingState,
@@ -44,7 +44,7 @@ from marketplace.serializers import VFoodSerializerDetail
 from api.permissions import IsVendorApproved, IsVendorOfObject
 from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch,Count
 from django.utils import timezone as tz
 from django.db.transaction import atomic
 from django.contrib.gis.geos import Point
@@ -54,13 +54,21 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotAcceptable
 from api.permissions import IsVendorOfObject
 from rest_framework import parsers, serializers
-from .utils import get_vendor_carriers_key, get_vendor_status, r, revert_discount, apply_discount
+from .utils import (
+    get_vendor_carriers_key,
+    get_vendor_status,
+    r,
+    revert_discount,
+    apply_discount,
+)
 from django.utils.translation import gettext as _
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
 from live.utils import send_notification
+from django.db.models.functions import ExtractDay
+
 
 # Create your views here.
 
@@ -86,7 +94,6 @@ class VendorAPIView(views.APIView):
         """enables vendor and related userprofile update"""
         data = self.request.data
         vendor = self.request.user.vendor
-        print("data came to vendor update view", data)
         vendor_serializer = VendorSerializerDetailed(vendor, data=data, partial=True)
         vendor_serializer.is_valid(raise_exception=True)
         vendor_serializer.save()
@@ -574,7 +581,9 @@ class CarriersNow(views.APIView):
     def get(self, *args, **kwargs):
         carriers = (
             Carrier.objects.filter(
-                vendor__id=self.request.user.vendor.id, is_active=True,status=CARRIER_STATUS_CHOICES[0][0]
+                vendor__id=self.request.user.vendor.id,
+                is_active=True,
+                status=CARRIER_STATUS_CHOICES[0][0],
             )
             .select_related("user_profile", "user")
             .only("id", "status", "name", "user_profile", "user")
@@ -640,55 +649,56 @@ class CarriersNow(views.APIView):
         return Response({"carriers": live_vendor_carriers}, status=status.HTTP_200_OK)
 
 
-class VendorRevenueView(views.APIView):
+class VendorSalesView(views.APIView):
     """THis view returns vendor revenue from different aspects"""
 
     permission_classes = [IsVendor, permissions.IsAuthenticated]
 
     def get(self, *args, **kwargs):
         """this method returns monthly, weekly and today's revenue"""
+        now = time.time()
+        data = self.request.query_params
         vendor = self.request.user.vendor
-        orders = Order.objects.filter(status="delivered", vendor=vendor)
-        one_month_ago = tz.now() - tz.timedelta(days=30)
-        one_week_ago = tz.now() - tz.timedelta(days=7)
+        vendor_foods  = Food.objects.filter(vendor=vendor)
+        this_year = tz.now().year
+        this_month = tz.now().month
+        this_year_orders = Order.objects.filter(
+            status="delivered", vendor=vendor, created_at__year=this_year
+        ).prefetch_related("foods")
         # --------------- this month revenue
-        month_orders = orders.filter(created_at__gte=one_month_ago)
-        monthly_revenue = month_orders.annotate(
-            vendor_revenue=ExpressionWrapper(
-                F("total_price")
-                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
-                output_field=DecimalField(),
-            )
-        ).aggregate(total=Sum("vendor_revenue"))
+        this_month_orders = this_year_orders.filter(created_at__month=this_month)
+        this_month_total_sales = this_month_orders.aggregate(total=Sum("total_price"))
+        today_orders = this_month_orders.filter(created_at__date=tz.now().date())
+        today_total_sales = today_orders.aggregate(total=Sum("total_price"))
+        # --------------- per day chart
+        per_day_sales_qs = (
+            this_month_orders.annotate(day=ExtractDay("created_at"))
+            .values("day")
+            .annotate(total_sale=Sum("total_price"))
+            .order_by("day")
+        )
+        per_day_dict = [
+            {"day": day["day"], "total_sale": int(day["total_sale"])}
+            for day in per_day_sales_qs
+        ]
+        # ---------------------- top sale foods
 
-        # ---------------- this week revenue
-        week_orders = orders.filter(created_at__gte=one_week_ago)
-        weekly_revenue = week_orders.annotate(
-            vendor_revenue=ExpressionWrapper(
-                F("total_price")
-                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
-                output_field=DecimalField(),
-            )
-        ).aggregate(total=Sum("vendor_revenue"))
-
-        # ---------------- today revenue
-        today_orders = orders.filter(created_at__date=tz.now().date())
-        totay_revenue = today_orders.annotate(
-            vendor_revenue=ExpressionWrapper(
-                F("total_price")
-                - F("total_items") * PUBLIC_PLATFORM_ITEM_COMMISSION_FEE,
-                output_field=DecimalField(),
-            )
-        ).aggregate(total=Sum("vendor_revenue"))
-
+        per_food_sales_qs = OrderItem.objects.filter(order__in=this_month_orders).values('food__name').annotate(
+            total_sale=Sum(F('quantity') * F('price')),
+        ).order_by("-total_sale")
+        per_food_dict = [
+            {"food": food["food__name"], "total_sale": int(food["total_sale"])}
+            for food in per_food_sales_qs
+        ]
+        print(time.time()- now)
         return Response(
             {
-                "monthly_revenue": monthly_revenue["total"] or 0,
-                "weekly_revenue": weekly_revenue["total"] or 0,
-                "today_revenue": totay_revenue["total"] or 0,
+                "monthly_sale_amount": this_month_total_sales or 0,
+                "today_sale_amount": today_total_sales["total"] or 0,
+                "month_sales_per_day": per_day_dict,
+                "top_sale_foods": per_food_dict
             }
         )
-
     def post(self, *args, **kwargs):
         """
         This method returns vendor revenue in custom range
@@ -758,12 +768,14 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         queryset = self.get_queryset()
         today_orders = queryset.filter(created_at__date=tz.now().date())
         vendor = self.request.user.vendor
-        is_available = get_vendor_status(vendor.id) 
-        if not is_available:    
+        is_available = get_vendor_status(vendor.id)
+        if not is_available:
             # only change db once per day
             vendor.is_available = True
             vendor.save()
         # details
+        name = vendor.vendor_name
+        image = vendor.image.url if vendor.image else None
         today_sale_amount = today_orders.filter(
             status=ORDER_STATUS_CHOICES[4][0]
         ).aggregate(total=Sum("total_price"))
@@ -781,6 +793,8 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         ).count()
         return Response(
             {
+                "name": name,
+                "image": image,
                 "total_sale": today_sale_amount["total"],
                 "pending_orders": pending_orders_count,
                 "preparing_orders": preparing_orders_count,
@@ -848,7 +862,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
 
                     return Response({"message": "order_order_rejected_by_vendor"})
                 else:
-                    # vendor accepted order
+                    # vendor accepted order, set otp
                     # check if the vendor owns this order
                     self.check_object_permissions(self.request, order)
                     # ------------------ estimateing travel time for new order
@@ -943,6 +957,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
                     # adding delivery cost to total price of order
                     order.delivery_cost = delivery_cost
+                    # since accepted by vendor, otp is set on and used in filter waiting orders of vendor
+                    otp = generate_otp(8)
+                    order.otp = otp
                     total_cost = float(order.total_price) + float(order.delivery_cost)
                     total_time = round(float(prep_time) + float(estimated))
                     order.save()

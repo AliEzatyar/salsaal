@@ -70,7 +70,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     permission_classes = [IsAuthenticated]
     serializer_class = FoodSerializerMany
-    # django-filter
     filter_backends = [
         filters.OrderingFilter,
         DjangoFilterBackend,

@@ -140,7 +140,7 @@ class VOrderFilterSet(django_filters.FilterSet):
         elif value == "waiting":
             today = now()
             return queryset.filter(
-                created_at__date=today.date(), status=ORDER_STATUS_CHOICES[1][0]
+                created_at__date=today.date(), status=ORDER_STATUS_CHOICES[1][0],otp=None
             )
         elif value == "preparing":
             today = now()
@@ -194,6 +194,7 @@ class CustomVendorSearch(SearchFilter):
     """
     this search filter class is used in marketplace/VendorSearchViewset
     """
+
     search_param = "query"
 
     def filter_queryset(self, request, queryset, view):

@@ -93,6 +93,8 @@ SIMPLE_JWT = {
     "VERIFYING_KEY": open(BASE_DIR.parent / "public.pem").read(),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=120),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 

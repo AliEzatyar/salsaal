@@ -35,7 +35,7 @@ urlpatterns = [
         "convert-to-vendor/",
         views.ConvertToVendorAPIView.as_view(),
     ),
-    path("vendor-revenue/", views.VendorRevenueView.as_view()),
+    path("vendor-sales/", views.VendorSalesView.as_view()),
     path(
         "add-carrier/",
         views.AddCarrierAPIView.as_view(),

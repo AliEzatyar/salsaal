@@ -144,7 +144,11 @@ class LoginApiView(views.APIView):
                 # r.delete(otp_tries_key)
 
                 return Response(
-                    {"access": str(refresh.access_token), "refresh": str(refresh)},
+                    {
+                        "access": str(refresh.access_token),
+                        "refresh": str(refresh),
+                        "id": user.id,
+                    },
                     status=status.HTTP_200_OK,
                 )
             except UserOtp.DoesNotExist:
@@ -214,7 +218,8 @@ class LoginApiView(views.APIView):
                     # saved_otp.delete()
                     refresh = RefreshToken.for_user(user)
                     return Response(
-                        {"access": str(refresh.access_token), "refresh": str(refresh)},
+                        {"access": str(refresh.access_token), "refresh": str(refresh),
+                        "id":user.id},
                         status=status.HTTP_200_OK,
                     )
             except IntegrityError:
@@ -249,4 +254,6 @@ class UpsertDeviceToken(views.APIView):
 
 
 def jwtks_view(request):
+    """this endpoint returns public key for verifying jwt;
+    used in uwsocket server"""    
     return HttpResponse(settings.SIMPLE_JWT["VERIFYING_KEY"], content_type="text/plain")

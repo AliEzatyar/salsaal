@@ -105,13 +105,6 @@ class Order(models.Model):
         self.status = ORDER_STATUS_CHOICES[0][0]
         self.save()
 
-    def save(self, *args, **kwargs):
-        """this method is overriden for auto-filling otp of order"""
-        if not self.pk:
-            otp = generate_otp(8)
-            self.otp = otp
-
-        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Order {self.id} - {self.user.full_name}"
