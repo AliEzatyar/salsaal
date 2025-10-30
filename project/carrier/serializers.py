@@ -10,6 +10,8 @@ from .models import Carrier
 class CarrierSerializer(serializers.ModelSerializer):
     vendor = serializers.PrimaryKeyRelatedField(read_only=True)
     name = serializers.ReadOnlyField(source="user.full_name")
+    image = serializers.ReadOnlyField(source="user_profile.image.url")
+
     class Meta:
         model = Carrier
         fields = [
@@ -17,11 +19,10 @@ class CarrierSerializer(serializers.ModelSerializer):
             "is_active",
             "vendor",
             "user",
-            "user_profile",
-            "id_document",
             "name",
+            "image",
         ]
-        read_only_fields = ["id", "user", "user_profile", "email", "vendor", "name"]
+        read_only_fields = ["id", "user",  "name", "vendor","image"]
 
 
 class CarrierOrderSerializer(serializers.ModelSerializer):
@@ -85,3 +86,4 @@ class CarrierOrderSerializerMany(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["__all__"]
+

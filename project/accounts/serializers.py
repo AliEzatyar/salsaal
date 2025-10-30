@@ -82,7 +82,7 @@ class UserDetailSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "full_name", "email", "phone_number", "profile", "created_date"]
+        fields = ["id", "full_name", "phone_number", "profile", "created_date"]
         read_only_fields = [
             "id",
             "email",

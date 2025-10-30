@@ -1,12 +1,22 @@
 from django.conf import settings
 from django.http import HttpResponse
-from accounts.models import CUSTOMER, OTP_RETRY_DELAY, NoUserOtp, User, UserOtp, get_token_valid_after
+from accounts.models import (
+    CUSTOMER,
+    OTP_RETRY_DELAY,
+    NoUserOtp,
+    User,
+    UserOtp,
+    get_token_valid_after,
+)
 from accounts.serializers import (
     UserCreationSerializer,
     UserDetailSerializer,
 )
 from django.db.utils import IntegrityError
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 from order.models import Reward
 from .utils import OTP_LOGIN, OTP_VERIFY_PHONE, generate_otp, get_user_otp_tries_key
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -27,6 +37,7 @@ from marketplace.utils import r
 from django.utils import timezone
 from datetime import timedelta
 from django.db.transaction import atomic
+
 """Account API Views"""
 
 
@@ -53,6 +64,7 @@ class UserViewset(viewsets.ModelViewSet):
 
 class UserRewardsViewset(viewsets.ReadOnlyModelViewSet):
     """this view lists user's rewards"""
+
     serializer_class = RewardSerializer
 
     def get_queryset(self):
@@ -79,7 +91,7 @@ class LoginApiView(views.APIView):
             # ------- if user already exists with this phone number
             user = User.objects.get(phone_number=phone_number)
             otp = generate_otp()
-            send_otp.delay(otp=otp,user_id=user.id, typ=OTP_LOGIN)
+            send_otp.delay(otp=otp, user_id=user.id, typ=OTP_LOGIN)
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
@@ -87,12 +99,12 @@ class LoginApiView(views.APIView):
         except User.DoesNotExist:
             # -------- if its a new user
             otp = generate_otp()
-            send_otp.delay(otp,typ=OTP_VERIFY_PHONE, phone_number=phone_number)
+            send_otp.delay(otp, typ=OTP_VERIFY_PHONE, phone_number=phone_number)
             return Response(
                 {"type": "new_user", "message": "otp_sent"}, status=status.HTTP_200_OK
             )
         except Exception as e:
-            print("exception in login",e)
+            print("exception in login", e)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def post(self, *args, **kwargs):
@@ -212,14 +224,16 @@ class LoginApiView(views.APIView):
                     # ------ creating user profile
                     ser = UserProfileCreationSerializer(data=new_user_data)
                     ser.is_valid(raise_exception=True)
-                    profile = ser.save(user=user)
                     # ------ removing otp and generating access token for new user
                     # r.delete(otp_tries_key)
                     # saved_otp.delete()
                     refresh = RefreshToken.for_user(user)
                     return Response(
-                        {"access": str(refresh.access_token), "refresh": str(refresh),
-                        "id":user.id},
+                        {
+                            "access": str(refresh.access_token),
+                            "refresh": str(refresh),
+                            "id": user.id,
+                        },
                         status=status.HTTP_200_OK,
                     )
             except IntegrityError:
@@ -242,18 +256,32 @@ class RoleTokenRefreshView(TokenRefreshView):
 class UpsertDeviceToken(views.APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
-        if request.user.devices:
-            ser = DeviceSerializer(request.user.devices.last(), data=data, partial=True)
-        else:
-            ser = DeviceSerializer(data)
-        if ser.is_valid(raise_exception=True):
-            ser.validated_data["user"] = request.user
-            print("saving user device...",data)
-            ser.save()
+        new_token = data.get("token", None)
+        # if no token provided, return 400
+        if not new_token:
+            return Response(
+                {"detail": "no_token_provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            if request.user.devices:
+                last_device = request.user.devices.last()
+                if last_device.token == new_token:
+                    return Response()
+                ser = DeviceSerializer(
+                    request.user.devices.last(), data=data, partial=True
+                )
+            else:
+                ser = DeviceSerializer(data)
+            if ser.is_valid(raise_exception=True):
+                ser.validated_data["user"] = request.user
+                ser.save()
+        except Exception as e:
+            print("error in saving user device token----->", e)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response()
 
 
 def jwtks_view(request):
     """this endpoint returns public key for verifying jwt;
-    used in uwsocket server"""    
+    used in uwsocket server"""
     return HttpResponse(settings.SIMPLE_JWT["VERIFYING_KEY"], content_type="text/plain")

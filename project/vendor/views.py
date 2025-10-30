@@ -33,6 +33,7 @@ from carrier.utils import get_carrier_key
 from live.models import Notification
 from live.utils import send_notification
 from multiVend.country.info import PLATFORM_SHARE
+from accounts.serializers import UserDetailSerializer
 from vendor.models import OpeningHour
 from .serializers import (
     DiscountSerializer,
@@ -62,12 +63,12 @@ from .utils import (
     apply_discount,
 )
 from django.utils.translation import gettext as _
-from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
 from live.utils import send_notification
 from django.db.models.functions import ExtractDay
+from rest_framework.decorators import action
 
 
 # Create your views here.
@@ -131,7 +132,7 @@ class ConvertToVendorAPIView(views.APIView):
             ser.is_valid(raise_exception=True)
         except Exception as e:
             print("eroroororo", e)
-        print("no eroor in covernt to endor", data)
+        print("no eroor in covernt to vendor", data)
 
         with atomic():
             try:
@@ -170,6 +171,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     # searching
     search_fields = ["name", "category__name", "description"]
 
+    
     def get_queryset(self):
         """any queryset should be of the requesting vendor"""
         query_set = Food.objects.filter(vendor__user__id=self.request.user.id)
@@ -568,6 +570,22 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         r.hset(vendor_carriers_key, "f_c_c", f_c_c)
         user.save()
 
+    @action(detail=False, methods=["get"], url_path="search-carrier")
+    def search_carrier(self, request, *args, **kwargs):
+        data = request.query_params
+        print("vendor searches for carrier", data)
+        phone_number = data.get("phone_number",None)
+        if not phone_number:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(phone_number=phone_number)
+            print("user found", user.id)
+        except Exception as e:
+            print("error in search users", e)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        ser = UserDetailSerializer(user)
+        return Response(ser.data)
+
 
 class CarriersNow(views.APIView):
     """
@@ -700,11 +718,11 @@ class VendorSalesView(views.APIView):
         print("elapsed time:",time.time()- now)
         return Response(
             {
-                "monthly_sale_amount": this_month_total_sales or 0,
-                "today_sale_amount": today_total_sales or 0,
+                "monthly_sale_amount": int(this_month_total_sales or 0),
+                "today_sale_amount": int(today_total_sales or 0),
                 "month_sales_per_day": per_day_dict,
                 "top_sale_foods": per_food_dict,
-                "platform_share" : platform_share
+                "platform_share" : int(platform_share)
             }
         )
     def post(self, *args, **kwargs):

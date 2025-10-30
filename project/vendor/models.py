@@ -47,6 +47,7 @@ class Vendor(models.Model):
     is_approved = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
+    license_valid_until = models.DateField(auto_now_add=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
     opening_hours = models.ManyToManyField(
@@ -80,16 +81,12 @@ class Vendor(models.Model):
                 opclasses=["gin_trgm_ops"],
             ),
         ]
-        
-
-    def get_location(self):
-        """returns the location of the vendor"""
-        return self.user_profile.location
 
     def __str__(self):
         return self.vendor_name
 
     def update_avg_rating(self, *args, **kwargs):
+        """this method updates vendor avg_rating after a new rating is created"""
         ct = ContentType.objects.get_for_model(Vendor)
         avg_and_count = Rating.objects.filter(
             object_id=self.pk,
@@ -118,7 +115,7 @@ class Vendor(models.Model):
                     title = "We Are Sorry, Your Shop Is Not Approved!"
                     send_notification(self.user.email, title, template, context)
 
-        # user update/saves this vendor
+        # vendor update/saves this
         if self.latitude and self.longitude:
             print("vendor location saved.....")
             self.location = Point(

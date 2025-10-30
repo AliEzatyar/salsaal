@@ -55,12 +55,11 @@ class IsVendorOfObject(BasePermission):
 
     def has_permission(self, request, view):
         if not hasattr(request.user, "vendor") or request.user.role != REST:
-            print("user is not vendor")
+            print("user is not vendor",request.user.id)
             raise PermissionDenied(detail="user_not_vendor")
         return True
 
     def has_object_permission(self, request, view, obj):
-        print("vendor owns this ")
         return obj.vendor == request.user.vendor
 
 

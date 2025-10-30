@@ -72,13 +72,11 @@ class Food(models.Model):
         related_name="foods",
         db_index=True,
     )
-    image = models.ImageField(upload_to="foods-images/")
-    description = models.TextField(max_length=250)
+    image = models.ImageField(upload_to="foods-images/",blank=True)
+    description = models.TextField(max_length=250,blank=True,null=True)
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    avg_rating = models.FloatField(default=0)
-    rating_count = models.PositiveSmallIntegerField(default=0)
     discount = models.ForeignKey(
         Discount, null=True, blank=True, on_delete=models.SET_NULL, related_name="foods"
     )
@@ -92,7 +90,7 @@ class Food(models.Model):
     class Meta:
         verbose_name = "food"
         verbose_name_plural = "foods"
-        ordering = ["-avg_rating"]  # newest
+        ordering = ["-likes"]  # newest
         indexes = [
             GinIndex(
                 name="food_name_trgm",

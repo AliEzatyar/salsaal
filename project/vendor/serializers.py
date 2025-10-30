@@ -1,9 +1,12 @@
 from zoneinfo import ZoneInfo
-from django.contrib.gis.measure  import Distance
+from django.contrib.gis.measure import Distance
 from rest_framework import serializers
 from django.utils import timezone
 from marketplace.models import Discount, Food
-from marketplace.serializers import DiscountedFoodSerializerMany, FoodSerializerLessDetail
+from marketplace.serializers import (
+    DiscountedFoodSerializerMany,
+    FoodSerializerLessDetail,
+)
 from vendor.utils import to_af_weekday
 from .models import OpeningHour, Promotion, Vendor
 from accounts.models import REST
@@ -31,18 +34,19 @@ class VendorSerializerMany(serializers.ModelSerializer):
             "logo",
             "reach_time",
             "is_open_now",
-            "vendor_type"
+            "vendor_type",
         ]
 
     def get_distance(self, obj):
         # obj.distance is a Distance object; convert to km/miles/etc.
-        distance_attr = getattr(obj,"distance",None)
+        distance_attr = getattr(obj, "distance", None)
         if type(distance_attr) == Distance:
-            return round(obj.distance.km,1)
+            return round(obj.distance.km, 1)
         return obj.distance if hasattr(obj, "distance") else None
 
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
+
 
 class VendorSerializerWithFoodImages(serializers.ModelSerializer):
     """this provides vendor detail with its foods in `All Venodrs` part"""
@@ -71,7 +75,6 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
 
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
-
 
 
 class OpeningHourSerializer(serializers.ModelSerializer):
@@ -107,14 +110,15 @@ class DiscountSerializer(serializers.ModelSerializer):
 class PromotionSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Promotion 
-        fields = ["image", "vendor","link"]
+        model = Promotion
+        fields = ["image", "vendor", "link"]
 
 
 class VendorSerializerDetailed(serializers.ModelSerializer):
     """used in vendor management views- only vendors access"""
 
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
+
     class Meta:
         model = Vendor
         fields = [
@@ -129,7 +133,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "vendor_license",
             "image",
             "logo",
-            "mfdd", # max free delivery distance
+            "mfdd",  # max free delivery distance
             "mfcfd",  # min food count free delivery
             "min_order_price",
             "delivery_fee_km",
@@ -137,7 +141,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "vendor_type",
             "latitude",
             "longitude",
-            "city"
+            "city",
         ]
         read_only_fields = [
             "id",
@@ -149,31 +153,20 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         ]
 
     def update(self, instance, validated_data):
-        """overriding to apply user profile update together with vendor"""
+        """overriding to validate location data of vendor"""
         # custom location validation
-        latitude, longitude = validated_data.get("latitude",None), validated_data.get("longitude",None)
+        latitude, longitude = validated_data.get("latitude", None), validated_data.get(
+            "longitude", None
+        )
         try:
-            if latitude & longitude:
+            if latitude and longitude:
                 float(latitude)
                 float(longitude)
-        except:
-            print("lat and lon invalid", latitude, longitude, "--")
+        except Exception as e:
+            print("lat and lon invalid", e, type(latitude), longitude, "--")
             raise ValidationError("provide_correct_lat_lon")
-        # updating user profile if provided
-        user_profile_data = validated_data.pop("user_profile", None)
-        if user_profile_data:
-            existing_user_profile = instance.user_profile
-            for attr, value in user_profile_data.items():
-                setattr(existing_user_profile, attr, value)
-            existing_user_profile.save()
-        instance.city = str(instance.city).lower()
-
-        # updating vendor itself
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        return instance
+        
+        return super().update(instance, validated_data)
 
     def create(self, validated_data):
         user = self.context.get("request").user
@@ -182,11 +175,15 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         user.save()
         latitude, longitude = validated_data["latitude"], validated_data["longitude"]
         try:
-            float(latitude)
-            float(longitude)
+            if latitude and longitude:
+                float(latitude)
+                float(longitude)
+            else:
+                raise ValidationError("provide_correct_lat_lon_city")
+                
             validated_data["city"] = str(validated_data["city"]).lower()
         except:
-            print("lat and lon invalid",latitude,longitude,"--")
+            print("lat and lon invalid", latitude, longitude, "--")
             raise ValidationError("provide_correct_lat_lon_city")
         validated_data["user"] = user
         validated_data["user_profile"] = user_profile
@@ -195,11 +192,10 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
 
 class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details, used in public vendor detail"""
+
     is_open_now = serializers.ReadOnlyField(source="is_available")  # read only
-    discounted_foods = DiscountedFoodSerializerMany(many=True,read_only=True)
-    featured_items = serializers.SerializerMethodField(
-        "get_featured_items"
-    )
+    discounted_foods = DiscountedFoodSerializerMany(many=True, read_only=True)
+    featured_items = serializers.SerializerMethodField("get_featured_items")
     categories = serializers.SerializerMethodField("get_categories")
     reach_time = serializers.SerializerMethodField("get_reach_time")
     categories_count = serializers.IntegerField(read_only=True)
@@ -226,14 +222,13 @@ class PublicVendorSerializer(serializers.ModelSerializer):
             "featured_items",
             "categories",
             "categories_count",
-            "distance"
+            "distance",
         ]
         read_only_fields = ["__all__"]
 
-    def get_categories(self,obj):
-        categories = getattr(obj,"categories")
+    def get_categories(self, obj):
+        categories = getattr(obj, "categories")
         return categories
-
 
     def get_featured_items(self, obj):
         featured = getattr(obj, "featured_items")
@@ -259,14 +254,15 @@ class AbstractVendorSerializer(serializers.ModelSerializer):
     this serializer has id, location, vendor_name
     used in vendors on map.
     """
+
     location = serializers.SerializerMethodField("get_location")
 
     class Meta:
         model = Vendor
-        fields = ["id", "location", "vendor_name","vendor_type"]
+        fields = ["id", "location", "vendor_name", "vendor_type"]
         read_only_fields = ["__all__"]
 
-    def get_location(self,obj):
+    def get_location(self, obj):
         if obj.location:
-            return [obj.location.y,obj.location.x]
-        return 
+            return [obj.location.y, obj.location.x]
+        return

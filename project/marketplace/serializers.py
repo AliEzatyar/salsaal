@@ -65,7 +65,8 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
     min_price = MyDecimalField(read_only=True)
     is_available = serializers.BooleanField(default=True)
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    image = serializers.ReadOnlyField(source="image_url")
+    discount = serializers.ReadOnlyField(source="discount.amount")
+    
     class Meta:
         model = Food
         fields = [
@@ -74,18 +75,17 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
             "min_price",
             "prices",
             "category",
-            "category_name",
             "description",
             "is_available",
             "image",
-            "avg_rating",
-            "rating_count",
-            "created_at",
-            "modified_at",
             "vendor",
             "duration",
-            "is_ready_type",
             "ready_time",
+            "category_name",
+            "is_ready_type",
+            "created_at",
+            "modified_at",
+            "discount"            
         ]
         read_only_fields = [
             "avg_rating",
@@ -93,17 +93,22 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
             "modified_at",
             "min_price",
             "id",
-            "image",
             "vendor",
+            "discount"
         ]
+
+        
+    def validate_prices(self,value):
+        return value        
+
 
     def create(self, validated_data):
         """setting the vendor and min price for the food + preventing duplicates"""
+        print(validated_data,"validated data in add food",validated_data)
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
         validated_data["min_price"] = min([x for x in validated_data["prices"]])
         name = validated_data.get("name")
         vendor = validated_data.get("vendor")
-
         # preventing duplicate fooditem
         if self.instance:
             # For update: exclude self
@@ -146,6 +151,12 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
         except IntegrityError:
             raise ValidationError({"detail": "uknown_problem"})
         return instance
+
+    def to_internal_value(self, data):
+        # Convert empty string image to None before validation
+        if 'image' in data and data['image'] == '':
+            data['image'] = None
+        return super().to_internal_value(data)
 
     def validate(self, attrs):
         """

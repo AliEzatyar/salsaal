@@ -159,7 +159,7 @@ class UserProfile(g_models.Model):
 
 class Device(models.Model):
     user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, related_name="devices"
+        get_user_model(), on_delete=models.CASCADE, related_name="devices", blank=True
     )
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)

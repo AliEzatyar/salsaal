@@ -1,8 +1,8 @@
 {
   "graphhopper": {
     "graph.encoded_values": "road_class",
-    "datareader.file": "afghanistan.osm.pbf",
-    "graph.location": "graph-cache",
+    "datareader.file": "/data/world.osm.pbf",
+    "graph.location": "/data/graph-cache",
     "profile": "car",
     "profiles": [
       {
@@ -17,13 +17,15 @@
     "application_connectors": [
       {
         "type": "http",
-        "port": 8989
+        "port": 8989,
+        "bind_host": "0.0.0.0"
       }
     ],
     "admin_connectors": [
       {
         "type": "http",
-        "port": 8990
+        "port": 8990,
+        "bind_host": "0.0.0.0"
       }
     ]
   }

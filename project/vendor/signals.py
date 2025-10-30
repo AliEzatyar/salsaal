@@ -15,3 +15,4 @@ def revert_food_prices_after_discount_deletion(sender, instance, **kwargs):
             print("signal reverted food price")
             revert_discount(food, discount.amount)
         Food.objects.bulk_update(foods, ["prices", "min_price"])
+

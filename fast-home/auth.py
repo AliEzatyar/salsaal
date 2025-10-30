@@ -1,9 +1,8 @@
 import jwt
 from datetime import datetime, timezone
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
-from database import SessionLocal as db
 from dependencies import get_db
 from models import User
 from sqlalchemy.orm import Session

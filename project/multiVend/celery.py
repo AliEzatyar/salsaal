@@ -1,5 +1,5 @@
 from celery import Celery
-from os import environ 
+from os import environ
 
 environ.setdefault("DJANGO_SETTINGS_MODULE", "multiVend.settings.local")
 

@@ -418,13 +418,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
         nearest_h3s = h3.grid_disk(user_h3, 20)
         # filter in db for existing nearby  open city vendors
-        vendors = (
-            Vendor.objects.filter(
-                id__in=city_vendors_ids,
-                h3_id__in=nearest_h3s,
-            )
-            .only("vendor_name", "id","location","id","vendor_type")
-        )
+        vendors = Vendor.objects.filter(
+            id__in=city_vendors_ids,
+            h3_id__in=nearest_h3s,
+        ).only("vendor_name", "id", "location", "id", "vendor_type")
         ser = AbstractVendorSerializer(vendors, many=True)
         return Response(ser.data)
 
@@ -670,9 +667,9 @@ class CategoriesReadAPIView(views.APIView):
     http_method_names = ["get"]
 
     def get(self, *args, **kwargs):
-        return Response(
-            {"categories": [(cat.id, cat.name) for cat in Category.objects.all()]}
-        )
+        cats = Category.objects.all()
+        ser = CategorySerializer(cats,many=True)
+        return Response(ser.data)
 
 
 class PublicVendorDetail(views.APIView):
@@ -716,11 +713,7 @@ class PublicVendorDetail(views.APIView):
                     featured_items = vendor_foods.filter(is_featured=True)
                     vendor_categories = sorted(
                         list(
-                            set(
-                                vendor_foods.values_list(
-                                    "category__name", flat=True
-                                )
-                            )
+                            set(vendor_foods.values_list("category__name", flat=True))
                         ),
                         key=lambda x: strxfrm(x),
                         reverse=True,
@@ -759,8 +752,8 @@ class PublicVendorDetail(views.APIView):
             counter.update_counts(vendor_id)
             return Response(ser_data, status=status.HTTP_200_OK)
             # except Exception as e:
-                # print("error occured in vendor detail", e, e.args)
-                # return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+            # print("error occured in vendor detail", e, e.args)
+            # return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
         else:
             return Response(
                 {"detail": "no_id_provided"}, status=status.HTTP_400_BAD_REQUEST
