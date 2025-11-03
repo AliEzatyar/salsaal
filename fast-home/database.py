@@ -3,7 +3,10 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import QueuePool
 from os import environ
 
+# Ensure DATABASE_URL is defined before the check
 DATABASE_URL = environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set")
 
 engine = create_engine(
     DATABASE_URL,

@@ -65,8 +65,8 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
     min_price = MyDecimalField(read_only=True)
     is_available = serializers.BooleanField(default=True)
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    discount = serializers.ReadOnlyField(source="discount.amount")
-    
+    discount = serializers.SerializerMethodField("get_discount_amount")
+
     class Meta:
         model = Food
         fields = [
@@ -97,14 +97,16 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
             "discount"
         ]
 
-        
     def validate_prices(self,value):
         return value        
 
+    def get_discount_amount(self, obj):
+        if obj.discount and obj.discount.is_active:
+            return obj.discount.amount
+        return None
 
     def create(self, validated_data):
         """setting the vendor and min price for the food + preventing duplicates"""
-        print(validated_data,"validated data in add food",validated_data)
         validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
         validated_data["min_price"] = min([x for x in validated_data["prices"]])
         name = validated_data.get("name")
@@ -303,7 +305,7 @@ class RatingSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "user"]
 
     def get_user_name(self, obj):
-        return obj.user.full_name
+        return obj.user.name
 
 
 class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):

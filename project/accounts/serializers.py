@@ -13,7 +13,7 @@ from rest_framework_simplejwt.settings import api_settings
 class UserCreationSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ["full_name", "phone_number"]
+        fields = ["name", "phone_number"]
 
     def create(self, validated_data):
         # overriden for password hashing
@@ -82,10 +82,10 @@ class UserDetailSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "full_name", "phone_number", "profile", "created_date"]
+        fields = ["id", "name", "phone_number", "profile", "created_date"]
         read_only_fields = [
             "id",
-            "email",
+            "phone_number",
             "created_date",
         ]  # Prevent updating the email, seperate view is made
 
@@ -104,14 +104,6 @@ class UserDetailSerializer(ModelSerializer):
             profile_serializer.update(profile, profile_data)
 
         return instance
-
-
-class DeviceSerializer(ModelSerializer):
-    """this is used to save device token for out-of-app notifications"""
-
-    class Meta:
-        model = Device
-        fields = ["user", "token"]
 
 
 class VendorCreateSerializer(ModelSerializer):

@@ -53,9 +53,9 @@ class COrderSerializer(ModelSerializer):
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
     total_price = MyDecimalField(read_only=True)
-    carrier_name = serializers.ReadOnlyField(source="carrier.user.full_name")
+    carrier_name = serializers.ReadOnlyField(source="carrier.user.name")
     carrier = serializers.ReadOnlyField(source="carrier.user.id")
-    customer_name = serializers.ReadOnlyField(source="user.full_name")
+    customer_name = serializers.ReadOnlyField(source="user.name")
 
     class Meta:
         model = Order
@@ -157,7 +157,7 @@ class VOrderSerializer(ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
     def get_customer_name(self, obj):
-        return obj.user.full_name
+        return obj.user.name
 
     def get_destination(self,obj):
         if obj.destination:

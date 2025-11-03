@@ -14,12 +14,21 @@ from rest_framework.permissions import IsAuthenticated
 
 
 class CartApiView(views.APIView):
-    """this view enables adding/editing/deleting/retriving cart items"""
+    """
+    API view for managing cart operations.
+
+    This view allows users to add, edit, delete, and retrieve cart items.
+    """
 
     permission_classes = [IsAuthenticated, IsHavingCart]
 
     def get(self, *args, **kwargs):
-        """showing cart detail with items"""
+        """
+        Retrieve the details of the user's cart.
+
+        Returns:
+            - Cart details including items, vendor information, and drinks.
+        """
         cart = self.request.user.cart
         serializer = CartSerializer(cart)
         #  suggested foods
@@ -38,7 +47,6 @@ class CartApiView(views.APIView):
                     "vendor_id": vendor.id,
                     "vendor_name": vendor.vendor_name,
                     "drinks": drinks_serializer.data,
-                    # "suggestions": ser_many.data,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -49,13 +57,24 @@ class CartApiView(views.APIView):
                 "vendor_id": None,
                 "vendor_name": None,
                 "drinks": [],
-                # "suggestions": ser_many.data,
             },
             status=status.HTTP_200_OK,
         )
 
     def patch(self, *args, **kwargs):
-        """partial update for cart-items amount change and price selection"""
+        """
+        Update the quantity or price of a cart item.
+
+        Args:
+            - id: The ID of the food item.
+            - quantity: The new quantity.
+            - size: The selected size/price.
+
+        Returns:
+            - 200 OK if the update is successful.
+            - 400 Bad Request if required data is missing.
+            - 404 Not Found if the food item does not exist.
+        """
         cart = self.request.user.cart
         data = self.request.data
         food_id = data.get("id", None)
@@ -73,7 +92,6 @@ class CartApiView(views.APIView):
                     size = food.min_price
                 if not quantity:
                     quantity = 1
-                # handling both create and update
                 CartItem.objects.filter(cart=cart, food=food).update(
                     quantity=quantity,
                     price=size,
@@ -89,14 +107,22 @@ class CartApiView(views.APIView):
                 {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            print("error in cart api view",e)
             return Response(
                 {"detail": "unknown_error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     def delete(self, *args, **kwargs):
-        """provides deleting a cart item or clearing cart"""
+        """
+        Delete a specific cart item or clear the entire cart.
+
+        Args:
+            - item-id: The ID of the cart item to delete (optional).
+
+        Returns:
+            - 204 No Content if the operation is successful.
+            - 404 Not Found if the item does not exist.
+        """
         item_id = self.request.data.get("item-id", None)
         if item_id:
             try:
@@ -108,12 +134,11 @@ class CartApiView(views.APIView):
                         {"message": "item_deleted"}, status=status.HTTP_204_NO_CONTENT
                     )
                 else:
-                    Response(
+                    return Response(
                         {"detail": "no_matching_item"}, status=status.HTTP_404_NOT_FOUND
                     )
-            except:
+            except Exception as e:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-        # clearing cart
         else:
             self.request.user.cart.clear()
             return Response(
@@ -121,7 +146,19 @@ class CartApiView(views.APIView):
             )
 
     def post(self, *args, **kwargs):
-        """Adding new item into cart"""
+        """
+        Add a new item to the cart.
+
+        Args:
+            - id: The ID of the food item.
+            - quantity: The quantity to add.
+            - size: The selected size/price.
+
+        Returns:
+            - 200 OK if the item is added successfully.
+            - 400 Bad Request if required data is missing.
+            - 404 Not Found if the food item does not exist.
+        """
         cart = self.request.user.cart
         data = self.request.data
         food_id = data.get("id", None)
@@ -135,7 +172,6 @@ class CartApiView(views.APIView):
         try:
             food = Food.objects.get(pk=food_id)
             if food and food.is_available:
-                # replacing cart vendor with new vendor
                 if not cart.is_empty() and cart.get_vendor() != food.vendor:
                     cart.clear()
 
@@ -143,7 +179,6 @@ class CartApiView(views.APIView):
                     size = food.min_price
                 if not quantity:
                     quantity = 1
-                # handling both create and update
                 CartItem.objects.update_or_create(
                     cart=cart,
                     food=food,
@@ -164,7 +199,6 @@ class CartApiView(views.APIView):
                 {"detail": "food_does_not_exist"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            print("error in cart view",e)
             return Response(
                 {"detail": "unknown_error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

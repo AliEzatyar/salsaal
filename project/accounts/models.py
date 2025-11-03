@@ -30,16 +30,16 @@ def get_token_valid_after():
 
 # Create your models here.
 class UserManager(BaseUserManager):
-    def create_user(self, phone_number, email, full_name, password=None):
+    def create_user(self, phone_number, email, name, password=None):
 
         email = self.normalize_email(email)
         if not phone_number:
             raise ValueError("phone_number_cannot_be_empty")
-        if not full_name:
-            raise ValueError("full_name_empty")
+        if not name:
+            raise ValueError("name_empty")
         user = self.model(
             phone_number=phone_number,
-            full_name=full_name,
+            name=name,
             email=email,
             password=password,
         )
@@ -47,11 +47,11 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, phone_number: str, email, full_name, password=None):
+    def create_superuser(self, phone_number: str, email, name, password=None):
         user = self.create_user(
             phone_number=phone_number,
             email=self.normalize_email(email),
-            full_name=full_name,
+            name=name,
             password=password,
         )
 
@@ -78,7 +78,7 @@ class User(AbstractBaseUser):
         (CARRIER, "Carrier"),
     ]
 
-    full_name = models.CharField(max_length=60)
+    name = models.CharField(max_length=60)
     email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=12, unique=True)
     role = models.PositiveSmallIntegerField(

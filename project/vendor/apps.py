@@ -12,4 +12,7 @@ class VendorConfig(AppConfig):
 
         @receiver(post_migrate)
         def create_daily_task(sender, **kwargs):
-            return register_periodic_tasks()
+            try:
+                return register_periodic_tasks()    
+            except:
+                return

@@ -4,7 +4,7 @@ from sqlalchemy import func
 from fastapi import Depends
 from auth import get_user
 from dependencies import get_db
-from schemas import ListCategorySchema
+from schemas import HomeSchema
 from models import (
     Category,
     Discount,
@@ -28,13 +28,14 @@ from utils import (
 )
 from schemas import CategorySchema
 
+
 DEFAULT_H3_RESOLUTION = 9
 
 
 app = FastAPI()
 
 
-@app.get("/api/marketplace/home/", response_model=ListCategorySchema)
+@app.get("/api/marketplace/home/", response_model=HomeSchema)
 async def home(
     location: str,
     city: str,
@@ -45,7 +46,6 @@ async def home(
     try:
         lat, lon = geohash.decode(location)
     except Exception as e:
-        print("error occured while decoding location", e)
         return {}
     city = city.lower()
     # ----------- user cart and notf count
@@ -122,7 +122,6 @@ async def home(
         city_vendors_qs.filter(Vendor.id.in_(top_vendors_ids))
     ).all()
     set_image_url_to_scalars(top_vendors, "vendor")
-
     return {
         "cart_count": user_cart_count,
         "notf_count": user_notf_count,

@@ -3,7 +3,7 @@ from marketplace.utils import r
 
 
 def to_af_weekday(index):
-    
+
     return (9 + index) % 7 + 1
 
 

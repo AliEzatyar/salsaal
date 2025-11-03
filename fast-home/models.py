@@ -77,7 +77,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID(as_uuid=True), default=uuid4, unique=True, index=True)
-    full_name = Column(String(60))
+    name = Column(String(60))
     email = Column(String(100), unique=True, nullable=True)
     phone_number = Column(String(12), unique=True)
     role = Column(SmallInteger, default=3)

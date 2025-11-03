@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     "carrier.apps.CarrierConfig",
     "channels",
     "live.apps.LiveConfig",
+    "qoraa.apps.QoraaConfig",
+    
 ]
 
 MIDDLEWARE = [

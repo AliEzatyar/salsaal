@@ -88,14 +88,9 @@ class OpeningHourSerializer(serializers.ModelSerializer):
 class DiscountFoodSerializerMany(serializers.ModelSerializer):
     """used in DiscountSerializer"""
 
-    vendor_name = serializers.SerializerMethodField("get_vendor_name")
-
     class Meta:
         model = Food
-        fields = ["id", "name", "image", "vendor", "vendor_name"]
-
-    def get_vendor_name(self, obj):
-        return obj.vendor.vendor_name
+        fields = ["id", "name"]
 
 
 class DiscountSerializer(serializers.ModelSerializer):
@@ -103,7 +98,7 @@ class DiscountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Discount
-        fields = ["id", "vendor", "amount", "deadline", "foods"]
+        fields = ["id", "amount", "deadline", "foods","is_active"]
         read_only_fields = ["id"]
 
 

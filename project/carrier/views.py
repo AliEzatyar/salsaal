@@ -23,16 +23,22 @@ from .serializers import CarrierOrderSerializerMany, CarrierOrderSerializer
 
 class CarrierOrderApiView(views.APIView):
     """
-    THis view enables a carrier(only) to view current order it carries.
-    A carrier can see detail of each
+    API view for carriers to view their current order.
+
+    This view allows a carrier to see the details of the order they are currently carrying.
+    Only orders created within the last 3 hours are considered.
     """
 
     serializer_class = CarrierOrderSerializer
     permission_classes = [perm.IsAuthenticated, IsCarrierOfVendor]
 
     def get(self, *args, **kwargs):
-        """carrier only sees an order relating to it, in carrying state and the order is created
-        late than 3 hours ago. If multiple, then last one is returned.
+        """
+        Retrieve the current order for the authenticated carrier.
+
+        Returns:
+            - Order details if a valid order exists.
+            - Vendor details associated with the carrier.
         """
         try:
             expire_minutes = dj_tz.timedelta(
@@ -50,7 +56,7 @@ class CarrierOrderApiView(views.APIView):
             current_order_data = None
             carrier_vendor = self.request.user.carrier.vendor
             if order:
-                # check if carrier is of order's vendor
+                # Ensure the carrier has permission to access the order
                 self.check_object_permissions(self.request, order)
                 ser = CarrierOrderSerializer(instance=order)
                 current_order_data = ser.data
@@ -63,15 +69,28 @@ class CarrierOrderApiView(views.APIView):
                 },
             }
             return Response(data, status=status.HTTP_200_OK)
+        except perm.exceptions.PermissionDenied:
+            return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
-            print("error in carrier order view", e)  
-            return Response(status.HTTP_501_NOT_IMPLEMENTED)
+            return Response({"detail": "An error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class DeliveredOrdersApiView(views.APIView):
+    """
+    API view for carriers to view their delivered orders.
+
+    This view provides a paginated list of orders that have been delivered by the carrier.
+    """
+
     permission_classes = [perm.IsAuthenticated, IsCarrierOfVendor]
 
     def get(self, *args, **kwargs):
+        """
+        Retrieve a paginated list of delivered orders for the authenticated carrier.
+
+        Returns:
+            - Paginated response containing delivered orders.
+        """
         orders = (
             Order.objects.filter(
                 status=ORDER_STATUS_CHOICES[4][0],  # delivered
@@ -87,10 +106,24 @@ class DeliveredOrdersApiView(views.APIView):
 
 
 def run_script(request, which=None):
-    if which:
-        if which == "vendor":
-            return render(request, "test_client/vendor.html")
-        elif which == "customer":
-            return render(request, "test_client/customer.html")
+    """
+    Render a test client page based on the `which` parameter.
+
+    Args:
+        request: The HTTP request object.
+        which: Specifies the type of client to render (vendor, customer, or carrier).
+
+    Returns:
+        - Rendered HTML page for the specified client type.
+        - 400 Bad Request if the `which` parameter is invalid.
+    """
+    allowed_values = {"vendor", "customer", "carrier"}
+    if which not in allowed_values:
+        return Response({"detail": "Invalid parameter."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if which == "vendor":
+        return render(request, "test_client/vendor.html")
+    elif which == "customer":
+        return render(request, "test_client/customer.html")
 
     return render(request, "test_client/carrier.html")

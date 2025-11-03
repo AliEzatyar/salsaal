@@ -526,7 +526,6 @@ class RatingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
-        print("rating for ", object_id)
         # user should be logged in and own the rating object
         if self.request.method in ("DELETE", "PATCH"):
             if (
@@ -782,7 +781,7 @@ class ListVendorFoods(views.APIView):
             return Response(ser.data)
         try:
             # checking the cache
-            key = self.get_cache_key(vendor_id)
+            # key = self.get_cache_key(vendor_id)
             # data = cache.get(key, None)
             # if not data:
             categories = sorted(

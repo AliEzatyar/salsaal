@@ -6,15 +6,17 @@ from sqlalchemy import select
 from dependencies import get_db
 from models import User
 from sqlalchemy.orm import Session
+from requests import get
+from os import environ as env
+
 
 PUBLIC_KEY = None
 ALGORITHM = "RS256"
 security = HTTPBearer()
 
-# Load the same public key Django uses
-with open("public.pem", "r") as f:
-    PUBLIC_KEY = f.read()
-    print(PUBLIC_KEY)
+# sending request to get public key for jwt authentication
+resp = get(env("DJANGO_SERVER_URL") + "/jwtks/").text
+PUBLIC_KEY = resp
 
 
 def decode_token(token):
@@ -25,7 +27,7 @@ def decode_token(token):
             return None
         return payload
     except Exception as e:
-        print("error:", e)
+        print("error decoding user token in fastAPI:", e)
         return None
 
 

@@ -8,7 +8,7 @@ urlpatterns = [
     # cart
     path(
         "",
-        views.CartApiView.as_view(),
+        views.CartApiView.as_view(),  # Endpoint for managing cart operations
         name="cart-detail",
     ),
 ]

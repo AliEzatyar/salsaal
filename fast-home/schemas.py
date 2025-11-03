@@ -56,9 +56,9 @@ class DiscountedFoodsSchema(BaseModel):
     category_name: str
 
 
-class ListCategorySchema(BaseModel):
+class HomeSchema(BaseModel):
     cart_count: int
-    notf_count: int
+    notf_count: Optional[int]
     categories: List[CategorySchema]
     promotions: List[PromotionSchema]
     discounted_foods: List[DiscountedFoodsSchema]

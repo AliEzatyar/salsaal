@@ -4,7 +4,7 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 from json import dumps as j_dumps, loads as j_loads
-from config import AWS_STORAGE_BUCKET_NAME, s3
+from settings import AWS_STORAGE_BUCKET_NAME, s3
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from models import Cart
@@ -95,8 +95,8 @@ def distance_reach_time(qs, lat, lon, typ="food"):
     for obj in qs:
         distance = round(
             haversine_distance(
-                (obj.vendor.latitude if typ == "food" else obj.latitude),
-                (obj.vendor.longitude if typ == "food" else obj.longitude),
+                (obj.vendor_of.latitude if typ == "food" else obj.latitude),
+                (obj.vendor_of.longitude if typ == "food" else obj.longitude),
                 lat,
                 lon,
             ),

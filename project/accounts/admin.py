@@ -7,7 +7,7 @@ from order.models import Reward
 
 class UserAd(UserAdmin):
     filter_horizontal = ()
-    list_display = ['id','role','full_name','email','phone_number']
+    list_display = ['id','role','name','email','phone_number']
     fieldsets = ()
     list_filter = ()
     list_display_links = ['phone_number']

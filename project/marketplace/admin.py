@@ -15,9 +15,10 @@ class FoodAdmin(admin.ModelAdmin):
         "min_price",
         "category",
         "image",
+        "min_price",
     ]
     list_editable = ["is_available","description"]
-    list_filter = ["is_available", "vendor"]
+    list_filter = ["is_available", "vendor","min_price","category"]
     search_fields = ["category__name", "vendor__vendor_name"]
 
 

@@ -1,99 +1,104 @@
-from django_celery_beat.models import PeriodicTask, CrontabSchedule, IntervalSchedule
+import logging
 import json
+
+from django.conf import settings
+from django_celery_beat.models import PeriodicTask, CrontabSchedule, IntervalSchedule
 
 from live.models import OLD_NOTIFICAITON_EXPIRE_DAYS
 
+logger = logging.getLogger(__name__)
+
+
+def _ensure_crontab_task(name, task_path, minute, hour, timezone_str="Asia/Kabul", args=None):
+    """Ensure a crontab + PeriodicTask exists and is enabled.
+    Returns the PeriodicTask instance.
+    """
+    schedule, _ = CrontabSchedule.objects.get_or_create(
+        minute=minute,
+        hour=hour,
+        day_of_week="*",
+        day_of_month="*",
+        month_of_year="*",
+        timezone=timezone_str,
+    )
+
+    defaults = {"crontab": schedule, "args": json.dumps(args or [])}
+    task, created = PeriodicTask.objects.get_or_create(name=name, task=task_path, defaults=defaults)
+    if not created:
+        # keep schedule and enabled state up-to-date
+        task.crontab = schedule
+        task.args = json.dumps(args or [])
+        task.enabled = True
+        task.save()
+        logger.debug("Updated existing periodic task: %s", name)
+    else:
+        logger.info("Created periodic task: %s", name)
+    return task
+
+
+def _ensure_interval_task(name, task_path, every, period, args=None):
+    """Ensure an interval schedule + PeriodicTask exists and is enabled."""
+    schedule, _ = IntervalSchedule.objects.get_or_create(every=every, period=period)
+    defaults = {"interval": schedule, "args": json.dumps(args or [])}
+    task, created = PeriodicTask.objects.get_or_create(name=name, task=task_path, defaults=defaults)
+    if not created:
+        task.interval = schedule
+        task.args = json.dumps(args or [])
+        task.enabled = True
+        task.save()
+        logger.debug("Updated existing interval task: %s", name)
+    else:
+        logger.info("Created interval task: %s", name)
+    return task
+
 
 def register_periodic_tasks():
-    # ----------------------- vendor carriers status revert- crontab---------------------------------
-    # creating the crontab schedule
-    revert_carriers_schedule, created = CrontabSchedule.objects.get_or_create(
-        minute="0",
-        hour="1",
-        day_of_week="*",
-        day_of_month="*",
-        month_of_year="*",
-        timezone="Asia/Kabul",  # important
-    )
+    """
+    Register periodic tasks for vendor-related background work.
 
-    # creating the periodic task
-    task, created = PeriodicTask.objects.get_or_create(
-        name="Reset Vendors Carriers Status",  # Unique name
-        task="vendor.tasks.reset_vendors_carriers_in_redis",  # path to task
-        defaults={
-            "crontab": revert_carriers_schedule,
-            "args": json.dumps([]),  # optional
-        },
-    )
+    This function is idempotent and safe to call multiple times (it uses get_or_create
+    and updates existing PeriodicTask entries).
+    """
+    tz = getattr(settings, "DEFAULT_TIMEZONE", "Asia/Kabul")
 
-    if not created:
-        # Update if already exists
-        print("reset carriers task already existed")
-        task.crontab = revert_carriers_schedule
-        task.enabled = True
-        task.save()
+    try:
+        # Reset vendors carriers status at 01:00
+        _ensure_crontab_task(
+            name="Reset Vendors Carriers Status",
+            task_path="vendor.tasks.reset_vendors_carriers_in_redis",
+            minute="0",
+            hour="1",
+            timezone_str=tz,
+        )
 
-    # ------------------------------ disbale vendors task-----------------------------------------
-    # creating the crontab schedule
-    disable_vendors_schedule, created = CrontabSchedule.objects.get_or_create(
-        minute="0",
-        hour="1",
-        day_of_week="*",
-        day_of_month="*",
-        month_of_year="*",
-        timezone="Asia/Kabul",  # important
-    )
+        # Disable vendors at 01:00 (kept separate to allow independent enabling)
+        _ensure_crontab_task(
+            name="Disable Vendors",
+            task_path="vendor.tasks.disable_vendors",
+            minute="0",
+            hour="1",
+            timezone_str=tz,
+        )
 
-    # creating the periodic task
-    task, created = PeriodicTask.objects.get_or_create(
-        name="Disabling Vendors",  # Unique name
-        task="vendor.tasks.disable_vendors",  # path to task
-        defaults={
-            "crontab": disable_vendors_schedule,
-            "args": json.dumps([]),  # optional
-        },
-    )
+        # Deactivate expired discounts every hour
+        _ensure_interval_task(
+            name="Deactivate Dead Discounts",
+            task_path="vendor.tasks.deactivate_discounts",
+            every=1,
+            period=IntervalSchedule.HOURS,
+        )
 
-    if not created:
-        # Update if already exists
-        print("disbale-vendor task already existed")
-        task.crontab = disable_vendors_schedule
-        task.enabled = True
-        task.save()
+        # Delete old notifications on a schedule defined by OLD_NOTIFICAITON_EXPIRE_DAYS
+        _ensure_interval_task(
+            name="Delete Old Notifications",
+            task_path="live.tasks.delete_notifications",
+            every=OLD_NOTIFICAITON_EXPIRE_DAYS,
+            period=IntervalSchedule.DAYS,
+        )
 
-    # ------------------------- discount revert task- interval  --------------------------------------
-    deactivate_discount_schedule, created = IntervalSchedule.objects.get_or_create(
-        every=1, period=IntervalSchedule.HOURS
-    )
+    except Exception:
+        # We intentionally catch broad exceptions here because this runs at app startup
+        # (post_migrate) and must not break the application if celery-beat isn't ready.
+        logger.exception("Failed to register periodic tasks for vendor app")
 
-    deactivate_discount_task, created = PeriodicTask.objects.get_or_create(
-        name="Deactivate Dead Discounts",  # Unique name
-        task="vendor.tasks.deactivate_discounts",  # path to task
-        defaults={
-            "interval": deactivate_discount_schedule,
-            "args": json.dumps([]),  # optional
-        },
-    )
-
-    if not created:
-        print("deactivate-discount task already exists")
-        deactivate_discount_task.interval = deactivate_discount_schedule
-        deactivate_discount_task.save()
-    # ------------------------------ delete notifications  --------------------------------------
-    delete_notifications_schedule, created = IntervalSchedule.objects.get_or_create(
-        every=OLD_NOTIFICAITON_EXPIRE_DAYS, period=IntervalSchedule.DAYS
-    )
-
-    delete_notifications_task, created = PeriodicTask.objects.get_or_create(
-        name="Delete Old Notifications",  # Unique name
-        task="live.tasks.delete_notifications",  # path to task
-        defaults={
-            "interval": delete_notifications_schedule,
-            "args": json.dumps([]),  # optional
-        },
-    )
-
-    if not created:
-        print("delete notification task already exists")
-        delete_notifications_task.interval = delete_notifications_schedule
-        delete_notifications_task.save()
+    return True

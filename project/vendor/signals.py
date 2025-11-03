@@ -12,7 +12,6 @@ def revert_food_prices_after_discount_deletion(sender, instance, **kwargs):
     foods = discount.foods.only("id", "min_price", "prices")
     with transaction.atomic():
         for food in foods:
-            print("signal reverted food price")
             revert_discount(food, discount.amount)
         Food.objects.bulk_update(foods, ["prices", "min_price"])
 

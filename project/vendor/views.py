@@ -196,16 +196,10 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         the client side should provide ids[] of food items
         """
         data = request.data
-        ids = data.get("ids", None)
         amount = data.get("amount", None)
-        days_to_expire = data.get("days", None)
-        vendor_id = request.user.vendor.id
-
-        if not (ids and amount and days_to_expire):
+        deadline = data.get("deadline", None)
+        if not (amount and deadline):
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        if not type(days_to_expire) == int:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        deadline = tz.now() + tz.timedelta(days=days_to_expire)
         data["deadline"] = deadline
         data["vendor"] = self.request.user.vendor.id
         ser = DiscountSerializer(data=data)
@@ -216,22 +210,8 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 {"detail": "discount_already_exists"}, status=status.HTTP_409_CONFLICT
             )
 
-        foods = Food.objects.filter(id__in=ids, vendor__id=vendor_id).select_related(
-            "vendor__user", "discount"
-        )
-        # rejecting discount on other vendors fooditems, and upserting
-
         with atomic():
-            discount = ser.save()
-            for food in foods:
-                if food.discount != None:
-                    # if food has already discount, reset to original price and set newset discount
-                    revert_discount(food, food.discount.amount)
-                # applying discount to all prices of food
-                apply_discount(food, amount)
-                food.discount = discount
-            Food.objects.bulk_update(foods, ["discount", "min_price", "prices"])
-
+            ser.save()
         return Response(ser.data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
@@ -327,34 +307,33 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
             )
         return Response(ser.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=["post"], url_path="edable")
+    @action(detail=True, methods=["post"], url_path="enable-disable")
     def enable_disable(self, request, *args, **kwargs):
         """
         this endpoint enables or disables a discount
-        edable takes True and False, first one means enable latter means disable.
-        if edable is None, no enable or disable happens.
+        enabletakes True and False, first one means enable latter means disable.
+        if enable is None, no enable or disable happens.
         request must be sent out of update and exact.
         """
-        typ = request.data.get("type", "enable")
+        enable = request.data.get("enable",True)
         discount = self.get_object()
         try:
             foods = discount.foods.only("id", "min_price", "prices")
             # enable discount
-            edable = None
-            if typ == "enable" and discount.is_active == False:
-                edable = True
+            if enable == True and discount.is_active == False:
+                enable = True
                 for food in foods:
                     apply_discount(food, discount.amount)
             # disable discount
-            elif typ == "disable" and discount.is_active == True:
-                edable = False
+            elif enable== False and discount.is_active == True:
+                enable= False
                 for food in foods:
                     revert_discount(food, discount.amount)
             # bulk update
             with atomic():
-                if edable in (True, False):
+                if enable in (True, False):
                     Food.objects.bulk_update(foods, ["min_price", "prices"])
-                    discount.is_active = edable
+                    discount.is_active = enable
                     discount.save()
                 else:
                     print("no changes in discount...")
@@ -362,6 +341,50 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             print("error in deactivate of discount", e)
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=["post"], url_path="remove-food")
+    def remove_food_from_discount(self, request, *args, **kwargs):
+        """
+        this endpoint removes a food from discount
+        request must be sent out of update and exact.
+        """
+        food_id = request.data.get("food_id", None)
+        discount = self.get_object()
+        try:
+            food = discount.foods.get(id=food_id)
+            # removing discount from food
+            revert_discount(food, discount.amount)
+            food.discount = None
+            food.save()
+            return Response()
+
+        except Exception as e:
+            print("error in remove food from discount", e)
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=["post"], url_path="add-food")
+    def add_food_to_discount(self, request, *args, **kwargs):
+        """
+        this endpoint adds a food to discount
+        request must be sent out of update and exact.
+        """
+        food_id = request.data.get("food_id", None)
+        discount = self.get_object()
+        try:
+            food = Food.objects.get(
+                id=food_id, vendor__id=request.user.vendor.id
+            )
+            # adding discount to food
+            if food.discount != None:
+                revert_discount(food, food.discount.amount)
+            apply_discount(food, discount.amount)
+            food.discount = discount
+            food.save()
+            return Response()
+
+        except Exception as e:
+            print("error in add food to discount", e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -422,14 +445,21 @@ class AddCarrierAPIView(views.APIView):
         """this method verifies the phone_number and sends OTP, no carrier creation"""
         # ---- authorization and validation
         data = self.request.data
-        phone_number = data.get("phone_number")
+        phone_number = data.get("phone_number",None)
+        print(data,"----")
+        if not phone_number:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        phone_number= str(phone_number).strip()
+        # phone_number = "+"+phone_number
         account = User.objects.filter(phone_number=phone_number).first()
         if not account or not account.is_active:
+            print("not found")
             raise serializers.ValidationError(
                 {"detail": "no_account_found_by_that_email"}
             )
         if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
             raise NotAcceptable(detail="You are not allowed", code=403)
+
         elif account.role == CARRIER:
             raise serializers.ValidationError({"detail": "already_exists"})
 
@@ -450,23 +480,25 @@ class AddCarrierAPIView(views.APIView):
         phone_number = data.get("phone_number")
         otp = data.get("otp")
         try:
-            otp = UserOtp.objects.get(otp=otp)
-            if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
-                return Response(
-                    {"detail": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST
-                )
-            if not otp.user.phone_number == phone_number:
-                return Response(
-                    {"detail": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
-                )
-            carrier_user_account = otp.user
+            print(data,"===")
+            # otp = UserOtp.objects.get(otp=otp)
+            # if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
+            #     return Response(
+            #         {"detail": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST
+            #     )
+            # if not otp.user.phone_number == phone_number:
+            #     return Response(
+            #         {"detail": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
+            #     )
+            # carrier_user_account = otp.
+            carrier_user_account = User.objects.get(phone_number=phone_number)
             profile = carrier_user_account.profile
             vendor = self.request.user.vendor
             carrier = Carrier.objects.create(
                 user=carrier_user_account, user_profile=profile, vendor=vendor
             )
             carrier_user_account.role = CARRIER
-            otp.delete()
+            # otp.delete()
             carrier_user_account.cart.delete()
             carrier_user_account.save()
             # --------------- re-balancing carriers status of vendor
@@ -575,14 +607,18 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         data = request.query_params
         print("vendor searches for carrier", data)
         phone_number = data.get("phone_number",None)
+        
         if not phone_number:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        phone_number= str(phone_number).strip()
+        phone_number = "+"+phone_number
+        
         try:
             user = User.objects.get(phone_number=phone_number)
             print("user found", user.id)
         except Exception as e:
             print("error in search users", e)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
         ser = UserDetailSerializer(user)
         return Response(ser.data)
 

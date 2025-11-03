@@ -9,9 +9,9 @@ from .models import Carrier
 
 class CarrierSerializer(serializers.ModelSerializer):
     vendor = serializers.PrimaryKeyRelatedField(read_only=True)
-    name = serializers.ReadOnlyField(source="user.full_name")
+    name = serializers.ReadOnlyField(source="user.name")
     image = serializers.ReadOnlyField(source="user_profile.image.url")
-
+    phone_number = serializers.ReadOnlyField(source="user.phone_number")
     class Meta:
         model = Carrier
         fields = [
@@ -21,12 +21,13 @@ class CarrierSerializer(serializers.ModelSerializer):
             "user",
             "name",
             "image",
+            "phone_number",
         ]
-        read_only_fields = ["id", "user",  "name", "vendor","image"]
+        read_only_fields = ["id", "user",  "name", "vendor","image","phone_number"]
 
 
 class CarrierOrderSerializer(serializers.ModelSerializer):
-    customer_name = serializers.ReadOnlyField(source="user.full_name")
+    customer_name = serializers.ReadOnlyField(source="user.name")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     total_price = MyDecimalField(read_only=True)
     id = serializers.SerializerMethodField("get_id")
@@ -74,7 +75,7 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
 
 
 class CarrierOrderSerializerMany(serializers.ModelSerializer):
-    customer_name = serializers.ReadOnlyField(source="user.full_name")
+    customer_name = serializers.ReadOnlyField(source="user.name")
     total_price = MyDecimalField(read_only=True)
 
     class Meta:

@@ -22,7 +22,6 @@ from .utils import OTP_LOGIN, OTP_VERIFY_PHONE, generate_otp, get_user_otp_tries
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
 from .serializers import (
-    DeviceSerializer,
     RewardSerializer,
     RoleTokenRefreshSeriaizer,
     UserProfileCreationSerializer,
@@ -204,19 +203,19 @@ class LoginApiView(views.APIView):
                             {"detail": "provide_user_data"},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-                    full_name = new_user_data.get("full_name", None)
-                    if not full_name:
+                    name = new_user_data.get("name", None)
+                    if not name:
                         return Response(
-                            {"detail": "provide_full_name"},
+                            {"detail": "provide_name"},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                     # serializing data for validation only not creation
                     ser = UserCreationSerializer(
-                        data={"phone_number": phone_number, "full_name": full_name}
+                        data={"phone_number": phone_number, "name": name}
                     )
                     ser.is_valid(raise_exception=True)
                     user = User(
-                        phone_number=phone_number, is_active=True, full_name=full_name
+                        phone_number=phone_number, is_active=True, name=name
                     )
                     user.role = CUSTOMER
                     user.token_valid_after = get_token_valid_after()
@@ -262,23 +261,41 @@ class UpsertDeviceToken(views.APIView):
             return Response(
                 {"detail": "no_token_provided"}, status=status.HTTP_400_BAD_REQUEST
             )
+        # Normalize token
+        new_token = str(new_token).strip()
+
+        # Fast-path: if user already has a device with same token, nothing to do
+        existing_for_user = request.user.devices.filter(token=new_token).first()
+        if existing_for_user:
+            return Response(status=status.HTTP_200_OK)
+
+        from .models import Device
         try:
-            if request.user.devices:
-                last_device = request.user.devices.last()
-                if last_device.token == new_token:
-                    return Response()
-                ser = DeviceSerializer(
-                    request.user.devices.last(), data=data, partial=True
-                )
-            else:
-                ser = DeviceSerializer(data)
-            if ser.is_valid(raise_exception=True):
-                ser.validated_data["user"] = request.user
-                ser.save()
+            # If a device with this token exists for another user, reassign it to current user
+            device = Device.objects.filter(token=new_token).first()
+            if device:
+                # reassign owner to current user
+                device.user = request.user
+                device.save()
+                return Response(status=status.HTTP_200_OK)
+
+            # otherwise create a new device for this user
+            # wrap in atomic to handle race conditions
+            with atomic():
+                Device.objects.create(user=request.user, token=new_token)
+        except IntegrityError:
+            # token creation raced with another request; try to fetch and reassign
+            try:
+                device = Device.objects.get(token=new_token)
+                device.user = request.user
+                device.save()
+                return Response(status=status.HTTP_200_OK)
+            except Device.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print("error in saving user device token----->", e)
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        return Response()
+
+        return Response(status=status.HTTP_201_CREATED)
 
 
 def jwtks_view(request):
