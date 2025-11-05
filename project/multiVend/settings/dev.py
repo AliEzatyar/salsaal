@@ -65,7 +65,9 @@ AWS_STORAGE_BUCKET_NAME = env.get("AWS_STORAGE_BUCKET_NAME")
 AWS_ACCESS_KEY_ID = env.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = env.get("AWS_SECRET_ACCESS_KEY")
 AWS_QUERYSTRING_AUTH = True  # images have ?X-Amz-Signature=...
-AWS_S3_REGION_NAME = "us-east-1"  # change if your bucket is in another region
+AWS_S3_REGION_NAME = env.get(
+    "AWS_S3_REGION_NAME"
+)  # change if your bucket is in another region # change if your bucket is in another region
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 # Tell Django to use S3 for media storage
 # Public URL of your bucket (can be S3 or CloudFront CDN)
