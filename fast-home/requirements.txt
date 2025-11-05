@@ -13,3 +13,6 @@ redis
 SQLAlchemy
 starlette
 uvicorn
+requests
+boto3
+django-storages

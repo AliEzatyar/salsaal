@@ -10,6 +10,8 @@ AWS_ACCESS_KEY_ID = env.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = env.get("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = env.get("AWS_STORAGE_BUCKET_NAME")
 
+
+
 s3 = boto3.client(
     "s3",
     region_name=AWS_S3_REGION_NAME,
@@ -17,3 +19,8 @@ s3 = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     config=boto3.session.Config(signature_version=AWS_S3_SIGNATURE_VERSION),
 )
+ 
+ 
+REDIS_HOST = env.get("REDIS_HOST", "localhost")
+REDIS_PORT = int(env.get("REDIS_PORT", 6379))
+REDIS_DB = int(env.get("REDIS_DB", 2))

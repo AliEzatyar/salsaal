@@ -15,7 +15,7 @@ ALGORITHM = "RS256"
 security = HTTPBearer()
 
 # sending request to get public key for jwt authentication
-resp = get(env("DJANGO_SERVER_URL") + "/jwtks/").text
+resp = get(env.get("DJANGO_SERVER_URL") + "/jwtks/").text
 PUBLIC_KEY = resp
 
 
