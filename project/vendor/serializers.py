@@ -98,7 +98,7 @@ class DiscountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Discount
-        fields = ["id", "amount", "deadline", "foods","is_active"]
+        fields = ["id", "amount", "deadline", "foods","is_active","vendor"]
         read_only_fields = ["id"]
 
 

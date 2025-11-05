@@ -72,6 +72,23 @@ class UserRewardsViewset(viewsets.ReadOnlyModelViewSet):
 
 
 class LoginApiView(views.APIView):
+    """
+    LoginApiView
+    Handles two-step OTP login/registration.
+
+    Methods:
+      - PATCH: request OTP for phone_number. Sends OTP for existing users (OTP_LOGIN)
+               or for new numbers (OTP_VERIFY_PHONE).
+      - POST: verify OTP. typ="existing_user" issues JWTs after updating token_valid_after.
+              typ="new_user" validates user_data, creates User/profile (role=CUSTOMER),
+              sets token_valid_after and issues JWTs.
+
+    Notes:
+      - OTP verification and retry logic exist but are commented out here.
+      - Uses send_otp Celery task and RefreshToken.for_user to issue tokens.
+      - Returns standard 200/400/403/404/409/501 responses for the described cases.
+    """
+    
     permission_classes = [permissions.AllowAny]
 
     def patch(self, *args, **kwargs):
@@ -209,11 +226,11 @@ class LoginApiView(views.APIView):
                             {"detail": "provide_name"},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-                    # serializing data for validation only not creation
-                    ser = UserCreationSerializer(
+                    # serializing data for validation only, not creation
+                    user_ser = UserCreationSerializer(
                         data={"phone_number": phone_number, "name": name}
                     )
-                    ser.is_valid(raise_exception=True)
+                    user_ser.is_valid(raise_exception=True)
                     user = User(
                         phone_number=phone_number, is_active=True, name=name
                     )
@@ -221,8 +238,9 @@ class LoginApiView(views.APIView):
                     user.token_valid_after = get_token_valid_after()
                     user.save()
                     # ------ creating user profile
-                    ser = UserProfileCreationSerializer(data=new_user_data)
-                    ser.is_valid(raise_exception=True)
+                    profile_ser = UserProfileCreationSerializer(data=new_user_data)
+                    profile_ser.is_valid(raise_exception=True)
+                    profile_ser.save(user=user)
                     # ------ removing otp and generating access token for new user
                     # r.delete(otp_tries_key)
                     # saved_otp.delete()

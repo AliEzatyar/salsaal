@@ -1,14 +1,10 @@
 from django.db import models
 from uuid import uuid4
-
-# Create your models here.
 from django.db import models
 from django.contrib.auth import get_user_model
 from marketplace.models import Food
-from accounts.utils import generate_otp
 from vendor.models import Vendor
 from django.contrib.gis.db import models as g_models
-from django.db.models import Q
 
 
 User = get_user_model()
@@ -38,6 +34,32 @@ VALID_PAYMENT_TYPES = [
 
 
 class Order(models.Model):
+    """
+    Order model representing a customer's order in the system.
+    Attributes:
+        uuid (UUIDField): Unique identifier for the order.
+        user (ForeignKey): Reference to the user who placed the order.
+        status (CharField): Current status of the order, with predefined choices.
+        total_price (DecimalField): Total price of the order including items and delivery cost.
+        delivery_cost (DecimalField): Cost of delivery for the order.
+        paid (BooleanField): Indicates whether the order has been paid.
+        payment_id (CharField): Identifier for the payment transaction.
+        created_at (DateTimeField): Timestamp when the order was created.
+        modified_at (DateTimeField): Timestamp when the order was last modified.
+        total_items (SmallIntegerField): Total number of items in the order.
+        carrier (ForeignKey): Reference to the carrier handling the order.
+        otp (IntegerField): One-time password for order verification.
+        vendor (ForeignKey): Reference to the vendor fulfilling the order.
+        destination (PointField): Geographical location for delivery.
+        payment_type (CharField): Type of payment used for the order.
+    Methods:
+        calculate_total_price(): Calculates and updates the total price of the order.
+        set_total_items(): Updates the total number of items in the order.
+        get_vendors(): Returns a string of vendor names associated with the order.
+        cancel_order(): Cancels the order if it is in a valid status.
+        __str__(): Returns a string representation of the order.
+    """
+    
     uuid = models.UUIDField(
         default=uuid4, db_index=True, unique=True, editable=False, null=True
     )
@@ -111,6 +133,23 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
+    """
+    OrderItem model represents an item in an order, linking it to a specific order,
+    food item, and vendor. It includes details such as quantity and price, and provides
+    methods to calculate the subtotal and retrieve the food name.
+    Attributes:
+        order (ForeignKey): A reference to the Order this item belongs to.
+        food (ForeignKey): A reference to the Food item associated with this order item.
+        vendor (ForeignKey): A reference to the Vendor providing the food item.
+        quantity (PositiveIntegerField): The quantity of the food item ordered.
+        price (DecimalField): The price of the food item.
+    Methods:
+        __str__(): Returns a string representation of the order item, including quantity,
+                    food name, and vendor name.
+        subtotal: Property that calculates the total price for the quantity of food items.
+        food_name: Property that retrieves the name of the food item.
+    """
+    
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     food = models.ForeignKey(Food, on_delete=models.CASCADE)
     vendor = models.ForeignKey(
@@ -132,6 +171,17 @@ class OrderItem(models.Model):
 
 
 class Reward(models.Model):
+    """
+    Reward model represents a reward associated with a user and a vendor.
+    Attributes:
+        user (ForeignKey): The user who receives the reward.
+        vendor (ForeignKey): The vendor associated with the reward.
+        amount (FloatField): The amount of the reward, capped at 500.
+    Methods:
+        save(*args, **kwargs): Overrides the default save method to ensure 
+        that the amount does not exceed 500.
+    """
+    
     user = models.ForeignKey(
         "accounts.User", on_delete=models.CASCADE, related_name="rewards"
     )

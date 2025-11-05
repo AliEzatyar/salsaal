@@ -1,0 +1,29 @@
+THis is the Qoraa App
+
+Flow:
+
+1- vendor(s) register themselves as providers(QoraaVendors)
+    * set title
+    * set date range
+    * image
+    * foods being choosen in a Qoraa
+    
+2- There are four tasks (located at register_tasks.py) running every day
+    start_morning_qoraa
+        * creates platform's default qoraa at 11:00 AM
+        * creates all vendors qoraas if date range matches, for those vendors who are QoraaVendor
+    end_morining_qoraa
+        * chooses a winner and random foods of the vendor
+        * ends all running qoraas at 12:00 AM 
+
+    start_evening_qoraa
+        * works the same as start_morning_qoraa
+    end_evening_qoraa
+        * works the same as end evening qoraa
+    
+3- user collects his Qoraa.foods to Cart
+    views.py: CollectQoraaApiView...
+
+4- chooses payment method 'qoraa'
+    order is created and marked as paid
+    * no revenue for vendor should be added due to this

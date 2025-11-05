@@ -15,7 +15,6 @@ def register_periodic_tasks():
     Uses timezone 'Asia/Kabul' to match other registered tasks in the project.
     """
     timezone = "Asia/Kabul"
-
     # create morning at 11:00
     create_morning_schedule, _ = CrontabSchedule.objects.get_or_create(
         minute="0", hour="11", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone

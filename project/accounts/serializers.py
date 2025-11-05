@@ -10,6 +10,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.state import token_backend
 from rest_framework_simplejwt.settings import api_settings
 
+
 class UserCreationSerializer(ModelSerializer):
     class Meta:
         model = User
@@ -59,23 +60,25 @@ class UserProfileSerializer(ModelSerializer):
 
 
 class UserProfileCreationSerializer(ModelSerializer):
+    """Serializer for creating UserProfile instances.
+    Validates that latitude and longitude can be converted to float before creating
+    the UserProfile. Exposes the fields: pf_lang, country, city, latitude, longitude,
+    and address.
+    Raises a ValidationError if provided coordinates are invalid.
+    """
+
     class Meta:
         model = UserProfile
         fields = ["pf_lang", "country", "city", "latitude", "longitude", "address"]
-
-    def create(self, validated_data):
-        latitude, longitude = validated_data["latitude"], validated_data["longitude"]
-        try:
-            float(latitude)
-            float(longitude)
-        except:
-            print("lat and lon invalid",latitude,longitude,"--")
-            raise ValidationError("provide_correct_lat_lon")
-        return super().create(validated_data)
-
-    def save(self, **kwargs):
-        return super().save(**kwargs)
-
+        def create(self, validated_data):
+            latitude = validated_data.get("latitude")
+            longitude = validated_data.get("longitude")
+            
+            if not all(isinstance(coord, (int, float)) for coord in [latitude, longitude]):
+                print("lat lon incorrect", latitude, longitude)
+                raise ValidationError("provide_correct_lat_lon")
+            
+            return super().create(validated_data)
 
 class UserDetailSerializer(ModelSerializer):
     profile = UserProfileSerializer()
@@ -125,9 +128,10 @@ class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class RoleTokenRefreshSeriaizer(TokenRefreshSerializer):
     """
-    overriden to invalidate pre-access tokens 
+    overriden to invalidate pre-access tokens
     when getting new access token with refresh token
     """
+
     def validate(self, attrs):
         # validates whether the refresh token is correct and generates new access token
         tokens = super().validate(attrs)

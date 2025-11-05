@@ -131,8 +131,8 @@ class ConvertToVendorAPIView(views.APIView):
         try:
             ser.is_valid(raise_exception=True)
         except Exception as e:
-            print("eroroororo", e)
-        print("no eroor in covernt to vendor", data)
+            print("error in validation", e)
+        print("input data valid", data)
 
         with atomic():
             try:
@@ -156,7 +156,6 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     permission_classes = [
         permissions.IsAuthenticated,
         IsVendorOfObject,
-        IsVendorApproved,
     ]
     # ordering
     filter_backends = [

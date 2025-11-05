@@ -2,9 +2,10 @@ from rest_framework import views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from project.qoraa.serializers import QoraaVendorSerializer
 from qoraa.utils import get_city_lottery_vendors_key
 from vendor.models import Vendor
-from .models import Qoraa
+from .models import Qoraa, QoraaVendor
 from marketplace.utils import r
 
 # Create your views here.
@@ -69,9 +70,15 @@ class JoinQoraaApiView(views.APIView):
         return Response({"detail": "joined"}, status=status.HTTP_200_OK)
 
 
-class AddQoraaVendor(views.APIView):
+class JoinQoraaVendor(views.APIView):
+    """
+    vendors can join qoraa vendors
+    system picks a Vendor for a Qoraa randomly from the list of QoraaVendors
+    """
+
     def post(self, request, *args, **kwargs):
-        vendor_id = request.data.get("vendor_id")
+        data = request.data
+        vendor_id = data.get("vendor_id")
         if not vendor_id:
             return Response(
                 {"detail": "vendor_id_required"}, status=status.HTTP_400_BAD_REQUEST
@@ -82,7 +89,9 @@ class AddQoraaVendor(views.APIView):
             return Response(
                 {"detail": "vendor_not_found"}, status=status.HTTP_404_NOT_FOUND
             )
+        ser = QoraaVendorSerializer(data=data, context={"vendor": vendor})
 
-        key = get_city_lottery_vendors_key()
-        r.sadd(key, str(vendor.pk))
-        return Response({"detail": "vendor_added"}, status=status.HTTP_200_OK)
+        if ser.is_valid():
+            ser.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)

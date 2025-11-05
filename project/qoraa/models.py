@@ -8,8 +8,10 @@ from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
 
 
-QORAA_DEFAULT_VALUE = 250 # default price value for any Qoraa
+QORAA_DEFAULT_VALUE = 250  # default price value for any Qoraa
 VENDORS_FOR_LOTTERY = "vendors_for_lottery"
+PLATFORM_DEFAULT_MORNING_QORAA_TITLE = "Daily Lottery"
+PLATFORM_DEFAULT_EVENING_QORAA_TITLE = "Evening Lottery"
 
 class Qoraa(models.Model):
     """
@@ -57,7 +59,7 @@ class Qoraa(models.Model):
     vendor = models.ForeignKey(
         Vendor, on_delete=models.CASCADE, related_name="qoraas", null=True, blank=True
     )
-    
+
     class Meta:
         # ensure we don't accidentally create overlapping identical start times
         ordering = ["-start"]
@@ -89,11 +91,32 @@ class QoraaVendor(models.Model):
     vendor = models.OneToOneField(
         Vendor, on_delete=models.CASCADE, related_name="qoraa_participation"
     )
-    food_items = models.JSONField(default=list) # list of food item IDs chosen ran
-    price_value = models.PositiveSmallIntegerField(default=QORAA_DEFAULT_VALUE) # max price value for lottery of this vendor
-    title = models.CharField(max_length=200, blank=True, default="Daily Lottery") # custom title for this vendor's lottery
-    is_active = models.BooleanField(default=True) # whether vendor is actively participating
-    created_at = models.DateTimeField(auto_now_add=True) 
+    food_items = models.JSONField(default=list)  # list of food item IDs chosen ran
+    price_value = models.PositiveSmallIntegerField(
+        default=QORAA_DEFAULT_VALUE
+    )  # max price value for lottery of this vendor
+    title = models.CharField(
+        max_length=200, blank=True, default="Daily Lottery"
+    )  # custom title for this vendor's lottery
+    is_active = models.BooleanField(
+        default=True
+    )  # whether vendor is actively participating
+    created_at = models.DateTimeField(auto_now_add=True)
+    image = models.ImageField(
+        upload_to="qoraa_vendor_images/", blank=True, null=True
+    )  # optional image for vendor's lottery
+    start_date = models.DateField(
+        default=timezone.now,
+        help_text="Date from which the vendor wants to start participating in lotteries",
+    )  # date from which the vendor wants to start participating
+    end_date = models.DateField(
+        default=timezone.now,
+        help_text="Date until which the vendor wants to participate in lotteries (inclusive). Leave blank for indefinite participation.",
+    )  # date until which the vendor wants to participate
+
+    class Meta:
+        verbose_name = _("Qoraa Vendor")
+        verbose_name_plural = _("Qoraa Vendors")
 
     def __str__(self) -> str:
         return f"QoraaVendor {self.vendor.name} (Active: {self.is_active})"

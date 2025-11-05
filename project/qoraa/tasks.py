@@ -1,8 +1,10 @@
 from celery import shared_task
 from django.utils import timezone
-from .models import Qoraa
+from .models import PLATFORM_DEFAULT_EVENING_QORAA_TITLE, PLATFORM_DEFAULT_MORNING_QORAA_TITLE, Qoraa, QoraaVendor
 from random import choice
-
+from django.utils.translation import gettext as _
+from django.utils.translation import deactivate as deactivate_language
+from django.utils.translation import activate as activate_language
 
 
 @shared_task
@@ -11,6 +13,7 @@ def create_morning_qoraa():
     NOTE: we assume server stores timezone-aware datetimes. This task will create
     a Qoraa instance for today's date between 11:00 and 12:00 local time.
     """
+    # ----------- platform's default qoraa --------------
     now = timezone.localtime()
     start = now.replace(hour=11, minute=0, second=0, microsecond=0)
     end = start + timezone.timedelta(hours=1)
@@ -18,15 +21,24 @@ def create_morning_qoraa():
     exists = Qoraa.objects.filter(start=start).exists()
     if not exists:
         # Create the Qoraa instance, vendors also be choosen randomly during finalization
-        q = Qoraa.objects.create(start=start, end=end, status=Qoraa.STATUS_RUNNING, title="Morning Lottery")
-        return q.pk
+        activate_language("fa")
+        q = Qoraa.objects.create(
+            start=start,
+            end=end,
+            status=Qoraa.STATUS_RUNNING,
+            title=_(PLATFORM_DEFAULT_MORNING_QORAA_TITLE),
+        )
+        deactivate_language()
+    # ------------ creating vendors custom qoraas --------------
+    qvs = QoraaVendor.objects.filter(is_active=True, start_date__lte=now.date(), end_date__gte=now.date())
+    for qv in qvs:
+        q, created = Qoraa.objects.get_or_create(vendor=qv.vendor, start=start, defaults={"end": end, "status": Qoraa.STATUS_RUNNING, "title": qv.title})
+
+    return "Morning Qoraas Created"
 
 
-
-@shared_task
-def finalize_morning_qoraa():
+def finalize_qoraa():
     """Finalize the morning lottery (select winner, mark finished).
-
     This task finds yesterday/today lotteries that ended and are still running.
     """
     now = timezone.now()
@@ -45,6 +57,17 @@ def finalize_morning_qoraa():
 
 
 @shared_task
+def finalize_morning_qoraa():
+    """Finalize morning lotteries/qoraas."""
+    return finalize_qoraa() 
+
+
+@shared_task
+def finalize_evening_qoraa():
+    """Finalize evening lotteries/qoraas."""
+    return finalize_qoraa()
+
+
 def create_evening_qoraa():
     """Create the evening lottery (18:00 - 19:00).
     """
@@ -53,11 +76,22 @@ def create_evening_qoraa():
     end = start + timezone.timedelta(hours=1)
     exists = Qoraa.objects.filter(start=start).exists()
     if not exists:
-        q = Qoraa.objects.create(start=start, end=end, status=Qoraa.STATUS_RUNNING, title="Evening Lottery")
-        return q.pk
+        q = Qoraa.objects.create(
+            start=start,
+            end=end,
+            status=Qoraa.STATUS_RUNNING,
+            title=_(PLATFORM_DEFAULT_EVENING_QORAA_TITLE),
+        )
 
-
-@shared_task
-def finalize_evening_qoraa():
-    """Finalize evening lotteries similar to morning finalize."""
-    return finalize_morning_qoraa()
+    # ------------ creating vendors custom qoraas --------------
+    qvs = QoraaVendor.objects.filter(
+        is_active=True, start_date__lte=now.date(), end_date__gte=now.date()
+    )
+    for qv in qvs:
+        q, created = Qoraa.objects.get_or_create(
+            vendor=qv.vendor,
+            start=start,
+            defaults={"end": end, "status": Qoraa.STATUS_RUNNING, "title": qv.title},
+        )
+        
+    return "Evening Qoraas Created"

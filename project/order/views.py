@@ -4,7 +4,6 @@ from order.utils import get_order_delivery_tries_key
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
     COrderSerializer,
-    VOrderSerializer,
     COrderSerializerLessDetail,
 )
 from cart.models import CartItem
@@ -40,11 +39,30 @@ from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
 from live.utils import send_notification
 
-"""Order API Views"""
-
 
 class OrderViewSet(viewsets.ModelViewSet):
-    """this view enables order create/edit/del by customer"""
+    """
+    OrderViewSet is a Django REST Framework viewset that provides CRUD operations for managing orders.
+    This viewset allows users to:
+    - List their orders with limited details.
+    - Create new orders from their cart, including validation and notification to vendors.
+    - Cancel waiting orders.
+    Attributes:
+        http_method_names (list): Allowed HTTP methods for this viewset.
+        serializer_class (class): Serializer class used for order serialization.
+    Methods:
+        get_queryset(): 
+            Returns a queryset of orders filtered by the current user's ID.
+        list(request, *args, **kwargs): 
+            Returns a list of orders for the current user with limited details.
+        create(request, *args, **kwargs): 
+            Creates a new order from the user's cart, updates user location, and handles notifications.
+        cancel(request): 
+            Cancels all waiting orders for the current user and notifies the respective vendors.
+        get_serializer_context(): 
+            Returns the context for the serializer, including the current user's ID.
+    """
+    
 
     http_method_names = ["delete", "post", "get"]
     serializer_class = COrderSerializer
@@ -273,8 +291,32 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 class AcceptRejectOrderView(views.APIView):
     """
-    THis view enables a customer to finalize order. It adjusts order status appropriately.
+    AcceptRejectOrderView
+    Handle buyer confirmation/acceptance of an order via POST. Expected input:
+    - order_id (required): ID of the Order to accept.
+    - payment_type (required): one of VALID_PAYMENT_TYPES.
+    - payment_id (optional): required when payment_type == VALID_PAYMENT_TYPES[1][0] (online/Hesab Pay).
+    Behavior:
+    - Enforces IsAuthenticated and IsBuyer permissions and checks object permissions for the order.
+    - Only allows transition when order.status is in the allowed waiting/preparing states.
+    - Validates payment_type and handles three payment flows:
+        - Non-reward payments: increment or create a Reward for the user based on vendor.reward_percentage.
+        - Reward payments (VALID_PAYMENT_TYPES[2][0]): deduct from existing Reward; refuses if insufficient funds.
+        - Online/Hesab Pay (VALID_PAYMENT_TYPES[1][0]): requires payment_id and marks order as paid.
+    - Uses an atomic transaction to update rewards, order.payment_type, payment_id, paid flag, and set order.status to preparing.
+    - Clears the buyer's cart, publishes an ORDER_UPDATE event to Redis (pub:order:<order_id>), and creates a Notification for the vendor.
+    - Activates the buyer's preferred language briefly when creating the notification.
+    Responses (not exhaustive):
+    - 200/204: success (empty Response returned on success).
+    - 400: invalid_payment_type or missing payment_id.
+    - 403: order_not_waiting_state or ineffecient_amount (insufficient reward balance).
+    - 404: Order not found.
+    - 501: unexpected server error.
+    Notes:
+    - Performs rounding when computing reward amounts.
+    - Side effects: updates Reward and Order records, clears cart, publishes to Redis, creates Notification.
     """
+    
 
     permission_classes = [IsAuthenticated, IsBuyer]
 
@@ -407,10 +449,20 @@ class AcceptRejectOrderView(views.APIView):
 
 class SetOrderStateDelivered(views.APIView):
     """
-    This view is only accessible via customer account, it proves whether
-    a customer (indirectly-by-scanning) is the owner of order and valid Food has reached it.
+    SetOrderStateDelivered
+    Handle POST requests from a carrier to mark an order as delivered. Expects encrypted
+    'id' (order id) and 'pass' (OTP) in request.data; decrypts and validates the OTP,
+    enforces max delivery attempts via Redis, and performs the state transition inside
+    an atomic transaction. Side effects include clearing the user's cart, marking the
+    order delivered/paid, freeing the carrier, updating vendor carrier counts in Redis,
+    deleting the OTP, creating notifications for customer and vendor, and publishing a
+    vendor websocket message.
+    Permissions: IsAuthenticated, IsBuyer, IsOrderCarryingState.
+    Responses: 202 Accepted on success; 403 for invalid/expired OTP or permission issues;
+    404 if order not found; 400 on invalid OTP input; 501 for unknown errors.
     """
-
+    
+    
     permission_classes = [permissions.IsAuthenticated, IsBuyer, IsOrderCarryingState]
 
     def post(self, *args, **kwargs):
@@ -519,6 +571,22 @@ class SetOrderStateDelivered(views.APIView):
 
 
 class ReOrder(views.APIView):
+    """
+    ReOrder API view for handling reordering of previous orders.
+    This view allows authenticated users with the 'IsBuyer' permission to reorder items 
+    from a previous order. The user must provide the 'order_id' of the order they wish 
+    to reorder. If the order exists and the user has permission to access it, the items 
+    from the previous order will be added to the user's cart.
+    Methods:
+        post: Handles the POST request to reorder items from a previous order.
+    Request Body:
+        - order_id (str): The ID of the previous order to be reordered.
+    Responses:
+        - 200 OK: If the items are successfully added to the cart.
+        - 400 Bad Request: If 'order_id' is not provided.
+        - 500 Internal Server Error: If an error occurs while processing the order.
+    """
+    
     permission_classes = [permissions.IsAuthenticated, IsBuyer]
 
     def post(self, *args, **kwargs):
