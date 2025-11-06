@@ -21,6 +21,4 @@ s3 = boto3.client(
 )
  
  
-REDIS_HOST = env.get("REDIS_HOST", "localhost")
-REDIS_PORT = int(env.get("REDIS_PORT", 6379))
-REDIS_DB = int(env.get("REDIS_DB", 2))
+REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379/2")

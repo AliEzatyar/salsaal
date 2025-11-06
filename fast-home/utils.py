@@ -4,7 +4,7 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 from json import dumps as j_dumps, loads as j_loads
-from settings import AWS_STORAGE_BUCKET_NAME, REDIS_HOST, s3, REDIS_PORT, REDIS_DB
+from settings import AWS_STORAGE_BUCKET_NAME, REDIS_URL, s3
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from models import Cart
@@ -21,7 +21,7 @@ if cart_item_table is None:
 DEFAULT_AVG_SPEED = 5
 
 redis = aioredis.from_url(
-    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}", encoding="utf-8", decode_responses=True
+    REDIS_URL, encoding="utf-8", decode_responses=True
 )
 FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
