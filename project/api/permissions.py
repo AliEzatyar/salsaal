@@ -62,6 +62,12 @@ class IsVendorOfObject(BasePermission):
     def has_object_permission(self, request, view, obj):
         return obj.vendor == request.user.vendor
 
+class IsCustomer(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.role != CUSTOMER:
+            print("user_not_customer")
+            raise PermissionDenied(detail="user_not_customer")
+        return True
 
 class IsBuyer(BasePermission):
     def has_permission(self, request, view):

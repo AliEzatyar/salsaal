@@ -180,8 +180,6 @@ class Food(Base):
     is_available = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, index=True)
     modified_at = Column(DateTime)
-    avg_rating = Column(Float, default=0)
-    rating_count = Column(SmallInteger, default=0)
     discount_id = Column(Integer, ForeignKey("marketplace_discount.id"), nullable=True)
     is_featured = Column(Boolean, default=False)
     likes = Column(Integer, default=0)

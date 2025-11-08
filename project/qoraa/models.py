@@ -49,7 +49,9 @@ class Qoraa(models.Model):
         blank=True,
         null=True,
     )
-    foods = models.ManyToManyField(to=Food, related_name="+", blank=True)
+    food = models.ForeignKey(
+        Food, on_delete=models.SET_NULL, related_name="+", blank=True, null=True
+    )
     joiners = models.ManyToManyField(
         to=get_user_model(), related_name="qoraas_joined", blank=True
     )
@@ -59,6 +61,7 @@ class Qoraa(models.Model):
     vendor = models.ForeignKey(
         Vendor, on_delete=models.CASCADE, related_name="qoraas", null=True, blank=True
     )
+    is_platform = models.BooleanField(default=False)
 
     class Meta:
         # ensure we don't accidentally create overlapping identical start times
@@ -87,7 +90,7 @@ class QoraaVendor(models.Model):
     """
     Model to facilitate vendors participate in Qoraa lotteries.
     """
-
+    is_platform = models.BooleanField(default=False)  # whether this is the platform itself
     vendor = models.OneToOneField(
         Vendor, on_delete=models.CASCADE, related_name="qoraa_participation"
     )

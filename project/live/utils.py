@@ -14,8 +14,20 @@ def is_user_online(user_id):
     return r.exists(f"user:{user_id}")  # returns 1 if online, 0 if offline
 
 @shared_task(bind=True, max_retries=5,default_retry_delay=10)
-def send_notification(self,user_id, title, body, data=None):
-    """sends notification in background-task mode"""
+def send_notification(self,user_id:int, title:str, body:str, data=None):
+    """
+    Send a notification to a user: via WebSocket if online, otherwise via FCM to their registered devices.
+    Args:
+        user_id: ID of the target user.
+        title: Notification title.
+        body: Notification body text.
+        data: Optional extra payload for the push message.
+    Returns:
+        A status string such as "Sent via WebSocket" or "NoDevice{user_id}" when applicable; otherwise None.
+    Raises:
+        May invoke Celery retry on delivery errors.
+    """
+
     try:
         print("sending notification started...")
         # Check if user is online via Redis
