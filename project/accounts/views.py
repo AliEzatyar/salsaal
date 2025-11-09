@@ -88,14 +88,15 @@ class LoginApiView(views.APIView):
       - Uses send_otp Celery task and RefreshToken.for_user to issue tokens.
       - Returns standard 200/400/403/404/409/501 responses for the described cases.
     """
-    
+
     permission_classes = [permissions.AllowAny]
 
     def patch(self, *args, **kwargs):
         data = self.request.data
         phone_number = data.get("phone_number", None)
-
-        if not phone_number:
+        role = data.get("role", None)
+        print(role,"this was the role")
+        if not phone_number or not role:
             return Response(
                 {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -104,8 +105,12 @@ class LoginApiView(views.APIView):
                 {"detail": "invalid_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            # ------- if user already exists with this phone number
+            role = int(role)
+
             user = User.objects.get(phone_number=phone_number)
+            if role != user.role:
+                print("incorrect app", role, user.role)
+                return Response(status=status.HTTP_409_CONFLICT)
             otp = generate_otp()
             send_otp.delay(otp=otp, user_id=user.id, typ=OTP_LOGIN)
             return Response(

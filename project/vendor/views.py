@@ -437,6 +437,16 @@ class ManageOpeningHours(viewsets.ModelViewSet):
 
 
 class AddCarrierAPIView(views.APIView):
+    """
+    AddCarrierAPIView handles the addition of a carrier account through OTP verification.
+    It provides two main functionalities:
+    1. PATCH: Verifies the phone number and sends an OTP if the account exists and is valid.
+    2. POST: Verifies the OTP and converts the user account to a carrier account.
+    Methods:
+    - patch: Validates the phone number and sends an OTP to the user's phone.
+    - post: Verifies the OTP and creates a carrier account if valid.
+    """
+    
     permission_classes = [permissions.IsAuthenticated, IsVendor]
     http_method_names = ["post", "patch"]
 
@@ -457,7 +467,7 @@ class AddCarrierAPIView(views.APIView):
                 {"detail": "no_account_found_by_that_email"}
             )
         if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
-            raise NotAcceptable(detail="You are not allowed", code=403)
+            raise NotAcceptable(detail="not_allowed", code=403)
 
         elif account.role == CARRIER:
             raise serializers.ValidationError({"detail": "already_exists"})
@@ -540,11 +550,7 @@ class AddCarrierAPIView(views.APIView):
 
 
 class ManageCarrierViewSet(viewsets.ModelViewSet):
-    """
-    This view is only accessible by a vendor to manage carriers
-    GET, PATCH, DELETE
-    UPDATEable: is_active, id_document
-    """
+    
 
     permission_classes = [permissions.IsAuthenticated, IsVendor, IsVendorOfObject]
     serializer_class = CarrierSerializer
@@ -624,10 +630,41 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
 
 class CarriersNow(views.APIView):
     """
-    this view returns list of vendor carriers sorted by
-    nearst to farthest ones from vendor location
-    it is used when assigning carriers for order delivery task
+    API view that returns live carriers for the authenticated vendor along with approximate return times.
+    Permissions:
+    - IsAuthenticated
+    - IsVendor
+    HTTP GET:
+    - Filters active carriers belonging to the current vendor with the "free/available" status.
+    - Attempts to read live telemetry per carrier from a cache/Redis using get_carrier_key(carrier_id).
+    - If no live data is present, defaults location/destination to the vendor's current location.
+    - Computes a rough ETA (return_time, in minutes) using haversine_distance and distance_to_travel_time:
+        - Free carriers: time from carrier's current location to the vendor (only if distance > 200m).
+        - Busy carriers: time from the customer's destination back to the vendor.
+    - Sorts carriers by ascending return_time.
+    Response (200 OK):
+    {
+        "carriers": [
+            {
+                "id": int,
+                "name": str,
+                "return_time": int,          # minutes
+                "profile": str | None        # profile picture URL
+            },
+            ...
+        ]
+    Notes:
+    - Uses select_related('user_profile', 'user') and only() for efficient DB access.
+    - On per-carrier exceptions, falls back to return_time=0 and may include a non-URL image field.
+    - Distances are computed in kilometers and converted to whole minutes for return_time.
+    Dependencies:
+    - CARRIER_STATUS_CHOICES
+    - get_carrier_key
+    - haversine_distance
+    - distance_to_travel_time
+    - Redis/cache client (for live telemetry)
     """
+    
 
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
@@ -703,7 +740,41 @@ class CarriersNow(views.APIView):
 
 
 class VendorSalesView(views.APIView):
-    """THis view returns vendor sales from different aspects"""
+    """API view that exposes sales analytics for the authenticated vendor.
+    Permissions:
+    - IsAuthenticated
+    - IsVendor
+    GET:
+    - Returns current month totals and breakdowns:
+        - monthly_sale_amount (int)
+        - today_sale_amount (int)
+        - month_sales_per_day: [{"day": int, "total_sale": int}, ...]
+        - top_sale_foods: [{"food": str, "total_sale": int}, ...]
+        - platform_share (int) = monthly total * PLATFORM_SHARE
+    POST:
+    - Computes total sales in a custom datetime range.
+    - Body: {"start_date": "YYYY-MM-DDTHH:MM:SSZ", "end_date": "YYYY-MM-DDTHH:MM:SSZ"} (UTC)
+    - Returns: {"total-sales": number}
+    - 400 if dates are missing.
+    Return current month sales analytics for the authenticated vendor.
+    Calculates from delivered orders:
+    - monthly total sales
+    - today’s total sales
+    - per-day totals within the month
+    - top-selling foods in the month
+    - platform share derived from monthly total
+    Return vendor total sales within a custom datetime range.
+    Body:
+    - start_date: ISO 8601 UTC string (e.g., "YYYY-MM-DDTHH:MM:SSZ")
+    - end_date: ISO 8601 UTC string (e.g., "YYYY-MM-DDTHH:MM:SSZ")
+    Behavior:
+    - Parses and makes datetimes timezone-aware if needed
+    - Filters delivered orders within [start_date, end_date]
+    - Aggregates total_price as "total-sales"
+    Errors:
+    - 400 if start_date or end_date is missing
+    """
+    
 
     permission_classes = [IsVendor, permissions.IsAuthenticated]
 
@@ -801,8 +872,23 @@ class VendorSalesView(views.APIView):
 
 
 class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
-    """This enables a vendor to see past orders it completed successfully."""
-
+    """
+    Read-only DRF ViewSet exposing the authenticated vendor’s orders.
+    Features:
+    - Pagination (StandardResultSetPagination), search, ordering (total_price, created_at; default -created_at)
+    - Filtering via VOrderFilterSet
+    - Permissions: IsAuthenticated, IsVendorOfObject
+    - Serializer: VOrderSerializer
+    Queryset:
+    - Restricts results to orders belonging to request.user.vendor.
+    Actions:
+    - GET /abstract/: Returns today’s summary for the vendor:
+        - name, image
+        - total_sale (sum of delivered orders’ total_price)
+        - pending_orders, preparing_orders, carrying_orders, delivered_orders
+        Also ensures vendor.is_available is set to True once per day if currently unavailable.
+    """
+    
     pagination_class = StandardResultSetPagination
     serializer_class = VOrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
@@ -866,10 +952,37 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
 
 class CalculateOrderTimeAndDeliveryCost(views.APIView):
     """
-    This view takes new order id and estimates new order reaching-time considering
-    preparing orders count, free carriers count and total carriers count of vendor
-    returns {"estimated":integer}
+    CalculateOrderTimeAndDeliveryCost API view.
+    Handles vendor acceptance or rejection of an order and (if accepted) computes:
+    - Preparation time (max of item durations or ready-time deltas).
+    - Travel time (via estimate_travel_time_graphhopper).
+    - Delivery cost (free if within vendor free distance & item count threshold, else per‑km * 2).
+    - Aggregated total cost and estimated total time (prep + travel).
+    Query Parameters:
+    - order_id (int, required): ID of the order to process.
+    - is_accepted (bool/int/str truthy/falsy, required): Vendor decision.
+    Behavior:
+    - If missing parameters: returns HTTP 400.
+    - If rejected: cancels order, notifies user, returns {"message": "order_order_rejected_by_vendor"}.
+    - If accepted: validates vendor ownership, sets OTP, updates delivery_cost, returns calculation payload.
+    Successful Response JSON (HTTP 200):
+        "estimation": int,          # rounded total_time
+        "delivery_cost": float|int,
+        "preparation_time": int,
+        "order_cost": int,
+        "total_cost": int,
+        "order_id": int,
+        "total_time": int           # same as estimation
+    Error Responses:
+    - 400: Missing/invalid query parameters.
+    - 501: Unhandled server-side exception.
+    Side Effects:
+    - Updates Order (delivery_cost, otp).
+    - May cancel order and publish/send notifications on rejection.
+    Permissions:
+    - Authenticated user must be the vendor owning the order (IsVendorOfObject).
     """
+    
 
     permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
 
@@ -1041,9 +1154,20 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
 
 class SetOrderStateCarrying(views.APIView):
     """
-    THis view enables a vendor(only) to choose an order and set it
-    in carrying state. Besides, this view generates an OTP valid for 1 Day
+    APIView allowing an authenticated vendor to set an order to the 'carrying' state.
+    POST:
+    - Validates vendor ownership of both order and carrier and carrier availability.
+    - Atomically: assigns carrier, marks carrier busy, sets order status/destination,
+        generates/stores user OTP, updates Redis (carrier state, busy/free counts), and
+        creates & publishes a notification for customer and carrier live tracking.
+    - Triggers asynchronous push notification.
+    Responses:
+    - 200: order_set_carrying
+    - 403: no such order / not_allowed / carrier not owned
+    - 409: carrier_busy
+    - 500: unexpected server error
     """
+    
 
     permission_classes = [
         permissions.IsAuthenticated,

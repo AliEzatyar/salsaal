@@ -3,8 +3,8 @@ from celery import shared_task
 from django.utils import timezone
 from marketplace.utils import r
 from marketplace.models import Food
-from project.live.models import Notification
-from project.live.utils import send_notification
+from live.models import Notification
+from live.utils import send_notification
 from .models import (
     PLATFORM_DEFAULT_EVENING_QORAA_TITLE,
     PLATFORM_DEFAULT_MORNING_QORAA_TITLE,
