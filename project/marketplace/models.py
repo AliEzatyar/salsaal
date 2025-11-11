@@ -117,16 +117,6 @@ class Food(models.Model):
             ),
         ]
 
-    def update_avg_rating(self, *args, **kwargs):
-        ct = ContentType.objects.get_for_model(Food)
-        avg_and_count = Rating.objects.filter(
-            object_id=self.pk,
-            content_type=ct,
-        ).aggregate(avg=models.Avg("rating"), count=models.Count("rating"))
-        self.avg_rating = avg_and_count["avg"] or 0.0
-        self.rating_count = avg_and_count["count"] or 0
-        self.save()
-
     def save(self, *args, **kwargs):
         if self.pk:
             # updated
@@ -144,6 +134,7 @@ class Food(models.Model):
 
     def __str__(self):
         return self.name
+
 
 
 class Rating(models.Model):

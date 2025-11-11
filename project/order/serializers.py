@@ -46,6 +46,17 @@ class COrderItemSerializer(ModelSerializer):
     def get_food_name(self, obj):
         return obj.food_name
 
+class OrderItemSerializerLessDetail(ModelSerializer):
+    """used in online payment session creation"""
+    name = serializers.SerializerMethodField("get_name")
+
+    class Meta:
+        model= OrderItem
+        fields = ["id", "name", "quantity","subtotal"]
+
+    def get_name(self, obj):
+        return obj.food_name
+
 
 class COrderSerializer(ModelSerializer):
     user = PrimaryKeyRelatedField(read_only=True)
@@ -65,7 +76,7 @@ class COrderSerializer(ModelSerializer):
             "status",
             "total_price",
             "paid",
-            "payment_id",
+            "transaction_id",
             "created_at",
             "total_items",
             "carrier",  # for live tracking if needed
@@ -82,6 +93,7 @@ class COrderSerializer(ModelSerializer):
 
     def create(self, validated_data):
         validated_data["user"] = User.objects.get(id=self.context["user"])
+        
         return super().create(validated_data)
 
 
@@ -148,7 +160,7 @@ class VOrderSerializer(ModelSerializer):
             "total_price",
             "status",
             "paid",
-            "payment_id",
+            "transaction_id",
             "created_at",
             "carrier",
             "items",

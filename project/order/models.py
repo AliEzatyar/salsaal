@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from marketplace.models import Food
 from vendor.models import Vendor
 from django.contrib.gis.db import models as g_models
+from django.db.models import Q
 
 
 User = get_user_model()
@@ -43,7 +44,7 @@ class Order(models.Model):
         total_price (DecimalField): Total price of the order including items and delivery cost.
         delivery_cost (DecimalField): Cost of delivery for the order.
         paid (BooleanField): Indicates whether the order has been paid.
-        payment_id (CharField): Identifier for the payment transaction.
+        transaction_id (CharField): Identifier for the payment transaction.
         created_at (DateTimeField): Timestamp when the order was created.
         modified_at (DateTimeField): Timestamp when the order was last modified.
         total_items (SmallIntegerField): Total number of items in the order.
@@ -59,7 +60,7 @@ class Order(models.Model):
         cancel_order(): Cancels the order if it is in a valid status.
         __str__(): Returns a string representation of the order.
     """
-    
+
     uuid = models.UUIDField(
         default=uuid4, db_index=True, unique=True, editable=False, null=True
     )
@@ -70,7 +71,7 @@ class Order(models.Model):
     total_price = models.DecimalField(default=0, max_digits=6, decimal_places=1)
     delivery_cost = models.DecimalField(default=0,max_digits=4,decimal_places=1)
     paid = models.BooleanField(default=False)
-    payment_id = models.CharField(
+    transaction_id = models.CharField(
         max_length=250, blank=True, null=True, default="np..."
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -87,20 +88,26 @@ class Order(models.Model):
     payment_type = models.CharField(
         max_length=60, choices=VALID_PAYMENT_TYPES, default=VALID_PAYMENT_TYPES[0][0]
     )
+    is_epay = models.BooleanField(default=False)
 
     class Meta:
         indexes = [models.Index(fields=["-created_at"])]
         ordering = ["-created_at"]
-
+        constraints = [
+            models.CheckConstraint(
+                check=Q(is_epay=False) | Q(transaction_id__isnull=False),
+                name="paid_order_must_have_transaction_id",
+            )
+        ]
 
     def calculate_total_price(self):
         self.total_price = sum(item.subtotal for item in self.items.all()) + self.delivery_cost
-        self.save()
+        return self.total_price
 
     def set_total_items(self):
         """returns total items amount in order"""
         self.total_items = sum([item.quantity for item in self.items.all()])
-        self.save()
+        return self.total_items
 
     def get_vendors(self):
         """returns an string containing vendor names spillited by comma"""
@@ -126,7 +133,6 @@ class Order(models.Model):
             raise Exception("order_not_in_waiting_or_preparing_status")
         self.status = ORDER_STATUS_CHOICES[0][0]
         self.save()
-
 
     def __str__(self):
         return f"Order {self.id} - {self.user.name}"

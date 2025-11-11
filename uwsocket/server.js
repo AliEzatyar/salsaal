@@ -149,6 +149,11 @@ app.ws("/*", {
                     let room = `carrier:${data.carrierId}`;
                     subscribeToRoom(ws, room);
                     var lastCarrierLocation = await redisPub.get(`carrier_last_${data.carrierId}`)
+                    if (!lastCarrierLocation) {
+                        lastCarrierLocation = {}
+                    } else {
+                        lastCarrierLocation = JSON.parse(lastCarrierLocation)
+                    }
                     ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED' }))
                     if (lastCarrierLocation.latitude && lastCarrierLocation.longitude) {
                         console.log("sending locaiotn", lastCarrierLocation.latitude)

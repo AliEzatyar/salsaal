@@ -74,8 +74,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         filters.OrderingFilter,
         DjangoFilterBackend,
     ]
-    ordering_fields = ["name", "min_price", "avg_rating"]
-    ordering = ["-avg_rating"]
+    ordering_fields = ["name", "min_price", "likes"]
+    ordering = ["-likes"]
     # filering
     filterset_class = FoodFilterSet
 
@@ -375,7 +375,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 rn=Window(
                     expression=RowNumber(),
                     partition_by=[F("vendor_id")],
-                    order_by=F("avg_rating").desc(),
+                    order_by=F("likes").desc(),
                 )
             )
             .filter(rn__lte=3)  # limit to 3 foods per vendor
@@ -385,8 +385,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 "name",
                 "image",
                 "min_price",
-                "rating_count",
-                "avg_rating",
             )
         )
         vendors = (

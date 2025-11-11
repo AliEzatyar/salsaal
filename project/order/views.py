@@ -1,11 +1,15 @@
+from django.urls import reverse
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
-from order.utils import get_order_delivery_tries_key
+from order.utils import get_order_delivery_tries_key, start_payment_session
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
     COrderSerializer,
     COrderSerializerLessDetail,
+    OrderItemSerializerLessDetail,
 )
+from django.contrib.gis.geos import Point
+
 from cart.models import CartItem
 from .models import (
     MAX_ORDER_DELIVERY_TRIES_COUNT,
@@ -38,6 +42,8 @@ from accounts.models import (
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
 from live.utils import send_notification
+from order.utils import create_payment_session
+from django.conf import settings
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -51,18 +57,17 @@ class OrderViewSet(viewsets.ModelViewSet):
         http_method_names (list): Allowed HTTP methods for this viewset.
         serializer_class (class): Serializer class used for order serialization.
     Methods:
-        get_queryset(): 
+        get_queryset():
             Returns a queryset of orders filtered by the current user's ID.
-        list(request, *args, **kwargs): 
+        list(request, *args, **kwargs):
             Returns a list of orders for the current user with limited details.
-        create(request, *args, **kwargs): 
+        create(request, *args, **kwargs):
             Creates a new order from the user's cart, updates user location, and handles notifications.
-        cancel(request): 
+        cancel(request):
             Cancels all waiting orders for the current user and notifies the respective vendors.
-        get_serializer_context(): 
+        get_serializer_context():
             Returns the context for the serializer, including the current user's ID.
     """
-    
 
     http_method_names = ["delete", "post", "get"]
     serializer_class = COrderSerializer
@@ -110,11 +115,23 @@ class OrderViewSet(viewsets.ModelViewSet):
         lat = data.get("latitude", None)
         lon = data.get("longitude", None)
         if lat and lon:
+            try:
+                float(lat)
+                float(lon)
+            except ValueError:
+                return Response(
+                    {"detail": "provide_correct_location"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             user_profile = request.user.profile
             user_profile.latitude = str(lat)
             user_profile.longitude = str(lon)
             user_profile.save()
-            print("order view: user locaiton updated")
+        else:
+            return Response(
+                {"detail": "provide_correct_location"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         cart = request.user.cart
         # setting vendor id
@@ -188,7 +205,8 @@ class OrderViewSet(viewsets.ModelViewSet):
 
                 order.calculate_total_price()  # setting total price field value
                 order.set_total_items()  # setting total items amount field value
-
+                order.destination = Point(float(lat), float(lon), srid=4326)
+                order.save()
                 # ------------------------- creating the notification object
                 profile = request.user.profile
                 activate(profile.pf_lang)
@@ -295,20 +313,20 @@ class AcceptRejectOrderView(views.APIView):
     Handle buyer confirmation/acceptance of an order via POST. Expected input:
     - order_id (required): ID of the Order to accept.
     - payment_type (required): one of VALID_PAYMENT_TYPES.
-    - payment_id (optional): required when payment_type == VALID_PAYMENT_TYPES[1][0] (online/Hesab Pay).
+    - transaction_id (optional): required when payment_type == VALID_PAYMENT_TYPES[1][0] (online/Hesab Pay).
     Behavior:
     - Enforces IsAuthenticated and IsBuyer permissions and checks object permissions for the order.
     - Only allows transition when order.status is in the allowed waiting/preparing states.
     - Validates payment_type and handles three payment flows:
         - Non-reward payments: increment or create a Reward for the user based on vendor.reward_percentage.
         - Reward payments (VALID_PAYMENT_TYPES[2][0]): deduct from existing Reward; refuses if insufficient funds.
-        - Online/Hesab Pay (VALID_PAYMENT_TYPES[1][0]): requires payment_id and marks order as paid.
-    - Uses an atomic transaction to update rewards, order.payment_type, payment_id, paid flag, and set order.status to preparing.
+        - Online/Hesab Pay (VALID_PAYMENT_TYPES[1][0]): requires transaction_id and marks order as paid.
+    - Uses an atomic transaction to update rewards, order.payment_type, transaction_id, paid flag, and set order.status to preparing.
     - Clears the buyer's cart, publishes an ORDER_UPDATE event to Redis (pub:order:<order_id>), and creates a Notification for the vendor.
     - Activates the buyer's preferred language briefly when creating the notification.
     Responses (not exhaustive):
     - 200/204: success (empty Response returned on success).
-    - 400: invalid_payment_type or missing payment_id.
+    - 400: invalid_payment_type or missing transaction_id.
     - 403: order_not_waiting_state or ineffecient_amount (insufficient reward balance).
     - 404: Order not found.
     - 501: unexpected server error.
@@ -316,7 +334,6 @@ class AcceptRejectOrderView(views.APIView):
     - Performs rounding when computing reward amounts.
     - Side effects: updates Reward and Order records, clears cart, publishes to Redis, creates Notification.
     """
-    
 
     permission_classes = [IsAuthenticated, IsBuyer]
 
@@ -397,15 +414,21 @@ class AcceptRejectOrderView(views.APIView):
                 # -------------- setting order payment type
                 order.payment_type = payment_type
                 # Online Payment
+                response_data = {}
                 if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
-                    payment_id = data.get("payment_id", None)
-                    if not payment_id:
-                        return Response(
-                            {"detail": "no_payment_id"},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-                    order.payment_id = payment_id
-                    order.paid = True
+                    items = OrderItemSerializerLessDetail(order.items)
+                    session_url = start_payment_session(items.data, order_id)
+                    order.is_epay = True
+                    response_data['payment_session_url'] = session_url
+                    # transaction_id = data.get("transaction_id", None)
+                    # if not transaction_id:
+                    #     return Response(
+                    #         {"detail": "no_transaction_id"},
+                    #         status=status.HTTP_400_BAD_REQUEST,
+                    #     )
+                    # order.transaction_id = transaction_id
+                    # order.paid = True
+                    
                 order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
                 order.save()
                 event_data = {
@@ -461,8 +484,7 @@ class SetOrderStateDelivered(views.APIView):
     Responses: 202 Accepted on success; 403 for invalid/expired OTP or permission issues;
     404 if order not found; 400 on invalid OTP input; 501 for unknown errors.
     """
-    
-    
+
     permission_classes = [permissions.IsAuthenticated, IsBuyer, IsOrderCarryingState]
 
     def post(self, *args, **kwargs):
@@ -573,9 +595,9 @@ class SetOrderStateDelivered(views.APIView):
 class ReOrder(views.APIView):
     """
     ReOrder API view for handling reordering of previous orders.
-    This view allows authenticated users with the 'IsBuyer' permission to reorder items 
-    from a previous order. The user must provide the 'order_id' of the order they wish 
-    to reorder. If the order exists and the user has permission to access it, the items 
+    This view allows authenticated users with the 'IsBuyer' permission to reorder items
+    from a previous order. The user must provide the 'order_id' of the order they wish
+    to reorder. If the order exists and the user has permission to access it, the items
     from the previous order will be added to the user's cart.
     Methods:
         post: Handles the POST request to reorder items from a previous order.
@@ -586,7 +608,7 @@ class ReOrder(views.APIView):
         - 400 Bad Request: If 'order_id' is not provided.
         - 500 Internal Server Error: If an error occurs while processing the order.
     """
-    
+
     permission_classes = [permissions.IsAuthenticated, IsBuyer]
 
     def post(self, *args, **kwargs):
@@ -614,4 +636,87 @@ class ReOrder(views.APIView):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(
             {"detail": "provide_order_id"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class RedirectPaymentSuccess(views.APIView):
+    """
+    this view is called by hesab pay and redirects success url to mobile app and sends session id.
+    """
+
+    def get(self, *args, **kwargs):
+        body = self.request.body
+        params = self.request.query_params
+        print(body, "this was body")
+        print(params, "this was params")
+        session_id = params.get("session_id")
+        app_link = f"zayton://payment/success?session_id={session_id}"
+        response = Response(status=status.HTTP_302_FOUND)
+        response["Location"] = app_link
+        return response
+
+
+class RedirectPaymentFailure(views.APIView):
+    """
+    this view redirects success url to mobile app and sends session id.
+    """
+
+    def get(self, *args, **kwargs):
+        body = self.request.body
+        params = self.request.query_params
+        print(body, "this was gateway response body")
+        print(params, "this was gateway response params")
+        session_id = params.get("session_id")
+        app_link = f"zayton://payment/failure?session_id={session_id}"
+        response = Response(status=status.HTTP_302_FOUND)
+        response["Location"] = app_link
+        return response
+
+
+class HesabPayWebhook(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        print("HesabPay webhook data:", data)
+        success = data.get("success")
+        transaction_id = data.get("transaction_id")
+        memo = data.get("memo")
+
+        if success == "true" and memo and transaction_id:
+            try:
+                # Assuming memo is in the format "ORDER-123"
+                order_id_str = memo.split("-")[-1]
+                order_id = int(order_id_str)
+
+                order = Order.objects.get(id=order_id)
+
+                with atomic():
+                    order.paid = True
+                    order.transaction_id = transaction_id
+                    order.save()
+
+                # Notify vendor and customer if needed
+                # Example: send a websocket message or a push notification
+                r.publish(
+                    f"pub:order:{order.id}",
+                    json.dumps(
+                        {
+                            "type": "PAYMENT_CONFIRMED",
+                            "data": {"order_id": order.id, "paid": True},
+                        }
+                    ),
+                )
+                print(f"Order {order_id} marked as paid.")
+                return Response(status=status.HTTP_200_OK)
+
+            except (Order.DoesNotExist, ValueError, IndexError) as e:
+                print(f"Error processing webhook: {e}")
+                return Response(
+                    {"detail": "Invalid order ID in memo"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        return Response(
+            {"detail": "Invalid payload"}, status=status.HTTP_400_BAD_REQUEST
         )

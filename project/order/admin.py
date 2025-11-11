@@ -3,7 +3,7 @@ from .models import Order, OrderItem
 # Register your models here.
 class OrderAdmin(admin.ModelAdmin):
     model = Order
-    list_display = ["id","status","user","total_price"]
+    list_display = ["id","status","user","total_price","is_epay"]
     list_editable = ["status"]
 
 class OrderItemAdmin(admin.ModelAdmin):

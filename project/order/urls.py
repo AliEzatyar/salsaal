@@ -20,6 +20,26 @@ urlpatterns = [
         views.ReOrder.as_view(),
     ),
     path(
+        "user-orders/redirect-success/",
+        views.RedirectPaymentSuccess.as_view(),
+        name="redirect_payment_success",
+    ),
+    path(
+        "user-orders/redirect-failure/",
+        views.RedirectPaymentFailure.as_view(),
+        name="redirect_payment_failure",
+    ),
+    path(
+        "hesab-pay/success/",
+        views.RedirectPaymentSuccess.as_view(),
+        name="redirect_payment_success",
+    ),
+    path(
+        "hesab-pay/failure/",
+        views.RedirectPaymentFailure.as_view(),
+        name="redirect_payment_failure",
+    ),
+    path(
         "set-order-state-delivered/",
         views.SetOrderStateDelivered.as_view(),
     ),

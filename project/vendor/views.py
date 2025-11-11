@@ -464,13 +464,10 @@ class AddCarrierAPIView(views.APIView):
         if not account or not account.is_active:
             print("not found")
             raise serializers.ValidationError(
-                {"detail": "no_account_found_by_that_email"}
+                {"detail": "no_account_found_by_that_phone"}
             )
-        if account.role in (REST, ADMIN) or account.is_admin or account.is_superadmin:
+        if account.role in (REST, ADMIN, CARRIER) or account.is_admin or account.is_superadmin:
             raise NotAcceptable(detail="not_allowed", code=403)
-
-        elif account.role == CARRIER:
-            raise serializers.ValidationError({"detail": "already_exists"})
 
         # ----- sending otp to user's phone number
         otp = generate_otp()
@@ -626,6 +623,15 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_404_NOT_FOUND)
         ser = UserDetailSerializer(user)
         return Response(ser.data)
+
+    @action(detail=True, methods=["get"], url_path="enable-disable-carrier")
+    def enable_disable_carrier(self, request, *args, **kwargs):
+        print('ldsfjdslka')
+        carrier = self.get_object()
+        
+        carrier.is_active = not carrier.is_active
+        carrier.save()
+        return Response(status=status.HTTP_200_OK)
 
 
 class CarriersNow(views.APIView):
@@ -1133,9 +1139,11 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     # since accepted by vendor, otp is set on and used in filter waiting orders of vendor
                     otp = generate_otp(8)
                     order.otp = otp
+                    print(order.otp, "--- order otp--- set in calc",otp)
                     total_cost = float(order.total_price) + float(order.delivery_cost)
                     total_time = round(float(prep_time) + float(estimated))
                     order.save()
+                    print("order saved")
                     return Response(
                         {
                             "estimation": round(total_time),
@@ -1167,7 +1175,6 @@ class SetOrderStateCarrying(views.APIView):
     - 409: carrier_busy
     - 500: unexpected server error
     """
-    
 
     permission_classes = [
         permissions.IsAuthenticated,
@@ -1182,6 +1189,7 @@ class SetOrderStateCarrying(views.APIView):
         carrier_id = data.get("carrier_id")
         try:
             order = Order.objects.get(id=order_id)
+            print(order,order.otp,"---order---",order.id)
             carrier = Carrier.objects.get(pk=carrier_id)
 
             if (
@@ -1277,13 +1285,20 @@ class SetOrderStateCarrying(views.APIView):
                         }  # customer app should extract order id and subscribe it for live tracking
                     ),
                 )
+            # sending notification to customer
             send_notification.delay(
                 order.user.id,
                 notf.title,
                 body=notf.description,
                 data={"order_id": order.id},
             )
-
+            # sending notification to carrier
+            send_notification.delay(
+                carrier_id,
+                "New Order Assigned",
+                body=None,
+                data={"order_id": order.id},
+            )
             print("notification sent to customer", f"pub:user:{order.user.id}")
             # --------------------- sending notification to carrier's room
 

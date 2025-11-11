@@ -40,3 +40,8 @@ class Carrier(models.Model):
         self.avg_rating = avg_and_count["avg"] or 0.0
         self.rating_count = avg_and_count["count"] or 0
         self.save()
+
+    def save(self,*args, **kwargs):
+        if not self.pk:
+            self.name = self.user.name
+        return super().save(*args, **kwargs)
