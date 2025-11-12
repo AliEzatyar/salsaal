@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-from decimal import Decimal
 from datetime import timedelta
 from decouple import config
 import os

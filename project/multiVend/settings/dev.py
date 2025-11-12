@@ -1,3 +1,5 @@
+"""this setting file is for pre-CI/CD deployment settings"""
+
 from multiVend.settings.base import *
 from os import environ as env
 
@@ -18,7 +20,6 @@ DATABASES = {
 
 SECRET_KEY = env.get("SECRET_KEY")
 LOCAL = False
-
 # Redis as its own
 REDIS_HOST = env.get("REDIS_HOST")
 REDIS_PORT = env.get("REDIS_PORT")
@@ -101,7 +102,7 @@ FCM_API_KEY = env.get("FIREBASE_SERVICE_ACCOUNT_KEY")
 
 # AES encryption in order delivery token
 DUMMY_SECRET = env.get("DUMMY_SECRET")
-
+SECRET_KEY = env.get("SECRET_KEY")
 # zego cloud
 ZEGOCLOUD_APP_ID = env.get("ZEGOCLOUD_APP_ID")
 ZEGOCLOUD_SERVER_SECRET = env.get("ZEGOCLOUD_SERVER_SECRET")

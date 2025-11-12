@@ -46,13 +46,16 @@ async def home(
     try:
         lat, lon = geohash.decode(location)
     except Exception as e:
-        return {}
+        lat, lon = float(user.profile.latitude), float(user.profile.longitude)
     city = city.lower()
     # ----------- user cart and notf count
-    user_notf_count = db.scalar(
-        select(Notification.id).where(
-            Notification.receiver_id == user.id, Notification.is_read == False
+    user_notf_count = (
+        db.scalar(
+            select(Notification.id).where(
+                Notification.receiver_id == user.id, Notification.is_read == False
+            )
         )
+        or 0
     )
     user_cart_count = get_total_cart_items(user.id)
     print(user_notf_count, user_cart_count)
