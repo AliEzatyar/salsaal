@@ -37,18 +37,19 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
         "Accept": "application/json",
     }
 
-    payload = {"items": items, "memo": order_id}
+    payload = {"items": items, "reference_id": order_id}
 
     # Add optional parameters
     if email:
         payload["email"] = email
 
     if redirect_urls:
-        payload.update(redirect_urls)
+        payload.update({"redirect_success_url": redirect_urls.get("success_url"), "redirect_failure_url": redirect_urls.get("failure_url")})
 
     try:
-        response = requests.post(endpoint, json=payload, headers=headers)
-        response.raise_for_status()
+        print("this is payload", payload)
+        response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
+        # response.raise_for_status()
         return response.json()
 
     except requests.exceptions.RequestException as e:
@@ -56,10 +57,10 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
 
 
 def start_payment_session(items, order_id):
-    success_url = "http://192.168.0.120:8000/" + reverse(
+    success_url = "https://api.zayton.llc/" + reverse(
         "api:order:redirect_payment_success"
     )
-    failure_url = "http://192.168.0.120:8000/" + reverse(
+    failure_url = "https://api.zayton.llc/" + reverse(
         "api:order:redirect_payment_failure"
     )
     print(settings.HESAB_PAY_API_KEY)

@@ -655,6 +655,17 @@ class RedirectPaymentSuccess(views.APIView):
         response["Location"] = app_link
         return response
 
+    def get(self,*args, **kwargs):
+        body = self.request.body
+        params = self.request.query_params
+        print(body, "this was body")
+        print(params, "this was params")
+        session_id = params.get("session_id")
+        app_link = f"zayton://payment/success?session_id={session_id}"
+        response = Response(status=status.HTTP_302_FOUND)
+        response["Location"] = app_link
+        return response
+
 
 class RedirectPaymentFailure(views.APIView):
     """

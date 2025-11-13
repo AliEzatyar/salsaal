@@ -75,7 +75,7 @@ async def home(
     city_vendor_ids_key = f"vdrs:{city}:ids"
     city_vendor_ids = await cache_get(city_vendor_ids_key)
     if not city_vendor_ids:
-        ids = db.query(Vendor.id).filter(Vendor.city == city).all()
+        ids = db.query(Vendor.id).filter(Vendor.city == city,Vendor.is_approved==True).all()
         city_vendor_ids = [v.id for v in ids]
         await cache_set(city_vendor_ids_key, city_vendor_ids)
     # ------------ city foods
