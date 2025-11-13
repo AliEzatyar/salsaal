@@ -169,7 +169,7 @@ class OrderItem(models.Model):
 
     @property
     def subtotal(self):
-        return self.quantity * self.price
+        return float(self.quantity * self.price)
 
     @property
     def food_name(self):

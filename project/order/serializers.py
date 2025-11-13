@@ -48,14 +48,12 @@ class COrderItemSerializer(ModelSerializer):
 
 class OrderItemSerializerLessDetail(ModelSerializer):
     """used in online payment session creation"""
-    name = serializers.SerializerMethodField("get_name")
-
+    name = serializers.ReadOnlyField(source="food.name")
+    price  = serializers.ReadOnlyField(source="subtotal")
     class Meta:
         model= OrderItem
-        fields = ["id", "name", "quantity","subtotal"]
+        fields = ["id", "name", "price"]
 
-    def get_name(self, obj):
-        return obj.food_name
 
 
 class COrderSerializer(ModelSerializer):

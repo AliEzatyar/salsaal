@@ -341,133 +341,133 @@ class AcceptRejectOrderView(views.APIView):
         data = self.request.data
         order_id = data.get("order_id", None)
         event_data = None
-        try:
-            order = Order.objects.get(id=order_id)
-            # check if this user owns the order
-            self.check_object_permissions(self.request, order)
-            # only 'waiting' order can be set to preparing
-            if not order.status in [
-                ORDER_STATUS_CHOICES[1][0],  # waiting
-                ORDER_STATUS_CHOICES[2][0],  # preparing
-            ]:
+        # try:
+        order = Order.objects.get(id=order_id)
+        # check if this user owns the order
+        self.check_object_permissions(self.request, order)
+        # only 'waiting' order can be set to preparing
+        if not order.status in [
+            ORDER_STATUS_CHOICES[1][0],  # waiting
+            ORDER_STATUS_CHOICES[2][0],  # preparing
+        ]:
 
-                print("order  not wiaing preparing or waiting......", order_id)
-                return Response(
-                    {"detail", "order_not_waiting_state"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            # checking if payment type is correct
-            payment_type = data.get("payment_type", None)
-            if not payment_type or not payment_type in [
-                i[0] for i in VALID_PAYMENT_TYPES
-            ]:
-                return Response(
-                    {"detail": "invalid_payment_type"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            # ------------checking if payment is reward + incrementing reward amount
-            existing_reward = Reward.objects.filter(
-                vendor__id=order.vendor.id, user=self.request.user
-            ).first()
-            with atomic():
-                # payment type other than reward -> increment reward
-                if payment_type != VALID_PAYMENT_TYPES[2][0]:
-                    if existing_reward:
-                        print("reward existed before")
-                        existing_reward.amount += round(
-                            (order.vendor.reward_percentage * float(order.total_price))
+            print("order  not wiaing preparing or waiting......", order_id)
+            return Response(
+                {"detail", "order_not_waiting_state"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        # checking if payment type is correct
+        payment_type = data.get("payment_type", None)
+        if not payment_type or not payment_type in [
+            i[0] for i in VALID_PAYMENT_TYPES
+        ]:
+            return Response(
+                {"detail": "invalid_payment_type"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # ------------checking if payment is reward + incrementing reward amount
+        existing_reward = Reward.objects.filter(
+            vendor__id=order.vendor.id, user=self.request.user
+        ).first()
+        with atomic():
+            # payment type other than reward -> increment reward
+            if payment_type != VALID_PAYMENT_TYPES[2][0]:
+                if existing_reward:
+                    print("reward existed before")
+                    existing_reward.amount += round(
+                        (order.vendor.reward_percentage * float(order.total_price))
+                        / 100
+                    )
+                    existing_reward.save()
+                else:
+                    if order.vendor.reward_percentage > 0:
+                        print("creating new reward")
+                        reward_to_add = round(
+                            (
+                                order.vendor.reward_percentage
+                                * float(order.total_price)
+                            )
                             / 100
                         )
-                        existing_reward.save()
-                    else:
-                        if order.vendor.reward_percentage > 0:
-                            print("creating new reward")
-                            reward_to_add = round(
-                                (
-                                    order.vendor.reward_percentage
-                                    * float(order.total_price)
-                                )
-                                / 100
-                            )
-                            Reward.objects.create(
-                                vendor=order.vendor,
-                                user=self.request.user,
-                                amount=reward_to_add,
-                            )
-                # payment type `reward` -> deduct reward
-                else:
-                    print("type reward paymnet")
-                    # deducting reward and setting as paid
-                    if not existing_reward or existing_reward.amount < float(
-                        order.total_price
-                    ):
-                        return Response(
-                            {
-                                "detail": "ineffecient_amount",
-                            },
-                            status=status.HTTP_403_FORBIDDEN,
+                        Reward.objects.create(
+                            vendor=order.vendor,
+                            user=self.request.user,
+                            amount=reward_to_add,
                         )
-                    existing_reward.amount -= float(order.total_price)
-                    order.paid = True
-                    existing_reward.save()
-
-                # -------------- setting order payment type
-                order.payment_type = payment_type
-                # Online Payment
-                response_data = {}
-                if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
-                    items = OrderItemSerializerLessDetail(order.items)
-                    session_url = start_payment_session(items.data, order_id)
-                    order.is_epay = True
-                    response_data['payment_session_url'] = session_url
-                    # transaction_id = data.get("transaction_id", None)
-                    # if not transaction_id:
-                    #     return Response(
-                    #         {"detail": "no_transaction_id"},
-                    #         status=status.HTTP_400_BAD_REQUEST,
-                    #     )
-                    # order.transaction_id = transaction_id
-                    # order.paid = True
-                    
-                order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
-                order.save()
-                event_data = {
-                    "accepted": True,
-                    "payment_type": payment_type,
-                    "order_id": order_id,
-                }
-                self.request.user.cart.clear()
-                # sendig order updates to vendor
-                r.publish(
-                    f"pub:order:{order.id}",
-                    json.dumps(
+            # payment type `reward` -> deduct reward
+            else:
+                print("type reward paymnet")
+                # deducting reward and setting as paid
+                if not existing_reward or existing_reward.amount < float(
+                    order.total_price
+                ):
+                    return Response(
                         {
-                            "type": "ORDER_UPDATE",
-                            "data": event_data,
-                        }
-                    ),
-                )
+                            "detail": "ineffecient_amount",
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                existing_reward.amount -= float(order.total_price)
+                order.paid = True
+                existing_reward.save()
 
-            # creating notification for the user
-            activate_language(self.request.user.profile.pf_lang)
-            Notification.objects.create(
-                title=_("Order Set Preparing"),
-                description=_("your order is being prepared"),
-                type="ORDER_SET_PREPARING",
-                data={},
-                receiver=order.vendor.user,
-                target_id=order.id,
+            # -------------- setting order payment type
+            order.payment_type = payment_type
+            # Online Payment
+            response_data = {}
+            if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
+                items = OrderItemSerializerLessDetail(order.items.all(), many=True)
+                session_url = start_payment_session(items.data, order_id)
+                order.is_epay = True
+                response_data['payment_session_url'] = session_url
+                # transaction_id = data.get("transaction_id", None)
+                # if not transaction_id:
+                #     return Response(
+                #         {"detail": "no_transaction_id"},
+                #         status=status.HTTP_400_BAD_REQUEST,
+                #     )
+                # order.transaction_id = transaction_id
+                # order.paid = True
+                
+            order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
+            order.save()
+            event_data = {
+                "accepted": True,
+                "payment_type": payment_type,
+                "order_id": order_id,
+            }
+            self.request.user.cart.clear()
+            # sendig order updates to vendor
+            r.publish(
+                f"pub:order:{order.id}",
+                json.dumps(
+                    {
+                        "type": "ORDER_UPDATE",
+                        "data": event_data,
+                    }
+                ),
             )
-            deactivate_language()
 
-            return Response()
+        # creating notification for the user
+        activate_language(self.request.user.profile.pf_lang)
+        Notification.objects.create(
+            title=_("Order Set Preparing"),
+            description=_("your order is being prepared"),
+            type="ORDER_SET_PREPARING",
+            data={},
+            receiver=order.vendor.user,
+            target_id=order.id,
+        )
+        deactivate_language()
 
-        except Order.DoesNotExist:
-            print("order not found!")
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            print("error in ar-order:", e.args, e)
-            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+        return Response()
+
+        # except Order.DoesNotExist:
+        #     print("order not found!")
+        #     return Response(status=status.HTTP_404_NOT_FOUND)
+        # except Exception as e:
+        #     print("error in ar-order:", e.args, e)
+        #     return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class SetOrderStateDelivered(views.APIView):
@@ -644,7 +644,7 @@ class RedirectPaymentSuccess(views.APIView):
     this view is called by hesab pay and redirects success url to mobile app and sends session id.
     """
 
-    def get(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         body = self.request.body
         params = self.request.query_params
         print(body, "this was body")

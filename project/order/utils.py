@@ -3,6 +3,7 @@ import requests
 import json
 from django.conf import settings
 
+
 def get_order_delivery_tries_key(order_id):
     """
     Generates a key for tracking the number of delivery attempts for a specific order.
@@ -55,12 +56,18 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
 
 
 def start_payment_session(items, order_id):
-    success_url = reverse("order:redirect_payment_success")
-    failure_url = reverse("order:redirect_payment_failure")
+    success_url = "http://192.168.0.120:8000/" + reverse(
+        "api:order:redirect_payment_success"
+    )
+    failure_url = "http://192.168.0.120:8000/" + reverse(
+        "api:order:redirect_payment_failure"
+    )
+    print(settings.HESAB_PAY_API_KEY)
     response = create_payment_session(
         settings.HESAB_PAY_API_KEY,
         items,
         order_id,
         redirect_urls={"success_url": success_url, "failure_url": failure_url},
     )
+    print("this was response", response, items,order_id)
     return response
