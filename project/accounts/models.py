@@ -1,7 +1,7 @@
 from datetime import timedelta
 from uuid import uuid4
 from django.db import models
-from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
 from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
 from h3 import latlng_to_cell as h3_latlng_to_cell
@@ -59,12 +59,12 @@ class UserManager(BaseUserManager):
         user.is_admin = True
         user.is_staff = True
         user.is_active = True
-        user.is_superadmin = False
+        user.is_superuser = True
         user.save(using=self._db)
         return user
 
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, PermissionsMixin):
     uuid = models.UUIDField(
         default=uuid4, db_index=True, unique=True, editable=False, null=True
     )
@@ -92,13 +92,12 @@ class User(AbstractBaseUser):
     created_date = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-    is_superadmin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     region = models.CharField(blank=True, null=True, default="AF")
 
     USERNAME_FIELD = "phone_number"
 
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS = ["name"]
 
     def __str__(self):
         return self.phone_number
@@ -130,8 +129,8 @@ class UserProfile(g_models.Model):
     picture = models.ImageField(upload_to="users/pictures/", blank=True, null=True)
     address = models.CharField(blank=True, null=True, max_length=60)
     city = models.CharField(max_length=15, db_index=True)
-    latitude = models.CharField(max_length=20)
-    longitude = models.CharField(max_length=20)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
@@ -144,10 +143,10 @@ class UserProfile(g_models.Model):
         """overriding to set location point automatically"""
         if self.latitude and self.longitude:
             self.location = Point(
-                float(self.longitude), float(self.latitude), srid=4326
+                self.longitude, self.latitude, srid=4326
             )
             self.h3_id = h3_latlng_to_cell(
-                float(self.latitude), float(self.longitude), DEFAULT_H3_RESOLUTION
+                self.latitude, self.longitude, DEFAULT_H3_RESOLUTION
             )
             self.city = str(self.city).lower()
 

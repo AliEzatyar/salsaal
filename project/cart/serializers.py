@@ -36,7 +36,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         Returns:
             The total price for the cart item.
         """
-        return obj.get_total_price()
+        return obj.total_price
 
 
 class CartSerializer(serializers.ModelSerializer):

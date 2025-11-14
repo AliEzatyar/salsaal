@@ -1,4 +1,3 @@
-from django.urls import reverse
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
 from order.utils import get_order_delivery_tries_key, start_payment_session
@@ -9,7 +8,6 @@ from .serializers import (
     OrderItemSerializerLessDetail,
 )
 from django.contrib.gis.geos import Point
-
 from cart.models import CartItem
 from .models import (
     MAX_ORDER_DELIVERY_TRIES_COUNT,
@@ -35,15 +33,13 @@ from django.utils.translation import activate, deactivate, gettext as _
 from marketplace.utils import r
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
-from api.permissions import IsBuyer, IsOrderCarryingState
+from api.permissions import IsBuyer, IsCustomer, IsOrderCarryingState
 from accounts.models import (
     UserOtp,
 )
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
 from live.utils import send_notification
-from order.utils import create_payment_session
-from django.conf import settings
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -291,7 +287,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                     f"pub:vendor:{order.vendor.id}",
                     json.dumps(
                         {
-                            "type": "ORDER_CANCELLED",
+                            "type": "ORDER_UPDATE",
                             "data": {"orderId": order.id},
                         }  # vendor app should extract order id and subscribe to --order room
                     ),
@@ -340,134 +336,142 @@ class AcceptRejectOrderView(views.APIView):
     def post(self, *args, **kwargs):
         data = self.request.data
         order_id = data.get("order_id", None)
-        event_data = None
-        # try:
-        order = Order.objects.get(id=order_id)
-        # check if this user owns the order
-        self.check_object_permissions(self.request, order)
-        # only 'waiting' order can be set to preparing
-        if not order.status in [
-            ORDER_STATUS_CHOICES[1][0],  # waiting
-            ORDER_STATUS_CHOICES[2][0],  # preparing
-        ]:
-
-            print("order  not wiaing preparing or waiting......", order_id)
-            return Response(
-                {"detail", "order_not_waiting_state"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        # checking if payment type is correct
         payment_type = data.get("payment_type", None)
-        if not payment_type or not payment_type in [
-            i[0] for i in VALID_PAYMENT_TYPES
-        ]:
-            return Response(
-                {"detail": "invalid_payment_type"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        # ------------checking if payment is reward + incrementing reward amount
-        existing_reward = Reward.objects.filter(
-            vendor__id=order.vendor.id, user=self.request.user
-        ).first()
-        with atomic():
-            # payment type other than reward -> increment reward
-            if payment_type != VALID_PAYMENT_TYPES[2][0]:
-                if existing_reward:
-                    print("reward existed before")
-                    existing_reward.amount += round(
-                        (order.vendor.reward_percentage * float(order.total_price))
-                        / 100
-                    )
-                    existing_reward.save()
-                else:
-                    if order.vendor.reward_percentage > 0:
-                        print("creating new reward")
-                        reward_to_add = round(
-                            (
-                                order.vendor.reward_percentage
-                                * float(order.total_price)
-                            )
+        event_data = None
+        try:
+            order = Order.objects.get(id=order_id)
+            #------------- check if this user owns the order
+            self.check_object_permissions(self.request, order)
+            #------------- only 'waiting' order 
+            if not order.status == ORDER_STATUS_CHOICES[1][0]:
+                return Response(
+                    {"detail", "order_not_waiting_state"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            #------------ checking if payment type is correct
+            if not payment_type or not payment_type in [i[0] for i in VALID_PAYMENT_TYPES]:
+                return Response(
+                    {"detail": "invalid_payment_type"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            existing_reward = Reward.objects.filter(
+                vendor__id=order.vendor.id, user=self.request.user
+            ).first()
+            with atomic():
+                # payment type not reward -> increment reward
+                if payment_type != VALID_PAYMENT_TYPES[2][0] : 
+                    if existing_reward:
+                        existing_reward.amount += round(
+                            (order.vendor.reward_percentage * float(order.total_price))
                             / 100
                         )
-                        Reward.objects.create(
-                            vendor=order.vendor,
-                            user=self.request.user,
-                            amount=reward_to_add,
+                        existing_reward.save()
+                    else:
+                        # if buyer has no reward object of this vendor
+                        if order.vendor.reward_percentage > 0:
+                            reward_to_add = round(
+                                (order.vendor.reward_percentage * float(order.total_price))
+                                / 100
+                            )
+                            Reward.objects.create(
+                                vendor=order.vendor,
+                                user=self.request.user,
+                                amount=reward_to_add,
+                            )
+                # payment type `reward` -> deduct reward
+                else:
+                    # deducting reward and setting as paid
+                    if not existing_reward or existing_reward.amount < float(
+                        order.total_price
+                    ):
+                        return Response(
+                            {
+                                "detail": "ineffecient_amount",
+                            },
+                            status=status.HTTP_403_FORBIDDEN,
                         )
-            # payment type `reward` -> deduct reward
-            else:
-                print("type reward paymnet")
-                # deducting reward and setting as paid
-                if not existing_reward or existing_reward.amount < float(
-                    order.total_price
-                ):
-                    return Response(
+                    existing_reward.amount -= float(order.total_price)
+                    order.paid = True
+                    existing_reward.save()
+
+                # -------------- handling hesab pay
+                order.payment_type = payment_type
+                # Online Payment
+                if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
+                    # client app has received transaction id after payment successful
+                    transaction_id = data.get("transaction_id",None)
+                    if not transaction_id:
+                         return Response({"detail":"provide_transaction_id"},status=status.HTTP_400_BAD_REQUEST)
+                    order.transaction_id = transaction_id
+                    order.is_epay= True
+                    order.paid = True
+
+                order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
+                order.save()
+                event_data = {
+                    "accepted": True,
+                    "payment_type": payment_type,
+                    "order_id": order_id,
+                }
+                self.request.user.cart.clear()
+                # sendig order updates to vendor
+                r.publish(
+                    f"pub:order:{order.id}",
+                    json.dumps(
                         {
-                            "detail": "ineffecient_amount",
-                        },
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-                existing_reward.amount -= float(order.total_price)
-                order.paid = True
-                existing_reward.save()
+                            "type": "ORDER_UPDATE",
+                            "data": event_data,
+                        }
+                    ),
+                )
 
-            # -------------- setting order payment type
-            order.payment_type = payment_type
-            # Online Payment
-            response_data = {}
-            if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
-                items = OrderItemSerializerLessDetail(order.items.all(), many=True)
-                session_url = start_payment_session(items.data, order_id)
-                order.is_epay = True
-                response_data['payment_session_url'] = session_url
-                # transaction_id = data.get("transaction_id", None)
-                # if not transaction_id:
-                #     return Response(
-                #         {"detail": "no_transaction_id"},
-                #         status=status.HTTP_400_BAD_REQUEST,
-                #     )
-                # order.transaction_id = transaction_id
-                # order.paid = True
-                
-            order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
-            order.save()
-            event_data = {
-                "accepted": True,
-                "payment_type": payment_type,
-                "order_id": order_id,
-            }
-            self.request.user.cart.clear()
-            # sendig order updates to vendor
-            r.publish(
-                f"pub:order:{order.id}",
-                json.dumps(
-                    {
-                        "type": "ORDER_UPDATE",
-                        "data": event_data,
-                    }
-                ),
+            # creating notification for the user
+            activate_language(self.request.user.profile.pf_lang)
+            Notification.objects.create(
+                title=_("Order Set Preparing"),
+                description=_("your order is being prepared"),
+                type="ORDER_SET_PREPARING",
+                data={},
+                receiver=order.vendor.user,
+                target_id=order.id,
             )
+            deactivate_language()
 
-        # creating notification for the user
-        activate_language(self.request.user.profile.pf_lang)
-        Notification.objects.create(
-            title=_("Order Set Preparing"),
-            description=_("your order is being prepared"),
-            type="ORDER_SET_PREPARING",
-            data={},
-            receiver=order.vendor.user,
-            target_id=order.id,
-        )
-        deactivate_language()
+            return Response()
 
-        return Response()
+        except Order.DoesNotExist:
+            print("order not found!")
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print("error in ar-order:", e.args, e)
+            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
-        # except Order.DoesNotExist:
-        #     print("order not found!")
-        #     return Response(status=status.HTTP_404_NOT_FOUND)
-        # except Exception as e:
-        #     print("error in ar-order:", e.args, e)
-        #     return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+class OnlinePaymentView(views.APIView):
+    """
+    this view takes order id and returns a session url for online payment
+    app should open it in browser
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsCustomer]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            order_id = data.get("order_id", None)
+            if not order_id:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            order = Order.objects.get(id=order_id)
+            items = order.items.all()
+            items_ser = OrderItemSerializerLessDetail(items, many=True)
+            session_url = start_payment_session(items_ser.data, order_id)
+            print("this is session url", session_url)
+            return Response({"session_url": session_url})
+        except Order.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print("error in online payment view", e)
+            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class SetOrderStateDelivered(views.APIView):
@@ -641,27 +645,14 @@ class ReOrder(views.APIView):
 
 class RedirectPaymentSuccess(views.APIView):
     """
-    this view is called by hesab pay and redirects success url to mobile app and sends session id.
+    this endpoint is called by hesab pay after payment is successful
+    it redirects the request to customer app with transaction_id 
     """
-
-    def post(self, *args, **kwargs):
-        body = self.request.body
-        params = self.request.query_params
-        print(body, "this was body")
-        print(params, "this was params")
-        session_id = params.get("session_id")
-        app_link = f"zayton://payment/success?session_id={session_id}"
-        response = Response(status=status.HTTP_302_FOUND)
-        response["Location"] = app_link
-        return response
-
-    def get(self,*args, **kwargs):
-        body = self.request.body
-        params = self.request.query_params
-        print(body, "this was body")
-        print(params, "this was params")
-        session_id = params.get("session_id")
-        app_link = f"zayton://payment/success?session_id={session_id}"
+    def get(self, *args, **kwargs):        
+        params_data = self.request.query_params["data"]
+        print(params_data, "this was params")
+        transaction_id = params_data.get("transaction_id")
+        app_link = f"zayton_customer://payment/success?transaction_id={transaction_id}"
         response = Response(status=status.HTTP_302_FOUND)
         response["Location"] = app_link
         return response
@@ -673,61 +664,10 @@ class RedirectPaymentFailure(views.APIView):
     """
 
     def get(self, *args, **kwargs):
-        body = self.request.body
         params = self.request.query_params
-        print(body, "this was gateway response body")
         print(params, "this was gateway response params")
-        session_id = params.get("session_id")
-        app_link = f"zayton://payment/failure?session_id={session_id}"
+        app_link = f"zayton://payment/failure"
         response = Response(status=status.HTTP_302_FOUND)
         response["Location"] = app_link
         return response
 
-
-class HesabPayWebhook(views.APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        data = request.data
-        print("HesabPay webhook data:", data)
-        success = data.get("success")
-        transaction_id = data.get("transaction_id")
-        memo = data.get("memo")
-
-        if success == "true" and memo and transaction_id:
-            try:
-                # Assuming memo is in the format "ORDER-123"
-                order_id_str = memo.split("-")[-1]
-                order_id = int(order_id_str)
-
-                order = Order.objects.get(id=order_id)
-
-                with atomic():
-                    order.paid = True
-                    order.transaction_id = transaction_id
-                    order.save()
-
-                # Notify vendor and customer if needed
-                # Example: send a websocket message or a push notification
-                r.publish(
-                    f"pub:order:{order.id}",
-                    json.dumps(
-                        {
-                            "type": "PAYMENT_CONFIRMED",
-                            "data": {"order_id": order.id, "paid": True},
-                        }
-                    ),
-                )
-                print(f"Order {order_id} marked as paid.")
-                return Response(status=status.HTTP_200_OK)
-
-            except (Order.DoesNotExist, ValueError, IndexError) as e:
-                print(f"Error processing webhook: {e}")
-                return Response(
-                    {"detail": "Invalid order ID in memo"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        return Response(
-            {"detail": "Invalid payload"}, status=status.HTTP_400_BAD_REQUEST
-        )

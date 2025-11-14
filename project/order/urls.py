@@ -11,6 +11,7 @@ router = DefaultRouter()
 router.register(r"user-orders", views.OrderViewSet, basename="user-orders")
 
 urlpatterns = [
+    path("epay/", views.OnlinePaymentView.as_view(), name="online_payment"),
     path(
         "user-orders/ar-order/",
         views.AcceptRejectOrderView.as_view(),
@@ -26,16 +27,6 @@ urlpatterns = [
     ),
     path(
         "user-orders/redirect-failure/",
-        views.RedirectPaymentFailure.as_view(),
-        name="redirect_payment_failure",
-    ),
-    path(
-        "hesab-pay/success/",
-        views.RedirectPaymentSuccess.as_view(),
-        name="redirect_payment_success",
-    ),
-    path(
-        "hesab-pay/failure/",
         views.RedirectPaymentFailure.as_view(),
         name="redirect_payment_failure",
     ),

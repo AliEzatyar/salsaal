@@ -45,7 +45,7 @@ from marketplace.serializers import VFoodSerializerDetail
 from api.permissions import IsVendorApproved, IsVendorOfObject
 from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch,Count
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch, Count
 from django.utils import timezone as tz
 from django.db.transaction import atomic
 from django.contrib.gis.geos import Point
@@ -170,7 +170,6 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     # searching
     search_fields = ["name", "category__name", "description"]
 
-    
     def get_queryset(self):
         """any queryset should be of the requesting vendor"""
         query_set = Food.objects.filter(vendor__user__id=self.request.user.id)
@@ -307,14 +306,14 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         return Response(ser.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="enable-disable")
-    def enable_disable(self, request, *args, **kwargs):
+    def enable_disable_discount(self, request, *args, **kwargs):
         """
         this endpoint enables or disables a discount
         enabletakes True and False, first one means enable latter means disable.
         if enable is None, no enable or disable happens.
         request must be sent out of update and exact.
         """
-        enable = request.data.get("enable",True)
+        enable = request.data.get("enable", True)
         discount = self.get_object()
         try:
             foods = discount.foods.only("id", "min_price", "prices")
@@ -324,8 +323,8 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 for food in foods:
                     apply_discount(food, discount.amount)
             # disable discount
-            elif enable== False and discount.is_active == True:
-                enable= False
+            elif enable == False and discount.is_active == True:
+                enable = False
                 for food in foods:
                     revert_discount(food, discount.amount)
             # bulk update
@@ -371,9 +370,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         food_id = request.data.get("food_id", None)
         discount = self.get_object()
         try:
-            food = Food.objects.get(
-                id=food_id, vendor__id=request.user.vendor.id
-            )
+            food = Food.objects.get(id=food_id, vendor__id=request.user.vendor.id)
             # adding discount to food
             if food.discount != None:
                 revert_discount(food, food.discount.amount)
@@ -446,7 +443,7 @@ class AddCarrierAPIView(views.APIView):
     - patch: Validates the phone number and sends an OTP to the user's phone.
     - post: Verifies the OTP and creates a carrier account if valid.
     """
-    
+
     permission_classes = [permissions.IsAuthenticated, IsVendor]
     http_method_names = ["post", "patch"]
 
@@ -454,11 +451,11 @@ class AddCarrierAPIView(views.APIView):
         """this method verifies the phone_number and sends OTP, no carrier creation"""
         # ---- authorization and validation
         data = self.request.data
-        phone_number = data.get("phone_number",None)
-        print(data,"----")
+        phone_number = data.get("phone_number", None)
+        print(data, "----")
         if not phone_number:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        phone_number= str(phone_number).strip()
+        phone_number = str(phone_number).strip()
         # phone_number = "+"+phone_number
         account = User.objects.filter(phone_number=phone_number).first()
         if not account or not account.is_active:
@@ -466,7 +463,11 @@ class AddCarrierAPIView(views.APIView):
             raise serializers.ValidationError(
                 {"detail": "no_account_found_by_that_phone"}
             )
-        if account.role in (REST, ADMIN, CARRIER) or account.is_admin or account.is_superadmin:
+        if (
+            account.role in (REST, ADMIN, CARRIER)
+            or account.is_admin
+            or account.is_superadmin
+        ):
             raise NotAcceptable(detail="not_allowed", code=403)
 
         # ----- sending otp to user's phone number
@@ -486,7 +487,7 @@ class AddCarrierAPIView(views.APIView):
         phone_number = data.get("phone_number")
         otp = data.get("otp")
         try:
-            print(data,"===")
+            print(data, "===")
             # otp = UserOtp.objects.get(otp=otp)
             # if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
             #     return Response(
@@ -547,7 +548,6 @@ class AddCarrierAPIView(views.APIView):
 
 
 class ManageCarrierViewSet(viewsets.ModelViewSet):
-    
 
     permission_classes = [permissions.IsAuthenticated, IsVendor, IsVendorOfObject]
     serializer_class = CarrierSerializer
@@ -608,13 +608,13 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
     def search_carrier(self, request, *args, **kwargs):
         data = request.query_params
         print("vendor searches for carrier", data)
-        phone_number = data.get("phone_number",None)
-        
+        phone_number = data.get("phone_number", None)
+
         if not phone_number:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        phone_number= str(phone_number).strip()
-        phone_number = "+"+phone_number
-        
+        phone_number = str(phone_number).strip()
+        phone_number = "+" + phone_number
+
         try:
             user = User.objects.get(phone_number=phone_number)
             print("user found", user.id)
@@ -626,9 +626,33 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="enable-disable-carrier")
     def enable_disable_carrier(self, request, *args, **kwargs):
-        print('ldsfjdslka')
+        # ---------------- updating vendor's carriers in redis
         carrier = self.get_object()
-        
+        vendor = carrier.vendor
+        vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+        if not carrier.is_active:
+            # if vendor enables a carrier, increment 1 to total_c_c and f_c_c
+            total_carriers_count = vendor.carriers.filter(is_active=True).count()
+            total_carriers_count += 1
+            r.hset(
+                vendor_carriers_key, "total_c_c", total_carriers_count
+            )  # tota carriers
+            f_c_c = r.hget(vendor_carriers_key, "f_c_c")
+            f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
+            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+        else:
+            # if a vendor disables a carrier
+            total_carriers_count = vendor.carriers.filter(is_active=True).count()
+            if total_carriers_count > 0:
+                total_carriers_count -= 1
+                r.hset(
+                    vendor_carriers_key, "total_c_c", total_carriers_count
+                )  # total carriers
+                f_c_c = r.hget(vendor_carriers_key, "f_c_c")
+                if int(f_c_c) > 0:
+                    f_c_c = int(f_c_c) - 1  # decrementing free carrier's count
+                    r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+
         carrier.is_active = not carrier.is_active
         carrier.save()
         return Response(status=status.HTTP_200_OK)
@@ -670,7 +694,6 @@ class CarriersNow(views.APIView):
     - distance_to_travel_time
     - Redis/cache client (for live telemetry)
     """
-    
 
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
@@ -780,18 +803,17 @@ class VendorSalesView(views.APIView):
     Errors:
     - 400 if start_date or end_date is missing
     """
-    
 
     permission_classes = [IsVendor, permissions.IsAuthenticated]
 
     def get(self, *args, **kwargs):
         """
-            returns:
-            * today total sales
-            * this month total sales
-            * this month per-day sales 
-            * this month top-sale food 
-            * this month platform share 
+        returns:
+        * today total sales
+        * this month total sales
+        * this month per-day sales
+        * this month top-sale food
+        * this month platform share
         """
         now = time.time()
         vendor = self.request.user.vendor
@@ -802,7 +824,9 @@ class VendorSalesView(views.APIView):
         )
         # --------------- this month sales
         this_month_orders = this_year_orders.filter(created_at__month=this_month)
-        this_month_total_sales = this_month_orders.aggregate(total=Sum("total_price"))["total"]
+        this_month_total_sales = this_month_orders.aggregate(total=Sum("total_price"))[
+            "total"
+        ]
         today_orders = this_month_orders.filter(created_at__date=tz.now().date())
         today_total_sales = today_orders.aggregate(total=Sum("total_price"))["total"]
         # --------------- per day chart
@@ -818,25 +842,31 @@ class VendorSalesView(views.APIView):
         ]
         # ---------------------- top sale foods
 
-        per_food_sales_qs = OrderItem.objects.filter(order__in=this_month_orders).values('food__name').annotate(
-            total_sale=Sum(F('quantity') * F('price')),
-        ).order_by("-total_sale")
+        per_food_sales_qs = (
+            OrderItem.objects.filter(order__in=this_month_orders)
+            .values("food__name")
+            .annotate(
+                total_sale=Sum(F("quantity") * F("price")),
+            )
+            .order_by("-total_sale")
+        )
         per_food_dict = [
             {"food": food["food__name"], "total_sale": int(food["total_sale"])}
             for food in per_food_sales_qs
         ]
         # --------------------- platform share
         platform_share = (this_month_total_sales or 0) * PLATFORM_SHARE
-        print("elapsed time:",time.time()- now)
+        print("elapsed time:", time.time() - now)
         return Response(
             {
                 "monthly_sale_amount": int(this_month_total_sales or 0),
                 "today_sale_amount": int(today_total_sales or 0),
                 "month_sales_per_day": per_day_dict,
                 "top_sale_foods": per_food_dict,
-                "platform_share" : int(platform_share)
+                "platform_share": int(platform_share),
             }
         )
+
     def post(self, *args, **kwargs):
         """
         This method returns vendor sales in custom range
@@ -894,7 +924,7 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         - pending_orders, preparing_orders, carrying_orders, delivered_orders
         Also ensures vendor.is_available is set to True once per day if currently unavailable.
     """
-    
+
     pagination_class = StandardResultSetPagination
     serializer_class = VOrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
@@ -988,7 +1018,6 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
     Permissions:
     - Authenticated user must be the vendor owning the order (IsVendorOfObject).
     """
-    
 
     permission_classes = [permissions.IsAuthenticated, IsVendorOfObject]
 
@@ -1139,7 +1168,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     # since accepted by vendor, otp is set on and used in filter waiting orders of vendor
                     otp = generate_otp(8)
                     order.otp = otp
-                    print(order.otp, "--- order otp--- set in calc",otp)
+                    print(order.otp, "--- order otp--- set in calc", otp)
                     total_cost = float(order.total_price) + float(order.delivery_cost)
                     total_time = round(float(prep_time) + float(estimated))
                     order.save()
@@ -1189,7 +1218,7 @@ class SetOrderStateCarrying(views.APIView):
         carrier_id = data.get("carrier_id")
         try:
             order = Order.objects.get(id=order_id)
-            print(order,order.otp,"---order---",order.id)
+            print(order, order.otp, "---order---", order.id)
             carrier = Carrier.objects.get(pk=carrier_id)
 
             if (

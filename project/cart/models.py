@@ -99,7 +99,8 @@ class CartItem(models.Model):
     quantity = models.PositiveSmallIntegerField(default=1)
     price = models.DecimalField(max_digits=6, decimal_places=1)
 
-    def get_total_price(self):
+    @property
+    def total_price(self):
         """
         Calculate the total price for this cart item.
 

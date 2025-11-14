@@ -7,13 +7,6 @@ from order.models import ORDER_STATUS_CHOICES, Order
 from vendor.models import Vendor
 from vendor.utils import get_vendor_carriers_key, revert_discount
 from django.db.transaction import atomic
-from json import loads as j_loads
-
-
-@shared_task
-def say_hello():
-    print("Hello from Celery")
-    return "Hello!"
 
 
 @shared_task
@@ -48,13 +41,11 @@ def reset_vendors_carriers_in_redis():
             print("order in carrying, no reset for this vendor ", vendor.id)
             continue
         vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+        # setting all carriers of this vendor free
         vendor.carriers.update(status=CARRIER_STATUS_CHOICES[0][0])
-        total_carriers_count = 0
-        if r.hget(vendor_carriers_key, "total_c_c"):
-            total_carriers_count = j_loads(r.hget(vendor_carriers_key, "total_c_c"))
-        else:
-            total_carriers_count = vendor.carriers.all().count()
-            print("total initialized for vendor", vendor.id)
+        # setting total carriers count from db
+        total_carriers_count = vendor.carriers.filter(is_active=True).count()
+        r.hset(vendor_carriers_key, "total_c_c", total_carriers_count)  # total carriers
         r.hset(vendor_carriers_key, "f_c_c", total_carriers_count)  # all free
         r.hset(vendor_carriers_key, "b_c_c", 0)  # no busy carriers
 
@@ -63,6 +54,9 @@ def reset_vendors_carriers_in_redis():
 
 @shared_task
 def disable_vendors():
-    """this task marks all vendors disabled at 11:59 PM"""
+    """
+    this task marks all vendors disabled at 11:59 PM
+    any vendor heading orders page is marked as avaialble
+    """
     Vendor.objects.all().update(is_available=False)
     

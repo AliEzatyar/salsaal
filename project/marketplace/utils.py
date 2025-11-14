@@ -200,7 +200,9 @@ def distance_reach_time(qs, lat, lon, typ="food"):
 def get_user_info(request):
     """
     this utility method extracts user info from request object, if not
-    provided, takes from user profile"""
+    provided, takes from user profile
+    it is used mostly in marketplace app.
+    """
     request_data = request.query_params
     city = request_data.get("city", None)
     location = request_data.get("location", None)
@@ -210,8 +212,8 @@ def get_user_info(request):
         # decoding location
         lat, lon = geohash.decode(location)
     except:
-        lat = float(request.user.profile.latitude)
-        lon = float(request.user.profile.longitude)
+        lat = request.user.profile.latitude
+        lon = request.user.profile.longitude
         city = request.user.profile.city
     city = str(city).lower()
     return (city, lat, lon)

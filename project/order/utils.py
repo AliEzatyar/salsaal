@@ -44,7 +44,12 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
         payload["email"] = email
 
     if redirect_urls:
-        payload.update({"redirect_success_url": redirect_urls.get("success_url"), "redirect_failure_url": redirect_urls.get("failure_url")})
+        payload.update(
+            {
+                "redirect_success_url": redirect_urls.get("success_url"),
+                "redirect_failure_url": redirect_urls.get("failure_url"),
+            }
+        )
 
     try:
         print("this is payload", payload)
@@ -57,18 +62,14 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
 
 
 def start_payment_session(items, order_id):
-    success_url = "https://api.zayton.llc/" + reverse(
-        "api:order:redirect_payment_success"
-    )
-    failure_url = "https://api.zayton.llc/" + reverse(
-        "api:order:redirect_payment_failure"
-    )
-    print(settings.HESAB_PAY_API_KEY)
+    CURRENT_DOMAIN_NAME = settings.CURRENT_DOMAIN_NAME
+    success_url = CURRENT_DOMAIN_NAME + reverse("api:order:redirect_payment_success")
+    failure_url = CURRENT_DOMAIN_NAME + reverse("api:order:redirect_payment_failure")
     response = create_payment_session(
         settings.HESAB_PAY_API_KEY,
         items,
         order_id,
         redirect_urls={"success_url": success_url, "failure_url": failure_url},
     )
-    print("this was response", response, items,order_id)
+    print("this was response", response, items, order_id)
     return response

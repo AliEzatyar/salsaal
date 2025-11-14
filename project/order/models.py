@@ -72,11 +72,11 @@ class Order(models.Model):
     delivery_cost = models.DecimalField(default=0,max_digits=4,decimal_places=1)
     paid = models.BooleanField(default=False)
     transaction_id = models.CharField(
-        max_length=250, blank=True, null=True, default="np..."
+        max_length=250, blank=True, null=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
-    total_items = models.SmallIntegerField(default=2)
+    total_items = models.SmallIntegerField(default=0)
     carrier = models.ForeignKey(
         "carrier.Carrier", null=True, on_delete=models.SET_NULL, related_name="orders"
     )
@@ -169,7 +169,7 @@ class OrderItem(models.Model):
 
     @property
     def subtotal(self):
-        return float(self.quantity * self.price)
+        return int(self.quantity * self.price)
 
     @property
     def food_name(self):
