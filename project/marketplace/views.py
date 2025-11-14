@@ -102,10 +102,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         try:
             city, lat, lon = get_user_info(request)
             distance = haversine_distance(
-                vendor.latitude,
-                vendor.longitude,
-                lat,
-                lon,
+                float(vendor.latitude),
+                float(vendor.longitude),
+                float(lat),
+                float(lon),
             )
             # serializer for the item
             serializer = CVFoodSerializerDetail(instance=obj)

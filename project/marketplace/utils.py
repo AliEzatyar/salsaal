@@ -119,7 +119,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
 
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    
+
     return R * c  # distance in kilometers
 
 
@@ -161,6 +161,7 @@ def distance_to_travel_time(distance, avg_speed=DEFAULT_AVG_SPEED):
 
 class StandardResultSetPagination(PageNumberPagination):
     page_size = 10
+
     def __init__(self, page_size=10):
         super().__init__()
         self.page_size = page_size
@@ -178,16 +179,8 @@ def distance_reach_time(qs, lat, lon, typ="food"):
     for obj in qs:
         distance = round(
             haversine_distance(
-                (
-                    obj.vendor.latitude
-                    if typ == "food"
-                    else obj.latitude
-                ),
-                (
-                    obj.vendor.longitude
-                    if typ == "food"
-                    else obj.longitude
-                ),
+                (obj.vendor.latitude if typ == "food" else obj.latitude),
+                (obj.vendor.longitude if typ == "food" else obj.longitude),
                 lat,
                 lon,
             ),
@@ -200,9 +193,7 @@ def distance_reach_time(qs, lat, lon, typ="food"):
 def get_user_info(request):
     """
     this utility method extracts user info from request object, if not
-    provided, takes from user profile
-    it is used mostly in marketplace app.
-    """
+    provided, takes from user profile"""
     request_data = request.query_params
     city = request_data.get("city", None)
     location = request_data.get("location", None)
@@ -212,8 +203,8 @@ def get_user_info(request):
         # decoding location
         lat, lon = geohash.decode(location)
     except:
-        lat = request.user.profile.latitude
-        lon = request.user.profile.longitude
+        lat = float(request.user.profile.latitude)
+        lon = float(request.user.profile.longitude)
         city = request.user.profile.city
     city = str(city).lower()
     return (city, lat, lon)

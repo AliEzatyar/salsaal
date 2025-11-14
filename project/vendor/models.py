@@ -65,8 +65,8 @@ class Vendor(models.Model):
     )  # delivery fee per km AFS
     is_available = models.BooleanField(default=True)
     reward_percentage = models.FloatField(default=0)
-    latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)
+    latitude = models.CharField(max_length=20)
+    longitude = models.CharField(max_length=20)
     location = g_models.PointField(null=True, blank=True, srid=4326)
     h3_id = models.CharField(max_length=55, blank=True)
     city = models.CharField(max_length=15, db_index=True)
@@ -119,13 +119,12 @@ class Vendor(models.Model):
         if self.latitude and self.longitude:
             print("vendor location saved.....")
             self.location = Point(
-                self.longitude, self.latitude, srid=4326
+                float(self.longitude), float(self.latitude), srid=4326
             )
             self.h3_id = h3_latlng_to_cell(
-                self.latitude, self.longitude, DEFAULT_H3_RESOLUTION
+                float(self.latitude), float(self.longitude), DEFAULT_H3_RESOLUTION
             )
-            
-            
+
         return super(Vendor, self).save(*args, **kwargs)
 
     @property
