@@ -358,6 +358,7 @@ class AcceptRejectOrderView(views.APIView):
                 vendor__id=order.vendor.id, user=self.request.user
             ).first()
             with atomic():
+                # -------------- handling reward points
                 # payment type not reward -> increment reward
                 if payment_type != VALID_PAYMENT_TYPES[2][0] : 
                     if existing_reward:
@@ -394,18 +395,16 @@ class AcceptRejectOrderView(views.APIView):
                     order.paid = True
                     existing_reward.save()
 
-                # -------------- handling hesab pay
+                # -------------- handling online payment --------------
                 order.payment_type = payment_type
-                # Online Payment
                 if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
                     # client app has received transaction id after payment successful
                     transaction_id = data.get("transaction_id",None)
                     if not transaction_id:
-                         return Response({"detail":"provide_transaction_id"},status=status.HTTP_400_BAD_REQUEST)
+                         return Response(status=status.HTTP_400_BAD_REQUEST)
                     order.transaction_id = transaction_id
                     order.is_epay= True
                     order.paid = True
-
                 order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
                 order.save()
                 event_data = {
@@ -449,8 +448,9 @@ class AcceptRejectOrderView(views.APIView):
 
 class OnlinePaymentView(views.APIView):
     """
+    this is the first view the customer hits to start online payment
     this view takes order id and returns a session url for online payment
-    app should open it in browser
+    app should open this session url in browser
     """
 
     permission_classes = [permissions.IsAuthenticated, IsCustomer]
@@ -466,7 +466,7 @@ class OnlinePaymentView(views.APIView):
             items_ser = OrderItemSerializerLessDetail(items, many=True)
             session_url = start_payment_session(items_ser.data, order_id)
             print("this is session url", session_url)
-            return Response({"session_url": session_url})
+            return Response({"session_url": session_url['url']})
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -651,8 +651,14 @@ class RedirectPaymentSuccess(views.APIView):
     def get(self, *args, **kwargs):        
         params_data = self.request.query_params["data"]
         print(params_data, "this was params")
-        transaction_id = params_data.get("transaction_id")
-        app_link = f"zayton_customer://payment/success?transaction_id={transaction_id}"
+        data_dict = json.loads(params_data)
+        print(data_dict, "this was data dict")
+        if data_dict.get("success") != True:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        transaction_id = data_dict.get("transaction_id", None)
+        if transaction_id is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        app_link = f"zaytonfood://hesabpay/success?transaction_id={transaction_id}"
         response = Response(status=status.HTTP_302_FOUND)
         response["Location"] = app_link
         return response
@@ -660,14 +666,18 @@ class RedirectPaymentSuccess(views.APIView):
 
 class RedirectPaymentFailure(views.APIView):
     """
+    this endpoint is called by hesab pay after payment is failed
     this view redirects success url to mobile app and sends session id.
     """
 
     def get(self, *args, **kwargs):
-        params = self.request.query_params
-        print(params, "this was gateway response params")
-        app_link = f"zayton://payment/failure"
+        params_data = self.request.query_params
+        print(params_data, "this was gateway response params")
+        data_dict = json.loads(params_data)
+        message = data_dict.get("message", None)
+        if not message:
+            message = "impossible_to_process_payment"
+        app_link = f"zaytonfood://hesabpay/failure?reason={message}"
         response = Response(status=status.HTTP_302_FOUND)
         response["Location"] = app_link
         return response
-

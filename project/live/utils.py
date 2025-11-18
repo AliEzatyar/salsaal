@@ -64,7 +64,7 @@ def send_fcm(token, title, body, data=None):
     android_cfg = {
         "priority": "high",  # wrapper will translate to android priority
         "notification": {
-            "channel_id": "eatee_channel",  # MUST match Android channel id
+            "channel_id": "zayton_channel",  # MUST match Android channel id
             "sound": "default",
         },
     }

@@ -109,11 +109,6 @@ class UserDetailSerializer(ModelSerializer):
         return instance
 
 
-class VendorCreateSerializer(ModelSerializer):
-    class Meta:
-        model = Vendor
-        fields = ["vendor_name"]
-
 
 class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
 

@@ -1,13 +1,11 @@
-from zoneinfo import ZoneInfo
 from django.contrib.gis.measure import Distance
 from rest_framework import serializers
-from django.utils import timezone
 from marketplace.models import Discount, Food
 from marketplace.serializers import (
     DiscountedFoodSerializerMany,
     FoodSerializerLessDetail,
 )
-from vendor.utils import to_af_weekday
+from accounts.utils import CITY_TRANSLATIONS
 from .models import OpeningHour, Promotion, Vendor
 from accounts.models import REST
 from .models import WEEKDAYS
@@ -113,7 +111,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     """used in vendor management views- only vendors access"""
 
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
-
+    city = serializers.SerializerMethodField()
     class Meta:
         model = Vendor
         fields = [
@@ -160,7 +158,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         except Exception as e:
             print("lat and lon invalid", e, type(latitude), longitude, "--")
             raise ValidationError("provide_correct_lat_lon")
-        
+
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
@@ -175,7 +173,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
                 float(longitude)
             else:
                 raise ValidationError("provide_correct_lat_lon_city")
-                
+
             validated_data["city"] = str(validated_data["city"]).lower()
         except:
             print("lat and lon invalid", latitude, longitude, "--")
@@ -183,6 +181,11 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
         validated_data["user"] = user
         validated_data["user_profile"] = user_profile
         return super().create(validated_data)
+
+    def get_city(self, obj):
+        if obj.city and obj.city.capitalize() in CITY_TRANSLATIONS.keys():
+            return CITY_TRANSLATIONS[obj.city.capitalize()]
+        return obj.city
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):

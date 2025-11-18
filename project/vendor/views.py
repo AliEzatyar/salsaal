@@ -79,11 +79,11 @@ from rest_framework.decorators import action
 
 class VendorAPIView(views.APIView):
     """
-    This view enables a vendor to see, edit and delete its vendor account.
+    This view enables a vendor to see and edit its vendor account.
     """
 
     permission_classes = [permissions.IsAuthenticated, IsVendor]
-    http_method_names = ["get", "patch", "delete"]
+    http_method_names = ["get", "patch"]
 
     def get(self, *args, **kwargs):
         """returns vendor details"""
@@ -101,13 +101,7 @@ class VendorAPIView(views.APIView):
         # success
         return Response(vendor_serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self, *args, **kwargs):
-        """overriden to cancel vendor account"""
-        user = self.request.user
-        vendor = user.vendor
-        vendor.delete()
-        user.delete()
-        return Response(status=status.HTTP_200_OK)
+    
 
 
 class ConvertToVendorAPIView(views.APIView):
@@ -590,8 +584,8 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         """converting a carrier to a normal user"""
         user = instance.user
-        instance.delete()
         user.role = CUSTOMER
+        instance.delete()
         Cart.objects.create(user=user)
         vendor = self.request.user.vendor
         # decreasing carrier's count
@@ -607,19 +601,14 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="search-carrier")
     def search_carrier(self, request, *args, **kwargs):
         data = request.query_params
-        print("vendor searches for carrier", data)
         phone_number = data.get("phone_number", None)
-
         if not phone_number:
             return Response(status=status.HTTP_404_NOT_FOUND)
         phone_number = str(phone_number).strip()
         phone_number = "+" + phone_number
-
         try:
             user = User.objects.get(phone_number=phone_number)
-            print("user found", user.id)
         except Exception as e:
-            print("error in search users", e)
             return Response(status=status.HTTP_404_NOT_FOUND)
         ser = UserDetailSerializer(user)
         return Response(ser.data)
@@ -631,7 +620,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         vendor = carrier.vendor
         vendor_carriers_key = get_vendor_carriers_key(vendor.id)
         if not carrier.is_active:
-            # if vendor enables a carrier, increment 1 to total_c_c and f_c_c
+            # if vendor enables a carrier, increment  total_c_c and f_c_c  by 1
             total_carriers_count = vendor.carriers.filter(is_active=True).count()
             total_carriers_count += 1
             r.hset(
@@ -641,7 +630,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
             f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
             r.hset(vendor_carriers_key, "f_c_c", f_c_c)
         else:
-            # if a vendor disables a carrier
+            # if a vendor disables a carrier, decrement total_c_c and f_c_ by 1
             total_carriers_count = vendor.carriers.filter(is_active=True).count()
             if total_carriers_count > 0:
                 total_carriers_count -= 1

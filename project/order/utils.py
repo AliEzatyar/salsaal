@@ -62,6 +62,7 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
 
 
 def start_payment_session(items, order_id):
+    """this function starts payment session and returns session url"""
     CURRENT_DOMAIN_NAME = settings.CURRENT_DOMAIN_NAME
     success_url = CURRENT_DOMAIN_NAME + reverse("api:order:redirect_payment_success")
     failure_url = CURRENT_DOMAIN_NAME + reverse("api:order:redirect_payment_failure")
@@ -71,5 +72,5 @@ def start_payment_session(items, order_id):
         order_id,
         redirect_urls={"success_url": success_url, "failure_url": failure_url},
     )
-    print("this was response", response, items, order_id)
+    print("this was response in starting payment session:", response, items, order_id)
     return response

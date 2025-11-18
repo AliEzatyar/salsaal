@@ -305,6 +305,7 @@ class UpsertDeviceToken(views.APIView):
             # otherwise create a new device for this user
             # wrap in atomic to handle race conditions
             with atomic():
+                print("device token saved",new_token)
                 Device.objects.create(user=request.user, token=new_token)
         except IntegrityError:
             # token creation raced with another request; try to fetch and reassign

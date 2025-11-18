@@ -64,7 +64,7 @@ class Order(models.Model):
     uuid = models.UUIDField(
         default=uuid4, db_index=True, unique=True, editable=False, null=True
     )
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="orders")
     status = models.CharField(
         max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
     )
@@ -82,7 +82,7 @@ class Order(models.Model):
     )
     otp = models.IntegerField(null=True, blank=True)
     vendor = models.ForeignKey(
-        "vendor.Vendor", on_delete=models.CASCADE, related_name="orders"
+        "vendor.Vendor", on_delete=models.SET_NULL, null=True, related_name="orders"
     )
     destination = g_models.PointField(null=True, blank=True, srid=4326)
     payment_type = models.CharField(
@@ -157,7 +157,7 @@ class OrderItem(models.Model):
     """
     
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    food = models.ForeignKey(Food, on_delete=models.CASCADE)
+    food = models.ForeignKey(Food, on_delete=models.SET_NULL, null=True, blank=True)
     vendor = models.ForeignKey(
         Vendor, on_delete=models.CASCADE, related_name="order_items"
     )
@@ -173,8 +173,9 @@ class OrderItem(models.Model):
 
     @property
     def food_name(self):
-        return self.food.name
-
+        if self.food:
+            return self.food.name
+        return "Food not available"
 
 class Reward(models.Model):
     """

@@ -3,7 +3,6 @@ from uuid import uuid4
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
-from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone as tz
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.postgres.indexes import GinIndex
@@ -68,7 +67,8 @@ class Food(models.Model):
     prices = models.JSONField(default=list)
     category = models.ForeignKey(
         "marketplace.Category",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name="foods",
         db_index=True,
     )
