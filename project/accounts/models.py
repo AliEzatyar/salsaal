@@ -99,7 +99,7 @@ class User(AbstractBaseUser):
 
     USERNAME_FIELD = "phone_number"
 
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS = ["name","email"]
 
     def __str__(self):
         return self.phone_number

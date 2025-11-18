@@ -185,7 +185,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     def get_city(self, obj):
         if obj.city and obj.city.capitalize() in CITY_TRANSLATIONS.keys():
             return CITY_TRANSLATIONS[obj.city.capitalize()]
-        return obj.city
+        return 
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):
