@@ -3,7 +3,7 @@ myvenv
 **.vscode**
 **pycache**
 **__pycache__**
-**_static
+**static**
 **static_/admin
 .env
 apitesting_nots**

@@ -345,7 +345,7 @@ class AcceptRejectOrderView(views.APIView):
             #------------- only 'waiting' order 
             if not order.status == ORDER_STATUS_CHOICES[1][0]:
                 return Response(
-                    {"detail", "order_not_waiting_state"},
+                    {"detail":"order_not_waiting_state"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
             #------------ checking if payment type is correct
@@ -439,7 +439,6 @@ class AcceptRejectOrderView(views.APIView):
             return Response()
 
         except Order.DoesNotExist:
-            print("order not found!")
             return Response(status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             print("error in ar-order:", e.args, e)
@@ -461,12 +460,14 @@ class OnlinePaymentView(views.APIView):
             order_id = data.get("order_id", None)
             if not order_id:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            order = Order.objects.get(id=order_id)
-            items = order.items.all()
-            items_ser = OrderItemSerializerLessDetail(items, many=True)
-            session_url = start_payment_session(items_ser.data, order_id)
-            print("this is session url", session_url)
-            return Response({"session_url": session_url['url']})
+            order = Order.objects.filter(id=order_id,is_epay=False).first()
+            if order:
+                items = order.items.all()
+                items_ser = OrderItemSerializerLessDetail(items, many=True)
+                session_url = start_payment_session(items_ser.data, order_id)
+                print("this is session url", session_url)
+                return Response({"session_url": session_url['url']})
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -649,7 +650,8 @@ class RedirectPaymentSuccess(views.APIView):
     it redirects the request to customer app with transaction_id 
     """
     def get(self, *args, **kwargs):        
-        params_data = self.request.query_params["data"]
+        print(self.request.query_params, "this was request whole data")
+        params_data = self.request.query_params.get("data", None)
         print(params_data, "this was params")
         data_dict = json.loads(params_data)
         print(data_dict, "this was data dict")

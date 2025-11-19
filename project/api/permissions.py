@@ -42,7 +42,7 @@ class IsOrderCarryingState(BasePermission):
 class IsVendor(BasePermission):
 
     def has_permission(self, request, view):
-        if not hasattr(request.user, "vendor") or request.user.role != REST:
+        if request.user.role != REST:
             raise PermissionDenied(detail="user_not_vendor")
         return True
 
@@ -51,7 +51,7 @@ class IsVendorOfObject(BasePermission):
     """check whether a user is a vendor or not"""
 
     def has_permission(self, request, view):
-        if not hasattr(request.user, "vendor") or request.user.role != REST:
+        if request.user.role != REST:
             print("user is not vendor",request.user.id)
             raise PermissionDenied(detail="user_not_vendor")
         return True
@@ -69,13 +69,11 @@ class IsCustomer(BasePermission):
 class IsBuyer(BasePermission):
     def has_permission(self, request, view):
         if request.user.role != CUSTOMER:
-            print("user_not_buyer")
             raise PermissionDenied(detail="user_not_buyer")
         return True
 
     def has_object_permission(self, request, view, obj):
         """checks whether the requesting user owns the order"""
-        print("do user own order?", obj.user == request.user)
         return obj.user == request.user
 
 
@@ -108,7 +106,7 @@ class NotAdmin(BasePermission):
 
 class IsVendorApproved(BasePermission):
     def has_permission(self, request, view):
-        if not hasattr(request.user, "vendor") or not request.user.vendor.is_approved:
+        if request.user.role != REST or not request.user.vendor.is_approved:
             raise PermissionDenied(detail="vendor_not_approved")
         return True
 

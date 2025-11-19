@@ -679,9 +679,6 @@ class PublicVendorDetail(views.APIView):
     def vendor_detail_key(self, id):
         return f"vdr:{id}:dt"
 
-    def vendor_location_key(self, id):
-        return f"vendor:{id}:location"
-
     def get(self, *args, **kwargs):
         """
         This initially tries to get vendor details from cache, if not found,
@@ -712,7 +709,7 @@ class PublicVendorDetail(views.APIView):
                             list(
                                 set(vendor_foods.values_list("category__name", flat=True))
                             ),
-                            key=lambda x: strxfrm(x),
+                            key=lambda x: strxfrm(x) if x else "",
                             reverse=True,
                         )
 
@@ -727,7 +724,7 @@ class PublicVendorDetail(views.APIView):
                         ser_data = ser.data
                         cache.set(
                             self.vendor_detail_key(vendor_id), ser_data, 5 * 60
-                        )  # cache for 10 minutes
+                        )  # cache for 5 minutes
                     # vendor object not found by this id
                     else:
                         return Response(status=status.HTTP_404_NOT_FOUND)

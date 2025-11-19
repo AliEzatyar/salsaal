@@ -54,10 +54,11 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
     try:
         print("this is payload", payload)
         response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
-        # response.raise_for_status()
+        response.raise_for_status()
         return response.json()
 
     except requests.exceptions.RequestException as e:
+        print(e.args,e)
         return {"error": "Request failed", "message": str(e)}
 
 
@@ -72,5 +73,6 @@ def start_payment_session(items, order_id):
         order_id,
         redirect_urls={"success_url": success_url, "failure_url": failure_url},
     )
+    print(success_url,"start payment session urls---")
     print("this was response in starting payment session:", response, items, order_id)
     return response
