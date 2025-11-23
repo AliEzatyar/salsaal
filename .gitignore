@@ -14,7 +14,7 @@ docker-**
 **.key
 local.tar
 uwsgi_app.sock
-command**
+command
 **aws**
 **users**
 **doc**

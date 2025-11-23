@@ -4,7 +4,7 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 from rest_framework import serializers
-from marketplace.serializers import MyDecimalField
+from marketplace.serializers import CustomDecimalField
 from carrier.utils import encrypt_32
 from .models import Order, OrderItem
 from accounts.models import User
@@ -13,7 +13,7 @@ from accounts.models import User
 class COrderItemSerializerMany(ModelSerializer):
     subtotal = serializers.SerializerMethodField("get_subtotal")
     food_name = serializers.SerializerMethodField("get_food_name")
-    price = MyDecimalField()
+    price = CustomDecimalField()
     image = serializers.ReadOnlyField(source="food.image_url")
     id = serializers.ReadOnlyField(source="food.id")
 
@@ -33,7 +33,7 @@ class COrderItemSerializer(ModelSerializer):
     subtotal = serializers.SerializerMethodField("get_subtotal")
     food_name = serializers.SerializerMethodField("get_food_name")
     image = serializers.ReadOnlyField(source="food.image_url")
-    price = MyDecimalField()
+    price = CustomDecimalField()
 
     class Meta:
         model = OrderItem
@@ -61,7 +61,7 @@ class COrderSerializer(ModelSerializer):
     items = COrderItemSerializerMany(many=True, read_only=True)
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
-    total_price = MyDecimalField(read_only=True)
+    total_price = CustomDecimalField(read_only=True)
     carrier_name = serializers.ReadOnlyField(source="carrier.user.name")
     carrier = serializers.ReadOnlyField(source="carrier.user.id")
     customer_name = serializers.ReadOnlyField(source="user.name")
@@ -102,7 +102,7 @@ class COrderSerializerLessDetail(ModelSerializer):
     """
 
     vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
-    total_price = MyDecimalField(read_only=True)
+    total_price = CustomDecimalField(read_only=True)
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     # items_pair = serializers.SerializerMethodField("get_items")
     items = COrderItemSerializerMany(many=True, read_only=True)
@@ -131,7 +131,7 @@ class VOrderItemSerializerDetail(ModelSerializer):
 
 
 class VOrderSerializerLessDetail(ModelSerializer):
-    total_price = MyDecimalField(read_only=True)
+    total_price = CustomDecimalField(read_only=True)
 
     class Meta:
         model = Order
@@ -147,7 +147,7 @@ class VOrderSerializerLessDetail(ModelSerializer):
 class VOrderSerializer(ModelSerializer):
     customer_name = SerializerMethodField("get_customer_name")
     items = VOrderItemSerializerDetail(read_only=True, many=True)
-    total_price = MyDecimalField(read_only=True)
+    total_price = CustomDecimalField(read_only=True)
     destination = SerializerMethodField("get_destination")
     class Meta:
         model = Order

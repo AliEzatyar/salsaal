@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from order.serializers import COrderItemSerializer
 from .utils import encrypt_32
-from marketplace.serializers import MyDecimalField
+from marketplace.serializers import CustomDecimalField
 from order.models import Order
 from .models import Carrier
 
@@ -29,7 +29,7 @@ class CarrierSerializer(serializers.ModelSerializer):
 class CarrierOrderSerializer(serializers.ModelSerializer):
     customer_name = serializers.ReadOnlyField(source="user.name")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    total_price = MyDecimalField(read_only=True)
+    total_price = CustomDecimalField(read_only=True)
     id = serializers.SerializerMethodField("get_id")
     otp = serializers.SerializerMethodField("get_otp")
     items = COrderItemSerializer(many=True)
@@ -76,7 +76,7 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
 
 class CarrierOrderSerializerMany(serializers.ModelSerializer):
     customer_name = serializers.ReadOnlyField(source="user.name")
-    total_price = MyDecimalField(read_only=True)
+    total_price = CustomDecimalField(read_only=True)
 
     class Meta:
         model = Order

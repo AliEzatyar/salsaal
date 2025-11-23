@@ -460,36 +460,6 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
         return super().get(request, *args, **kwargs)
 
 
-class LikeFood(views.APIView):
-
-    def get(self, *args, **kwargs):
-        data = self.request.query_params
-        food_id = data.get("id", None)
-        if not food_id:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        exists = Food.objects.filter(id=food_id).exists()
-        if exists:
-            key = f"food:{food_id}:likes"
-            r.incrby(key, 1)
-            return Response()
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-
-class LikeVendor(views.APIView):
-
-    def get(self, *args, **kwargs):
-        data = self.request.query_params
-        vendor_id = data.get("id", None)
-        if not vendor_id:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        exists = Vendor.objects.filter(id=vendor_id).exists()
-        if exists:
-            key = f"vendor:{vendor_id}:likes"
-            r.incrby(key, 1)
-            return Response()
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-
 class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
     """
     this viewset enables a user to search for a vendor
@@ -524,7 +494,7 @@ class RatingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """returns rating objects of a related object [food, vendor, carrier]"""
         object_id = self.request.query_params.get("obj_id", None)
-        # user should be logged in and own the rating object
+        # ------------ ownership in case of delete or update of rating
         if self.request.method in ("DELETE", "PATCH"):
             if (
                 not self.request.user.is_authenticated
@@ -532,9 +502,9 @@ class RatingViewSet(viewsets.ModelViewSet):
             ):
                 return Rating.objects.none()
             return Rating.objects.filter(user=self.request.user)
-        # for GET
         if not object_id:
             return Rating.objects.none()
+        # -------------------------- getting object
         try:
             ct = ContentType.objects.get_for_model(Vendor)
             query_set = Rating.objects.filter(
@@ -542,7 +512,6 @@ class RatingViewSet(viewsets.ModelViewSet):
             ).order_by("-rating")
             return query_set
         except:
-            # if any problem, no rating is returned
             return Rating.objects.none()
 
     @action(detail=False, methods=["get"], url_path="vendor-ratings-initial")
@@ -580,14 +549,13 @@ class RatingViewSet(viewsets.ModelViewSet):
         )
 
     def create(self, request, *args, **kwargs):
-        """overriden, obj_id, type"""
+        """overriden to handle cusotm rating creation and food likes"""
         if self.request.user.role != CUSTOMER:
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = request.data
         obj_id = data.get("obj_id")
         liked_foods = data.get("liked_foods", None)
         rating_data = data.get("rating")
-        print(data)
         if not obj_id or not type(obj_id) == int:
             return Response(
                 {"detail": "provide_id"},
@@ -596,53 +564,45 @@ class RatingViewSet(viewsets.ModelViewSet):
         previous = Rating.objects.filter(
             object_id=int(obj_id), user=request.user
         ).first()
-        # handling likes of food
+        #---------------  handling likes of foods
         if liked_foods:
             for f in liked_foods:
                 try:
                     food = Food.objects.get(id=f)
                     food.likes += 1
                     food.save()
-                except Exception as e:
-                    print("error in liking foods...", e)
+                except Food.DoesNotExist:
                     pass
-        # handling update
+                except Exception as e:
+                    print("error in like food:",e)
+        # -------------  handling rating update if updated
         if previous:
-            print("rating already existed...")
             # prviously exists, performing update
             ser = self.get_serializer(previous, data=rating_data)
             ser.is_valid(raise_exception=True)
             ser.save()
             ser.instance.related_obj.update_avg_rating()
-            print("rating updated,,,,", ser.instance)
             return Response(status=status.HTTP_200_OK)
-        # new rating
+        # --------------- new rating
         else:
-            print("new rating....")
-            # performing new rating creation
             serializer = self.get_serializer(data=rating_data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(
                 serializer
-            )  # sets instance to serializer after creation
-            print(
-                "rating created",
             )
             instance = serializer.instance
-            #
-            related_obj = None
+            vendor = None
             ct = ContentType.objects.get_for_model(Vendor)
             instance.content_type = ct
-            related_obj = Vendor.objects.filter(id=obj_id).first()
-            if not related_obj:
+            vendor = Vendor.objects.filter(id=obj_id).first()
+            if not vendor:
                 return Response(
                     {"detail": "no_such_vendor"}, status=status.HTTP_400_BAD_REQUEST
                 )
 
             instance.object_id = int(obj_id)
             instance.save()
-            related_obj.update_avg_rating()
-            # successfull creation
+            vendor.update_avg_rating()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
@@ -660,9 +620,7 @@ class RatingViewSet(viewsets.ModelViewSet):
 
 class CategoriesReadAPIView(views.APIView):
     """This endpoint a list of categories for vendors when adding new fooditems"""
-
     http_method_names = ["get"]
-
     def get(self, *args, **kwargs):
         cats = Category.objects.all()
         ser = CategorySerializer(cats,many=True)
@@ -691,15 +649,14 @@ class PublicVendorDetail(views.APIView):
         vendor_id = request_data.get("id", None)
         if vendor_id:
             try:
-            # ------------------------ getting vendor details either cache or db
+                # ------------------------ getting vendor details either cache or db
                 ser_data = None
                 vendor_in_cache = cache.get(self.vendor_detail_key(vendor_id))
                 vendor = Vendor.objects.get(is_approved=True, id=vendor_id, city=city)
-                # vendor is in cache
+                # ---------------- cache
                 if vendor_in_cache:
                     ser_data = vendor_in_cache.copy()
                 else:
-                    # vendor not in cache
                     if vendor:
                         vendor_foods = Food.objects.filter(
                             vendor_id=vendor.id, is_available=True
@@ -713,11 +670,11 @@ class PublicVendorDetail(views.APIView):
                             reverse=True,
                         )
 
-                        discounted_vendor_foods = vendor_foods.filter(
+                        discounted_foods = vendor_foods.filter(
                             discount__is_active=True
                         ).only("id", "name", "image", "min_price", "category")
                         vendor.featured_items = featured_items  # later on we decide
-                        vendor.discounted_foods = discounted_vendor_foods
+                        vendor.discounted_foods = discounted_foods
                         vendor.categories = vendor_categories
                         vendor.categories_count = len(vendor_categories)
                         ser = PublicVendorSerializer(vendor)
@@ -741,7 +698,7 @@ class PublicVendorDetail(views.APIView):
                 )
                 reach_time = distance_to_travel_time(distance)
                 ser_data["distance"] = distance
-                ser_data["reach_time"] = reach_time
+                ser_data["reach_time"] = int(reach_time)
                 counter = BestVendorsCounter(str(city))
                 counter.update_counts(vendor_id)
                 return Response(ser_data, status=status.HTTP_200_OK)
@@ -759,7 +716,8 @@ class PublicVendorDetail(views.APIView):
 class ListVendorFoods(views.APIView):
     """
     THis returns foods of a vendor either sorted by min price
-    or by grouped by category
+    or grouped by category
+    this endpoint works as the second part of vendor detail 
     """
 
     def get(self, *args, **kwargs):

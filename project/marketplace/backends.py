@@ -1,12 +1,10 @@
 """this file contains search, sort and filter logic"""
 
-import time
 import geohash
 import django_filters
-import h3
 from order.models import ORDER_STATUS_CHOICES, Order
 from marketplace.models import Food
-from django.utils.timezone import now, timedelta, datetime
+from django.utils.timezone import now 
 from rest_framework.filters import SearchFilter
 from rest_framework.filters import OrderingFilter
 from django.db.models import F
@@ -249,7 +247,6 @@ class CustomVendorSearch(SearchFilter):
             .annotate(reach_time=F("distance") / 7 / 60)
             .order_by("distance")
         )
-        print(vendors)
         return vendors
 
 

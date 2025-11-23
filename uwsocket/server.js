@@ -9,10 +9,23 @@ const PORT = process.env.SERVER_PORT || 3000;
 
 const djangoServerUrl = process.env.DJANGO_SERVER_URL
 const redisUrl = process.env.REDIS_URL
-// console.log(redisUrl, "thi-----redis-url")
+
 // getting public key for verifying user's jwt tokens
-const res = await fetch(djangoServerUrl + "/jwtks/");
-const JWT_PUBLIC_KEY = await res.text();
+let JWT_PUBLIC_KEY;
+try {
+    const res = await fetch(djangoServerUrl + "/jwtks/");
+    if (res.ok) {
+        JWT_PUBLIC_KEY = await res.text();
+        console.log("JWT public key loade successfully");
+    } else {
+        console.error("Failed to fetch JWT public key:", res.status, res.statusText);
+        JWT_PUBLIC_KEY = null;
+    }
+} catch (error) {
+    console.error("Error fetching JWT public key:", error);
+    JWT_PUBLIC_KEY = null;
+}
+
 console.log("this is the public key", JWT_PUBLIC_KEY)
 
 // creating and connecting redis publisher and subscriber
@@ -22,8 +35,15 @@ const redisPub = createClient({
 const redisSub = createClient({
     url: redisUrl,  // <- connection details
 })
-await redisPub.connect();
-await redisSub.connect();
+try {
+    await redisPub.connect();
+    await redisSub.connect();
+    console.log("Redis connections established successfully");
+} catch (error) {
+    console.error("Failed to connect to Redis:", error);
+    process.exit(1);
+}
+
 // default ttl for order
 const orderStatusTTL = 2 * 60 * 60 // 2 hours 
 
@@ -32,14 +52,17 @@ const orderStatusTTL = 2 * 60 * 60 // 2 hours
 const sockets = new Map();
 
 function verifyJWT(token) {
+    if (!JWT_PUBLIC_KEY) {
+        console.error("JWT public key not available");
+        return null;
+    }
     try {
         return jwt.verify(token, JWT_PUBLIC_KEY, { "algorithms": "RS256" })
     } catch (error) {
-        console.log(error)  
+        console.log("JWT verification error:", error.message)
         return null
     }
 }
-
 
 // helper methods for subscribe and unsubscribe
 
@@ -52,6 +75,14 @@ function subscribeToRoom(ws, room) {
 const app = uWS.App()
 
 
+// Health check endpoint
+app.get('/health', (res, req) => {
+    res.writeStatus('200 OK').writeHeader('Content-Type', 'application/json').end(JSON.stringify({
+        status: 'healthy',
+        service: 'uwsocket',
+        port: PORT
+    }));
+});
 
 // websokcet endpoint --- others joins the socket server app using this
 app.ws("/*", {
@@ -104,7 +135,15 @@ app.ws("/*", {
         
             // setting message type like notification or location and its related data
             console.log("message.......", Buffer.from(message).toString())
-            const { type, data } = JSON.parse(Buffer.from(message).toString());
+            let messageData;
+            try {
+                messageData = JSON.parse(Buffer.from(message).toString());
+            } catch (error) {
+                console.error("Invalid JSON received:", error.message);
+                ws.send(JSON.stringify({ error: "Invalid message format" }));
+                return;
+            }
+            const { type, data } = messageData;
             // console.log("message came from client to channel", type, data)
             switch (type) {
                 case "SUBSCRIBE_ORDER": {
@@ -232,6 +271,14 @@ app.ws("/*", {
                         console.log("unsubscribed from order", orderId)
                         ws.unsubscribe(room);
                     }, 2000)
+                    break;
+                }
+                case "ORDER_CANCELLED": {
+                    const orderId = data.orderId;
+                    redisPub.publish(
+                        `pub:order:${orderId}`,
+                        JSON.stringify({ type: "ORDER_CANCELLED", data: data })
+                    );
                     break;
                 }
 

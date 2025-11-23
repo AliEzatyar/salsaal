@@ -41,7 +41,7 @@ class ListOfDecimalsField(serializers.Field):
         return [d for d in value]
 
 
-class MyDecimalField(serializers.Field):
+class CustomDecimalField(serializers.Field):
     def to_representation(self, value):
         return round(float(value), 1)
 
@@ -58,11 +58,11 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class VFoodSerializerDetail(serializers.ModelSerializer):
-    """this serializer is used for vendor-only CRUD"""
+    """this serializer is used for vendor-only food manage views"""
 
     category_name = serializers.ReadOnlyField(source="category.name")
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
-    min_price = MyDecimalField(read_only=True)
+    min_price = CustomDecimalField(read_only=True)
     is_available = serializers.BooleanField(default=True)
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     discount = serializers.SerializerMethodField("get_discount_amount")
@@ -137,18 +137,18 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
         preventing duplicate foodname.
         """
         try:
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            name = validated_data.get("name")
+            if name:
+                existing = (
+                    Food.objects.filter(name__iexact=name, vendor=instance.vendor)
+                    .exclude(pk=self.instance.pk)
+                    .exists()
+                )
+                if existing:
+                    raise ValidationError({"detail": "foodname_already_used"})
             with transaction.atomic():
-                for attr, value in validated_data.items():
-                    setattr(instance, attr, value)
-                name = validated_data.get("name")
-                if name:
-                    existing = (
-                        Food.objects.filter(name__iexact=name, vendor=instance.vendor)
-                        .exclude(pk=self.instance.pk)
-                        .exists()
-                    )
-                    if existing:
-                        raise ValidationError({"detail": "foodname_already_used"})
                 instance.save()
         except IntegrityError:
             raise ValidationError({"detail": "uknown_problem"})
@@ -186,8 +186,8 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
 class CVFoodSerializerDetail(serializers.ModelSerializer):
     """used for category"""
     prices = ListOfDecimalsField()  # custom field to parse form-data prices values
-    min_price = MyDecimalField(read_only=True)
-    vendor_name = serializers.SerializerMethodField("get_vendor_name")
+    min_price = CustomDecimalField(read_only=True)
+    vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     image = serializers.ReadOnlyField(source="image_url")
     category_name = serializers.ReadOnlyField(source="category.name")
 
@@ -208,15 +208,11 @@ class CVFoodSerializerDetail(serializers.ModelSerializer):
         ]
         read_only_fields = ["__all__"]
 
-    def get_vendor_name(self, obj):
-        return obj.vendor.vendor_name
-
 
 class FoodSerializerMany(serializers.ModelSerializer):
-    """this serializer is used in read only views - customers"""
-
-    vendor_name = serializers.SerializerMethodField("get_vendor_name")
-    min_price = MyDecimalField()
+    """this serializer is used in read-only views """
+    vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
+    min_price = CustomDecimalField()
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
     image = serializers.ReadOnlyField(source="image_url")
@@ -238,8 +234,6 @@ class FoodSerializerMany(serializers.ModelSerializer):
             "category_name",
         ]
 
-    def get_vendor_name(self, obj):
-        return obj.vendor.vendor_name
 
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
@@ -249,8 +243,7 @@ class FoodSerializerMany(serializers.ModelSerializer):
 
 
 class DiscountedFoodSerializerMany(serializers.ModelSerializer):
-    """this serializer is used in read only views - customers home page"""
-
+    """this serializer is used in read only views"""
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
     # original price
@@ -292,16 +285,13 @@ class DiscountedFoodSerializerMany(serializers.ModelSerializer):
 
 
 class RatingSerializer(serializers.ModelSerializer):
-    user_name = serializers.SerializerMethodField("get_user_name")
+    user_name = serializers.ReadOnlyField(source="user.name")
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     
     class Meta:
         model = Rating
         fields = ["id", "user_name", "comment", "created_at", "rating"]
         read_only_fields = ["id", "created_at", "user"]
-
-    def get_user_name(self, obj):
-        return obj.user.name
 
 
 class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
@@ -314,7 +304,7 @@ class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
 
 
 class FoodSerializerLessDetail(serializers.ModelSerializer):
-    min_price = MyDecimalField(read_only=True)
+    min_price = CustomDecimalField(read_only=True)
     image = serializers.ReadOnlyField(source="image_url")
     category_name = serializers.ReadOnlyField(source="category.name")
     class Meta:
@@ -335,14 +325,14 @@ class CategoryVendorSerializer(serializers.ModelSerializer):
     """
     This serializer has vendor_name, distance, reach_time, avg_rating, foods
     The main use is to render foods by category
-    used in filter by category.
+    used in FoodsByCategory api view.
     {vendor1:{vendor_foods_in_specific_category},...}
     """
 
     foods = FoodSerializerLessDetail(many=True, read_only=True)
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
-    
+
     class Meta:
         model = Vendor
         fields = [

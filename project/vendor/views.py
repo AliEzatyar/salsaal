@@ -112,34 +112,28 @@ class ConvertToVendorAPIView(views.APIView):
         THis method converts a user to a vendor account
         body: vendor_name
         """
-        # if user is already a vendor
+        # -------------------  verfiying user role -------------------
         user = self.request.user
         if user.role in (REST, CARRIER, ADMIN):
             return Response(
-                {"detail": "not_allowed"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         data = self.request.data
-        print("data came in covert-to-vendor", data)
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         try:
             ser.is_valid(raise_exception=True)
         except Exception as e:
             print("error in validation", e)
-        print("input data valid", data)
 
         with atomic():
-            try:
-                vendor = ser.save()
-                user.cart.delete()
-                # setting vendor's carriers in redis
-                vendor_carriers_key = get_vendor_carriers_key(vendor.id)
-                r.hset(
-                    vendor_carriers_key,
-                    mapping={"f_c_c": 0, "b_c_c": 0, "total_c_c": 0},
-                )
-            except Exception as e:
-                print("error in convert-to-vendor", e)
+            vendor = ser.save()
+            user.cart.delete()
+            # setting vendor's carriers in redis
+            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+            r.hset(
+                vendor_carriers_key,
+                mapping={"f_c_c": 0, "b_c_c": 0, "total_c_c": 0},
+            )
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
 

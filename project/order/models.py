@@ -125,10 +125,9 @@ class Order(models.Model):
 
     def cancel_order(self):
         """reseting food order"""
-        print("status before cancelling order", self.status)
         if self.status not in [
-            ORDER_STATUS_CHOICES[1][1],
-            ORDER_STATUS_CHOICES[2][1],
+            ORDER_STATUS_CHOICES[1][1], # waiting
+            ORDER_STATUS_CHOICES[2][1], # preparing
         ]:  # not waiting
             raise Exception("order_not_in_waiting_or_preparing_status")
         self.status = ORDER_STATUS_CHOICES[0][0]

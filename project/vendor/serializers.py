@@ -145,46 +145,17 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
             "avg_rating",
         ]
 
-    def update(self, instance, validated_data):
-        """overriding to validate location data of vendor"""
-        # custom location validation
-        latitude, longitude = validated_data.get("latitude", None), validated_data.get(
-            "longitude", None
-        )
-        try:
-            if latitude and longitude:
-                float(latitude)
-                float(longitude)
-        except Exception as e:
-            print("lat and lon invalid", e, type(latitude), longitude, "--")
-            raise ValidationError("provide_correct_lat_lon")
-
-        return super().update(instance, validated_data)
-
     def create(self, validated_data):
         user = self.context.get("request").user
         user_profile = user.profile
         user.role = REST
         user.save()
-        # validate latitude/longitude robustly (allow 0 values)
-        latitude = validated_data.get("latitude", None)
-        longitude = validated_data.get("longitude", None)
-        if latitude is None or longitude is None:
-            raise ValidationError("provide_correct_lat_lon_city")
-        try:
-            float(latitude)
-            float(longitude)
-        except (TypeError, ValueError):
-            print("lat and lon invalid", latitude, longitude, "--")
-            raise ValidationError("provide_correct_lat_lon_city")
-
         # normalize city if provided (SerializerMethodField makes it read-only by default)
         city_val = validated_data.get("city")
         if city_val is None:
             city_val = self.initial_data.get("city")
         if city_val is not None:
             validated_data["city"] = str(city_val).lower()
-
         validated_data["user"] = user
         validated_data["user_profile"] = user_profile
         return super().create(validated_data)
@@ -197,7 +168,6 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
 
 class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details, used in public vendor detail"""
-
     is_open_now = serializers.ReadOnlyField(source="is_available")  # read only
     discounted_foods = DiscountedFoodSerializerMany(many=True, read_only=True)
     featured_items = serializers.SerializerMethodField("get_featured_items")

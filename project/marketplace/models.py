@@ -72,7 +72,7 @@ class Food(models.Model):
         related_name="foods",
         db_index=True,
     )
-    image = models.ImageField(upload_to="foods-images/",blank=True)
+    image = models.ImageField(upload_to="foods-images/")
     description = models.TextField(max_length=250,blank=True,null=True)
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
