@@ -95,7 +95,7 @@ class LoginApiView(views.APIView):
         data = self.request.data
         phone_number = data.get("phone_number", None)
         role = data.get("role", None)
-        print(role,"this was the role")
+        print(role, "this was the role")
         if not phone_number or not role:
             return Response(
                 {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
@@ -236,9 +236,7 @@ class LoginApiView(views.APIView):
                         data={"phone_number": phone_number, "name": name}
                     )
                     user_ser.is_valid(raise_exception=True)
-                    user = User(
-                        phone_number=phone_number, is_active=True, name=name
-                    )
+                    user = User(phone_number=phone_number, is_active=True, name=name)
                     user.role = CUSTOMER
                     user.token_valid_after = get_token_valid_after()
                     user.save()
@@ -271,6 +269,18 @@ class LoginApiView(views.APIView):
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+class DeleteAccountView(views.APIView):
+    
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        # Blacklist all outstanding tokens for the user
+        tokens = OutstandingToken.objects.filter(user=user)
+        for token in tokens:
+            BlacklistedToken.objects.get_or_create(token=token)
+        user.delete()
+        return Response(status=status.HTTP_200_OK)
+
+
 class RoleTokenRefreshView(TokenRefreshView):
     serializer_class = RoleTokenRefreshSeriaizer
 
@@ -293,6 +303,7 @@ class UpsertDeviceToken(views.APIView):
             return Response(status=status.HTTP_200_OK)
 
         from .models import Device
+
         try:
             # If a device with this token exists for another user, reassign it to current user
             device = Device.objects.filter(token=new_token).first()
@@ -305,7 +316,7 @@ class UpsertDeviceToken(views.APIView):
             # otherwise create a new device for this user
             # wrap in atomic to handle race conditions
             with atomic():
-                print("device token saved",new_token)
+                print("device token saved", new_token)
                 Device.objects.create(user=request.user, token=new_token)
         except IntegrityError:
             # token creation raced with another request; try to fetch and reassign
