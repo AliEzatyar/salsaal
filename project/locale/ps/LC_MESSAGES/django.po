@@ -1,0 +1,79 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-24 08:02+0430\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Pashto\n"
+"Language: ps\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: order/views.py:215
+msgid "you have a new order!"
+msgstr "تاسو یو نوی امر ترلاسه کړی!"
+
+#: order/views.py:275
+msgid "order has been cancelled by buyer!"
+msgstr "امر د پېرودونکي لخوا لغوه شو!"
+
+#: order/views.py:433
+msgid "order accepted by buyer!"
+msgstr "امر د پېرودونکي لخوا منل شوی!"
+
+#: order/views.py:551 order/views.py:559
+msgid "Order Delivered"
+msgstr "امر وسپارل شو"
+
+#: order/views.py:552
+msgid "Your order has been delivered successfully."
+msgstr "ستاسو امر په بریالیتوب سره وسپارل شو."
+
+#: order/views.py:560
+#, python-brace-format
+msgid "Order {order_id} delivered successfully."
+msgstr "امر {order_id} په بریالیتوب سره وسپارل شو."
+
+#: qoraa/models.py:121
+msgid "Qoraa Vendor"
+msgstr "د لاتری پلورونکی"
+
+#: qoraa/models.py:122
+msgid "Qoraa Vendors"
+msgstr "د لاتری پلورونکي"
+
+#: qoraa/tasks.py:23
+msgid "Qoraa Sponsorship"
+msgstr "د لاتری ملاتړ"
+
+#: qoraa/tasks.py:24
+#, python-brace-format
+msgid "You are a sponsor of this Qoraa at {time}."
+msgstr "تاسو د دې لاتری ملاتړ کوونکی یاست په {time} وخت کې."
+
+#: qoraa/tasks.py:168
+msgid "Qoraa Winner"
+msgstr "د لاتری ګټونکی"
+
+#: qoraa/tasks.py:170
+#, python-brace-format
+msgid "Congratulations! You have won the Qoraa sponsored by {vendor}"
+msgstr "مبارک شه! تاسو هغه لاتری ګټلې چې د {vendor} لخوا ملاتړ شوې."
+
+#: vendor/views.py:1028
+msgid "Order Rejected"
+msgstr "امر رد شو"
+
+#: vendor/views.py:1030
+msgid "sorry! your order has been rejected by restuarant!"
+msgstr "بخښنه غواړو! ستاسو امر د رستورانت لخوا رد شو!"
+
+#: vendor/views.py:1280
+msgid "Order set as carrying"
+msgstr "امر د لېږد په حالت کې ټاکل شوی"
+
+#: vendor/views.py:1285
+msgid "Your order is being carried, click to live track."
+msgstr "ستاسو امر لېږدول کېږي، د ژوندۍ څارنې لپاره کلیک وکړئ."

@@ -76,3 +76,66 @@ def start_payment_session(items, order_id):
     print(success_url,"start payment session urls---")
     print("this was response in starting payment session:", response, items, order_id)
     return response
+
+
+import requests
+import json
+import base64
+from cryptography.fernet import Fernet
+
+
+def encrypt_pin(pin, encryption_key):
+    """
+    Encrypt PIN for secure transmission
+    """
+    f = Fernet(encryption_key)
+    encrypted_pin = f.encrypt(pin.encode())
+    return base64.b64encode(encrypted_pin).decode()
+
+
+def create_multi_vendor_payment(api_key, encrypted_pin, vendors):
+    """
+    Distribute payment to multiple vendors
+
+    Args:
+        api_key (str): Your API key
+        encrypted_pin (str): Your encrypted account PIN
+        vendors (list): List of vendor accounts and amounts
+
+    Returns:
+        dict: API response
+    """
+    endpoint = settings.HESAB_PAY_MULTI_VENDOR_ENDPOINT
+    headers = {
+        "Authorization": f"API-KEY {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+    payload = {"pin": encrypted_pin, "vendors": vendors}
+
+    try:
+        response = requests.post(endpoint, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+    except requests.exceptions.RequestException as e:
+        return {"error": "Request failed", "message": str(e)}
+
+
+# Example usage
+api_key = settings.HESAB_PAY_API_KEY
+pin = "4245"
+
+encryption_key = b"kX3hH7QkPz0V8F0fX8yS6k6dO3g8GfN3WcBAzT5i5Yc="
+
+encrypted_pin = encrypt_pin(pin, encryption_key)
+
+vendors = [
+    {"account_number": "0794825911", "amount": 20},
+    {"account_number": "0794825001", "amount": 40},
+    {"account_number": "0742825911", "amount": 20},
+]
+
+result = create_multi_vendor_payment(api_key, encrypted_pin, vendors)
+print(json.dumps(result, indent=2))

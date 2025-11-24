@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-28 21:13+0430\n"
+"POT-Creation-Date: 2025-11-24 08:03+0430\n"
 "PO-Revision-Date: 2025-09-19 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Persian\n"
@@ -11,47 +11,69 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: order/views.py:163
+#: order/views.py:215
 msgid "you have a new order!"
-msgstr "شما سفارش جدید دارید!"
+msgstr "شما یک سفارش جدید دارید!"
 
-#: order/views.py:221
+#: order/views.py:275
 msgid "order has been cancelled by buyer!"
-msgstr "مشتری سفارش را لغو کرد"
+msgstr "سفارش توسط مشتری لغو شد."
 
-#: order/views.py:355
-msgid "Order Set Preparing"
-msgstr "سفارش در حال آماده سازی"
+#: order/views.py:433
+msgid "order accepted by buyer!"
+msgstr "سفارش توسط مشتری پذیرفته شد."
 
-#: order/views.py:356
-msgid "your order is being prepared"
-msgstr "سفارش شما در حال آماده شدن است."
-
-#: order/views.py:427 order/views.py:435
+#: order/views.py:551 order/views.py:559
 msgid "Order Delivered"
-msgstr "تحویل شد"
+msgstr "سفارش تحویل شد"
 
-#: order/views.py:428
+#: order/views.py:552
 msgid "Your order has been delivered successfully."
-msgstr "سفارش شما موفقانه تحویل شد."
+msgstr "سفارش شما با موفقیت تحویل شد."
 
-#: order/views.py:436
+#: order/views.py:560
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
-msgstr "سفارش {order_id} موفقانه تحویل شد."
+msgstr "سفارش {order_id} با موفقیت تحویل شد."
 
-#: vendor/views.py:718
+#: qoraa/models.py:121
+msgid "Qoraa Vendor"
+msgstr "فروشنده لاتری"
+
+#: qoraa/models.py:122
+msgid "Qoraa Vendors"
+msgstr "فروشندگان لاتری"
+
+#: qoraa/tasks.py:23
+msgid "Qoraa Sponsorship"
+msgstr "حمایت لاتری"
+
+#: qoraa/tasks.py:24
+#, python-brace-format
+msgid "You are a sponsor of this Qoraa at {time}."
+msgstr "شما در {time} حامی این لاتری هستید."
+
+#: qoraa/tasks.py:168
+msgid "Qoraa Winner"
+msgstr "برنده لاتری"
+
+#: qoraa/tasks.py:170
+#, python-brace-format
+msgid "Congratulations! You have won the Qoraa sponsored by {vendor}"
+msgstr "تبریک! شما لاتری‌ای را برنده شده‌اید که توسط {vendor} حمایت شده است."
+
+#: vendor/views.py:1028
 msgid "Order Rejected"
 msgstr "سفارش رد شد"
 
-#: vendor/views.py:720
+#: vendor/views.py:1030
 msgid "sorry! your order has been rejected by restuarant!"
-msgstr "متاسفیم! سفارش شما توسط رستورانت قبول نشد."
+msgstr "متأسفیم! سفارش شما توسط رستورانت رد شد."
 
-#: vendor/views.py:960
+#: vendor/views.py:1280
 msgid "Order set as carrying"
-msgstr "سفارش در حال انتقال"
+msgstr "سفارش در حالت انتقال قرار گرفت"
 
-#: vendor/views.py:965
+#: vendor/views.py:1285
 msgid "Your order is being carried, click to live track."
-msgstr "سفارش شما در حال انتقال است. برای مشاهده کلیک کنید."
+msgstr "سفارش شما در حال انتقال است. برای پیگیری لحظه‌ای کلیک کنید."

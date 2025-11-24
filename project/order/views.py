@@ -371,6 +371,7 @@ class AcceptRejectOrderView(views.APIView):
                     if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
                         # client app has received transaction id after payment successful
                         transaction_id = data.get("transaction_id",None)
+                        
                         if not transaction_id:
                             return Response(status=status.HTTP_400_BAD_REQUEST)
                         order.transaction_id = transaction_id

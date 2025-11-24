@@ -189,22 +189,37 @@ def distance_reach_time(qs, lat, lon, typ="food"):
         obj.distance = distance
         obj.reach_time = round(distance_to_travel_time(distance), 1)
 
+from rest_framework.exceptions import ValidationError
+
 
 def get_user_info(request):
     """
-    this utility method extracts user info from request object, if not
-    provided, takes from user profile"""
+    Extracts user info from request object. If not provided, takes from user profile.
+    Returns: city (str), lat (float), lon (float)
+    """
     request_data = request.query_params
-    city = request_data.get("city", None)
-    location = request_data.get("location", None)
+    city = request_data.get("city")
+    location = request_data.get("location")
+
+    # fallback to user profile if missing
     if not city or not location:
-        return Response(status=400)
-    try:
-        # decoding location
-        lat, lon = geohash.decode(location)
-    except:
-        lat = float(request.user.profile.latitude)
-        lon = float(request.user.profile.longitude)
-        city = request.user.profile.city
+        if hasattr(request.user, "profile"):
+            city = request.user.profile.city
+            lat = float(request.user.profile.latitude)
+            lon = float(request.user.profile.longitude)
+        else:
+            raise ValidationError({"detail": "City or location required"})
+    else:
+        try:
+            lat, lon = geohash.decode(location)
+        except Exception:
+            # fallback to profile if decoding fails
+            if hasattr(request.user, "profile"):
+                lat = float(request.user.profile.latitude)
+                lon = float(request.user.profile.longitude)
+                city = request.user.profile.city
+            else:
+                raise ValidationError({"detail": "Invalid location"})
+
     city = str(city).lower()
-    return (city, lat, lon)
+    return city, lat, lon
