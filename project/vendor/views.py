@@ -6,7 +6,6 @@ from api.permissions import (
     IsOrderPreparingState,
     IsVendor,
     IsVendorOfObject,
-    IsVendorOfObject,
 )
 from order.serializers import VOrderSerializer
 from order.models import ORDER_STATUS_CHOICES, Order, OrderItem
@@ -42,7 +41,6 @@ from .serializers import (
 )
 from marketplace.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import VFoodSerializerDetail
-from api.permissions import IsVendorApproved, IsVendorOfObject
 from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch, Count
@@ -53,7 +51,6 @@ from django.contrib.gis.geos import Point
 from dateutil.parser import parser as date_parser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotAcceptable
-from api.permissions import IsVendorOfObject
 from rest_framework import parsers, serializers
 from .utils import (
     get_vendor_carriers_key,
@@ -100,8 +97,6 @@ class VendorAPIView(views.APIView):
         vendor_serializer.save()
         # success
         return Response(vendor_serializer.data, status=status.HTTP_200_OK)
-
-    
 
 
 class ConvertToVendorAPIView(views.APIView):
@@ -503,6 +498,8 @@ class AddCarrierAPIView(views.APIView):
             total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
             if not f_c_c:
                 f_c_c = 0
+            if not total_c_c:
+                total_c_c = vendor.carriers.count()
             f_c_c = int(f_c_c) + 1
             total_c_c = int(total_c_c) + 1
             r.hset(vendor_carriers_key, "f_c_c", f_c_c)
@@ -554,7 +551,6 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
             total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
             f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
             b_c_c = json.loads(r.hget(vendor_carriers_key, "b_c_c"))
-
             # serializing and sending response
             queryset = self.filter_queryset(self.get_queryset())
             ser = self.get_serializer(queryset, many=True)
@@ -567,7 +563,11 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
                 }
             )
         except Exception as e:
+            vendor_carriers_key = get_vendor_carriers_key(self.request.user.vendor.id)
+            r.hset(vendor_carriers_key, "f_c_c", total_c_c)
+            r.hset(vendor_carriers_key, "total_c_c", total_c_c)
             print("error in list carriers", e)
+            print("reseting carries status in redis")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get_serializer_context(self):

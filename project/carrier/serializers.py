@@ -12,6 +12,7 @@ class CarrierSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField(source="user.name")
     image = serializers.ReadOnlyField(source="user_profile.image.url")
     phone_number = serializers.ReadOnlyField(source="user.phone_number")
+
     class Meta:
         model = Carrier
         fields = [
@@ -23,7 +24,7 @@ class CarrierSerializer(serializers.ModelSerializer):
             "image",
             "phone_number",
         ]
-        read_only_fields = ["id", "user",  "name", "vendor","image","phone_number"]
+        read_only_fields = ["id", "user", "name", "vendor", "image", "phone_number"]
 
 
 class CarrierOrderSerializer(serializers.ModelSerializer):
@@ -33,7 +34,6 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField("get_id")
     otp = serializers.SerializerMethodField("get_otp")
     items = COrderItemSerializer(many=True)
-    # customer_profile = serializers.ReadOnlyField(source="user.profile.picture.url")
     customer_profile = serializers.SerializerMethodField("get_customer_picture")
     destination = serializers.SerializerMethodField("get_destination")
 
@@ -60,16 +60,16 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
         return encrypt_32(obj.id)
 
     def get_customer_picture(self, obj):
-        return (
-            obj.user.profile.picture.url
-            if obj.user.profile.picture
-            else None
-        )
-    def get_destination(self,obj):
+        if obj.user:
+            return obj.user.profile.picture.url if obj.user.profile.picture else None
+        return None
+
+    def get_destination(self, obj):
         try:
             return reversed(list(obj.destination))
         except:
-            return 
+            return
+
     def get_otp(self, obj):
         return encrypt_32(obj.otp)
 
@@ -87,4 +87,3 @@ class CarrierOrderSerializerMany(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["__all__"]
-

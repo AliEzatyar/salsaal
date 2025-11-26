@@ -41,17 +41,13 @@ class CarrierOrderApiView(views.APIView):
             - Vendor details associated with the carrier.
         """
         try:
-            expire_minutes = dj_tz.timedelta(
-                minutes=ORDER_DELIVERY_OTP_EXPIRATION
-            )  # 3 hours
             order = (
                 Order.objects.filter(
                     status=ORDER_STATUS_CHOICES[3][0],  # carrying
                     carrier=self.request.user.carrier,
-                    created_at__gte=dj_tz.now() - expire_minutes,
                 )
                 .prefetch_related("items")
-                .last()
+                .first()
             )
             current_order_data = None
             carrier_vendor = self.request.user.carrier.vendor

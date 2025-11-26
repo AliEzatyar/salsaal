@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.http import HttpResponse
 from accounts.models import (
+    ADMIN,
     CUSTOMER,
     OTP_RETRY_DELAY,
+    REST,
     NoUserOtp,
     User,
     UserOtp,
@@ -270,16 +272,37 @@ class LoginApiView(views.APIView):
 
 
 class DeleteAccountView(views.APIView):
-    
+    """only normal users can delete account"""
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
         user = request.user
-        # Blacklist all outstanding tokens for the user
+        if user.role not in [REST, ADMIN]:
+            tokens = OutstandingToken.objects.filter(user=user)
+            for token in tokens:
+                BlacklistedToken.objects.get_or_create(token=token)
+            user.delete()
+            return Response(status=status.HTTP_200_OK)
+        # just logout vendor or admin
+        user.token_valid_after = get_token_valid_after() # 5 seconds later 
+        user.save()
+        return Response(status=status.HTTP_200_OK)
+
+
+class SignoutApiView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self,request,*args, **kwargs):
+        user = request.user
         tokens = OutstandingToken.objects.filter(user=user)
         for token in tokens:
             BlacklistedToken.objects.get_or_create(token=token)
-        user.delete()
-        return Response(status=status.HTTP_200_OK)
-
+        user.token_valid_after = get_token_valid_after()
+        # deleting device tokens to prevent fcm tokens
+        user.devices.all().delete() 
+        user.save()
+        return Response()
+        
 
 class RoleTokenRefreshView(TokenRefreshView):
     serializer_class = RoleTokenRefreshSeriaizer

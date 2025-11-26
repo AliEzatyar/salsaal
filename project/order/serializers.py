@@ -46,14 +46,16 @@ class COrderItemSerializer(ModelSerializer):
     def get_food_name(self, obj):
         return obj.food_name
 
+
 class OrderItemSerializerLessDetail(ModelSerializer):
     """used in online payment session creation"""
-    name = serializers.ReadOnlyField(source="food.name")
-    price  = serializers.ReadOnlyField(source="subtotal")
-    class Meta:
-        model= OrderItem
-        fields = ["id", "name", "price"]
 
+    name = serializers.ReadOnlyField(source="food.name")
+    price = serializers.ReadOnlyField(source="subtotal")
+
+    class Meta:
+        model = OrderItem
+        fields = ["id", "name", "price"]
 
 
 class COrderSerializer(ModelSerializer):
@@ -91,7 +93,7 @@ class COrderSerializer(ModelSerializer):
 
     def create(self, validated_data):
         validated_data["user"] = User.objects.get(id=self.context["user"])
-        
+
         return super().create(validated_data)
 
 
@@ -104,7 +106,6 @@ class COrderSerializerLessDetail(ModelSerializer):
     vendor_image = serializers.ReadOnlyField(source="vendor.image_url")
     total_price = CustomDecimalField(read_only=True)
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
-    # items_pair = serializers.SerializerMethodField("get_items")
     items = COrderItemSerializerMany(many=True, read_only=True)
     carrier = serializers.ReadOnlyField(source="carrier.user.id")
 
@@ -149,6 +150,7 @@ class VOrderSerializer(ModelSerializer):
     items = VOrderItemSerializerDetail(read_only=True, many=True)
     total_price = CustomDecimalField(read_only=True)
     destination = SerializerMethodField("get_destination")
+
     class Meta:
         model = Order
         fields = [
@@ -167,9 +169,10 @@ class VOrderSerializer(ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
     def get_customer_name(self, obj):
-        return obj.user.name
+        if obj.user:
+            return obj.user.name
 
-    def get_destination(self,obj):
+    def get_destination(self, obj):
         if obj.destination:
             return [obj.destination.y, obj.destination.x]
         return
