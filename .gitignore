@@ -3,8 +3,6 @@ myvenv
 **.vscode**
 **pycache**
 **__pycache__**
-**static**
-**static_/admin
 .env
 apitesting_nots**
 mysite.json
