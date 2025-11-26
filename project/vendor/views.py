@@ -563,12 +563,27 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
                 }
             )
         except Exception as e:
-            vendor_carriers_key = get_vendor_carriers_key(self.request.user.vendor.id)
-            r.hset(vendor_carriers_key, "f_c_c", total_c_c)
+            vendor = self.request.user.vendor
+            vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+            total_c_c = vendor.carriers.count()
+            b_c_c = Carrier.objects.filter(
+                vendor=vendor, status=CARRIER_STATUS_CHOICES[1][0]
+            ).count() 
+            f_c_c = total_c_c - b_c_c
+            r.hset(vendor_carriers_key, "f_c_c", f_c_c)
             r.hset(vendor_carriers_key, "total_c_c", total_c_c)
+            queryset = self.filter_queryset(self.get_queryset())
+            ser = self.get_serializer(queryset, many=True)
             print("error in list carriers", e)
             print("reseting carries status in redis")
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {
+                    "total_carriers": total_c_c,
+                    "free_carriers": f_c_c,
+                    "busy_carriers": b_c_c,
+                    "carriers": ser.data,
+                }
+            )
 
     def get_serializer_context(self):
         context = super(ManageCarrierViewSet, self).get_serializer_context()

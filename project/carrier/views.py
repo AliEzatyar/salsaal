@@ -24,7 +24,6 @@ from .serializers import CarrierOrderSerializerMany, CarrierOrderSerializer
 class CarrierOrderApiView(views.APIView):
     """
     API view for carriers to view their current order.
-
     This view allows a carrier to see the details of the order they are currently carrying.
     Only orders created within the last 3 hours are considered.
     """
