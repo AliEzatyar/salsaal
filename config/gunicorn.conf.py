@@ -1,9 +1,10 @@
+import multiprocessing
 chdir = "project"
 bind = "0.0.0.0:8000"
-workers = 5  # for 1 CPU
-threads = 3
-worker_class = "uvicorn.workers.UvicornWorker"
-timeout = 120
 loglevel = "debug"
 accesslog = "-"
 errorlog=  "-"
+workers = (multiprocessing.cpu_count() * 2) + 1
+threads = 2
+worker_class = "sync"
+timeout = 60

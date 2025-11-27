@@ -3,7 +3,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from live.models import Notification
 from live.utils import generate_token_for_call
-
 from .serializers import NotificationSerializer
 
 

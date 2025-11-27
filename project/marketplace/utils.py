@@ -8,7 +8,7 @@ import geohash
 from rest_framework.response import Response
 
 
-r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB)
+r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB,password=s.REDIS_PASSWORD)
 DEFAULT_H3_RESOLUTION = 9
 DEFAULT_H3_EDGE_LENGTH = 0.357
 DEFAULT_AVG_SPEED = 5

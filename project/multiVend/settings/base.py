@@ -55,11 +55,9 @@ INSTALLED_APPS = [
     "order.apps.OrderConfig",
     "api.apps.ApiConfig",
     "carrier.apps.CarrierConfig",
-    "channels",
     "live.apps.LiveConfig",
     "qoraa.apps.QoraaConfig",
     "admins.apps.AdminsConfig",
-    
 ]
 
 MIDDLEWARE = [

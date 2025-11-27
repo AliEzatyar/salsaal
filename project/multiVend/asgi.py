@@ -13,21 +13,5 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "multiVend.settings.local")
 django.setup()
 
-# secondly
-from live import routing as live_routings
-from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from live.middlewares import JWTAuthMiddleware
-from channels.security.websocket import AllowedHostsOriginValidator
 
 
-django_asgi_app = get_asgi_application()
-
-application = ProtocolTypeRouter(
-    {
-        "http": django_asgi_app,
-        "websocket": AllowedHostsOriginValidator(
-            JWTAuthMiddleware(URLRouter(live_routings.websocket_urlpatterns))
-        ),
-    }
-)

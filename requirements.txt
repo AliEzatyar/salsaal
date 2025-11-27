@@ -116,8 +116,6 @@ tzdata
 Unidecode
 uritemplate
 urllib3
-uvicorn
-uvloop
 vine
 watchfiles
 wcwidth
