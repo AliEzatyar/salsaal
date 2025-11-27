@@ -33,16 +33,20 @@ CACHES = {
         "LOCATION": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",  #
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # also supply password explicitly; some environments/clients pick this up more reliably
+            "PASSWORD": REDIS_PASSWORD,
         },
     }
 }
 # django channels
+# Use a redis URL that includes the password so channels_redis/aioredis sees auth
+# (some versions ignore a separate "password" key when hosts are tuples)
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
-            "password": REDIS_PASSWORD,
+            # supply a full redis URL including password and DB
+            "hosts": [f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"],
         },
     },
 }
