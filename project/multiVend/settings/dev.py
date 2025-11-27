@@ -24,12 +24,13 @@ LOCAL = False
 REDIS_HOST = env.get("REDIS_HOST")
 REDIS_PORT = env.get("REDIS_PORT")
 REDIS_DB = env.get("REDIS_DB")
+REDIS_PASSWORD = env.get("REDIS_PASSWORD")
 
 # CACHING
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",  #
+        "LOCATION": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",  #
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -41,6 +42,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "password": REDIS_PASSWORD,
         },
     },
 }
@@ -52,8 +54,8 @@ CURRENT_DOMAIN_NAME = env.get("CURRENT_DOMAIN_NAME")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Celery settings
-CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
-CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
+CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
 DJANGO_CELERY_BEAT_MAX_LOOP_INTERVAL = 50  # every 50 seconds, jobs re-taken from db
 
 # Celery Beat for periodic tasks

@@ -24,7 +24,7 @@ MAX_ORDER_DELIVERY_TRIES_COUNT = 10
 
 ORDER_DELIVERY_ATTEPMTS_DELAY = 600 
 
-ORDER_DELIVERY_OTP_EXPIRATION = 3 * 60  # 3 hours
+ORDER_DELIVERY_OTP_EXPIRATION = 6 * 60  # 3 hours
 
 
 VALID_PAYMENT_TYPES = [
@@ -134,7 +134,8 @@ class Order(models.Model):
         self.save()
 
     def __str__(self):
-        return f"Order {self.id} - {self.user.name}"
+        
+        return f"Order {self.id} - {self.user.name if self.user else 'Unknown User'}"
 
 
 class OrderItem(models.Model):
