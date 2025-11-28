@@ -68,7 +68,7 @@ class Order(models.Model):
     status = models.CharField(
         max_length=30, default=ORDER_STATUS_CHOICES[1][0], choices=ORDER_STATUS_CHOICES
     )
-    total_price = models.DecimalField(default=0, max_digits=6, decimal_places=1)
+    total_price = models.DecimalField(default=0, max_digits=6, decimal_places=1) # delivery cost + items cost
     delivery_cost = models.DecimalField(default=0,max_digits=4,decimal_places=1)
     paid = models.BooleanField(default=False)
     transaction_id = models.CharField(
@@ -137,7 +137,6 @@ class Order(models.Model):
         
         return f"Order {self.id} - {self.user.name if self.user else 'Unknown User'}"
 
-
 class OrderItem(models.Model):
     """
     OrderItem model represents an item in an order, linking it to a specific order,
@@ -201,3 +200,18 @@ class Reward(models.Model):
         if self.amount and self.amount > 500:
             self.amount = 500
         super().save(*args, **kwargs)
+
+class FailedMultiVendorPayment(models.Model):
+    """
+    Model to log failed multi-vendor payment attempts.
+    Attributes:
+        order (ForeignKey): Reference to the Order associated with the payment attempt.
+        error_message (TextField): Description of the error encountered during payment.
+        created_at (DateTimeField): Timestamp when the record was created.
+    """
+    
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE, related_name="failed_payments"
+    )
+    error_message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)    

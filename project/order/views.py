@@ -1,6 +1,10 @@
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
-from order.utils import get_order_delivery_tries_key, start_payment_session
+from order.utils import (
+    create_multi_vendor_payment,
+    get_order_delivery_tries_key,
+    start_payment_session,
+)
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
     COrderSerializer,
@@ -14,6 +18,7 @@ from .models import (
     ORDER_DELIVERY_ATTEPMTS_DELAY,
     VALID_PAYMENT_TYPES,
     ORDER_DELIVERY_OTP_EXPIRATION,
+    FailedMultiVendorPayment,
     Order,
     OrderItem,
     ORDER_STATUS_CHOICES,
@@ -242,9 +247,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             recommender = BoughtTogetherRecommender()
             recommender.update_together_bought(pks)
             response = Response(
-                {
-                    "order_id": new_order.id
-                }, 
+                {"order_id": new_order.id},
                 status=status.HTTP_201_CREATED,
             )
             return response
@@ -263,8 +266,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         """this endpoint cancells only waiting orders for request user"""
         orders = Order.objects.filter(
             user=request.user,
-            status__in=[ORDER_STATUS_CHOICES[1][1], # waiting order
-                        ORDER_STATUS_CHOICES[2][1]], # preparing order
+            status__in=[
+                ORDER_STATUS_CHOICES[1][1],  # waiting order
+                ORDER_STATUS_CHOICES[2][1],
+            ],  # preparing order
         )[:5]
         if len(orders) > 0:
             with atomic():
@@ -290,7 +295,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                         {
                             "type": "ORDER_CANCELLED",
                             "data": {"orderId": order.id},
-                        }  
+                        }
                     ),
                 )
         return Response(status=status.HTTP_200_OK)
@@ -340,13 +345,15 @@ class AcceptRejectOrderView(views.APIView):
             # ------------- only 'waiting' order
             if not order.status == ORDER_STATUS_CHOICES[1][0]:
                 return Response(
-                    {"detail":"order_not_waiting_state"},
+                    {"detail": "order_not_waiting_state"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
             # ------------- check if this user owns the order
             self.check_object_permissions(self.request, order)
             # ------------ validate payment type
-            if not payment_type or not payment_type in [i[0] for i in VALID_PAYMENT_TYPES]:
+            if not payment_type or not payment_type in [
+                i[0] for i in VALID_PAYMENT_TYPES
+            ]:
                 return Response(
                     {"detail": "invalid_payment_type"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -361,7 +368,8 @@ class AcceptRejectOrderView(views.APIView):
                         order.total_price
                     ):
                         return Response(
-                            {"detail": "ineffecient_amount"},status=status.HTTP_403_FORBIDDEN,
+                            {"detail": "ineffecient_amount"},
+                            status=status.HTTP_403_FORBIDDEN,
                         )
                     existing_reward.amount -= float(order.total_price)
                     order.paid = True
@@ -370,21 +378,39 @@ class AcceptRejectOrderView(views.APIView):
                     # -------------- handling online payment --------------
                     if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
                         # client app has received transaction id after payment successful
-                        transaction_id = data.get("transaction_id",None)
-                        
+                        transaction_id = data.get("transaction_id", None)
                         if not transaction_id:
                             return Response(status=status.HTTP_400_BAD_REQUEST)
                         order.transaction_id = transaction_id
-                        order.is_epay= True
+                        order.is_epay = True
                         order.paid = True
-
-                    self.handle_reward_increment(order, existing_reward)
-
+                        # -------------- creating multi-vendor payment --------------                              
+                        vendor_hesab_pay_account_number = AcceptRejectOrderView.get_vendor_account_number(order.vendor)
+                        vendors = [
+                            {
+                                "account_number": vendor_hesab_pay_account_number,
+                                "amount": order.total_price,  # delivery + items pr
+                            }
+                        ]
+                        # any error in reward case is not important, multi-vendor payment necessary
+                        try:
+                            self.handle_reward_increment(order, existing_reward)
+                        except Exception as e:
+                            pass
+                        try:
+                            create_multi_vendor_payment(vendors)
+                        except Exception as e:
+                            FailedMultiVendorPayment(
+                                order=order,
+                                error_message=str(e)
+                            ).save()
+                            pass
                 # ------------- clearing user's cart
                 self.request.user.cart.clear()
                 order.payment_type = payment_type
                 order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
                 order.save()
+
             event_data = {
                 "accepted": True,
                 "payment_type": payment_type,
@@ -439,9 +465,11 @@ class AcceptRejectOrderView(views.APIView):
         )
         deactivate_language()
         # ------------- sending notification to vendor
-        send_notification.delay(
-            order.vendor.user.id, notf.title, body=notf.description
-        )
+        send_notification.delay(order.vendor.user.id, notf.title, body=notf.description)
+
+    def get_vendor_account_number(vendor):
+        """returns vendor hesab pay account number"""
+        return "0" + str(vendor.user.phone_number).split("+93")[1]
 
 class OnlinePaymentView(views.APIView):
     """
@@ -458,12 +486,12 @@ class OnlinePaymentView(views.APIView):
             order_id = data.get("order_id", None)
             if not order_id:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            order = Order.objects.filter(id=order_id,is_epay=False).first()
+            order = Order.objects.filter(id=order_id, is_epay=False).first()
             if order:
                 items = order.items.all()
                 items_ser = OrderItemSerializerLessDetail(items, many=True)
                 session_url = start_payment_session(items_ser.data, order_id)
-                return Response({"session_url": session_url['url']})
+                return Response({"session_url": session_url["url"]})
             return Response(status=status.HTTP_400_BAD_REQUEST)
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -537,13 +565,11 @@ class SetOrderStateDelivered(views.APIView):
                 vendor_carriers_key = get_vendor_carriers_key(vendor.id)
                 b_c_c = r.hget(vendor_carriers_key, "b_c_c")  # busy carriers count
                 b_c_c = int(b_c_c) - 1  # decrementing busy carrier's count
-                r.hset(
-                    vendor_carriers_key, "b_c_c", b_c_c
-                )
+                r.hset(vendor_carriers_key, "b_c_c", b_c_c)
                 f_c_c = r.hget(vendor_carriers_key, "f_c_c")
                 f_c_c = int(f_c_c) + 1  # incrementing free carrier's count
                 r.hset(vendor_carriers_key, "f_c_c", f_c_c)
-                
+
             # --------------- creating notification of order delivery for vendor
             profile = vendor.user.profile
             activate_language(profile.pf_lang)
@@ -645,9 +671,10 @@ class ReOrder(views.APIView):
 class RedirectPaymentSuccess(views.APIView):
     """
     this endpoint is called by hesab pay after payment is successful
-    it redirects the request to customer app with transaction_id 
+    it redirects the request to customer app with transaction_id
     """
-    def get(self, *args, **kwargs):        
+
+    def get(self, *args, **kwargs):
         try:
             print(self.request.query_params, "this was request whole data")
             params_data = self.request.query_params.get("data", None)
@@ -686,5 +713,5 @@ class RedirectPaymentFailure(views.APIView):
             response = Response(status=status.HTTP_302_FOUND)
             response["Location"] = app_link
             return response
-        except Exception as e: 
+        except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)

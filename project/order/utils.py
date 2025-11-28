@@ -2,6 +2,10 @@ from django.urls import reverse
 import requests
 import json
 from django.conf import settings
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad
+import base64
 
 
 def get_order_delivery_tries_key(order_id):
@@ -58,7 +62,7 @@ def create_payment_session(api_key, items, order_id, email=None, redirect_urls=N
         return response.json()
 
     except requests.exceptions.RequestException as e:
-        print(e.args,e)
+        print(e.args, e)
         return {"error": "Request failed", "message": str(e)}
 
 
@@ -73,7 +77,7 @@ def start_payment_session(items, order_id):
         order_id,
         redirect_urls={"success_url": success_url, "failure_url": failure_url},
     )
-    print(success_url,"start payment session urls---")
+    print(success_url, "start payment session urls---")
     print("this was response in starting payment session:", response, items, order_id)
     return response
 
@@ -84,34 +88,40 @@ import base64
 from cryptography.fernet import Fernet
 
 
-def encrypt_pin(pin, encryption_key):
-    """
-    Encrypt PIN for secure transmission
-    """
-    f = Fernet(encryption_key)
-    encrypted_pin = f.encrypt(pin.encode())
-    return base64.b64encode(encrypted_pin).decode()
+def encrypt_pin(data, key):
+    key = key.encode("utf-8")[:32]
+    key = key.ljust(32, b"\0")
+
+    iv = get_random_bytes(16)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    padded_data = pad(data.encode("utf-8"), AES.block_size)
+
+    ciphertext = cipher.encrypt(padded_data)
+    encrypted_data = base64.b64encode(iv + ciphertext).decode("utf-8")
+    return encrypted_data
 
 
-def create_multi_vendor_payment(api_key, encrypted_pin, vendors):
+def create_multi_vendor_payment(vendors):
     """
     Distribute payment to multiple vendors
 
     Args:
         api_key (str): Your API key
-        encrypted_pin (str): Your encrypted account PIN
+        pin (str): Your account PIN
         vendors (list): List of vendor accounts and amounts
 
     Returns:
         dict: API response
     """
+    api_key = settings.HESAB_PAY_API_KEY
+    pin = settings.HESAB_PAY_ACCOUNT_PIN
     endpoint = settings.HESAB_PAY_MULTI_VENDOR_ENDPOINT
     headers = {
         "Authorization": f"API-KEY {api_key}",
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
-
+    encrypted_pin = encrypt_pin(pin, api_key)
     payload = {"pin": encrypted_pin, "vendors": vendors}
 
     try:
@@ -124,18 +134,9 @@ def create_multi_vendor_payment(api_key, encrypted_pin, vendors):
 
 
 # Example usage
-api_key = settings.HESAB_PAY_API_KEY
-pin = "4245"
 
-encryption_key = b"kX3hH7QkPz0V8F0fX8yS6k6dO3g8GfN3WcBAzT5i5Yc="
 
-encrypted_pin = encrypt_pin(pin, encryption_key)
 
 vendors = [
     {"account_number": "0794825911", "amount": 20},
-    {"account_number": "0794825001", "amount": 40},
-    {"account_number": "0742825911", "amount": 20},
 ]
-
-result = create_multi_vendor_payment(api_key, encrypted_pin, vendors)
-print(json.dumps(result, indent=2))

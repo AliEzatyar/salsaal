@@ -15,8 +15,6 @@ cachetools
 celery
 certifi
 cffi
-channels
-channels_redis
 charset-normalizer
 click
 click-didyoumean
@@ -28,7 +26,6 @@ cssselect2
 diff-match-patch
 Django
 django-celery-beat
-django-channels
 django-cors-headers
 django-debug-toolbar
 django-decouple
