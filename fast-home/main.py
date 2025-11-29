@@ -2,16 +2,13 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import Depends
-from auth import get_user
 from dependencies import get_db
 from schemas import HomeSchema
 from models import (
     Category,
     Discount,
     Food,
-    Notification,
     Promotion,
-    User,
     Vendor,
 )
 import geohash
@@ -40,25 +37,24 @@ async def home(
     location: str,
     city: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user),
 ):
-    # decoding location
+    # --------------- decoding location and getting city
     try:
         lat, lon = geohash.decode(location)
+        city = str(city).lower()
     except Exception as e:
-        lat, lon = float(user.profile.latitude), float(user.profile.longitude)
-    city = city.lower()
-    # ----------- user cart and notf count
-    user_notf_count = (
-        db.scalar(
-            select(Notification.id).where(
-                Notification.receiver_id == user.id, Notification.is_read == False
-            )
-        )
-        or 0
-    )
-    user_cart_count = get_total_cart_items(user.id)
-    print(user_notf_count, user_cart_count)
+        print("error in location decoding, home fast-api:",e)
+        return {
+            "cart_count": None,
+            "notf_count": None,
+            "categories": None,
+            "promotions": None,
+            "discounted_foods": None,
+            "local_vendors": None,
+            "cheapest_vendors": None,
+            "top_vendors": None,
+        }
+
     # ----------- categories
     categories_key = "categories_all"
     categories = await cache_get(categories_key)
@@ -126,8 +122,8 @@ async def home(
     ).all()
     set_image_url_to_scalars(top_vendors, "vendor")
     return {
-        "cart_count": user_cart_count,
-        "notf_count": user_notf_count,
+        "cart_count": None,
+        "notf_count": None,
         "categories": categories,
         "promotions": promotions,
         "discounted_foods": discounted_foods,

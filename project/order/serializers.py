@@ -52,7 +52,7 @@ class OrderItemSerializerLessDetail(ModelSerializer):
 
     name = serializers.ReadOnlyField(source="food.name")
     price = serializers.ReadOnlyField(source="subtotal")
-
+    
     class Meta:
         model = OrderItem
         fields = ["id", "name", "price"]

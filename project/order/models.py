@@ -164,7 +164,8 @@ class OrderItem(models.Model):
     price = models.DecimalField(default=0, max_digits=6, decimal_places=1)
 
     def __str__(self):
-        return f"{self.quantity} x {self.food.name} from {self.vendor.vendor_name}"
+        
+        return f"{self.quantity} x {self.food.name if self.food else 'Unknown Food'} from {self.vendor.vendor_name}"
 
     @property
     def subtotal(self):

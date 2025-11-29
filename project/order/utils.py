@@ -123,7 +123,7 @@ def create_multi_vendor_payment(vendors):
     }
     encrypted_pin = encrypt_pin(pin, api_key)
     payload = {"pin": encrypted_pin, "vendors": vendors}
-
+    print(payload,"tis was payload sent to multi vendor endpoint")
     try:
         response = requests.post(endpoint, json=payload, headers=headers)
         response.raise_for_status()

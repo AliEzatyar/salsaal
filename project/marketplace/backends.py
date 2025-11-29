@@ -47,7 +47,6 @@ class CustomFoodOrdering(OrderingFilter):
         """overriden for adding reach time for every food,
         since this filter is applied last, pythonic attrs are kept"""
         queryset = super().filter_queryset(request, queryset, view)
-
         request_data = request.query_params
         sort_by = request_data.get("sort_by", None)
         user_location = request_data.get("location", None)
@@ -65,6 +64,9 @@ class CustomFoodOrdering(OrderingFilter):
                     1,
                 )
                 food.reach_time = round(distance_to_travel_time(distance))
+        else:
+            return Food.objects.none()
+        
         if sort_by:
             if sort_by == "-reach_time":
                 return sorted(queryset, key=lambda x: x.reach_time, reverse=True)
@@ -197,7 +199,6 @@ class CustomVendorSearch(SearchFilter):
 
     def filter_queryset(self, request, queryset, view):
         # if search param value is void
-        # getting user location
         request_data = request.query_params
         search_param = request_data.get(self.search_param)
         location = request_data.get("location", None)

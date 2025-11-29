@@ -196,6 +196,7 @@ def get_user_info(request):
     """
     Extracts user info from request object. If not provided, takes from user profile.
     Returns: city (str), lat (float), lon (float)
+    not used yet, for future use
     """
     request_data = request.query_params
     city = request_data.get("city")
@@ -208,7 +209,7 @@ def get_user_info(request):
             lat = float(request.user.profile.latitude)
             lon = float(request.user.profile.longitude)
         else:
-            raise ValidationError({"detail": "City or location required"})
+            raise ValidationError({"detail": "City and location required"})
     else:
         try:
             lat, lon = geohash.decode(location)

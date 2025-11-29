@@ -375,24 +375,26 @@ class AcceptRejectOrderView(views.APIView):
                     order.paid = True
                     existing_reward.save()
                 else:  # -------- payment type not reward -> increment reward  points
-                    # -------------- handling online payment --------------
                     if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
-                        # client app has received transaction id after payment successful
+                        """
+                            this part handles import online payment
+                            after succesfull payment, user is redirected to app and request is made 
+                            to this endpoint. Here we transfer vendor's share to his account.
+                        """                        
                         transaction_id = data.get("transaction_id", None)
                         if not transaction_id:
                             return Response(status=status.HTTP_400_BAD_REQUEST)
                         order.transaction_id = transaction_id
                         order.is_epay = True
                         order.paid = True
-                        # -------------- creating multi-vendor payment --------------                              
-                        vendor_hesab_pay_account_number = AcceptRejectOrderView.get_vendor_account_number(order.vendor)
+                        vendor_hesab_pay_account_number = self.get_vendor_account_number(order.vendor)
                         vendors = [
                             {
                                 "account_number": vendor_hesab_pay_account_number,
-                                "amount": order.total_price,  # delivery + items pr
+                                "amount": int(order.total_price),  # delivery + items price
                             }
                         ]
-                        # any error in reward case is not important, multi-vendor payment necessary
+                        # any error in reward is not important, multi-vendor payment necessary
                         try:
                             self.handle_reward_increment(order, existing_reward)
                         except Exception as e:
@@ -400,12 +402,12 @@ class AcceptRejectOrderView(views.APIView):
                         try:
                             create_multi_vendor_payment(vendors)
                         except Exception as e:
-                            FailedMultiVendorPayment(
+                            FailedMultiVendorPayment.objects.create(
                                 order=order,
                                 error_message=str(e)
-                            ).save()
+                            )
                             pass
-                # ------------- clearing user's cart
+                # ------------- either payment type, this general part should be done
                 self.request.user.cart.clear()
                 order.payment_type = payment_type
                 order.status = ORDER_STATUS_CHOICES[2][1]  # preparing/execution
@@ -490,7 +492,14 @@ class OnlinePaymentView(views.APIView):
             if order:
                 items = order.items.all()
                 items_ser = OrderItemSerializerLessDetail(items, many=True)
-                session_url = start_payment_session(items_ser.data, order_id)
+                data = items_ser.data.copy()
+                data.append(
+                    {
+                        "name": "Delivery Cost",
+                        "price": int(order.delivery_cost),
+                    }
+                )
+                session_url = start_payment_session(data, order_id)
                 return Response({"session_url": session_url["url"]})
             return Response(status=status.HTTP_400_BAD_REQUEST)
         except Order.DoesNotExist:

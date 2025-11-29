@@ -1079,7 +1079,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
                     estimated, distance_km = estimate_travel_time_graphhopper(
                         vendor_location, user_location
-                    )
+                    ) # raw estimation in minutes
 
                     # ----------------- getting total free carriers and total preparing orders
                     vendor_carriers_key = get_vendor_carriers_key(vendor.id)
@@ -1148,7 +1148,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                                 prep_time = item.food.duration
                     print(prep_time, "max preparation time")
 
-                    # ------------------ calculating delivery fee ----------------/---------------------
+                    # ------------------ calculating delivery cost -------------------------
                     delivery_cost = None
                     v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
                     v_mfcfd = vendor.mfcfd  # vendor's minimum food count free delivery
@@ -1166,18 +1166,17 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     # since accepted by vendor, otp is set on and used in filter waiting orders of vendor
                     otp = generate_otp(8)
                     order.otp = otp
-                    print(order.otp, "--- order otp--- set in calc", otp)
-                    total_cost = float(order.total_price) + float(order.delivery_cost)
+                    order.calculate_total_price()
+                    food_price = order.total_price - order.delivery_cost
                     total_time = round(float(prep_time) + float(estimated))
                     order.save()
-                    print("order saved")
                     return Response(
                         {
-                            "estimation": round(total_time),
+                            "estimation": round(estimated),
                             "delivery_cost": delivery_cost,
                             "preparation_time": round(prep_time),
-                            "order_cost": round(order.total_price),
-                            "total_cost": round(total_cost),
+                            "order_cost": round(food_price),
+                            "total_cost": round(order.total_price),
                             "order_id": order.id,
                             "total_time": total_time,
                         }
@@ -1230,10 +1229,9 @@ class SetOrderStateCarrying(views.APIView):
                 )
             #  vendor should own this order
             self.check_object_permissions(self.request, order)
-            # if payment is online and not paid, not allowed
-            # if order.is_credit:
-            #     if not order.paid:
-            #         return Response({"detail": "payment not completed"}, status=400)
+            if order.is_epay:
+                if not order.paid:
+                    return Response({"detail": "payment not completed"}, status=400)
 
             with atomic():
                 # ----------------  making necessary things atomic

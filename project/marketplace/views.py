@@ -53,7 +53,6 @@ from .utils import (
 from django.db.models import Avg
 import geohash
 import h3
-from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import gettext as _
 import time
 from django.db.models import Count, Window, F
@@ -68,7 +67,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     For food detail, this view requires user location and city from client app.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     serializer_class = FoodSerializerMany
     filter_backends = [
         filters.OrderingFilter,
@@ -135,10 +134,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         user_notf_count = 0
         try:
             city, lat, lon = get_user_info(request)
-            user_cart_items_count = self.request.user.cart.calculate_total_items()
-            user_notf_count = Notification.objects.filter(
-                receiver=self.request.user, is_read=False
-            ).count()
 
         except Exception as e:
             print("error", e)
@@ -443,29 +438,22 @@ class FoodSearchViewset(viewsets.ReadOnlyModelViewSet):
     this viewset enables a user search for a fooditem
     the result is filtered by the user's city.
     """
-
+    permission_classes = [AllowAny]
     pagination_class = StandardResultSetPagination
     serializer_class = FoodSerializerMany
     queryset = Food.objects.filter(is_available=True)
-    # django-filter
     filter_backends = [
         CustomFoodSearch,
         DjangoFilterBackend,
         CustomFoodOrdering,
     ]
-    # filering
     filterset_class = FoodFilterSet
-
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
 
 class VendorSearchViewset(viewsets.ReadOnlyModelViewSet):
     """
     this viewset enables a user to search for a vendor
     result is filtered by both city and max_distance, so lat and long is need too.
     """
-
     queryset = Vendor.objects.filter(is_approved=True)
     serializer_class = VendorSerializerMany
     pagination_class = StandardResultSetPagination
@@ -763,6 +751,7 @@ class FoodsByCategory(generics.ListAPIView):
 
     serializer_class = CategoryVendorSerializer
     pagination_class = StandardResultSetPagination
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         """filtering by category"""
