@@ -70,7 +70,8 @@ class Vendor(models.Model):
     location = g_models.PointField(null=True, blank=True, srid=4326)
     h3_id = models.CharField(max_length=55, blank=True)
     city = models.CharField(max_length=15, db_index=True)
-
+    hesabpay_number = models.CharField(max_length=30, blank=True, null=True)
+    
     class Meta:
 
         ordering = ["-avg_rating"]

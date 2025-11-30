@@ -39,6 +39,9 @@ class CartApiView(views.APIView):
         # drinks
         if not cart.is_empty():
             vendor = cart.get_vendor()
+            hesab_pay = False
+            if vendor.hesabpay_number:
+                hesab_pay=True
             drinks = Food.objects.filter(is_drink=True, vendor=vendor)
             drinks_serializer = FoodSerializerMany(drinks, many=True)
             return Response(
@@ -47,6 +50,7 @@ class CartApiView(views.APIView):
                     "vendor_id": vendor.id,
                     "vendor_name": vendor.vendor_name,
                     "drinks": drinks_serializer.data,
+                    "hesab_pay": hesab_pay,
                 },
                 status=status.HTTP_200_OK,
             )

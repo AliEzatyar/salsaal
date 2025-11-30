@@ -12,7 +12,7 @@ from os import environ as env
 
 PUBLIC_KEY = None
 ALGORITHM = "RS256"
-security = HTTPBearer()
+security = HTTPBearer(auton_error=False)
 
 # sending request to get public key for jwt authentication
 resp = get(env.get("DJANGO_SERVER_URL") + "/jwtks/").text
@@ -34,18 +34,20 @@ def decode_token(token):
 async def get_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
-):
-    token = credentials.credentials
-    payload = decode_token(token)
-    if not payload:
+):  
+    try:
+        token = credentials.credentials
+        payload = decode_token(token)
+        if not payload:
+            return None
+        user_id = payload.get("user_id")
+        if not user_id:
+            return None
+        token_iat = payload["iat"]
+        user = db.scalars(select(User).where(User.id == user_id)).first()
+        if user.token_valid_after > datetime.fromtimestamp(token_iat, timezone.utc):
+            return None
+        # Fetch user from DB if needed (SQLAlchemy or ORM)
+        return user
+    except Exception as e:
         return None
-
-    user_id = payload.get("user_id")
-    if not user_id:
-        return None
-    token_iat = payload["iat"]
-    user = db.scalars(select(User).where(User.id == user_id)).first()
-    if user.token_valid_after > datetime.fromtimestamp(token_iat, timezone.utc):
-        return None
-    # Fetch user from DB if needed (SQLAlchemy or ORM)
-    return user

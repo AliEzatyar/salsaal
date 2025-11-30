@@ -478,6 +478,7 @@ class RatingViewSet(viewsets.ModelViewSet):
         filters.SearchFilter,
         DjangoFilterBackend,
     ]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         """returns rating objects of a related object [food, vendor, carrier]"""
@@ -537,7 +538,9 @@ class RatingViewSet(viewsets.ModelViewSet):
         )
 
     def create(self, request, *args, **kwargs):
-        """overriden to handle cusotm rating creation and food likes"""
+        """overriden to handle custom rating creation and food likes"""
+        if self.request.user.is_anonymous:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         if self.request.user.role != CUSTOMER:
             return Response(status=status.HTTP_403_FORBIDDEN)
         data = request.data
@@ -599,6 +602,8 @@ class RatingViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """updating obj rating avg and count if one of its ratings is deleted"""
+        if self.request.user.is_anonymous:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         rating = self.get_object()
         obj = rating.related_obj
         rating.delete()

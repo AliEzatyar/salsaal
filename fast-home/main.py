@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -10,6 +11,7 @@ from models import (
     Food,
     Notification,
     Promotion,
+    User,
     Vendor,
 )
 import geohash
@@ -38,9 +40,9 @@ async def home(
     location: str,
     city: str,
     db: Session = Depends(get_db),
+    user : Any = Depends(get_user)
 ):
-    user = await get_user()
-    # ----------- user cart and notf count
+    # ----------- user cart and notf count if auth provided
     user_notf_count = 0
     user_cart_count = 0
     if user:
@@ -58,7 +60,6 @@ async def home(
         lat, lon = geohash.decode(location)
         city = str(city).lower()
     except Exception as e:
-        print("error in location decoding, home fast-api:",e)
         return {
             "cart_count": 0,
             "notf_count": 0,
