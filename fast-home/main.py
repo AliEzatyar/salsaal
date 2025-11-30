@@ -8,6 +8,7 @@ from models import (
     Category,
     Discount,
     Food,
+    Notification,
     Promotion,
     Vendor,
 )
@@ -24,7 +25,7 @@ from utils import (
     set_image_url_to_scalars,
 )
 from schemas import CategorySchema
-
+from auth import get_user
 
 DEFAULT_H3_RESOLUTION = 9
 
@@ -38,6 +39,20 @@ async def home(
     city: str,
     db: Session = Depends(get_db),
 ):
+    user = await get_user()
+    # ----------- user cart and notf count
+    user_notf_count = 0
+    user_cart_count = 0
+    if user:
+        user_notf_count = (
+            db.scalar(
+                select(Notification.id).where(
+                    Notification.receiver_id == user.id, Notification.is_read == False
+                )
+            )
+            or 0
+        )
+        user_cart_count = get_total_cart_items(user.id)
     # --------------- decoding location and getting city
     try:
         lat, lon = geohash.decode(location)
@@ -45,14 +60,14 @@ async def home(
     except Exception as e:
         print("error in location decoding, home fast-api:",e)
         return {
-            "cart_count": None,
-            "notf_count": None,
-            "categories": None,
-            "promotions": None,
-            "discounted_foods": None,
-            "local_vendors": None,
-            "cheapest_vendors": None,
-            "top_vendors": None,
+            "cart_count": 0,
+            "notf_count": 0,
+            "categories": [],
+            "promotions": [],
+            "discounted_foods": [],
+            "local_vendors": [],
+            "cheapest_vendors": [],
+            "top_vendors": [],
         }
 
     # ----------- categories
@@ -122,8 +137,8 @@ async def home(
     ).all()
     set_image_url_to_scalars(top_vendors, "vendor")
     return {
-        "cart_count": None,
-        "notf_count": None,
+        "cart_count": user_cart_count,
+        "notf_count": user_notf_count,
         "categories": categories,
         "promotions": promotions,
         "discounted_foods": discounted_foods,

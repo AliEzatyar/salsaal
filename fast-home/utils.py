@@ -128,14 +128,28 @@ def set_image_url_to_scalars(qs, keyword="image"):
     this utility sets s3 url to a collection of orm instances
     django by saves the partial address of image in database not full url,
     temporary urls should be generated using s3
+    keyword: to identify which attribute to set the url
+        vendor -> image and logo
+        picture -> picture
+        image -> image
+        
+    ** a simple issue might occur when an instance is set url multiple times,
+        so we check if url already starts with https:// we skip it
+        like the same vendor object might be assigen url twice for logo and image
     """
     if keyword == "vendor":
         for item in qs:
+            if item.image.startswith("https://") or item.logo.startswith("https://"):
+                continue
             item.image = generate_image_url(item.image)
             item.logo = generate_image_url(item.logo)
     elif keyword == "picture":
         for item in qs:
+            if item.picture.startswith("https://"):
+                continue
             item.picture = generate_image_url(item.picture)
     elif keyword == "image":
         for item in qs:
+            if item.image.startswith("https://"):
+                continue
             item.image = generate_image_url(item.image)

@@ -57,11 +57,11 @@ class DiscountedFoodsSchema(BaseModel):
 
 
 class HomeSchema(BaseModel):
-    cart_count: int=None
-    notf_count: Optional[int]=None
-    categories: List[CategorySchema]=None
-    promotions: List[PromotionSchema]=None
-    discounted_foods: List[DiscountedFoodsSchema]=None
-    local_vendors: List[VendorOut]=None
-    cheapest_vendors: List[VendorOut]=None
-    top_vendors: List[VendorOut]=None
+    cart_count: Optional[int] = None
+    notf_count: Optional[int] = None
+    categories: Optional[List[CategorySchema]] = None
+    promotions: Optional[List[PromotionSchema]] = None
+    discounted_foods: Optional[List[DiscountedFoodsSchema]] = None
+    local_vendors: Optional[List[VendorOut]] = None
+    cheapest_vendors: Optional[List[VendorOut]] = None
+    top_vendors: Optional[List[VendorOut]] = None

@@ -141,12 +141,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 {
                     "cart_count": 0,
                     "notf_count": 0,
-                    "categories": None,
-                    "promotions": None,
-                    "discounted_foods": None,
-                    "local_vendors": None,
-                    "cheapest_vendors": None,
-                    "top_vendors": None,
+                    "categories": [],
+                    "promotions": [],
+                    "discounted_foods": [],
+                    "local_vendors": [],
+                    "cheapest_vendors": [],
+                    "top_vendors": [],
                 }
             )
         # -------------------- categories ----------------
@@ -707,7 +707,7 @@ class ListVendorFoods(views.APIView):
     or grouped by category
     this endpoint works as the second part of vendor detail 
     """
-
+    permission_classes = [AllowAny]
     def get(self, *args, **kwargs):
         data = self.request.query_params
         vendor_id = data.get("vendor_id", None)

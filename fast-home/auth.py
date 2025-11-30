@@ -38,18 +38,14 @@ async def get_user(
     token = credentials.credentials
     payload = decode_token(token)
     if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-        )
+        return None
 
     user_id = payload.get("user_id")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token payload")
+        return None
     token_iat = payload["iat"]
     user = db.scalars(select(User).where(User.id == user_id)).first()
     if user.token_valid_after > datetime.fromtimestamp(token_iat, timezone.utc):
-        raise HTTPException(status_code=401, detail="Invalid token payload")
-
+        return None
     # Fetch user from DB if needed (SQLAlchemy or ORM)
     return user
