@@ -52,9 +52,7 @@ class Vendor(models.Model):
     license_valid_until = models.DateField(auto_now_add=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
-    opening_hours = models.ManyToManyField(
-        to="vendor.OpeningHour", related_name="vendors"
-    )
+    
     mfdd = models.PositiveSmallIntegerField(
         default=0, blank=True
     )  # max free distance delivery
@@ -141,31 +139,6 @@ class Vendor(models.Model):
             return self.logo.url
         except ValueError:
             return None
-
-
-HOURS = [(i + add, i + add) for i in range(24) for add in (0,)]
-WEEKDAYS = [
-    ("1", "Saturday"),
-    ("2", "Sunday"),
-    ("3", "Monday"),
-    ("4", "Tuesday"),
-    ("5", "Wednesday"),
-    ("6", "Thursday"),
-    ("7", "Friday"),
-]
-
-
-class OpeningHour(models.Model):
-    uuid = models.UUIDField(
-        default=uuid4, db_index=True, unique=True, editable=False, null=True
-    )
-    start_hour = models.FloatField(choices=HOURS, null=True)
-    end_hour = models.FloatField(choices=HOURS, null=True)
-    weekday = models.CharField(choices=WEEKDAYS)
-    is_holiday = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.weekday + "-" + str(self.start_hour) + "-" + str(self.end_hour)
 
 
 class Promotion(models.Model):

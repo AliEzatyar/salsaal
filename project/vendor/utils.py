@@ -40,7 +40,7 @@ def get_vendor_key(id):
 
 
 def get_vendor_status(id):
-    """this saves availability of vendor in redis"""
+    """this saves availability of vendor in redis for 6 hours"""
     key = get_vendor_key(id)
     status_raw = r.get(key)
     if not status_raw:

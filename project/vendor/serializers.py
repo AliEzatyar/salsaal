@@ -6,13 +6,10 @@ from marketplace.serializers import (
     FoodSerializerLessDetail,
 )
 from accounts.utils import CITY_TRANSLATIONS
-from .models import OpeningHour, Promotion, Vendor
+from .models import Promotion, Vendor
 from accounts.models import REST
-from .models import WEEKDAYS
 from rest_framework.serializers import ValidationError
 
-
-WEEKDAY_MAP = {str(i): val for i, val in WEEKDAYS}
 
 
 class VendorSerializerMany(serializers.ModelSerializer):
@@ -73,14 +70,6 @@ class VendorSerializerWithFoodImages(serializers.ModelSerializer):
 
     def get_reach_time(self, obj):
         return int(obj.reach_time) if hasattr(obj, "reach_time") else None
-
-
-class OpeningHourSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = OpeningHour
-        fields = ["id", "start_hour", "end_hour", "weekday", "is_holiday"]
-        read_only_fields = ["id"]
 
 
 class DiscountFoodSerializerMany(serializers.ModelSerializer):

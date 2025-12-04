@@ -61,14 +61,6 @@ class Category(Base):
     foods = relationship("Food", back_populates="category_of")
 
 
-# Many-to-many association for Vendor <-> OpeningHour
-vendor_opening_hours = Table(
-    "vendor_opening_hours",
-    Base.metadata,
-    Column("vendor_id", ForeignKey("vendor_vendor.id"), primary_key=True),
-    Column("openinghour_id", ForeignKey("vendor_openinghour.id"), primary_key=True),
-)
-
 
 # ------------------ USER MODELS ------------------
 class User(Base):
@@ -152,9 +144,6 @@ class Vendor(Base):
     user_profile = relationship("UserProfile", back_populates="vendor")
     foods = relationship("Food", back_populates="vendor_of")
     discounts = relationship("Discount", back_populates="vendor")
-    opening_hours = relationship(
-        "OpeningHour", secondary=vendor_opening_hours, back_populates="vendors"
-    )
     city = Column(String(20))
     latitude = Column(String(60))
     longitude = Column(String(60))
@@ -206,23 +195,6 @@ class Discount(Base):
     created_at = Column(DateTime)
     vendor = relationship("Vendor", back_populates="discounts")
     foods = relationship("Food", back_populates="discount")
-
-
-# ------------------ OPENING HOURS ------------------
-class OpeningHour(Base):
-    __tablename__ = "vendor_openinghour"
-    __table_args__ = {"extend_existing": True}
-
-    id = Column(Integer, primary_key=True)
-    uuid = Column(UUID(as_uuid=True), default=uuid4, unique=True, index=True)
-    start_hour = Column(Float, nullable=True)
-    end_hour = Column(Float, nullable=True)
-    weekday = Column(String, nullable=False)
-    is_holiday = Column(Boolean, default=False)
-
-    vendors = relationship(
-        "Vendor", secondary=vendor_opening_hours, back_populates="opening_hours"
-    )
 
 
 # ------------------ NOTIFICATION ------------------

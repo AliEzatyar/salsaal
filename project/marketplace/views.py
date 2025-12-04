@@ -171,9 +171,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 "logo",
                 "vendor_type",
                 "user_profile",
-                "opening_hours",
             )
-            .prefetch_related("opening_hours")
         )
         # ----------------- city foods
         city_foods = (

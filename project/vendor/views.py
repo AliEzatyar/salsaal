@@ -33,10 +33,8 @@ from live.models import Notification
 from live.utils import send_notification
 from multiVend.country.info import PLATFORM_SHARE
 from accounts.serializers import UserDetailSerializer
-from vendor.models import OpeningHour
 from .serializers import (
     DiscountSerializer,
-    OpeningHourSerializer,
     VendorSerializerDetailed,
 )
 from marketplace.backends import FoodFilterSet, VOrderFilterSet
@@ -122,6 +120,8 @@ class ConvertToVendorAPIView(views.APIView):
 
         with atomic():
             vendor = ser.save()
+            vendor.is_approved = True # temporary needed for first vendors
+            vendor.save()
             user.cart.delete()
             # setting vendor's carriers in redis
             vendor_carriers_key = get_vendor_carriers_key(vendor.id)
@@ -370,55 +370,6 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print("error in add food to discount", e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class ManageOpeningHours(viewsets.ModelViewSet):
-    serializer_class = OpeningHourSerializer
-    permission_classes = [permissions.IsAuthenticated, IsVendor]
-
-    def get_queryset(self):
-        return OpeningHour.objects.filter(vendors__in=[self.request.user.vendor])
-
-    def perform_create(self, serializer):
-        data = serializer.validated_data
-        weekday = data.get("weekday", None)
-        start_hour = data.get("start_hour", None)
-        end_hour = data.get("end_hour", None)
-        is_holiday = data.get("is_holiday", None)
-
-        qs = self.get_queryset()
-        # preventing repetition
-        if weekday and qs.filter(weekday=weekday):
-            raise NotAcceptable(detail="already_exists", code=403)
-        if not is_holiday and (not start_hour or not end_hour):
-            raise NotAcceptable(detail="no_hours_mentioned", code=403)
-        if start_hour and end_hour:
-            if start_hour > end_hour:
-                raise NotAcceptable(detail="incorrect_hour_set", code=403)
-
-        instance = serializer.save()
-        vendor = self.request.user.vendor
-        vendor.opening_hours.add(instance)
-        return instance
-
-    def perform_update(self, serializer):
-        data = serializer.validated_data
-        weekday = data.get("weekday", None)
-        start_hour = data.get("start_hour", None)
-        end_hour = data.get("end_hour", None)
-        is_holiday = data.get("is_holiday", None)
-
-        qs = self.get_queryset().exclude(id=serializer.instance.id)
-        # preventing repetition
-        if weekday and qs.filter(weekday=weekday):
-            raise NotAcceptable(detail="already_exists", code=403)
-        if not is_holiday and (not start_hour or not end_hour):
-            raise NotAcceptable(detail="no_hours_mentioned", code=403)
-        if start_hour and end_hour:
-            if start_hour > end_hour:
-                raise NotAcceptable(detail="incorrect_hour_set", code=403)
-
-        return serializer.save()
 
 
 class AddCarrierAPIView(views.APIView):

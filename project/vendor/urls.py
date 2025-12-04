@@ -19,9 +19,6 @@ router.register(
 router.register(
     r"manage-discount", views.ManageDiscountViewSet, basename="manage-discount"
 )
-router.register(
-    r"manage-opening-hours", views.ManageOpeningHours, basename="manage-opening-hours"
-)
 router.register(r"vendor-orders", views.ListVendorOrders, basename="vendor-orders")
 # food retrive  routing
 

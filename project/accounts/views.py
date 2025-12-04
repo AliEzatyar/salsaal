@@ -136,9 +136,10 @@ class LoginApiView(views.APIView):
         otp = data.get("otp", None)
         phone_number = data.get("phone_number", None)
         if not otp:
-            return Response(
-                {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            # return Response(
+            #     {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+            # )
+            pass
         if not typ:
             return Response(
                 {"detail": "provide_type"}, status=status.HTTP_400_BAD_REQUEST
@@ -329,7 +330,7 @@ class UpsertDeviceToken(views.APIView):
 
         try:
             # If a device with this token exists for another user, reassign it to current user
-            device = Device.objects.filter(token=new_token).first()
+            device = Device.objects.filter(token=new_token).first() 
             if device:
                 # reassign owner to current user
                 device.user = request.user

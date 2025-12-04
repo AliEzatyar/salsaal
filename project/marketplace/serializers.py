@@ -1,7 +1,7 @@
 from decimal import InvalidOperation
 import json
 from rest_framework import serializers
-from vendor.models import OpeningHour, Vendor
+from vendor.models import Vendor
 from marketplace.models import Category, Food, Rating
 from rest_framework import serializers
 from decimal import InvalidOperation
@@ -293,14 +293,6 @@ class RatingSerializer(serializers.ModelSerializer):
         fields = ["id", "user_name", "comment", "created_at", "rating"]
         read_only_fields = ["id", "created_at", "user"]
 
-
-class ReadOnlyOpeningHourSerializer(serializers.ModelSerializer):
-    """for marketplace use"""
-
-    class Meta:
-        model = OpeningHour
-        fields = ["start_hour", "end_hour", "weekday", "is_holiday"]
-        read_only_fields = ["id", "start_hour", "end_hour", "weekday", "is_holdiay"]
 
 
 class FoodSerializerLessDetail(serializers.ModelSerializer):
