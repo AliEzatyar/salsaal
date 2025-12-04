@@ -5,24 +5,24 @@ from django.utils import timezone
 from api.permissions import IsCustomer, IsVendor
 from qoraa.serializers import QoraaVendorSerializer
 from vendor.models import Vendor
-from .models import Qoraa, QoraaVendor, QORAA_DEFAULT_VALUE
-from .serializers import QoraaSerializer
+from .models import Qoraa, QoraaVendor, MIN_QORAA_PRICE_VALUE
+from .serializers import QoraaReadOnlySerializer
 
 # Create your views here.
 
 
-class QoraaViewSet(viewsets.ReadOnlyModelViewSet):
+class QoraaListApiView(views.APIView):
     """
     A simple ViewSet for viewing active and past qoraas.
     """
 
-    queryset = Qoraa.objects.all()
-    serializer_class = QoraaSerializer
-
-    def get_queryset(self):
+    def get(self, request, *args, **kwargs):
+        """Returns a list of active qoraas."""
         now = timezone.now()
-        return Qoraa.objects.filter(start__lte=now, end__gte=now).order_by("-start")
-
+        qoraas = Qoraa.objects.filter(start__lte=now, end__gte=now,status__in=[Qoraa.STATUS_RUNNING,Qoraa.STATUS_FINISHED]
+                                                                               ).prefetch_related("joiners").order_by("-price_value")
+        ser = QoraaReadOnlySerializer(qoraas, many=True, context={"request": request})
+        return Response(ser.data, status=status.HTTP_200_OK)
 
 class JoinQoraaApiView(views.APIView):
     """
@@ -74,7 +74,7 @@ class JoinQoraaVendor(views.APIView):
     Vendors can join or update their qoraa participation settings.
     This uses an update_or_create logic to be idempotent.
     """
-
+    
     permission_classes = [IsAuthenticated, IsVendor]
 
     def post(self, request, *args, **kwargs):
@@ -112,7 +112,7 @@ class JoinQoraaVendor(views.APIView):
                     "title": request.data.get("title", "Daily Lottery"),
                     "food_items": request.data.get("food_items", []),
                     "is_active": request.data.get("is_active", True),
-                    "price_value": request.data.get("price_value", QORAA_DEFAULT_VALUE),
+                    "price_value": request.data.get("price_value", MIN_QORAA_PRICE_VALUE),
                 },
             )
             response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK

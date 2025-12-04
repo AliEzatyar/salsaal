@@ -1,7 +1,7 @@
 from uuid import uuid4
 from django.db import models
 from accounts.models import DEFAULT_CITY, User, UserProfile
-from accounts.utils import send_notification
+from live.utils import send_notification
 from marketplace.models import Rating
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.indexes import GinIndex
@@ -10,6 +10,8 @@ from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
 from h3 import latlng_to_cell as h3_latlng_to_cell
 from marketplace.utils import DEFAULT_H3_RESOLUTION
+from django.utils.translation import activate, deactivate, gettext as _
+
 
 # Create your models here.
 VENDOR_TYPES = [
@@ -103,19 +105,17 @@ class Vendor(models.Model):
         if self.pk != None:
             # update happend
             obj = Vendor.objects.get(pk=self.pk)
-            if self.is_approved != obj.is_approved:
-                # if there is changes in approvment of the vendor
-                context = {"user": self.user, "is_approved": self.is_approved}
-                template = "accounts/emails/admin_approval_email.html"
+            if not obj.is_approved:
                 if self.is_approved:
-                    # approved notification email sending
-                    title = "Congratulations! Your Shop Has Been Approved By Salsaal E-Commerce."
-                    send_notification(self.user.email, title, template, context)
-                else:
-                    # approved notification email sending
-                    title = "We Are Sorry, Your Shop Is Not Approved!"
-                    send_notification(self.user.email, title, template, context)
-
+                    # vendor got approved
+                    activate(obj.user_profile.pf_lang)
+                    send_notification(
+                        self.user.id,
+                        _("Congratulations! Your vendor account has been approved."),
+                        _("Congratulations! Your vendor account '{self.vendor_name}' has been approved.").format(self=self),
+                        
+                    )
+                    deactivate()                
         # vendor update/saves this
         if self.latitude and self.longitude:
             self.location = Point(

@@ -84,6 +84,7 @@ class BestVendorsCounter:
     def read_counts(self, max_results=5):
         """returns ids of most viewed vendors in the city"""
         top = r.zrange(self.top_vendors_key, 0, -1, desc=True)[:max_results]
+        
         return list(map(int, top))
 
 

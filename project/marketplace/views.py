@@ -67,7 +67,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     For food detail, this view requires user location and city from client app.
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = []
     serializer_class = FoodSerializerMany
     filter_backends = [
         filters.OrderingFilter,
@@ -364,6 +364,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """this returns all active vendors in the city"""
         city, lat, lon = get_user_info(request)
         vendors_ids = self.get_city_vendors(city)
+        print(vendors_ids,"ids")
         # foods limited to 3 IMPORTANT FOR PERFORMANCE
         foods_with_limit = (
             Food.objects.annotate(
@@ -392,10 +393,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             )
             .order_by("-avg_rating")
         )
+        print("vendors found",vendors)
         distance_reach_time(vendors, lat, lon, "vendor")
         paginator = StandardResultSetPagination()
         qs = paginator.paginate_queryset(vendors, request)
         ser = VendorSerializerWithFoodImages(qs, many=True)
+        print(ser.data)
         return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="nearby-vendors-on-map")

@@ -137,7 +137,7 @@ class UserProfile(g_models.Model):
     modified_at = models.DateTimeField(auto_now=True)
     location = g_models.PointField(null=True, blank=True, srid=4326)
     h3_id = models.CharField(max_length=55, blank=True, null=True, db_index=True)
-
+            
     def __str__(self):
         return str(self.user)
 

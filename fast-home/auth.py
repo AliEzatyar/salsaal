@@ -12,7 +12,7 @@ from os import environ as env
 
 PUBLIC_KEY = None
 ALGORITHM = "RS256"
-security = HTTPBearer(auton_error=False)
+security = HTTPBearer(auto_error=False)
 
 # sending request to get public key for jwt authentication
 resp = get(env.get("DJANGO_SERVER_URL") + "/jwtks/").text

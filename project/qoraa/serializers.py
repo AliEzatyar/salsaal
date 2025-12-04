@@ -1,10 +1,10 @@
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
+from rest_framework.serializers import ModelSerializer, SerializerMethodField, ReadOnlyField
+from accounts.models import User, UserProfile
 from qoraa.models import Qoraa, QoraaVendor
 
 
 class QoraaSerializer(ModelSerializer):
     joiners_count = SerializerMethodField()
-
     class Meta:
         model = Qoraa
         fields = [
@@ -17,14 +17,43 @@ class QoraaSerializer(ModelSerializer):
             "vendor",
             "food",
             "price_value",
+            "is_joined"
         ]
         read_only_fields = fields
 
     def get_joiners_count(self, obj):
         return obj.joiners.count()
 
+    def get_is_joined(self, obj):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return obj.joiners.filter(pk=user.pk).exists()
+        return False
+
+
+class QoraaWinnerSerializer(ModelSerializer):
+    picture = SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id","name", "picture"]
+
+    def get_picture(self, obj):
+        try:
+            profile = UserProfile.objects.get(user=obj)
+            if profile.picture:
+                return profile.picture.url
+            return None
+        except UserProfile.DoesNotExist:
+            return None
+
 
 class QoraaReadOnlySerializer(ModelSerializer):
+    is_joined = SerializerMethodField()
+    vendor_name = SerializerMethodField()
+    winner = QoraaWinnerSerializer(read_only=True)
+    food  = ReadOnlyField(source='food.image.url')
+    joiners_count = SerializerMethodField()
     class Meta:
         model = Qoraa
         fields = [
@@ -37,12 +66,31 @@ class QoraaReadOnlySerializer(ModelSerializer):
             "title",
             "created_at",
             "vendor",
-            "is_platform",  
-            ] 
+            "vendor_name",
+            "is_platform",
+            "joiners_count",
+            "is_joined",
+        ]
+
+    def get_vendor_name(self, obj):
+        if obj.vendor:
+            return obj.vendor.vendor_name
+        return "Zayton"
+
+    def get_joiners_count(self, obj):
+        if obj.joiners:
+            return obj.joiners.count()
+        return 0
+
+    def get_is_joined(self, obj):
+        user = self.context["request"].user
+        if user.is_authenticated:
+            return obj.joiners.filter(pk=user.pk).exists()
+        return False
 
 
 class QoraaVendorSerializer(ModelSerializer):
-    
+
     class Meta:
         model = QoraaVendor
         fields = [
@@ -54,4 +102,4 @@ class QoraaVendorSerializer(ModelSerializer):
             "vendor",
             "created_at",
         ]
-        read_only_fields = ['id', 'created_at','vendor']
+        read_only_fields = ["id", "created_at", "vendor"]

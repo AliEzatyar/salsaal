@@ -52,5 +52,9 @@ urlpatterns = [
         "set-order-state-carrying/",
         views.SetOrderStateCarrying.as_view(),
     ),
+    path(
+        "add-hesabpay-account/",
+        views.AddHesabPayAccount.as_view(),
+    ),
     path("", include(router.urls)),
 ]

@@ -118,6 +118,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         lon = data.get("longitude", None)
         if lat and lon:
             try:
+                
                 float(lat)
                 float(lon)
             except ValueError:
@@ -209,7 +210,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 new_order.destination = Point(float(lat), float(lon), srid=4326)
                 new_order.save()
                 # ------------------------- creating notification for vendor
-                profile = request.user.profile
+                profile = new_order.vendor.user.profile
                 activate(profile.pf_lang)
                 safe_data = json.loads(
                     json.dumps(

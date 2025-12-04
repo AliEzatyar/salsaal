@@ -174,5 +174,5 @@ class VOrderSerializer(ModelSerializer):
 
     def get_destination(self, obj):
         if obj.destination:
-            return [obj.destination.y, obj.destination.x]
+            return [obj.destination.x, obj.destination.y]
         return

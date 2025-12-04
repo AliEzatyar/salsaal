@@ -8,7 +8,7 @@ from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
 
 
-QORAA_DEFAULT_VALUE = 250  # default price value for any Qoraa
+MIN_QORAA_PRICE_VALUE = 500  # default price value for any Qoraa
 VENDORS_FOR_LOTTERY = "vendors_for_lottery"
 PLATFORM_DEFAULT_MORNING_QORAA_TITLE = "Daily Lottery"
 PLATFORM_DEFAULT_EVENING_QORAA_TITLE = "Evening Lottery"
@@ -57,7 +57,7 @@ class Qoraa(models.Model):
     )
     title = models.CharField(max_length=200, blank=True, default="Daily Lottery")
     created_at = models.DateTimeField(auto_now_add=True)
-    price_value = models.PositiveSmallIntegerField(default=QORAA_DEFAULT_VALUE)
+    price_value = models.PositiveSmallIntegerField(default=MIN_QORAA_PRICE_VALUE)
     vendor = models.ForeignKey(
         Vendor, on_delete=models.CASCADE, related_name="qoraas", null=True, blank=True
     )
@@ -96,7 +96,7 @@ class QoraaVendor(models.Model):
     )
     food_items = models.JSONField(default=list)  # list of food item IDs chosen ran
     price_value = models.PositiveSmallIntegerField(
-        default=QORAA_DEFAULT_VALUE
+        default=MIN_QORAA_PRICE_VALUE
     )  # max price value for lottery of this vendor
     title = models.CharField(
         max_length=200, blank=True, default="Daily Lottery"

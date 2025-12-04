@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-24 08:02+0430\n"
+"POT-Creation-Date: 2025-12-03 17:48+0430\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Pashto\n"
@@ -11,27 +11,27 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: order/views.py:215
+#: order/views.py:221
 msgid "you have a new order!"
 msgstr "تاسو یو نوی امر ترلاسه کړی!"
 
-#: order/views.py:275
+#: order/views.py:281
 msgid "order has been cancelled by buyer!"
 msgstr "امر د پېرودونکي لخوا لغوه شو!"
 
-#: order/views.py:433
+#: order/views.py:463
 msgid "order accepted by buyer!"
 msgstr "امر د پېرودونکي لخوا منل شوی!"
 
-#: order/views.py:551 order/views.py:559
+#: order/views.py:588 order/views.py:596
 msgid "Order Delivered"
 msgstr "امر وسپارل شو"
 
-#: order/views.py:552
+#: order/views.py:589
 msgid "Your order has been delivered successfully."
 msgstr "ستاسو امر په بریالیتوب سره وسپارل شو."
 
-#: order/views.py:560
+#: order/views.py:597
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "امر {order_id} په بریالیتوب سره وسپارل شو."
@@ -51,7 +51,7 @@ msgstr "د لاتری ملاتړ"
 #: qoraa/tasks.py:24
 #, python-brace-format
 msgid "You are a sponsor of this Qoraa at {time}."
-msgstr "تاسو د دې لاتری ملاتړ کوونکی یاست په {time} وخت کې."
+msgstr "تاسو په {time} وخت کې د دې لاتری ملاتړی یاست."
 
 #: qoraa/tasks.py:168
 msgid "Qoraa Winner"
@@ -62,18 +62,28 @@ msgstr "د لاتری ګټونکی"
 msgid "Congratulations! You have won the Qoraa sponsored by {vendor}"
 msgstr "مبارک شه! تاسو هغه لاتری ګټلې چې د {vendor} لخوا ملاتړ شوې."
 
-#: vendor/views.py:1028
+#: vendor/models.py:114
+msgid "Congratulations! Your vendor account has been approved."
+msgstr "مبارک شه! ستاسو د پلورونکي حساب تایید شو."
+
+#: vendor/models.py:115
+#, python-brace-format
+msgid ""
+"Congratulations! Your vendor account '{self.vendor_name}' has been approved."
+msgstr "مبارک شه! ستاسو د پلورونکي حساب '{self.vendor_name}' تایید شو."
+
+#: vendor/views.py:1061
 msgid "Order Rejected"
 msgstr "امر رد شو"
 
-#: vendor/views.py:1030
+#: vendor/views.py:1063
 msgid "sorry! your order has been rejected by restuarant!"
 msgstr "بخښنه غواړو! ستاسو امر د رستورانت لخوا رد شو!"
 
-#: vendor/views.py:1280
+#: vendor/views.py:1311
 msgid "Order set as carrying"
 msgstr "امر د لېږد په حالت کې ټاکل شوی"
 
-#: vendor/views.py:1285
+#: vendor/views.py:1316
 msgid "Your order is being carried, click to live track."
 msgstr "ستاسو امر لېږدول کېږي، د ژوندۍ څارنې لپاره کلیک وکړئ."

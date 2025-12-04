@@ -155,6 +155,11 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """any queryset should be of the requesting vendor"""
+        vendor = self.request.user.vendor
+        is_vendor_available = get_vendor_status(vendor.id)
+        if not is_vendor_available:
+            vendor.is_available = True
+            vendor.save()
         query_set = Food.objects.filter(vendor__user__id=self.request.user.id)
         return query_set
 
@@ -547,6 +552,12 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """overriden to add total carriers and free carriers amount"""
         try:
+            # ---- making vendor available if not yet
+            vendor = self.request.user.vendor
+            is_vendor_available = get_vendor_status(vendor.id)
+            if not is_vendor_available:
+                vendor.is_available = True
+                vendor.save()
             vendor_carriers_key = get_vendor_carriers_key(self.request.user.vendor.id)
             total_c_c = json.loads(r.hget(vendor_carriers_key, "total_c_c"))
             f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
@@ -696,6 +707,13 @@ class CarriersNow(views.APIView):
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
     def get(self, *args, **kwargs):
+        # ---- makeing vendor available if not yet
+        vendor = self.request.user.vendor
+        is_vendor_available = get_vendor_status(vendor.id)
+        if not is_vendor_available:
+            vendor.is_available = True
+            vendor.save()
+            
         carriers = (
             Carrier.objects.filter(
                 vendor__id=self.request.user.vendor.id,
@@ -948,8 +966,8 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         queryset = self.get_queryset()
         today_orders = queryset.filter(created_at__date=tz.now().date())
         vendor = self.request.user.vendor
-        is_available = get_vendor_status(vendor.id)
-        if not is_available:
+        is_vendor_available = get_vendor_status(vendor.id)
+        if not is_vendor_available:
             # only change db once per day
             vendor.is_available = True
             vendor.save()
@@ -1353,3 +1371,53 @@ class SetOrderStateCarrying(views.APIView):
         except Exception as e:
             print("error in set order as carrying", e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AddHesabPayAccount(views.APIView):
+
+    def get(self,request,*args, **kwargs):
+        """returns hesab pay account details if exists"""
+        vendor = request.user.vendor
+        try:
+            hesab_account = vendor.hesabpay_number
+            if hesab_account:
+                return Response(
+                    {
+                        "hesabpay_account": hesab_account,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+                
+            else:
+                return Response(
+                    status=status.HTTP_200_OK,
+                )
+        except Exception as e:
+            print("error in getting hesab pay account", e)
+
+    def post(self,request,*args, **kwargs):
+        """adds hesab pay account to vendor"""
+        data = request.data
+        hesabpay_account = data.get("hesabpay_account", None)
+        print(data)
+        if not hesabpay_account:
+            return Response(
+                {"detail": "please provide hesab pay account"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        vendor = request.user.vendor
+        try:
+            vendor.hesabpay_number = hesabpay_account
+            vendor.save()
+            return Response(
+                {
+                    "message": "hesab pay account added successfully",
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            print("error in adding hesab pay account", e)
+            return Response(
+                {"detail": "error in adding hesab pay account"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

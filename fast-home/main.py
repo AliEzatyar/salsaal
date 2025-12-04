@@ -134,7 +134,7 @@ async def home(
     counter = BestVendorsCounter(city)
     top_vendors_ids = await counter.read_counts()
     top_vendors = db.scalars(
-        city_vendors_qs.filter(Vendor.id.in_(top_vendors_ids))
+        city_vendors_qs.filter(Vendor.id.in_(top_vendors_ids)).order_by(func.random())
     ).all()
     set_image_url_to_scalars(top_vendors, "vendor")
     return {

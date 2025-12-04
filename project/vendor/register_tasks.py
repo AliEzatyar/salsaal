@@ -62,19 +62,10 @@ def register_periodic_tasks():
     tz = getattr(settings, "DEFAULT_TIMEZONE", "Asia/Kabul")
 
     try:
-        # Reset vendors carriers status at 01:00
+        # Reset vendors carriers status at 01:00 AM daily
         _ensure_crontab_task(
             name="Reset Vendors Carriers Status",
             task_path="vendor.tasks.reset_vendors_carriers_in_redis",
-            minute="0",
-            hour="1",
-            timezone_str=tz,
-        )
-
-        # Disable vendors at 01:00 (kept separate to allow independent enabling)
-        _ensure_crontab_task(
-            name="Disable Vendors",
-            task_path="vendor.tasks.disable_vendors",
             minute="0",
             hour="1",
             timezone_str=tz,
@@ -85,6 +76,14 @@ def register_periodic_tasks():
             name="Deactivate Dead Discounts",
             task_path="vendor.tasks.deactivate_discounts",
             every=1,
+            period=IntervalSchedule.HOURS,
+        )
+
+        # Disable vendors every 3 hours
+        _ensure_interval_task(
+            name="Disable Vendors Every 3 hour",
+            task_path="vendor.tasks.disable_vendors",
+            every=3,
             period=IntervalSchedule.HOURS,
         )
 

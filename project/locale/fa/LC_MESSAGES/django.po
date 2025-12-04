@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-24 08:03+0430\n"
+"POT-Creation-Date: 2025-12-03 17:48+0430\n"
 "PO-Revision-Date: 2025-09-19 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Persian\n"
@@ -11,27 +11,27 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: order/views.py:215
+#: order/views.py:221
 msgid "you have a new order!"
 msgstr "شما یک سفارش جدید دارید!"
 
-#: order/views.py:275
+#: order/views.py:281
 msgid "order has been cancelled by buyer!"
 msgstr "سفارش توسط مشتری لغو شد."
 
-#: order/views.py:433
+#: order/views.py:463
 msgid "order accepted by buyer!"
 msgstr "سفارش توسط مشتری پذیرفته شد."
 
-#: order/views.py:551 order/views.py:559
+#: order/views.py:588 order/views.py:596
 msgid "Order Delivered"
 msgstr "سفارش تحویل شد"
 
-#: order/views.py:552
+#: order/views.py:589
 msgid "Your order has been delivered successfully."
 msgstr "سفارش شما با موفقیت تحویل شد."
 
-#: order/views.py:560
+#: order/views.py:597
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "سفارش {order_id} با موفقیت تحویل شد."
@@ -62,18 +62,28 @@ msgstr "برنده لاتری"
 msgid "Congratulations! You have won the Qoraa sponsored by {vendor}"
 msgstr "تبریک! شما لاتری‌ای را برنده شده‌اید که توسط {vendor} حمایت شده است."
 
-#: vendor/views.py:1028
+#: vendor/models.py:114
+msgid "Congratulations! Your vendor account has been approved."
+msgstr "تبریک! حساب فروشندگی شما تایید شد."
+
+#: vendor/models.py:115
+#, python-brace-format
+msgid ""
+"Congratulations! Your vendor account '{self.vendor_name}' has been approved."
+msgstr "تبریک! حساب فروشندگی شما با نام '{self.vendor_name}' تایید شد."
+
+#: vendor/views.py:1061
 msgid "Order Rejected"
 msgstr "سفارش رد شد"
 
-#: vendor/views.py:1030
+#: vendor/views.py:1063
 msgid "sorry! your order has been rejected by restuarant!"
 msgstr "متأسفیم! سفارش شما توسط رستورانت رد شد."
 
-#: vendor/views.py:1280
+#: vendor/views.py:1311
 msgid "Order set as carrying"
 msgstr "سفارش در حالت انتقال قرار گرفت"
 
-#: vendor/views.py:1285
+#: vendor/views.py:1316
 msgid "Your order is being carried, click to live track."
 msgstr "سفارش شما در حال انتقال است. برای پیگیری لحظه‌ای کلیک کنید."
