@@ -1,17 +1,18 @@
+from typing import Any
 from rest_framework import views, status, viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from api.permissions import IsCustomer, IsVendor
-from qoraa.serializers import QoraaVendorSerializer
-from vendor.models import Vendor
-from .models import Qoraa, QoraaVendor, MIN_QORAA_PRICE_VALUE
-from .serializers import QoraaReadOnlySerializer
+from django.db.models import Prefetch
+from api.permissions import IsCustomer, IsVendor, IsVendorOfObject
+from accounts.models import User
+from qoraa.models import Qoraa
+from .serializers import QoraaReadOnlySerializer, VendorQoraaFoodSerializer, VendorQoraaSerializer
 
 # Create your views here.
 
 
-class QoraaListApiView(views.APIView):
+class ListQoraaApiView(views.APIView):
     """
     A simple ViewSet for viewing active and past qoraas.
     """
@@ -19,10 +20,18 @@ class QoraaListApiView(views.APIView):
     def get(self, request, *args, **kwargs):
         """Returns a list of active qoraas."""
         now = timezone.now()
-        qoraas = Qoraa.objects.filter(start__lte=now, end__gte=now,status__in=[Qoraa.STATUS_RUNNING,Qoraa.STATUS_FINISHED]
-                                                                               ).prefetch_related("joiners").order_by("-price_value")
+        qoraas = (
+            Qoraa.objects.filter(
+                start__lte=now,
+                end__gte=now,
+                status__in=[Qoraa.STATUS_RUNNING, Qoraa.STATUS_FINISHED],
+            )
+            .prefetch_related(Prefetch("joiners", queryset=User.objects.only("id")))
+            .order_by("-price_value")
+        )
         ser = QoraaReadOnlySerializer(qoraas, many=True, context={"request": request})
         return Response(ser.data, status=status.HTTP_200_OK)
+
 
 class JoinQoraaApiView(views.APIView):
     """
@@ -37,29 +46,28 @@ class JoinQoraaApiView(views.APIView):
         now = timezone.now()
         qoraa_id = request.data.get("qoraa_id")
         q = None
-        if qoraa_id:
-            try:
-                q = Qoraa.objects.get(
-                    pk=qoraa_id,
-                    start__lte=now,
-                    end__gt=now,
-                    status=Qoraa.STATUS_RUNNING,
-                )
-            except Qoraa.DoesNotExist:
-                return Response(
-                    {"detail": "no_active_lottery_with_id"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-        else:
+        if not qoraa_id:
             return Response(
                 {"detail": "qoraa_id_required"}, status=status.HTTP_400_BAD_REQUEST
             )
-
-        if not q:
-            return Response(
-                {"detail": "no_active_lottery"}, status=status.HTTP_404_NOT_FOUND
+        try:
+            q = Qoraa.objects.get(
+                pk=qoraa_id,
+                start__lte=now,
+                end__gt=now,
+                status=Qoraa.STATUS_RUNNING,
             )
-
+        except Qoraa.DoesNotExist:
+            return Response(
+                {"detail": "no_active_lottery_with_id"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        # --- check if user already joined --> handle UI
+        if q.joiners.count() >= q.joiners_limit:
+            return Response(
+                {"detail": "joiners_limit_reached"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         added = q.add_joiner(request.user)
         if not added:
             return Response(
@@ -69,55 +77,44 @@ class JoinQoraaApiView(views.APIView):
         return Response({"detail": "joined"}, status=status.HTTP_200_OK)
 
 
-class JoinQoraaVendor(views.APIView):
+class GetFoodsForQoraaApiView(views.APIView):
     """
-    Vendors can join or update their qoraa participation settings.
-    This uses an update_or_create logic to be idempotent.
+    Vendors can get their food items eligible for Qoraa participation.
     """
-    
+
     permission_classes = [IsAuthenticated, IsVendor]
 
-    def post(self, request, *args, **kwargs):
-        vendor_id = request.data.get("vendor_id")
-        if not vendor_id:
-            return Response(
-                {"detail": "vendor_id_required"}, status=status.HTTP_400_BAD_REQUEST
-            )
+    def get(self, request, *args, **kwargs):
+        """Returns a list of food items for the vendor."""
+        vendor = request.user.vendor
+        foods = vendor.foods.filter(is_active=True)
+        ser = VendorQoraaFoodSerializer(foods, many=True)
+        return Response(ser.data, status=status.HTTP_200_OK)
 
-        try:
-            vendor = Vendor.objects.get(pk=vendor_id)
-        except Vendor.DoesNotExist:
-            return Response(
-                {"detail": "vendor_not_found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception:
-            return Response(
-                {"detail": "invalid_vendor_id"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
-        # Use update_or_create to handle both creation and updates
+class ManageQoraaViewset(viewsets.ModelViewSet):
+    """
+    Vendors can create or update their qoraas.
+    This uses an update_or_create logic to be idempotent.
+    """
 
-        if (
-            not request.data.get("food_items", None)
-            or len(request.data.get("food_items")) == 0
-        ):
+    serializer_class = VendorQoraaSerializer
+    permission_classes = [IsAuthenticated, IsVendorOfObject]
+
+    def get_queryset(self):
+        return Qoraa.objects.filter(vendor=self.request.user.vendor)
+
+    def get_context_data(self, **kwargs) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        print(self.request.data, "data in create qoraa vendor")
+        context["vendor"] = self.request.user.vendor
+        context["food_price"] = self.request.data.get("food_price")
+        return context
+
+    def perform_destroy(self, instance):
+        if instance.status != Qoraa.STATUS_SCHEDULED:
             return Response(
-                {"detail": "food_items_required"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "only_pending_qoraa_can_be_deleted"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        ser = QoraaVendorSerializer(data=request.data)
-        if ser.is_valid(raise_exception=True):
-            qoraa_vendor, created = QoraaVendor.objects.update_or_create(
-                vendor=vendor,
-                defaults={
-                    "title": request.data.get("title", "Daily Lottery"),
-                    "food_items": request.data.get("food_items", []),
-                    "is_active": request.data.get("is_active", True),
-                    "price_value": request.data.get("price_value", MIN_QORAA_PRICE_VALUE),
-                },
-            )
-            response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
-            return Response(ser.data, status=response_status)
-        else:
-            return Response(
-                {"detail": "invalid_data"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        return super().perform_destroy(instance)

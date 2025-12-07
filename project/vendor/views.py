@@ -107,9 +107,14 @@ class ConvertToVendorAPIView(views.APIView):
         """
         # -------------------  verfiying user role -------------------
         user = self.request.user
-        if user.role in (REST, CARRIER, ADMIN):
+        if user.role in (CARRIER, ADMIN):
             return Response(
                 status=status.HTTP_403_FORBIDDEN,
+            )
+        if user.role == REST and hasattr(user, "vendor"):
+            return Response(
+                {"detail": "already_a_vendor"},
+                status=status.HTTP_409_CONFLICT,
             )
         data = self.request.data
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
@@ -1325,7 +1330,18 @@ class SetOrderStateCarrying(views.APIView):
 
 
 class AddHesabPayAccount(views.APIView):
-
+    """vendor can add hesab pay account to receive payments
+        they also see if any account is added already
+    Permissions:
+    - IsAuthenticated
+    - IsVendor
+    GET:
+    - Returns the vendor's existing Hesab Pay account details, if available.
+    POST:
+    - Accepts a Hesab Pay account number in the request body.   
+    """
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+    
     def get(self,request,*args, **kwargs):
         """returns hesab pay account details if exists"""
         vendor = request.user.vendor
@@ -1350,7 +1366,6 @@ class AddHesabPayAccount(views.APIView):
         """adds hesab pay account to vendor"""
         data = request.data
         hesabpay_account = data.get("hesabpay_account", None)
-        print(data)
         if not hesabpay_account:
             return Response(
                 {"detail": "please provide hesab pay account"},
@@ -1370,5 +1385,23 @@ class AddHesabPayAccount(views.APIView):
             print("error in adding hesab pay account", e)
             return Response(
                 {"detail": "error in adding hesab pay account"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+    def delete(self,request,*args, **kwargs):
+        """deletes hesab pay account from vendor"""
+        vendor = request.user.vendor
+        try:
+            vendor.hesabpay_number = None
+            vendor.save()
+            return Response(
+                {
+                    "message": "hesab pay account deleted successfully",
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            print("error in deleting hesab pay account", e)
+            return Response(
+                {"detail": "error in deleting hesab pay account"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

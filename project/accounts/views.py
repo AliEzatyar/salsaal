@@ -107,22 +107,21 @@ class LoginApiView(views.APIView):
                 {"detail": "invalid_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
+            # -------- if existing user, send otp for login
             role = int(role)
-
             user = User.objects.get(phone_number=phone_number)
             if role != user.role:
                 print("incorrect app", role, user.role)
                 return Response(status=status.HTTP_409_CONFLICT)
             otp = generate_otp()
+            UserOtp.objects.create(user=user, otp=otp)
             send_otp.delay(otp=otp, user_id=user.id, typ=OTP_LOGIN)
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
             )
         except User.DoesNotExist:
-            # -------- if its a new user
-            otp = generate_otp()
-            send_otp.delay(otp, typ=OTP_VERIFY_PHONE, phone_number=phone_number)
+            # -------- if its a new user, just say new user
             return Response(
                 {"type": "new_user", "message": "otp_sent"}, status=status.HTTP_200_OK
             )
@@ -133,13 +132,9 @@ class LoginApiView(views.APIView):
     def post(self, *args, **kwargs):
         data = self.request.data
         typ = data.get("type", None)
-        otp = data.get("otp", None)
         phone_number = data.get("phone_number", None)
-        if not otp:
-            # return Response(
-            #     {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
-            # )
-            pass
+        role = data.get("role", None)
+
         if not typ:
             return Response(
                 {"detail": "provide_type"}, status=status.HTTP_400_BAD_REQUEST
@@ -152,6 +147,13 @@ class LoginApiView(views.APIView):
         if typ == "existing_user":
             # -------------------------------- sending tokens
             try:
+                otp = data.get("otp", None)
+                print(otp," otp received for existing user login")
+                if not otp:
+                    # return Response(
+                    #     {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+                    # )
+                    pass
                 # verifying otp
                 # otp_tries_key = get_user_otp_tries_key(phone_number)
                 # tries = r.get(otp_tries_key)
@@ -174,7 +176,8 @@ class LoginApiView(views.APIView):
                 # # finding user
                 user = User.objects.get(phone_number=phone_number)
                 user.token_valid_after = get_token_valid_after()
-                # user.save()
+                user.is_active = True
+                user.save()
                 refresh = RefreshToken.for_user(user)
                 # saved_otp.delete()
                 # r.delete(otp_tries_key)
@@ -201,26 +204,9 @@ class LoginApiView(views.APIView):
 
         elif typ == "new_user":
             # ----------------- creating user account
+            print("new user",data)
             try:
                 with atomic():
-
-                    # ----- preventing auto retries
-                    # otp_tries_key = get_user_otp_tries_key(phone_number)
-                    # tries = r.get(otp_tries_key)
-                    # r.incrby(otp_tries_key, 1)
-                    # if tries and int(tries) > 5:
-                    #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
-                    #     return Response(
-                    #         {"detail": "max_attempts_reached"},
-                    #         status=status.HTTP_403_FORBIDDEN,
-                    #     )
-                    # # ----- verifying otp
-                    # saved_otp = NoUserOtp.objects.get(otp=otp)
-                    # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-                    #     return Response(
-                    #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-                    #     )
-
                     # ----- validating user data and creating new account
                     new_user_data = data.get("user_data", None)
                     if not new_user_data:
@@ -240,23 +226,22 @@ class LoginApiView(views.APIView):
                     )
                     user_ser.is_valid(raise_exception=True)
                     user = User(phone_number=phone_number, is_active=True, name=name)
-                    user.role = CUSTOMER
+                    if role == REST:
+                        user.role = REST
+                    else:
+                        user.role = CUSTOMER
+                    user.is_active = False
                     user.token_valid_after = get_token_valid_after()
                     user.save()
                     # ------ creating user profile
                     profile_ser = UserProfileCreationSerializer(data=new_user_data)
                     profile_ser.is_valid(raise_exception=True)
                     profile_ser.save(user=user)
-                    # ------ removing otp and generating access token for new user
-                    # r.delete(otp_tries_key)
-                    # saved_otp.delete()
-                    refresh = RefreshToken.for_user(user)
+                    # ------ sending otp
+                    otp = generate_otp()
+                    NoUserOtp.objects.create(phone_number=phone_number, otp=otp)
+                    send_otp.delay(otp=otp, user_id=user.id, typ=OTP_LOGIN)
                     return Response(
-                        {
-                            "access": str(refresh.access_token),
-                            "refresh": str(refresh),
-                            "id": user.id,
-                        },
                         status=status.HTTP_200_OK,
                     )
             except IntegrityError:
@@ -270,6 +255,71 @@ class LoginApiView(views.APIView):
                 )
         else:
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class VerifyOtpSignUpApiView(views.APIView):
+    """
+    This view verifies OTPs for new user sign-ups.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, *args, **kwargs):
+        data = self.request.data
+        otp = data.get("otp", None)
+        phone_number = data.get("phone_number", None)
+
+        if not otp:
+            return Response(
+                {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if not phone_number:
+            return Response(
+                {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+
+            # ----- preventing auto retries
+            # otp_tries_key = get_user_otp_tries_key(phone_number)
+            # tries = r.get(otp_tries_key)
+            # r.incrby(otp_tries_key, 1)
+            # if tries and int(tries) > 5:
+            #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
+            #     return Response(
+            #         {"detail": "max_attempts_reached"},
+            #         status=status.HTTP_403_FORBIDDEN,
+            #     )
+            # # ----- verifying otp
+            # saved_otp = NoUserOtp.objects.get(otp=otp)
+            # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+            #     return Response(
+            #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+            #     )
+            saved_otp = NoUserOtp.objects.get(otp=otp)
+            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+                return Response(
+                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                )
+            user = User.objects.filter(phone_number=phone_number).first()
+            if user:
+                user.is_active = True
+                user.save()
+                saved_otp.delete()
+                refresh = RefreshToken.for_user(user)
+                return Response(
+                    {
+                        "access": str(refresh.access_token),
+                        "refresh": str(refresh),
+                        "id": user.id,
+                    }
+                )
+            return Response(
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except NoUserOtp.DoesNotExist:
+            return Response(
+                {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+            )
 
 
 class DeleteAccountView(views.APIView):
@@ -303,7 +353,7 @@ class SignoutApiView(views.APIView):
         user.devices.all().delete() 
         user.save()
         return Response()
-        
+
 
 class RoleTokenRefreshView(TokenRefreshView):
     serializer_class = RoleTokenRefreshSeriaizer
@@ -355,6 +405,44 @@ class UpsertDeviceToken(views.APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         return Response(status=status.HTTP_201_CREATED)
+
+
+class ResendOtpApiView(views.APIView):
+    
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self,*args, **kwargs):
+        data = self.request.data
+        phone_number = data.get("phone_number", None)
+        typ = data.get("type", None)
+        new_otp = generate_otp()
+        print(data)
+        if not phone_number or not typ:
+            return Response(
+                {"detail": "provide_phone_number_and_type"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if typ == "new_user":
+            # delete old otp entries
+            send_otp.delay(
+                otp=new_otp,
+                phone_number=phone_number,
+                user_id=None,
+                typ=OTP_VERIFY_PHONE,
+            )
+        else:
+            try:
+                user = User.objects.get(phone_number=phone_number)
+                send_otp.delay(
+                    otp=new_otp,
+                    phone_number=phone_number,
+                    user_id=user.id,
+                    typ=OTP_LOGIN,
+                )
+            except User.DoesNotExist:
+                return Response(
+                    {"detail": "no_user_found"}, status=status.HTTP_404_NOT_FOUND
+                )
+        return Response(status=status.HTTP_200_OK)
 
 
 def jwtks_view(request):

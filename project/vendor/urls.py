@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from . import views
+from qoraa.views import GetFoodsForQoraaApiView, ManageQoraaViewset
 
 app_name = "vendor"
 
@@ -19,6 +20,8 @@ router.register(
 router.register(
     r"manage-discount", views.ManageDiscountViewSet, basename="manage-discount"
 )
+router.register("manage-qoraa", ManageQoraaViewset, basename="manage-qoraa")
+
 router.register(r"vendor-orders", views.ListVendorOrders, basename="vendor-orders")
 # food retrive  routing
 
@@ -53,5 +56,11 @@ urlpatterns = [
         "add-hesabpay-account/",
         views.AddHesabPayAccount.as_view(),
     ),
+    path(
+        "delete-hesabpay-account/",
+        views.AddHesabPayAccount.as_view(),
+    ),
+    path("get-qoraa-foods/", GetFoodsForQoraaApiView.as_view()),
+    
     path("", include(router.urls)),
 ]

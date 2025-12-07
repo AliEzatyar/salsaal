@@ -18,6 +18,8 @@ router.register(r"user-rewards", views.UserRewardsViewset, basename="user-reward
 urlpatterns = [
     path("login/", views.LoginApiView.as_view(), name="login"),
     path("signout/", views.SignoutApiView.as_view(), name="signout"),
+    path("verify-otp-signup/", views.VerifyOtpSignUpApiView.as_view(), name="verify-otp-signup"),
+    path("resend-otp/",views.ResendOtpApiView.as_view()),
     path("refresh-token/", views.RoleTokenRefreshView.as_view()),
     path("upsert-device-token/", views.UpsertDeviceToken.as_view()),
     path('delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),

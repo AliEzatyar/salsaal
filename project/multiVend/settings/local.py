@@ -66,11 +66,11 @@ INSTALLED_APPS += ["django_celery_beat", "storages"]
 
 # S3 config
 
-AWS_STORAGE_BUCKET_NAME = "food-delivery-images-prod"
+AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME")
 AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY")
 AWS_QUERYSTRING_AUTH = True  # so URLs are clean, no ?X-Amz-Signature=...
-AWS_S3_REGION_NAME = env.get(
+AWS_S3_REGION_NAME = config(
     "AWS_S3_REGION_NAME"
 )  # change if your bucket is in another region # change if your bucket is in another region
 AWS_S3_SIGNATURE_VERSION = "s3v4"

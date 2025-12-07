@@ -39,7 +39,7 @@ OTP_LOGIN = 4
 @shared_task(bind=True, max_retries=5, default_retry_delay=10)
 def send_otp(self, otp=None, user_id=None, phone_number=None, typ=OTP_VERIFY_PHONE, **kwargs):
     """
-    sends otp using email
+    sends otp using OBD compaign
     """
     try:
         if not user_id:

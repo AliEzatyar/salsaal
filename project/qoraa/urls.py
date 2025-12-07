@@ -3,10 +3,8 @@ from . import views
 
 app_name = "qoraa"
 
+
 urlpatterns = [
-    path("", views.QoraaListApiView.as_view(), name="list-qoraas"),
+    path("", views.ListQoraaApiView.as_view(), name="list-qoraas"),
     path("join/", views.JoinQoraaApiView.as_view(), name="join"),
-    path(
-        "join-qoraa-vendor/", views.JoinQoraaVendor.as_view(), name="join_qoraa_vendor"
-    ),
-]
+] 

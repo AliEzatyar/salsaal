@@ -21,6 +21,8 @@ class CustomJWTAuthentication(JWTAuthentication):
         token_iat_dt = datetime.fromtimestamp(token_iat, tz=timezone.utc)
         if user.role > REST:  # resturants can have multiple devices
             if token_iat_dt < user.token_valid_after:
-                raise AuthenticationFailed("Token has been invalidated")
+                raise AuthenticationFailed()
+            if user.is_active is False:
+                raise AuthenticationFailed()
         print("user authenticated successfully")
         return user

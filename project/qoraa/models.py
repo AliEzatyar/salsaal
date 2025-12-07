@@ -12,7 +12,7 @@ MIN_QORAA_PRICE_VALUE = 500  # default price value for any Qoraa
 VENDORS_FOR_LOTTERY = "vendors_for_lottery"
 PLATFORM_DEFAULT_MORNING_QORAA_TITLE = "Daily Lottery"
 PLATFORM_DEFAULT_EVENING_QORAA_TITLE = "Evening Lottery"
-
+QORAA_JOINERS_LIMIT_DEFAULT = 10000  
 class Qoraa(models.Model):
     """
     Lottery model. A Qoraa represents a single lottery window where users may join.
@@ -62,6 +62,10 @@ class Qoraa(models.Model):
         Vendor, on_delete=models.CASCADE, related_name="qoraas", null=True, blank=True
     )
     is_platform = models.BooleanField(default=False)
+    joiners_limit = models.PositiveIntegerField(
+        default=QORAA_JOINERS_LIMIT_DEFAULT,
+        help_text="Maximum number of joiners allowed",
+    )
 
     class Meta:
         # ensure we don't accidentally create overlapping identical start times
@@ -85,41 +89,18 @@ class Qoraa(models.Model):
         self.joiners.add(user)
         return True
 
+class PlatformQoraaVendor(models.Model):
+    """
+    Vendors that are eligible for platform default Qoraa.
+    """
 
-class QoraaVendor(models.Model):
-    """
-    Model to facilitate vendors participate in Qoraa lotteries.
-    """
-    is_platform = models.BooleanField(default=False)  # whether this is the platform itself
-    vendor = models.OneToOneField(
-        Vendor, on_delete=models.CASCADE, related_name="qoraa_participation"
+    vendor = models.ForeignKey(
+        Vendor, on_delete=models.CASCADE, related_name="platform_qoraa_vendors"
     )
-    food_items = models.JSONField(default=list)  # list of food item IDs chosen ran
-    price_value = models.PositiveSmallIntegerField(
-        default=MIN_QORAA_PRICE_VALUE
-    )  # max price value for lottery of this vendor
-    title = models.CharField(
-        max_length=200, blank=True, default="Daily Lottery"
-    )  # custom title for this vendor's lottery
-    is_active = models.BooleanField(
-        default=True
-    )  # whether vendor is actively participating
-    created_at = models.DateTimeField(auto_now_add=True)
-    image = models.ImageField(
-        upload_to="qoraa_vendor_images/", blank=True, null=True
-    )  # optional image for vendor's lottery
-    start_date = models.DateField(
-        default=timezone.now,
-        help_text="Date from which the vendor wants to start participating in lotteries",
-    )  # date from which the vendor wants to start participating
-    end_date = models.DateField(
-        default=timezone.now,
-        help_text="Date until which the vendor wants to participate in lotteries (inclusive). Leave blank for indefinite participation.",
-    )  # date until which the vendor wants to participate
+    food_items = models.ManyToManyField(
+        Food, related_name="platform_qoraa_vendors", blank=True
+    )
+    is_active = models.BooleanField(default=True)
 
-    class Meta:
-        verbose_name = _("Qoraa Vendor")
-        verbose_name_plural = _("Qoraa Vendors")
-
-    def __str__(self) -> str:
-        return f"QoraaVendor {self.vendor.name} (Active: {self.is_active})"
+    def __str__(self):
+        return _(f"PlatformQoraaVendor: {self.vendor.vendor_name}")

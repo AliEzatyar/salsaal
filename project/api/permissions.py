@@ -43,7 +43,7 @@ class IsOrderCarryingState(BasePermission):
 class IsVendor(BasePermission):
 
     def has_permission(self, request, view):
-        if request.user.role != REST:
+        if request.user.role != REST or not hasattr(request.user, "vendor"):
             raise PermissionDenied(detail="user_not_vendor")
         return True
 
@@ -55,7 +55,7 @@ class IsVendorOfObject(BasePermission):
     """
 
     def has_permission(self, request, view):
-        if request.user.role != REST:
+        if request.user.role != REST or not hasattr(request.user, "vendor"):
             raise PermissionDenied(detail="user_not_vendor")
         return True
 
@@ -92,15 +92,6 @@ class IsHavingCart(BasePermission):
     def has_permission(self, request, view):
         if not (hasattr(request.user, "cart") and request.user.role == CUSTOMER):
             raise PermissionDenied(detail="user_has_no_cart")
-        return True
-
-
-class IsHavingFavlist(BasePermission):
-    """only customers have fav list"""
-
-    def has_permission(self, request, view):
-        if not (hasattr(request.user, "favlist") and request.user.role == CUSTOMER):
-            raise PermissionDenied(detail="user_has_no_favlist")
         return True
 
 

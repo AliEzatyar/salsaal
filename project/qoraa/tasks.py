@@ -9,7 +9,7 @@ from .models import (
     PLATFORM_DEFAULT_EVENING_QORAA_TITLE,
     PLATFORM_DEFAULT_MORNING_QORAA_TITLE,
     Qoraa,
-    QoraaVendor,
+    PlatformQoraaVendor,
 )
 from random import choice
 from django.utils.translation import gettext as _
@@ -61,61 +61,24 @@ def _create_qoraas_for_time(hour, platform_qoraa_title):
 
     # ----------- platform's default qoraa --------------
     if not Qoraa.objects.filter(start=start, is_platform=True).exists():
-        platform_qvs = QoraaVendor.objects.filter(is_platform=True).select_related('vendor__user')
-        if platform_qvs.exists():
-            random_qv = choice(list(platform_qvs))
-            if random_qv.food_items:
-                random_food_id = choice(random_qv.food_items)
-                food = Food.objects.filter(pk=random_food_id).first()
-                if food:
-                    activate_language("fa")
-                    q = Qoraa.objects.create(
-                        vendor=random_qv.vendor,
-                        food=food,
-                        start=start,
-                        end=end,
-                        status=Qoraa.STATUS_RUNNING,
-                        title=_(platform_qoraa_title),
-                        is_platform=True,
-                    )
-                    deactivate_language()
-                    _send_qoraa_creation_notification(random_qv.vendor, q, end)
-
-    # ------------ creating vendors custom qoraas --------------
-    qvs = QoraaVendor.objects.filter(
-        is_active=True, start_date__lte=now.date(), end_date__gte=now.date()
-    ).select_related('vendor__user')
-    
-    all_food_ids = []
-    for qv in qvs:
-        if qv.food_items:
-            all_food_ids.extend(qv.food_items)
-    
-    foods = Food.objects.in_bulk(list(set(all_food_ids)))
-
-    for qv in qvs:
-        if not qv.food_items:
-            continue
-        
-        random_food_id = choice(qv.food_items)
-        food = foods.get(random_food_id)
-
-        if not food:
-            continue
-            
-        q, created = Qoraa.objects.get_or_create(
-            vendor=qv.vendor,
-            start=start,
-            defaults={
-                "end": end,
-                "status": Qoraa.STATUS_RUNNING,
-                "title": qv.title,
-                "food": food,
-            },
-        )
-
-        if created:
-            _send_qoraa_creation_notification(qv.vendor, q, end)
+        platform_qoraa_vendors = PlatformQoraaVendor.objects.filter(is_active=True)
+        random_qv = choice(platform_qoraa_vendors) if platform_qoraa_vendors else None
+        if random_qv and random_qv.food_items:  
+            random_food_id = choice(random_qv.food_items.all().values_list("id", flat=True))
+            food = Food.objects.filter(pk=random_food_id).first()
+            if food:
+                activate_language(random_qv.vendor.user.profile.pf_lang)
+                q = Qoraa.objects.create(
+                    vendor=random_qv.vendor,
+                    food=food,
+                    start=start,
+                    end=end,
+                    status=Qoraa.STATUS_RUNNING,
+                    title=_(platform_qoraa_title),
+                    is_platform=True,
+                )
+                deactivate_language()
+                _send_qoraa_creation_notification(random_qv.vendor, q, end)
 
 
 @shared_task
@@ -164,11 +127,12 @@ def finalize_qoraa():
         q.save()
         # ---------------- sending notification to winner --------------
         if winner:
-            activate_language("fa")
+            activate_language(winner.profile.pf_lang)
             title = _("Qoraa Winner")
+            sponser = _("Zaytoon Food") if q.is_platform else q.vendor.vendor_name
             description = _(
-                "Congratulations! You have won the Qoraa sponsored by {vendor}"
-            ).format(vendor=q.vendor.vendor_name)
+                "Congratulations! You have won the Qoraa sponsored by {sponser}"
+            ).format(sponser=sponser)
             notf = Notification.objects.create(
                 receiver=winner,
                 title=title,
@@ -177,19 +141,11 @@ def finalize_qoraa():
                 data={},
                 target_id=q.id,
             )
-            r.publish(
-                f"pub:user:{winner.id}",
-                json.dumps(
-                    {
-                        "type": "NOTIFICATION",
-                        "data": {},
-                    }
-                ),
-            )
             send_notification.delay(
                 winner.id,
                 notf.title,
                 body=notf.description,
+                data={"qoraa_id": q.id},
             )
             deactivate_language()
         results.append({"qoraa": q.pk, "winner": getattr(winner, "pk", None)})
@@ -212,3 +168,73 @@ def finalize_evening_qoraa():
     This task simply calls the main `finalize_qoraa` logic.
     """
     return finalize_qoraa()
+
+
+@shared_task
+def start_vendor_qoraa(qoraa_id):
+    """
+    Celery task to start a vendor's qoraa by setting its status to 'RUNNING'.
+    
+    Args:
+        qoraa_id (int): The primary key of the Qoraa to be started.
+    
+    Returns:
+        str: A message indicating the result of the operation.
+    """
+    try:
+        qoraa = Qoraa.objects.get(pk=qoraa_id)
+        qoraa.status = Qoraa.STATUS_RUNNING
+        qoraa.save(update_fields=["status"])
+        return f"Qoraa {qoraa_id} started."
+    except Qoraa.DoesNotExist:
+        return f"Qoraa {qoraa_id} does not exist."
+
+@shared_task
+def end_vendor_qoraa(qoraa_id):
+    """
+    Celery task to end a vendor's qoraa by finalizing it.
+    
+    Args:
+        qoraa_id (int): The primary key of the Qoraa to be ended.
+    
+    Returns:
+        str: A message indicating the result of the operation.
+    """
+    try:
+        qoraa = Qoraa.objects.get(pk=qoraa_id)
+        if qoraa.status == Qoraa.STATUS_RUNNING:
+            joiners = list(qoraa.joiners.all())
+            winner = None
+            if joiners:
+                winner = choice(joiners)
+                qoraa.winner = winner
+            qoraa.status = Qoraa.STATUS_FINISHED
+            qoraa.save()
+            # Notify the winner if there is one
+            if winner:
+                activate_language(winner.profile.pf_lang)
+                title = _("Qoraa Winner")
+                description = _(
+                    "Congratulations! You have won the Qoraa sponsored by {sponser}"
+                ).format(sponser= qoraa.vendor.vendor_name)
+                notf = Notification.objects.create(
+                    receiver=winner,
+                    title=title,
+                    description=description,
+                    type="QORAA_WINNER",
+                    data={},
+                    target_id=qoraa.id,
+                )
+
+                send_notification.delay(
+                    winner.id,
+                    notf.title,
+                    body=notf.description,
+                    data={"qoraa_id": qoraa.id},
+                )
+                deactivate_language()
+            return f"Qoraa {qoraa_id} ended."
+        else:
+            return f"Qoraa {qoraa_id} is not running."
+    except Qoraa.DoesNotExist:
+        return f"Qoraa {qoraa_id} does not exist."

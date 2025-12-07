@@ -6,10 +6,10 @@ from marketplace.serializers import (
     FoodSerializerLessDetail,
 )
 from accounts.utils import CITY_TRANSLATIONS
+from qoraa.models import Qoraa
 from .models import Promotion, Vendor
 from accounts.models import REST
 from rest_framework.serializers import ValidationError
-
 
 
 class VendorSerializerMany(serializers.ModelSerializer):
@@ -85,7 +85,7 @@ class DiscountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Discount
-        fields = ["id", "amount", "deadline", "foods","is_active","vendor"]
+        fields = ["id", "amount", "deadline", "foods", "is_active", "vendor"]
         read_only_fields = ["id"]
 
 
@@ -101,6 +101,7 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
 
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:", read_only=True)
     city = serializers.SerializerMethodField()
+
     class Meta:
         model = Vendor
         fields = [
@@ -152,11 +153,12 @@ class VendorSerializerDetailed(serializers.ModelSerializer):
     def get_city(self, obj):
         if obj.city and obj.city.capitalize() in CITY_TRANSLATIONS.keys():
             return CITY_TRANSLATIONS[obj.city.capitalize()]
-        return 
+        return
 
 
 class PublicVendorSerializer(serializers.ModelSerializer):
     """public vendor details, used in public vendor detail"""
+
     is_open_now = serializers.ReadOnlyField(source="is_available")  # read only
     discounted_foods = DiscountedFoodSerializerMany(many=True, read_only=True)
     featured_items = serializers.SerializerMethodField("get_featured_items")
@@ -230,3 +232,4 @@ class AbstractVendorSerializer(serializers.ModelSerializer):
         if obj.location:
             return [obj.location.y, obj.location.x]
         return
+

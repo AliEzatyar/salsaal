@@ -107,7 +107,7 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """setting the vendor and min price for the food + preventing duplicates"""
-        validated_data["vendor"] = Vendor.objects.get(id=self.context["vendor"])
+        validated_data["vendor"] = Vendor.objects.get(id=self.context.get("vendor",None))
         validated_data["min_price"] = min([x for x in validated_data["prices"]])
         name = validated_data.get("name")
         vendor = validated_data.get("vendor")
@@ -324,7 +324,7 @@ class CategoryVendorSerializer(serializers.ModelSerializer):
     foods = FoodSerializerLessDetail(many=True, read_only=True)
     reach_time = serializers.SerializerMethodField("get_reach_time")
     distance = serializers.SerializerMethodField("get_distance")
-
+    
     class Meta:
         model = Vendor
         fields = [
