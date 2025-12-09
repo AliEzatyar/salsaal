@@ -429,7 +429,7 @@ class AcceptRejectOrderView(views.APIView):
                     }
                 ),
             )
-            self.send_notification(order)
+            self.send_notification()
             return Response()
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -468,7 +468,7 @@ class AcceptRejectOrderView(views.APIView):
         )
         deactivate_language()
         # ------------- sending notification to vendor
-        send_notification.delay(order.vendor.user.id, notf.title, body=notf.description)
+        send_notification.delay(order.vendor.user.id, notf.title, body=notf.description,data={"order_id": order.id})
 
     def get_vendor_account_number(vendor):
         """returns vendor hesab pay account number"""

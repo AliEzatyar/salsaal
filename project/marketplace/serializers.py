@@ -85,7 +85,8 @@ class VFoodSerializerDetail(serializers.ModelSerializer):
             "is_ready_type",
             "created_at",
             "modified_at",
-            "discount"            
+            "discount",
+            "is_featured"            
         ]
         read_only_fields = [
             "avg_rating",

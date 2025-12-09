@@ -115,7 +115,7 @@ class LoginApiView(views.APIView):
                 return Response(status=status.HTTP_409_CONFLICT)
             otp = generate_otp()
             UserOtp.objects.create(user=user, otp=otp)
-            send_otp.delay(otp=otp, user_id=user.id, typ=OTP_LOGIN)
+            send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
@@ -240,7 +240,7 @@ class LoginApiView(views.APIView):
                     # ------ sending otp
                     otp = generate_otp()
                     NoUserOtp.objects.create(phone_number=phone_number, otp=otp)
-                    send_otp.delay(otp=otp, user_id=user.id, typ=OTP_LOGIN)
+                    send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
                     return Response(
                         status=status.HTTP_200_OK,
                     )
@@ -421,14 +421,24 @@ class ResendOtpApiView(views.APIView):
             return Response(
                 {"detail": "provide_phone_number_and_type"}, status=status.HTTP_400_BAD_REQUEST
             )
+        # preventing multiple resend by redis
+        resend_key = f"resend_otp_{phone_number}"
+        send_times = r.get(resend_key)
+        if send_times and int(send_times) >= 3:
+            return Response(
+                {"detail": "max_resend_attempts_reached"}, status=status.HTTP_403_FORBIDDEN
+            )
+        r.incrby(resend_key,1)
+        r.expire(resend_key,600) # key expires in 10 minutes
+            
         if typ == "new_user":
             # delete old otp entries
             send_otp.delay(
                 otp=new_otp,
                 phone_number=phone_number,
                 user_id=None,
-                typ=OTP_VERIFY_PHONE,
             )
+            
         else:
             try:
                 user = User.objects.get(phone_number=phone_number)
@@ -436,7 +446,6 @@ class ResendOtpApiView(views.APIView):
                     otp=new_otp,
                     phone_number=phone_number,
                     user_id=user.id,
-                    typ=OTP_LOGIN,
                 )
             except User.DoesNotExist:
                 return Response(

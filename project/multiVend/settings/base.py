@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 from django.contrib.messages import constants as messages
 from ..country.info import *
+import pillow_heif
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -224,3 +225,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 
 APPEND_SLASH = False
+
+# heic
+pillow_heif.register_heif_opener()

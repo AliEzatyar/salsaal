@@ -1,4 +1,4 @@
-from marketplace.utils import r 
+from marketplace.utils import r
 from accounts.models import Device
 from pyfcm import FCMNotification
 from django.conf import settings
@@ -10,11 +10,13 @@ import base64
 import time
 import json
 
+
 def is_user_online(user_id):
     return r.exists(f"user:{user_id}")  # returns 1 if online, 0 if offline
 
-@shared_task(bind=True, max_retries=5,default_retry_delay=10)
-def send_notification(self,user_id:int, title:str, body:str, data=None):
+
+@shared_task(bind=True, max_retries=5, default_retry_delay=10)
+def send_notification(self, user_id: int, title: str, body: str, data=None):
     """
     Send a notification to a user: via WebSocket if online, otherwise via FCM to their registered devices.
     Args:
@@ -53,8 +55,9 @@ def send_notification(self,user_id:int, title:str, body:str, data=None):
 
         return "does not exist"
     except Exception as e:
-        print("error in celery ",e)
+        print("error in celery ", e)
         raise self.retry(exc=e)
+
 
 fcm_api_key = settings.FCM_API_KEY
 fcm = FCMNotification(service_account_file=fcm_api_key)
@@ -62,25 +65,37 @@ fcm = FCMNotification(service_account_file=fcm_api_key)
 
 def send_fcm(token, title, body, data=None):
     android_cfg = {
-        "priority": "high",  # wrapper will translate to android priority
+        "priority": "high",
         "notification": {
-            "channel_id": "zayton_channel",  # MUST match Android channel id
+            "channel_id": "zayton_channel",
             "sound": "default",
         },
     }
-    result = None
+
+    apns_config = {
+        "headers": {"apns-priority": "10"},
+        "payload": {
+            "aps": {
+                "alert": {"title": title, "body": body},
+                "sound": "default",
+                "badge": 1,
+            }
+        },
+    }
+
     try:
-        result = fcm.notify(
+        return fcm.notify(
             fcm_token=token,
             notification_title=title,
             notification_body=body,
             data_payload={k: str(v) for k, v in (data or {}).items()},
             android_config=android_cfg,
+            apns_config=apns_config,
         )
     except Exception as e:
-        print("error in fcm sending notification, token",token)
+        print("error in fcm sending notification, token", token)
         print(e)
-    return result
+        return None
 
 
 def generate_token_for_call(user_id: str, effective_time_in_seconds: int = 3600):
@@ -118,6 +133,6 @@ def generate_token_for_call(user_id: str, effective_time_in_seconds: int = 3600)
         "app_id": app_id,
         "user_id": user_id,
         "expire_time": expire_time,
-        "create_time":create_time,
+        "create_time": create_time,
         "token": token,
     }

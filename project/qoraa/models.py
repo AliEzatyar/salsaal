@@ -12,7 +12,8 @@ MIN_QORAA_PRICE_VALUE = 500  # default price value for any Qoraa
 VENDORS_FOR_LOTTERY = "vendors_for_lottery"
 PLATFORM_DEFAULT_MORNING_QORAA_TITLE = "Daily Lottery"
 PLATFORM_DEFAULT_EVENING_QORAA_TITLE = "Evening Lottery"
-QORAA_JOINERS_LIMIT_DEFAULT = 10000  
+QORAA_JOINERS_LIMIT_DEFAULT = 1000000  
+
 class Qoraa(models.Model):
     """
     Lottery model. A Qoraa represents a single lottery window where users may join.

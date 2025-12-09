@@ -6,8 +6,12 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from api.permissions import IsCustomer, IsVendor, IsVendorOfObject
 from accounts.models import User
-from qoraa.models import Qoraa
-from .serializers import QoraaReadOnlySerializer, VendorQoraaFoodSerializer, VendorQoraaSerializer
+from qoraa.models import MIN_QORAA_PRICE_VALUE, Qoraa
+from .serializers import (
+    QoraaReadOnlySerializer,
+    VendorQoraaFoodSerializer,
+    VendorQoraaSerializer,
+)
 
 # Create your views here.
 
@@ -87,7 +91,7 @@ class GetFoodsForQoraaApiView(views.APIView):
     def get(self, request, *args, **kwargs):
         """Returns a list of food items for the vendor."""
         vendor = request.user.vendor
-        foods = vendor.foods.filter(is_active=True)
+        foods = vendor.foods.filter(min_price__gte=MIN_QORAA_PRICE_VALUE)
         ser = VendorQoraaFoodSerializer(foods, many=True)
         return Response(ser.data, status=status.HTTP_200_OK)
 
@@ -104,11 +108,10 @@ class ManageQoraaViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         return Qoraa.objects.filter(vendor=self.request.user.vendor)
 
-    def get_context_data(self, **kwargs) -> dict[str, Any]:
-        context = super().get_context_data(**kwargs)
-        print(self.request.data, "data in create qoraa vendor")
-        context["vendor"] = self.request.user.vendor
-        context["food_price"] = self.request.data.get("food_price")
+    def get_serializer_context(self, **kwargs) -> dict[str, Any]:
+        context = super().get_serializer_context(**kwargs)
+        print(self.request.data, "data in create qoraa vendor---------------")
+        context["vendor"] = self.request.user.vendor.id
         return context
 
     def perform_destroy(self, instance):

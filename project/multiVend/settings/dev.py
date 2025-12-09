@@ -46,7 +46,9 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             # supply a full redis URL including password and DB
-            "hosts": [f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"],
+            "hosts": [
+                f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+            ],
         },
     },
 }
@@ -58,7 +60,9 @@ CURRENT_DOMAIN_NAME = env.get("CURRENT_DOMAIN_NAME")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Celery settings
-CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
+CELERY_BROKER_URL = (
+    f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
+)
 CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
 DJANGO_CELERY_BEAT_MAX_LOOP_INTERVAL = 50  # every 50 seconds, jobs re-taken from db
 
@@ -118,3 +122,11 @@ HESAB_PAY_ENDPOINT = env.get("HESAB_PAY_ENDPOINT")
 HESAB_PAY_API_KEY = env.get("HESAB_PAY_API_KEY")
 HESAB_PAY_MULTI_VENDOR_ENDPOINT = env.get("HESAB_PAY_MULTI_VENDOR_ENDPOINT")
 HESAB_PAY_ACCOUNT_PIN = env.get("HESAB_PAY_ACCOUNT_PIN")
+
+# cpass
+CPAAS_AUTHENTICATION_URL = env.get("CPAAS_AUTHENTICATION_URL")
+CPAAS_CALLER_ID = env.get("CPAAS_CALLER_ID")
+CPAAS_USERNAME = env.get("CPAAS_USERNAME")
+CPAAS_PASSWORD = env.get("CPAAS_PASSWORD")
+CPAAS_UPLOAD_BASELOAD_URL = env.get("CPAAS_UPLOAD_BASELOAD_URL")
+CPAAS_OBD_CAMPAIGN_ID = env.get("CPAAS_OBD_CAMPAIGN_ID")

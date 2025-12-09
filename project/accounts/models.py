@@ -164,7 +164,7 @@ class Device(models.Model):
     )
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    modified_at = models.DateTimeField(auto_now=True)
 
 class UserOtp(models.Model):
     user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, db_index=True)

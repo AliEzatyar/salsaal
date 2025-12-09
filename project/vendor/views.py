@@ -117,6 +117,7 @@ class ConvertToVendorAPIView(views.APIView):
                 status=status.HTTP_409_CONFLICT,
             )
         data = self.request.data
+        print(data,"ssss")
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         try:
             ser.is_valid(raise_exception=True)
@@ -420,8 +421,6 @@ class AddCarrierAPIView(views.APIView):
             otp=otp,
             user_id=account.id,
             phone_number=phone_number,
-            typ=OTP_VERIFY_CARRIER,
-            vendor_name=self.request.user.vendor.vendor_name,  # extra data
         )
         return Response({"message": "otp_sent"}, status=status.HTTP_200_OK)
 
