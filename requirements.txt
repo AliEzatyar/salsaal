@@ -121,3 +121,4 @@ webencodings
 websockets
 yarl
 zopfli
+pillow-heif
