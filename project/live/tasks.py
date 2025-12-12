@@ -8,7 +8,7 @@ from live.models import Notification
 def delete_notifications():
     days_ago = tz.timedelta(days=OLD_NOTIFICAITON_EXPIRE_DAYS)
     now = tz.now()
-    Notification.objects.filter(is_read=True,date_time__lt=now - days_ago).delete()
+    Notification.objects.filter(is_read=True,created_at__lt=now - days_ago).delete()
     return "Deleted!"
 
 

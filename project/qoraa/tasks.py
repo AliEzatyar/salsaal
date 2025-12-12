@@ -58,7 +58,6 @@ def _create_qoraas_for_time(hour, platform_qoraa_title):
     now = timezone.localtime()
     start = now.replace(hour=hour, minute=0, second=0, microsecond=0)
     end = start + timezone.timedelta(hours=1)
-
     # ----------- platform's default qoraa --------------
     if not Qoraa.objects.filter(start=start, is_platform=True).exists():
         platform_qoraa_vendors = PlatformQoraaVendor.objects.filter(is_active=True)
@@ -225,7 +224,7 @@ def end_vendor_qoraa(qoraa_id):
                     data={},
                     target_id=qoraa.id,
                 )
-
+    
                 send_notification.delay(
                     winner.id,
                     notf.title,

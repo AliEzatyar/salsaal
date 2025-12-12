@@ -134,6 +134,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         user_notf_count = 0
         try:
             city, lat, lon = get_user_info(request)
+            if self.request.user.is_authenticated:
+                user_cart_items_count = self.request.user.cart.calculate_total_items()
+                user_notf_count = Notification.objects.filter(
+                    is_read=False, receiver=self.request.user
+                ).count()
 
         except Exception as e:
             print("error", e)
@@ -150,6 +155,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 }
             )
         # -------------------- categories ----------------
+
         cat_key = "home_categories"
         categories = cache.get(cat_key)
         if not categories:
@@ -237,6 +243,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         top_vendors = top_vendors_ser.data
         print(time.time() - now, "seconds")
         # final response
+        print(user_cart_items_count,"-----")
         return Response(
             {
                 "cart_count": user_cart_items_count,
@@ -362,7 +369,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """this returns all active vendors in the city"""
         city, lat, lon = get_user_info(request)
         vendors_ids = self.get_city_vendors(city)
-        print(vendors_ids,"ids")
         # foods limited to 3 IMPORTANT FOR PERFORMANCE
         foods_with_limit = (
             Food.objects.annotate(
@@ -391,12 +397,10 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             )
             .order_by("-avg_rating")
         )
-        print("vendors found",vendors)
         distance_reach_time(vendors, lat, lon, "vendor")
         paginator = StandardResultSetPagination()
         qs = paginator.paginate_queryset(vendors, request)
         ser = VendorSerializerWithFoodImages(qs, many=True)
-        print(ser.data)
         return paginator.get_paginated_response(ser.data)
 
     @action(detail=False, methods=["get"], url_path="nearby-vendors-on-map")

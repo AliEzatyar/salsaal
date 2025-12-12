@@ -5,7 +5,7 @@ from os import environ as env
 import requests as req
 from rest_framework.pagination import PageNumberPagination
 import geohash
-from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB,password=s.REDIS_PASSWORD)
@@ -190,8 +190,6 @@ def distance_reach_time(qs, lat, lon, typ="food"):
         obj.distance = distance
         obj.reach_time = round(distance_to_travel_time(distance), 1)
 
-from rest_framework.exceptions import ValidationError
-
 
 def get_user_info(request):
     """
@@ -202,6 +200,7 @@ def get_user_info(request):
     request_data = request.query_params
     city = request_data.get("city")
     location = request_data.get("location")
+    print(request_data)
 
     # fallback to user profile if missing
     if not city or not location:
@@ -214,6 +213,12 @@ def get_user_info(request):
     else:
         try:
             lat, lon = geohash.decode(location)
+            if not city:
+                # try to get city from user profile
+                if hasattr(request.user, "profile"):
+                    city = request.user.profile.city
+                else:
+                    raise ValidationError({"detail": "City required"})
         except Exception:
             # fallback to profile if decoding fails
             if hasattr(request.user, "profile"):
@@ -222,6 +227,6 @@ def get_user_info(request):
                 city = request.user.profile.city
             else:
                 raise ValidationError({"detail": "Invalid location"})
-
+    print(city, lat, lon,"return of taabi")
     city = str(city).lower()
     return city, lat, lon

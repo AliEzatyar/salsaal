@@ -24,10 +24,11 @@ class ListQoraaApiView(views.APIView):
     def get(self, request, *args, **kwargs):
         """Returns a list of active qoraas."""
         now = timezone.now()
+        one_day_ago = now - timezone.timedelta(days=1)
         qoraas = (
             Qoraa.objects.filter(
                 start__lte=now,
-                end__gte=now,
+                end__gte=one_day_ago,
                 status__in=[Qoraa.STATUS_RUNNING, Qoraa.STATUS_FINISHED],
             )
             .prefetch_related(Prefetch("joiners", queryset=User.objects.only("id")))
@@ -91,7 +92,7 @@ class GetFoodsForQoraaApiView(views.APIView):
     def get(self, request, *args, **kwargs):
         """Returns a list of food items for the vendor."""
         vendor = request.user.vendor
-        foods = vendor.foods.filter(min_price__gte=MIN_QORAA_PRICE_VALUE)
+        foods = vendor.foods.all()
         ser = VendorQoraaFoodSerializer(foods, many=True)
         return Response(ser.data, status=status.HTTP_200_OK)
 
@@ -110,7 +111,6 @@ class ManageQoraaViewset(viewsets.ModelViewSet):
 
     def get_serializer_context(self, **kwargs) -> dict[str, Any]:
         context = super().get_serializer_context(**kwargs)
-        print(self.request.data, "data in create qoraa vendor---------------")
         context["vendor"] = self.request.user.vendor.id
         return context
 

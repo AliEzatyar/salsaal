@@ -1,4 +1,3 @@
-from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from .models import NoUserOtp, User, UserOtp
 from celery import shared_task
@@ -6,20 +5,6 @@ from random import randint
 import requests
 from marketplace.utils import r
 from django.conf import settings
-from json import loads as jloads
-
-def send_log_email(amount, type_=None):
-    if type_ == "db":
-        mail = EmailMessage(
-            subject="Time token for db..", to=["aliahmadyar10@gmail.com"], body=amount
-        )
-    else:
-        mail = EmailMessage(
-            subject="total server Time token..",
-            to=["aliahmadyar10@gmail.com"],
-            body=amount,
-        )
-    mail.send()
 
 
 def generate_otp(length=6):
@@ -34,16 +19,17 @@ OTP_VERIFY_CARRIER = 3
 OTP_LOGIN = 4
 
 def create_otp_text(otp):
-    return otp
+    digits = ", , , , .".join([i for i in str(otp)])
+    return f"{digits} , , , . کد شما است , , , . {digits} , , , . کد شما است , , , .{digits}"
 
 
 def get_cpaas_token():
     token = r.get("cpaas_token")
-    r.expire("cpaas_token", 3)  # setting expiry to 1 hour
+    r.expire("cpaas_token", 5 * 60)  # setting expiry to 5 minutes
 
     print("cpaas token from redis:", token)
     if token:
-        return jloads(token)
+        return token.decode()
     else:
         # making a request to get new token
         response = requests.post(
@@ -60,7 +46,7 @@ def get_cpaas_token():
             else:
                 print("No token found in response of CPAAS")
 
-@shared_task(bind=True, max_retries=5, default_retry_delay=10)
+@shared_task(bind=True, max_retries=5, default_retry_delay=3)
 def send_otp(self,otp=None, user_id=None, phone_number=None, **kwargs):
     """
     sends otp using OBD compaign
@@ -115,7 +101,7 @@ def send_otp(self,otp=None, user_id=None, phone_number=None, **kwargs):
     except Exception as e:
         print(f"Error sending OTP: {e}")
         # retry after 10 seconds
-        delay = min(60 * 2 ** self.request.retries, 10)
+        delay = min(60 * 2 ** self.request.retries, 3)
         raise self.retry(exc=e, countdown=delay)
 
 

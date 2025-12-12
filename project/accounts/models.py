@@ -150,6 +150,7 @@ class UserProfile(g_models.Model):
             self.h3_id = h3_latlng_to_cell(
                 float(self.latitude), float(self.longitude), DEFAULT_H3_RESOLUTION
             )
+            
             self.city = str(self.city).lower()
 
         return super().save(*args, **kwargs)

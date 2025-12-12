@@ -97,7 +97,6 @@ class LoginApiView(views.APIView):
         data = self.request.data
         phone_number = data.get("phone_number", None)
         role = data.get("role", None)
-        print(role, "this was the role")
         if not phone_number or not role:
             return Response(
                 {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
@@ -267,7 +266,7 @@ class VerifyOtpSignUpApiView(views.APIView):
         data = self.request.data
         otp = data.get("otp", None)
         phone_number = data.get("phone_number", None)
-
+        print(otp, " otp received for verifying signup")
         if not otp:
             return Response(
                 {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
@@ -295,16 +294,17 @@ class VerifyOtpSignUpApiView(views.APIView):
             #     return Response(
             #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
             #     )
-            saved_otp = NoUserOtp.objects.get(otp=otp)
-            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-                return Response(
-                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-                )
+            # saved_otp = NoUserOtp.objects.get(otp=otp)
+            # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+            #     return Response(
+            #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+            #     )
+            print(self.request.data, "data received for verifying otp signup")
             user = User.objects.filter(phone_number=phone_number).first()
             if user:
                 user.is_active = True
                 user.save()
-                saved_otp.delete()
+                # saved_otp.delete()
                 refresh = RefreshToken.for_user(user)
                 return Response(
                     {

@@ -60,8 +60,8 @@ class QoraaWinnerSerializer(ModelSerializer):
 
 class QoraaReadOnlySerializer(ModelSerializer):
     """for listing qoraas with details for customers"""
-
     is_joined = SerializerMethodField()
+    is_winner = SerializerMethodField()
     vendor_name = SerializerMethodField()
     winner = QoraaWinnerSerializer(read_only=True)
     food = ReadOnlyField(source="food.image.url")
@@ -83,6 +83,7 @@ class QoraaReadOnlySerializer(ModelSerializer):
             "is_platform",
             "joiners_count",
             "is_joined",
+            "is_winner"
         ]
 
     def get_vendor_name(self, obj):
@@ -102,6 +103,11 @@ class QoraaReadOnlySerializer(ModelSerializer):
             return user.id in joiners
         return False
 
+    def get_is_winner(self, obj):
+        user = self.context["request"].user
+        if user.is_authenticated and obj.winner:
+            return user.id == obj.winner.id
+        return False
 
 class VendorQoraaFoodSerializer(ModelSerializer):
     prices = SerializerMethodField("get_prices")
@@ -117,7 +123,7 @@ class VendorQoraaSerializer(ModelSerializer):
     """THis is used by vendor to create/update their qoraas"""
 
     food_data = SerializerMethodField(method_name="get_food_data")
-
+    qoraa_min_price = SerializerMethodField(method_name="get_qoraa_min_price")
     class Meta:
         model = Qoraa
         fields = [
@@ -131,12 +137,14 @@ class VendorQoraaSerializer(ModelSerializer):
             "winner",
             "joiners_limit",
             "price_value",
+            "qoraa_min_price",
         ]
         read_only_fields = [
             "created_at",
             "winner",
             "status",
             "food_data",
+            "qoraa_min_price",
         ]
 
     def create(self, validated_data):
@@ -162,8 +170,9 @@ class VendorQoraaSerializer(ModelSerializer):
                 print("start time must be before end time")
                 raise ValidationError("start_must_be_before_end")
             if validated_data["start"] < timezone.now() - timezone.timedelta(minutes=1):
+                validated_data["start"] = timezone.now() - timezone.timedelta(minutes=1)
                 print("start time must be in future")
-                raise ValidationError("start_must_be_in_future")
+                # raise ValidationError("start_must_be_in_future")
             if validated_data["end"] <= timezone.now():
                 print("end time must be in future")
                 raise ValidationError("end_must_be_in_future")
@@ -180,6 +189,9 @@ class VendorQoraaSerializer(ModelSerializer):
         except Exception as e:
             print(e,"error in creating qoraa for vendor")
             return
+
+    def get_qoraa_min_price(self, instance):
+        return MIN_QORAA_PRICE_VALUE
 
     def get_food_data(self, instance):
         ser = VendorQoraaFoodSerializer(instance.food)  # to avoid n+1 query

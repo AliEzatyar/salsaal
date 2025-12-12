@@ -55,8 +55,8 @@ def reset_vendors_carriers_in_redis():
 @shared_task
 def disable_vendors():
     """
-    this task marks all vendors disabled at 11:59 PM
+    this task marks all vendors disabled every 3 hours
     any vendor heading orders page is marked as avaialble
     """
     Vendor.objects.all().update(is_available=False)
-    
+    return "Vendors disabled"    
