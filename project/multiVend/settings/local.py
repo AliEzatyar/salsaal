@@ -60,6 +60,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
 CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
 DJANGO_CELERY_BEAT_MAX_LOOP_INTERVAL = 10 # every 10 seconds, jobs re-taken from db
+# Use django-celery-beat DatabaseScheduler so periodic tasks stored in the DB are used.
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Celery Beat for periodic tasks
 INSTALLED_APPS += ["django_celery_beat", "storages"]
 

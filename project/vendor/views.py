@@ -583,6 +583,8 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         phone_number = "+" + phone_number
         try:
             user = User.objects.get(phone_number=phone_number)
+            if user.role == CARRIER:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(status=status.HTTP_404_NOT_FOUND)
         ser = UserDetailSerializer(user)

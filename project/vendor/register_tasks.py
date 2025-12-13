@@ -71,20 +71,20 @@ def register_periodic_tasks():
             timezone_str=tz,
         )
 
-        # Deactivate expired discounts every hour
+        # Deactivate expired discounts every minute
         _ensure_interval_task(
             name="Deactivate Dead Discounts",
             task_path="vendor.tasks.deactivate_discounts",
             every=1,
-            period=IntervalSchedule.HOURS,
+            period=IntervalSchedule.MINUTES,
         )
 
-        # Disable vendors every 3 hours
+        # Disable vendors every 1 minutes
         _ensure_interval_task(
-            name="Disable Vendors Every 3 hour",
+            name="Disable Vendors Every 1 minute",
             task_path="vendor.tasks.disable_vendors",
-            every=3,
-            period=IntervalSchedule.HOURS,
+            every=1,
+            period=IntervalSchedule.MINUTES,
         )
 
         # Delete old notifications on a schedule defined by OLD_NOTIFICAITON_EXPIRE_DAYS

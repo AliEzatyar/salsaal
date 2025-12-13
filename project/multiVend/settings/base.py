@@ -189,11 +189,6 @@ REST_FRAMEWORK = {
     # "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
     "DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S",
-    "DATETIME_INPUT_FORMATS": [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S.%fZ",
-        "%Y-%m-%dT%H:%M:%S%z",
-    ],
 }
 
 
