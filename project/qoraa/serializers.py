@@ -123,11 +123,11 @@ class VendorQoraaSerializer(ModelSerializer):
     """THis is used by vendor to create/update their qoraas"""
 
     food_data = SerializerMethodField(method_name="get_food_data")
-    qoraa_min_price = SerializerMethodField(method_name="get_qoraa_min_price")
     joiners_count = SerializerMethodField(method_name="get_joiners_count")
     class Meta:
         model = Qoraa
         fields = [
+            "id",
             "food",
             "food_data",
             "title",
@@ -138,7 +138,6 @@ class VendorQoraaSerializer(ModelSerializer):
             "winner",
             "joiners_limit",
             "price_value",
-            "qoraa_min_price",
             "joiners_count"
         ]
         read_only_fields = [
@@ -146,7 +145,6 @@ class VendorQoraaSerializer(ModelSerializer):
             "winner",
             "status",
             "food_data",
-            "qoraa_min_price",
             "joiners_count",
         ]
 
@@ -192,8 +190,6 @@ class VendorQoraaSerializer(ModelSerializer):
             print(e,"error in creating qoraa for vendor")
             return
 
-    def get_qoraa_min_price(self, instance):
-        return MIN_QORAA_PRICE_VALUE
 
     def get_food_data(self, instance):
         ser = VendorQoraaFoodSerializer(instance.food)  # to avoid n+1 query
@@ -201,5 +197,4 @@ class VendorQoraaSerializer(ModelSerializer):
 
     def get_joiners_count(self, instance):
         count = instance.joiners.count()
-        print("count of joiners:", count)
         return count

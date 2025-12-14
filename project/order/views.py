@@ -610,8 +610,9 @@ class SetOrderStateDelivered(views.APIView):
                     }
                 ),
             )
-
+            ser = COrderSerializer(order)
             return Response(
+                ser.data,
                 status=status.HTTP_202_ACCEPTED,
             )
         except Order.DoesNotExist:

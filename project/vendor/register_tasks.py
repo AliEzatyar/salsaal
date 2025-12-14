@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 def _ensure_crontab_task(name, task_path, minute, hour, timezone_str="Asia/Kabul", args=None):
-    """Ensure a crontab + PeriodicTask exists and is enabled.
+    """
+    Ensure a crontab + PeriodicTask exists and is enabled.
     Returns the PeriodicTask instance.
     """
     schedule, _ = CrontabSchedule.objects.get_or_create(
@@ -71,20 +72,20 @@ def register_periodic_tasks():
             timezone_str=tz,
         )
 
-        # Deactivate expired discounts every minute
+        # Deactivate expired discounts every hour
         _ensure_interval_task(
-            name="Deactivate Dead Discounts",
+            name="Deactivate Dead Discounts every 1 hour",
             task_path="vendor.tasks.deactivate_discounts",
             every=1,
-            period=IntervalSchedule.MINUTES,
+            period=IntervalSchedule.HOURS,
         )
 
-        # Disable vendors every 1 minutes
+        # Disable vendors every  hour
         _ensure_interval_task(
-            name="Disable Vendors Every 1 minute",
+            name="Disable Vendors Every 3 hours",
             task_path="vendor.tasks.disable_vendors",
-            every=1,
-            period=IntervalSchedule.MINUTES,
+            every=3,
+            period=IntervalSchedule.HOURS,
         )
 
         # Delete old notifications on a schedule defined by OLD_NOTIFICAITON_EXPIRE_DAYS

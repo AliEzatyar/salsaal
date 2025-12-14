@@ -49,7 +49,7 @@ def reset_vendors_carriers_in_redis():
         r.hset(vendor_carriers_key, "f_c_c", total_carriers_count)  # all free
         r.hset(vendor_carriers_key, "b_c_c", 0)  # no busy carriers
 
-    return "Carrier's reset!"
+    return "Carriers reset!"
 
 
 @shared_task

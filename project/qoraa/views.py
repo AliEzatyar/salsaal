@@ -94,7 +94,9 @@ class GetFoodsForQoraaApiView(views.APIView):
         vendor = request.user.vendor
         foods = vendor.foods.all()
         ser = VendorQoraaFoodSerializer(foods, many=True)
-        return Response(ser.data, status=status.HTTP_200_OK)
+        food_list = ser.data # list
+        data = {"foods": food_list, "price_limit": MIN_QORAA_PRICE_VALUE}
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class ManageQoraaViewset(viewsets.ModelViewSet):
@@ -115,7 +117,7 @@ class ManageQoraaViewset(viewsets.ModelViewSet):
         return context
 
     def perform_destroy(self, instance):
-        if instance.status != Qoraa.STATUS_SCHEDULED:
+        if instance.status not in [Qoraa.STATUS_SCHEDULED,Qoraa.STATUS_FINISHED]:
             return Response(
                 {"detail": "only_pending_qoraa_can_be_deleted"},
                 status=status.HTTP_400_BAD_REQUEST,

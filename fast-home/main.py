@@ -2,7 +2,7 @@ from typing import Any
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from fastapi import Depends
+from fastapi import Depends, Request
 from dependencies import get_db
 from schemas import HomeSchema
 from models import (
@@ -11,7 +11,6 @@ from models import (
     Food,
     Notification,
     Promotion,
-    User,
     Vendor,
 )
 import geohash
@@ -27,7 +26,7 @@ from utils import (
     set_image_url_to_scalars,
 )
 from schemas import CategorySchema
-from auth import get_user
+from auth import get_user, throttle_request
 
 DEFAULT_H3_RESOLUTION = 9
 
@@ -37,15 +36,25 @@ app = FastAPI()
 
 @app.get("/api/marketplace/home/", response_model=HomeSchema)
 async def home(
+    request : Request,
     location: str,
     city: str,
     db: Session = Depends(get_db),
-    user : Any = Depends(get_user)
+    user: Any = Depends(get_user),
 ):
-    # ----------- user cart and notf count if auth provided
+    
     user_notf_count = 0
     user_cart_count = 0
+    #  ------------- throttle requests
+    if not user:
+        is_request_allowed = throttle_request(http_request=request)
+        if is_request_allowed is False:
+            return {"detail": "Too many requests, please try later."}
     if user:
+        is_request_allowed = throttle_request(user_id=user.id)
+        if is_request_allowed is False:
+            return {"detail": "Too many requests, please try later."}
+        # ----------- user cart and notf count if auth provided
         user_notf_count = (
             db.scalar(
                 select(Notification.id).where(
@@ -87,7 +96,11 @@ async def home(
     city_vendor_ids_key = f"vdrs:{city}:ids"
     city_vendor_ids = await cache_get(city_vendor_ids_key)
     if not city_vendor_ids:
-        ids = db.query(Vendor.id).filter(Vendor.city == city,Vendor.is_approved==True).all()
+        ids = (
+            db.query(Vendor.id)
+            .filter(Vendor.city == city, Vendor.is_approved == True)
+            .all()
+        )
         city_vendor_ids = [v.id for v in ids]
         await cache_set(city_vendor_ids_key, city_vendor_ids)
     # ------------ city foods

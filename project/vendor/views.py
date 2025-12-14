@@ -924,10 +924,13 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         today_orders = queryset.filter(created_at__date=tz.now().date())
         vendor = self.request.user.vendor
         is_vendor_available = get_vendor_status(vendor.id)
+        print(is_vendor_available)
         if not is_vendor_available:
-            # only change db once per day
-            vendor.is_available = True
-            vendor.save()
+            if not vendor.is_available:
+                vendor.is_available = True
+                vendor.save()
+            else:
+                pass
         # details
         name = vendor.vendor_name
         image = vendor.image.url if vendor.image else None

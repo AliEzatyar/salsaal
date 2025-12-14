@@ -1,7 +1,6 @@
 from rest_framework.serializers import ModelSerializer, ValidationError
 from order.models import Reward
-from vendor.models import Vendor
-from .models import Device, User, UserProfile, CUSTOMER, get_token_valid_after
+from .models import User, UserProfile, CUSTOMER, get_token_valid_after
 from rest_framework_simplejwt.serializers import (
     TokenObtainPairSerializer,
     TokenRefreshSerializer,
@@ -9,7 +8,7 @@ from rest_framework_simplejwt.serializers import (
 from rest_framework import serializers
 from rest_framework_simplejwt.state import token_backend
 from rest_framework_simplejwt.settings import api_settings
-
+from django.conf import settings
 
 class UserCreationSerializer(ModelSerializer):
     class Meta:
@@ -23,6 +22,7 @@ class UserCreationSerializer(ModelSerializer):
         user.role = CUSTOMER
         user.save()
         return user
+
 
     def validate(self, attrs):
         super().validate(attrs)
@@ -39,6 +39,7 @@ class UserCreationSerializer(ModelSerializer):
 
 
 class UserProfileSerializer(ModelSerializer):
+    
     class Meta:
         model = UserProfile
         fields = ["picture", "city", "address", "latitude", "longitude","pf_lang"]
@@ -82,10 +83,10 @@ class UserProfileCreationSerializer(ModelSerializer):
 
 class UserDetailSerializer(ModelSerializer):
     profile = UserProfileSerializer()
-
+    whatsapp_support = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ["id", "name", "phone_number", "profile", "created_date"]
+        fields = ["id", "name", "phone_number", "profile", "created_date","whatsapp_support"]
         read_only_fields = [
             "id",
             "phone_number",
@@ -108,7 +109,10 @@ class UserDetailSerializer(ModelSerializer):
 
         return instance
 
+    def get_whatsapp_support(self, obj):
+        return settings.WHATSAPP_SUPPORT_NUMBER
 
+   
 
 class RoleTokenObtainPairSerializer(TokenObtainPairSerializer):
 

@@ -25,7 +25,7 @@ def create_otp_text(otp):
 
 def get_cpaas_token():
     token = r.get("cpaas_token")
-    r.expire("cpaas_token", 5 * 60)  # setting expiry to 5 minutes
+    r.expire("cpaas_token", 60 * 60)  # setting expiry to 1 hour
 
     print("cpaas token from redis:", token)
     if token:

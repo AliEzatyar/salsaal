@@ -62,6 +62,8 @@ class UserViewset(viewsets.ModelViewSet):
         new_qs = User.objects.filter(id=self.request.user.id)
         return new_qs
 
+    
+
 
 class UserRewardsViewset(viewsets.ReadOnlyModelViewSet):
     """this view lists user's rewards"""
@@ -223,7 +225,14 @@ class LoginApiView(views.APIView):
                     user_ser = UserCreationSerializer(
                         data={"phone_number": phone_number, "name": name}
                     )
-                    user_ser.is_valid(raise_exception=True)
+                    try:
+                        user_ser.is_valid(raise_exception=True)
+                    except Exception as e:
+                        print("validation error in new user data", e)
+                        return Response(
+                            {"detail": "invalid_user_data"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
                     user = User(phone_number=phone_number, is_active=True, name=name)
                     if role == REST:
                         user.role = REST
