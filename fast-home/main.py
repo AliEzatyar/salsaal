@@ -47,11 +47,11 @@ async def home(
     user_cart_count = 0
     #  ------------- throttle requests
     if not user:
-        is_request_allowed = throttle_request(http_request=request)
+        is_request_allowed = await throttle_request(http_request=request)
         if is_request_allowed is False:
             return {"detail": "Too many requests, please try later."}
     if user:
-        is_request_allowed = throttle_request(user_id=user.id)
+        is_request_allowed = await throttle_request(user_id=user.id)
         if is_request_allowed is False:
             return {"detail": "Too many requests, please try later."}
         # ----------- user cart and notf count if auth provided

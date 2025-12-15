@@ -14,20 +14,18 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-import debug_toolbar
 from django.contrib import admin
 from django.urls import include, path
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from accounts.views import jwtks_view
+from two_factor.urls import urlpatterns as tf_urls
+from two_factor.admin import AdminSiteOTPRequired
+
+admin.site.__class__ = AdminSiteOTPRequired
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("", include(tf_urls)),
+    path("hello-world-3000/", admin.site.urls),
     path("api/", include("api.urls", namespace="api")),
-    # OpenAPI schema (raw)
-    path("schema/", SpectacularAPIView.as_view(), name="schema"),
-    # Swagger UI for easy interactive documentation
-    path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-    path("__debug__/", include(debug_toolbar.urls)),
     path("jwtks/", jwtks_view),
 ]
 

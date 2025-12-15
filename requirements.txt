@@ -36,7 +36,8 @@ django-storages
 django-timezone-field
 djangorestframework
 djangorestframework_simplejwt
-drf-spectacular
+django-two-factor-auth
+phonenumbers
 Faker
 firebase_admin
 fonttools

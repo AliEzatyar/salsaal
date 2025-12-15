@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>
+      {% block title %}
+        My App
+      {% endblock %}
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Optional extra CSS/JS -->
+    {% block extra_media %}
+    {% endblock %}
+
+    <style>
+      body {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .main-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+      }
+      .alert-custom {
+        margin-top: 2rem;
+        border-radius: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Optional success message -->
+    <div class="alert alert-success alert-custom text-center">
+      <h3>
+        Welcome Dear Brother!
+      </h3>
+    </div>
+
+    <!-- Main content wrapper -->
+    {% block content_wrapper %}
+      <div class="main-container container">
+        <div class="w-100" style="max-width: 765px;">
+          {% block content %}
+          {% endblock %}
+        </div>
+      </div>
+    {% endblock %}
+
+    <!-- Bootstrap JS + jQuery -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

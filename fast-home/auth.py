@@ -1,3 +1,4 @@
+import zlib
 import jwt
 from datetime import datetime, timezone
 from fastapi import Depends, HTTPException, status, Request
@@ -8,9 +9,9 @@ from models import User
 from sqlalchemy.orm import Session
 from requests import get
 from os import environ as env
-from .utils import redis
+from utils import redis
 
-THROTTLE_PER_SECONDS=5
+THROTTLE_PER_HOUR=300
 PUBLIC_KEY = None
 ALGORITHM = "RS256"
 security = HTTPBearer(auto_error=False)
@@ -32,31 +33,34 @@ def decode_token(token):
         return None
 
 
-def get_throttle_cache_key(typ, ident):
+def get_throttle_cache_key(typ, ip=None,user_id=None):
     if typ == "anon":
-        return f"anon:{ident}:trtl"
+        return f"anon:{ip}:trtl"
     else:
-        return f"user:{ident}:trtl"
+        return f"user:{user_id}:trtl"
 
 
-def throttle_request(http_request=None,user_id=None):
+async def throttle_request(http_request=None,user_id=None):
     """throttle requests to prevent abuse"""
     raw= None
+    key = None
     if http_request:
         real_ip_addr = http_request.client.host
-        key = get_throttle_cache_key("anon",real_ip_addr)
-        raw = redis.get(key)
+        key = get_throttle_cache_key("anon", ip=real_ip_addr)
+        raw = await redis.get(key)
     elif user_id:
-        key = get_throttle_cache_key("user",user_id)
-        raw = redis.get(key)
-    
+        key = get_throttle_cache_key("user",user_id=user_id)
+        raw = await redis.get(key)
+
     if raw:
         val = int(raw) 
-        if val >= THROTTLE_PER_SECONDS:
+        if val >= THROTTLE_PER_HOUR:
             return False
-        redis.incrby(key)
+        await redis.incrby(key)
         return True
-    redis.incrby(key)
+    # first request, set key with expiry
+    await redis.incrby(key)
+    await redis.expire(key, 3600)
     return True
 
 async def get_user(

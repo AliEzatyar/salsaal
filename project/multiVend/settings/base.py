@@ -59,6 +59,11 @@ INSTALLED_APPS = [
     "live.apps.LiveConfig",
     "qoraa.apps.QoraaConfig",
     "admins.apps.AdminsConfig",
+    # two-factor authentication
+    "django_otp",
+    "django_otp.plugins.otp_totp",  # for TOTP tokens
+    "django_otp.plugins.otp_static",  # for backup/static tokens
+    "two_factor",
 ]
 
 MIDDLEWARE = [
@@ -69,6 +74,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -128,8 +134,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = "accounts.User"
-LOGIN_REDIRECT_URL = "accounts:user_dashboard"
-LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "/admin/"
+LOGIN_URL = "/account/login/"  # default admin login URL (2FA wrapped automatically)
+
 PASSWORD_RESET_TIMEOUT_DAYS = 1
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -194,8 +201,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/second',
-        'user': '5/second',
+        'anon': '300/hour',
+        'user': '500/hour', # vendors may have higher requests
     }
 }
 
@@ -213,24 +220,6 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = config("EMAIL_PORT")
 EMAIL_USE_TLS = True
-
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "My API",
-    "DESCRIPTION": "A detailed API documentation for my project",
-    "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-}
-
-
-# for react, cross site
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-]
-CORS_ALLOW_ALL_ORIGINS = True
 
 
 APPEND_SLASH = False
