@@ -1,7 +1,7 @@
 from uuid import uuid4
 from django.db import models
 from accounts.models import DEFAULT_CITY, User, UserProfile
-from live.utils import send_notification
+from live.utils import push_notification
 from marketplace.models import Rating
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.indexes import GinIndex
@@ -107,11 +107,10 @@ class Vendor(models.Model):
                 if self.is_approved:
                     # vendor got approved
                     activate(obj.user_profile.pf_lang)
-                    send_notification(
+                    push_notification.delay(
                         self.user.id,
-                        _("Congratulations! Your vendor account has been approved."),
-                        _("Congratulations! Your vendor account '{self.vendor_name}' has been approved.").format(self=self),
-                        
+                        title=_("Congratulations! Your vendor account has been approved."),
+                        body=_("Congratulations! Your vendor account '{self.vendor_name}' has been approved.").format(self=self),
                     )
                     deactivate()                
         # vendor update/saves this

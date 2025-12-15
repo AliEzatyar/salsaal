@@ -4,7 +4,7 @@ from django.utils import timezone
 from marketplace.utils import r
 from marketplace.models import Food
 from live.models import Notification
-from live.utils import send_notification
+from live.utils import push_notification
 from .models import (
     PLATFORM_DEFAULT_EVENING_QORAA_TITLE,
     PLATFORM_DEFAULT_MORNING_QORAA_TITLE,
@@ -39,7 +39,7 @@ def _send_qoraa_creation_notification(vendor, qoraa, end_time):
             }
         ),
     )
-    send_notification.delay(
+    push_notification.delay(
         vendor.user.id,
         notf.title,
         body=notf.description,
@@ -140,7 +140,7 @@ def finalize_qoraa():
                 data={},
                 target_id=q.id,
             )
-            send_notification.delay(
+            push_notification.delay(
                 winner.id,
                 notf.title,
                 body=notf.description,
@@ -225,7 +225,7 @@ def end_vendor_qoraa(qoraa_id):
                     target_id=qoraa.id,
                 )
     
-                send_notification.delay(
+                push_notification.delay(
                     winner.id,
                     notf.title,
                     body=notf.description,

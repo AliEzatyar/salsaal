@@ -30,7 +30,7 @@ from marketplace.utils import (
 from cart.models import Cart
 from carrier.utils import get_carrier_key
 from live.models import Notification
-from live.utils import send_notification
+from live.utils import push_notification
 from multiVend.country.info import PLATFORM_SHARE
 from accounts.serializers import UserDetailSerializer
 from .serializers import (
@@ -61,7 +61,7 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import PermissionDenied
 from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
-from live.utils import send_notification
+from live.utils import push_notification
 from django.db.models.functions import ExtractDay
 from rest_framework.decorators import action
 
@@ -114,7 +114,7 @@ class ConvertToVendorAPIView(views.APIView):
         if user.role == REST and hasattr(user, "vendor"):
             return Response(
                 {"detail": "already_a_vendor"},
-                status=status.HTTP_409_CONFLICT,
+                status=status.HTTP_403_FORBIDDEN,
             )
         data = self.request.data
         print(data,"ssss")
@@ -199,7 +199,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         # preventing duplicate
         if Discount.objects.filter(amount=amount).exists():
             return Response(
-                {"detail": "discount_already_exists"}, status=status.HTTP_409_CONFLICT
+                {"detail": "discount_already_exists"}, status=status.HTTP_403_FORBIDDEN
             )
 
         with atomic():
@@ -239,7 +239,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         ):
             return Response(
                 {"detail": "discount_already_exists_with_this_amount"},
-                status=status.HTTP_409_CONFLICT,
+                status=status.HTTP_403_FORBIDDEN,
             )
         # ----------- removing discounts from previous food items and finding new foods
         # set operations
@@ -430,25 +430,23 @@ class AddCarrierAPIView(views.APIView):
         phone_number = data.get("phone_number")
         otp = data.get("otp")
         try:
-            print(data, "===")
-            # otp = UserOtp.objects.get(otp=otp)
-            # if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
-            #     return Response(
-            #         {"detail": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST
-            #     )
-            # if not otp.user.phone_number == phone_number:
-            #     return Response(
-            #         {"detail": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
-            #     )
-            # carrier_user_account = otp.
-            carrier_user_account = User.objects.get(phone_number=phone_number)
+            otp = UserOtp.objects.get(otp=otp)
+            if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
+                return Response(
+                    {"detail": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            if not otp.user.phone_number == phone_number:
+                return Response(
+                    {"detail": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            carrier_user_account = otp.user
             profile = carrier_user_account.profile
             vendor = self.request.user.vendor
             carrier = Carrier.objects.create(
                 user=carrier_user_account, user_profile=profile, vendor=vendor
             )
             carrier_user_account.role = CARRIER
-            # otp.delete()
+            otp.delete()
             carrier_user_account.cart.delete()
             carrier_user_account.save()
             # --------------- re-balancing carriers status of vendor
@@ -1014,20 +1012,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
             )
             if order:
                 # if vendor has rejected order, no calculation, just notify user
-                if bool(accepted) == False:
+                if str(accepted) == "false":
                     order.cancel_order()
-                    activate_language(self.request.user.profile.pf_lang)
-                    notf = Notification.objects.create(
-                        title=_("Order Rejected"),
-                        description=_(
-                            "sorry! your order has been rejected by restuarant!"
-                        ),
-                        type="VENDOR_REJECTED",
-                        data={},
-                        receiver=order.vendor.user,
-                        target_id=order.id,
-                    )
-                    deactivate_language()
+                    self.send_notification(order,"VENDOR_REJECTED")
                     r.publish(
                         f"pub:order:{order.id}",
                         json.dumps(
@@ -1037,13 +1024,6 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             }
                         ),
                     )
-                    send_notification.delay(
-                        order.user.id,
-                        notf.title,
-                        body=notf.description,
-                        data={"order_id": order.id},
-                    )
-
                     return Response({"message": "order_order_rejected_by_vendor"})
                 else:
                     # vendor accepted order, set otp
@@ -1084,14 +1064,11 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     total_time = estimated
                     # ----------------- applying conditions and finalizing estimation of time  ...
                     if preparing_orders_count <= total_carriers_count:
-                        print("in first condition")
                         if preparing_orders_count < free_carriers_count:
                             total_time = estimated
                         elif preparing_orders_count >= free_carriers_count:
-                            print("preparing greater than free count")
                             total_time = estimated + 20
                     elif preparing_orders_count > total_carriers_count:
-                        print("in second condition")
                         if free_carriers_count == 0:
                             total_time = (
                                 estimated
@@ -1124,7 +1101,6 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         else:
                             if prep_time < item.food.duration:
                                 prep_time = item.food.duration
-                    print(prep_time, "max preparation time")
 
                     # ------------------ calculating delivery cost -------------------------
                     delivery_cost = None
@@ -1147,6 +1123,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     order.calculate_total_price()
                     food_price = order.total_price - order.delivery_cost
                     total_time = round(float(prep_time) + float(estimated))
+                    self.send_notification(order,"VENDOR_ACCEPTED")
                     order.save()
                     return Response(
                         {
@@ -1162,6 +1139,29 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         except Exception as e:
             print("error in order time calculation view\n", e, "\n", e.args)
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def send_notification(self, order,type_):
+        """creates notification for user when order is accepted by vendor"""
+        activate_language(order.user.profile.pf_lang)
+        description = "."
+        if type_ == "VENDOR_REJECTED":
+            description = _("sorry! your order has been rejected by restuarant!")
+            title = _("Order Rejected")
+        else:
+            description = _("your order has been accepted by restuarant!")
+            title = _("Order Accepted")
+        # ------------- creating notification for user  
+        notf = Notification.objects.create(
+                title=title,
+                type=type_,
+                data={},
+                description=description,
+                receiver=order.user,
+                target_id=order.id,
+            )
+        deactivate_language()
+        # ------------- sending notification to vendor
+        push_notification.delay(order.user.id, notf.title, body=notf.description,data={"order_id": order.id})
 
 
 class SetOrderStateCarrying(views.APIView):
@@ -1203,7 +1203,7 @@ class SetOrderStateCarrying(views.APIView):
                 return Response(status=status.HTTP_403_FORBIDDEN)
             if carrier.status == CARRIER_STATUS_CHOICES[1][0]:  # carrerir busy
                 return Response(
-                    {"detail": "carrier_busy"}, status=status.HTTP_409_CONFLICT
+                    {"detail": "carrier_busy"}, status=status.HTTP_403_FORBIDDEN
                 )
             #  vendor should own this order
             self.check_object_permissions(self.request, order)
@@ -1289,16 +1289,16 @@ class SetOrderStateCarrying(views.APIView):
                     ),
                 )
             # sending notification to customer
-            send_notification.delay(
+            push_notification.delay(
                 order.user.id,
                 notf.title,
                 body=notf.description,
                 data={"order_id": order.id},
             )
             # sending notification to carrier
-            send_notification.delay(
+            push_notification.delay(
                 carrier_id,
-                "New Order Assigned",
+                _("New Order Assigned"),
                 body=None,
                 data={"order_id": order.id},
             )

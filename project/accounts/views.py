@@ -112,7 +112,6 @@ class LoginApiView(views.APIView):
             role = int(role)
             user = User.objects.get(phone_number=phone_number)
             if role != user.role:
-                print("incorrect app", role, user.role)
                 return Response(status=status.HTTP_409_CONFLICT)
             otp = generate_otp()
             UserOtp.objects.create(user=user, otp=otp)
@@ -149,39 +148,37 @@ class LoginApiView(views.APIView):
             # -------------------------------- sending tokens
             try:
                 otp = data.get("otp", None)
-                print(otp," otp received for existing user login")
                 if not otp:
-                    # return Response(
-                    #     {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
-                    # )
-                    pass
+                    return Response(
+                        {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+                    )
                 # verifying otp
-                # otp_tries_key = get_user_otp_tries_key(phone_number)
-                # tries = r.get(otp_tries_key)
-                # r.incrby(otp_tries_key, 1)
-                # if tries and int(tries) > 5:
-                #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 10 minutes delay
-                #     return Response(
-                #         {"detail": "max_attempts_reached"},
-                #         status=status.HTTP_403_FORBIDDEN,
-                #     )
+                otp_tries_key = get_user_otp_tries_key(phone_number)
+                tries = r.get(otp_tries_key)
+                r.incrby(otp_tries_key, 1)
+                if tries and int(tries) > 5:
+                    r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 10 minutes delay
+                    return Response(
+                        {"detail": "max_attempts_reached"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
 
-                # saved_otp = UserOtp.objects.get(otp=otp)
-                # if (
-                #     saved_otp.is_expired()
-                #     or saved_otp.user.phone_number != phone_number
-                # ):
-                #     return Response(
-                #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-                #     )
+                saved_otp = UserOtp.objects.get(otp=otp)
+                if (
+                    saved_otp.is_expired()
+                    or saved_otp.user.phone_number != phone_number
+                ):
+                    return Response(
+                        {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                    )
                 # # finding user
                 user = User.objects.get(phone_number=phone_number)
                 user.token_valid_after = get_token_valid_after()
                 user.is_active = True
                 user.save()
                 refresh = RefreshToken.for_user(user)
-                # saved_otp.delete()
-                # r.delete(otp_tries_key)
+                saved_otp.delete()
+                r.delete(otp_tries_key)
 
                 return Response(
                     {
@@ -205,7 +202,6 @@ class LoginApiView(views.APIView):
 
         elif typ == "new_user":
             # ----------------- creating user account
-            print("new user",data)
             try:
                 with atomic():
                     # ----- validating user data and creating new account
@@ -275,7 +271,6 @@ class VerifyOtpSignUpApiView(views.APIView):
         data = self.request.data
         otp = data.get("otp", None)
         phone_number = data.get("phone_number", None)
-        print(otp, " otp received for verifying signup")
         if not otp:
             return Response(
                 {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
@@ -286,34 +281,32 @@ class VerifyOtpSignUpApiView(views.APIView):
             )
 
         try:
-
             # ----- preventing auto retries
-            # otp_tries_key = get_user_otp_tries_key(phone_number)
-            # tries = r.get(otp_tries_key)
-            # r.incrby(otp_tries_key, 1)
-            # if tries and int(tries) > 5:
-            #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
-            #     return Response(
-            #         {"detail": "max_attempts_reached"},
-            #         status=status.HTTP_403_FORBIDDEN,
-            #     )
-            # # ----- verifying otp
-            # saved_otp = NoUserOtp.objects.get(otp=otp)
-            # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-            #     return Response(
-            #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-            #     )
-            # saved_otp = NoUserOtp.objects.get(otp=otp)
-            # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-            #     return Response(
-            #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-            #     )
-            print(self.request.data, "data received for verifying otp signup")
+            otp_tries_key = get_user_otp_tries_key(phone_number)
+            tries = r.get(otp_tries_key)
+            r.incrby(otp_tries_key, 1)
+            if tries and int(tries) > 5:
+                r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
+                return Response(
+                    {"detail": "max_attempts_reached"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            # ----- verifying otp
+            saved_otp = NoUserOtp.objects.get(otp=otp)
+            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+                return Response(
+                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                )
+            saved_otp = NoUserOtp.objects.get(otp=otp)
+            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+                return Response(
+                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                )
             user = User.objects.filter(phone_number=phone_number).first()
             if user:
                 user.is_active = True
                 user.save()
-                # saved_otp.delete()
+                saved_otp.delete()
                 refresh = RefreshToken.for_user(user)
                 return Response(
                     {
@@ -379,29 +372,39 @@ class UpsertDeviceToken(views.APIView):
             )
         # Normalize token
         new_token = str(new_token).strip()
-
+        print("new token",new_token)
         # Fast-path: if user already has a device with same token, nothing to do
         existing_for_user = request.user.devices.filter(token=new_token).first()
         if existing_for_user:
             return Response(status=status.HTTP_200_OK)
 
+        # Import Device model here to avoid circular import issues
         from .models import Device
+        
+        if request.user.role != REST:
+            Device.objects.filter(user=request.user).delete()  # delete old devices for non-REST users
+
 
         try:
-            # If a device with this token exists for another user, reassign it to current user
-            device = Device.objects.filter(token=new_token).first() 
-            if device:
-                # reassign owner to current user
-                device.user = request.user
-                device.save()
+            # preventing duplicate device tokens
+            # if a device with this token already exists, reassign it to this user
+            # this is to handle cases where user logs in from multiple devices
+            devices_with_this_token = Device.objects.filter(token=new_token) 
+            if devices_with_this_token.exists():
+                devices_with_this_token.update(user=request.user)  # reassign existing device to this user
                 return Response(status=status.HTTP_200_OK)
-
-            # otherwise create a new device for this user
-            # wrap in atomic to handle race conditions
             with atomic():
-                print("device token saved", new_token)
+                # justing keeping last 3 devices for vendor users
+                print("counting user devices")
+                devices_count = Device.objects.filter(user=request.user).count()
+                if devices_count > 2:
+                    print("devices > 2")
+                    amount_to_remove = devices_count - 2
+                    Device.objects.filter(user=request.user).first().delete()
+                    
                 Device.objects.create(user=request.user, token=new_token)
-        except IntegrityError:
+        except Exception as e:
+            print("error in upsert device token", e)
             # token creation raced with another request; try to fetch and reassign
             try:
                 device = Device.objects.get(token=new_token)
@@ -409,10 +412,9 @@ class UpsertDeviceToken(views.APIView):
                 device.save()
                 return Response(status=status.HTTP_200_OK)
             except Device.DoesNotExist:
+                print("device does not exist after")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
+        
         return Response(status=status.HTTP_201_CREATED)
 
 

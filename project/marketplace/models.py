@@ -49,6 +49,8 @@ class Discount(models.Model):
     class Meta:
         ordering = ["-created_at"]  
 
+    def __str__(self):
+        return f"{self.vendor.vendor_name} - {self.amount}% off until {self.deadline.strftime('%Y-%m-%d %H:%M')}"
 
 class Food(models.Model):
     """please consider using decimal price value"""

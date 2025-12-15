@@ -44,7 +44,7 @@ from accounts.models import (
 )
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
-from live.utils import send_notification
+from live.utils import push_notification
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -222,12 +222,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                     type="NEW_ORDER",
                     data=safe_data,
                     receiver=new_order.vendor.user,
-                    description=None,
+                    description=_("you have received a new order from a customer."),
                     target_id=new_order.id,
                 )
                 deactivate()
                 # ------------- sending notification to vendor
-                send_notification.delay(
+                push_notification.delay(
                     new_order.vendor.user.id,
                     notf.title,
                     body=notf.description,
@@ -286,8 +286,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
                 deactivate()
                 # ------------- sending notification to vendor
-                send_notification.delay(
-                    order.vendor.user.id, notf.title, body=notf.description
+                push_notification.delay(
+                    order.vendor.user.id, notf.title, body="", data={"order_id": order.id}
                 )
 
                 r.publish(
@@ -429,7 +429,7 @@ class AcceptRejectOrderView(views.APIView):
                     }
                 ),
             )
-            self.send_notification()
+            self.send_notification(order)
             return Response()
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -463,12 +463,13 @@ class AcceptRejectOrderView(views.APIView):
             title=_("order accepted by buyer!"),
             type="ORDER_ACCEPTED",
             data={},
+            description="",
             receiver=order.vendor.user,
             target_id=order.id,
         )
         deactivate_language()
         # ------------- sending notification to vendor
-        send_notification.delay(order.vendor.user.id, notf.title, body=notf.description,data={"order_id": order.id})
+        push_notification.delay(order.vendor.user.id, notf.title, body=notf.description,data={"order_id": order.id})
 
     def get_vendor_account_number(vendor):
         """returns vendor hesab pay account number"""

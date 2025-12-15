@@ -42,13 +42,13 @@ class QoraaSerializer(ModelSerializer):
 
 
 class QoraaWinnerSerializer(ModelSerializer):
-    picture = SerializerMethodField()
+    image = SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "name", "picture"]
+        fields = ["id", "name", "image"]
 
-    def get_picture(self, obj):
+    def get_image(self, obj):
         try:
             profile = UserProfile.objects.get(user=obj)
             if profile.picture:
@@ -121,7 +121,7 @@ class VendorQoraaFoodSerializer(ModelSerializer):
 
 class VendorQoraaSerializer(ModelSerializer):
     """THis is used by vendor to create/update their qoraas"""
-
+    winner = QoraaWinnerSerializer(read_only=True)
     food_data = SerializerMethodField(method_name="get_food_data")
     joiners_count = SerializerMethodField(method_name="get_joiners_count")
     class Meta:

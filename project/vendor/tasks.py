@@ -11,7 +11,7 @@ from django.db.transaction import atomic
 
 @shared_task
 def deactivate_discounts():
-    discounts = Discount.objects.filter(deadline__lte=tz.now()).prefetch_related(
+    discounts = Discount.objects.filter(deadline__lte=tz.now(),is_active=True).prefetch_related(
         "foods"
     )
     # resetting foods prices to original
@@ -19,7 +19,6 @@ def deactivate_discounts():
         for dis in discounts:
             discount_foods = dis.foods.only("id", "min_price", "prices")
             for food in discount_foods:
-                print("discount cleared by celery...", food.id)
                 food = revert_discount(food, dis.amount)
             Food.objects.bulk_update(discount_foods, ["prices", "min_price"])
         discounts.update(is_active=False)

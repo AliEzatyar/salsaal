@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-03 17:48+0430\n"
+"POT-Creation-Date: 2025-12-15 17:57+0430\n"
 "PO-Revision-Date: 2025-09-19 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Persian\n"
@@ -15,6 +15,10 @@ msgstr ""
 msgid "you have a new order!"
 msgstr "شما یک سفارش جدید دارید!"
 
+#: order/views.py:225
+msgid "you have received a new order from a customer."
+msgstr "شما سفارش جدیدی از مشتری دارید."
+
 #: order/views.py:281
 msgid "order has been cancelled by buyer!"
 msgstr "سفارش توسط مشتری لغو شد."
@@ -23,26 +27,23 @@ msgstr "سفارش توسط مشتری لغو شد."
 msgid "order accepted by buyer!"
 msgstr "سفارش توسط مشتری پذیرفته شد."
 
-#: order/views.py:588 order/views.py:596
+#: order/views.py:589 order/views.py:597
 msgid "Order Delivered"
 msgstr "سفارش تحویل شد"
 
-#: order/views.py:589
+#: order/views.py:590
 msgid "Your order has been delivered successfully."
 msgstr "سفارش شما با موفقیت تحویل شد."
 
-#: order/views.py:597
+#: order/views.py:598
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "سفارش {order_id} با موفقیت تحویل شد."
 
-#: qoraa/models.py:121
-msgid "Qoraa Vendor"
-msgstr "فروشنده لاتری"
-
-#: qoraa/models.py:122
-msgid "Qoraa Vendors"
-msgstr "فروشندگان لاتری"
+#: qoraa/models.py:107
+#, python-brace-format
+msgid "PlatformQoraaVendor: {self.vendor.vendor_name}"
+msgstr ""
 
 #: qoraa/tasks.py:23
 msgid "Qoraa Sponsorship"
@@ -53,37 +54,283 @@ msgstr "حمایت لاتری"
 msgid "You are a sponsor of this Qoraa at {time}."
 msgstr "شما در {time} حامی این لاتری هستید."
 
-#: qoraa/tasks.py:168
+#: qoraa/tasks.py:130 qoraa/tasks.py:215
 msgid "Qoraa Winner"
 msgstr "برنده لاتری"
 
-#: qoraa/tasks.py:170
-#, python-brace-format
-msgid "Congratulations! You have won the Qoraa sponsored by {vendor}"
+#: qoraa/tasks.py:131
+msgid "Zaytoon Food"
+msgstr "زیتون فود"
+
+#: qoraa/tasks.py:133 qoraa/tasks.py:217
+#, fuzzy, python-brace-format
+#| msgid "Congratulations! You have won the Qoraa sponsored by {vendor}"
+msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgstr "تبریک! شما لاتری‌ای را برنده شده‌اید که توسط {vendor} حمایت شده است."
 
-#: vendor/models.py:114
+#: templates/two_factor/_wizard_actions.html:5
+msgid "Cancel"
+msgstr "لغو"
+
+#: templates/two_factor/_wizard_actions.html:10
+#: templates/two_factor/_wizard_actions.html:12
+msgid "Back"
+msgstr "بازگشت"
+
+#: templates/two_factor/_wizard_actions.html:14
+msgid "Next"
+msgstr "بعدی"
+
+#: templates/two_factor/core/backup_tokens.html:5
+msgid "Backup Tokens"
+msgstr "توکن‌های پشتیبان"
+
+#: templates/two_factor/core/backup_tokens.html:6
+msgid ""
+"Backup tokens can be used when your primary and backup phone numbers aren't "
+"available. The backup tokens below can be used for login verification. If "
+"you've used up all your backup tokens, you can generate a new set of backup "
+"tokens. Only the backup tokens shown below will be valid."
+msgstr ""
+"توکن‌های پشتیبان زمانی استفاده می‌شوند که به شماره تلفن اصلی یا پشتیبان خود "
+"دسترسی نداشته باشید. از توکن‌های زیر برای تأیید ورود استفاده می‌شود. اگر تمام "
+"توکن‌های پشتیبان را مصرف کنید، می‌توانید مجموعه جدیدی ایجاد نمایید. فقط "
+"توکن‌های نمایش‌داده‌شده در زیر معتبر هستند."
+
+#: templates/two_factor/core/backup_tokens.html:18
+msgid "Print these tokens and keep them somewhere safe."
+msgstr "این توکن‌ها را چاپ کرده و در جای امنی نگه‌داری کنید."
+
+#: templates/two_factor/core/backup_tokens.html:20
+msgid "You don't have any backup codes yet."
+msgstr "شما هنوز هیچ کد پشتیبانی ندارید."
+
+#: templates/two_factor/core/backup_tokens.html:25
+#: templates/two_factor/core/setup_complete.html:12
+#: templates/two_factor/core/setup_complete.html:19
+msgid "Back to Account Security"
+msgstr "بازگشت به امنیت حساب"
+
+#: templates/two_factor/core/backup_tokens.html:26
+msgid "Generate Tokens"
+msgstr "ایجاد توکن‌ها"
+
+#: templates/two_factor/core/login.html:13
+msgid "Login"
+msgstr "ورود"
+
+#: templates/two_factor/core/login.html:16
+msgid "Enter your credentials."
+msgstr "اطلاعات ورود خود را وارد کنید."
+
+#: templates/two_factor/core/login.html:20
+msgid ""
+"Use this form for entering backup tokens for logging in. These tokens have "
+"been generated for you to print and keep safe. Please enter one of these "
+"backup tokens to login to your account."
+msgstr ""
+"از این فرم برای وارد کردن توکن‌های پشتیبان جهت ورود استفاده کنید. این توکن‌ها "
+"برای چاپ و نگه‌داری ایمن ایجاد شده‌اند. لطفاً یکی از آن‌ها را برای ورود وارد "
+"کنید."
+
+#: templates/two_factor/core/login.html:34
+msgid "Or, alternatively, use one of your other authentication methods:"
+msgstr "یا به‌جای آن از یکی از روش‌های دیگر احراز هویت استفاده کنید:"
+
+#: templates/two_factor/core/login.html:52
+msgid "As a last resort, you can use a backup token:"
+msgstr "در نهایت می‌توانید از یک توکن پشتیبان استفاده کنید:"
+
+#: templates/two_factor/core/login.html:57
+msgid "Use Backup Token"
+msgstr "استفاده از توکن پشتیبان"
+
+#: templates/two_factor/core/otp_required.html:5
+msgid "Permission Denied"
+msgstr "دسترسی غیرمجاز"
+
+#: templates/two_factor/core/otp_required.html:7
+msgid ""
+"The page you requested, enforces users to verify using two-factor "
+"authentication for security reasons. You need to enable these security "
+"features in order to access this page."
+msgstr ""
+"این صفحه به دلایل امنیتی نیازمند تأیید هویت دو مرحله‌ای است. برای دسترسی به "
+"این صفحه باید این قابلیت را فعال کنید."
+
+#: templates/two_factor/core/otp_required.html:11
+msgid ""
+"Two-factor authentication is not enabled for your account. Enable two-factor "
+"authentication for enhanced account security."
+msgstr ""
+"احراز هویت دو مرحله‌ای برای حساب شما فعال نیست. برای افزایش امنیت حساب، آن را "
+"فعال کنید."
+
+#: templates/two_factor/core/otp_required.html:16
+msgid "Go back"
+msgstr "بازگشت"
+
+#: templates/two_factor/core/otp_required.html:18
+#: templates/two_factor/core/setup.html:9
+#: templates/two_factor/core/setup_complete.html:5
+msgid "Enable Two-Factor Authentication"
+msgstr "فعال‌سازی احراز هویت دو مرحله‌ای"
+
+#: templates/two_factor/core/phone_register.html:5
+msgid "Add Backup Phone"
+msgstr "افزودن شماره پشتیبان"
+
+#: templates/two_factor/core/phone_register.html:8
+msgid ""
+"You'll be adding a backup phone number to your account. This number will be "
+"used if your primary method of registration is not available."
+msgstr ""
+"شما یک شماره تلفن پشتیبان به حساب خود اضافه می‌کنید. این شماره زمانی استفاده "
+"می‌شود که روش اصلی در دسترس نباشد."
+
+#: templates/two_factor/core/phone_register.html:12
+msgid ""
+"We've sent a token to your phone number. Please enter the token you've "
+"received."
+msgstr ""
+"یک توکن به شماره تلفن شما ارسال شده است. لطفاً توکن دریافت‌شده را وارد کنید."
+
+#: templates/two_factor/core/setup.html:11
+msgid ""
+"You are about to take your account security to the next level. Follow the "
+"steps in this wizard to enable two-factor authentication."
+msgstr ""
+"شما در حال ارتقای امنیت حساب خود هستید. مراحل این راهنما را دنبال کنید تا "
+"احراز هویت دو مرحله‌ای فعال شود."
+
+#: templates/two_factor/core/setup.html:15
+msgid "Please select which authentication method you would like to use."
+msgstr "لطفاً روش احراز هویت مورد نظر خود را انتخاب کنید."
+
+#: templates/two_factor/core/setup.html:18
+msgid ""
+"To start using a token generator, please use your smartphone to scan the QR "
+"code below. For example, use Google Authenticator."
+msgstr ""
+"برای شروع استفاده از تولیدکننده توکن، با تلفن هوشمند خود کد QR زیر را اسکن "
+"کنید. برای مثال از Google Authenticator استفاده نمایید."
+
+#: templates/two_factor/core/setup.html:22
+msgid ""
+"Alternatively you can use the following secret to setup TOTP in your "
+"authenticator or password manager manually."
+msgstr ""
+"همچنین می‌توانید از کد مخفی زیر برای تنظیم دستی TOTP در برنامه احراز هویت یا "
+"مدیر رمز عبور خود استفاده کنید."
+
+#: templates/two_factor/core/setup.html:24
+msgid "TOTP Secret:"
+msgstr "کد مخفی TOTP:"
+
+#: templates/two_factor/core/setup.html:25
+msgid "Then, enter the token generated by the app."
+msgstr "سپس توکن تولیدشده توسط برنامه را وارد کنید."
+
+#: templates/two_factor/core/setup.html:28
+msgid ""
+"Please enter the phone number you wish to receive the text messages on. This "
+"number will be validated in the next step."
+msgstr ""
+"لطفاً شماره تلفنی را وارد کنید که می‌خواهید پیامک‌ها را دریافت نمایید. این "
+"شماره در مرحله بعدی تأیید خواهد شد."
+
+#: templates/two_factor/core/setup.html:32
+msgid ""
+"Please enter the phone number you wish to be called on. This number will be "
+"validated in the next step."
+msgstr ""
+"لطفاً شماره تلفنی را وارد کنید که می‌خواهید با آن تماس گرفته شود. این شماره در "
+"مرحله بعدی تأیید خواهد شد."
+
+#: templates/two_factor/core/setup.html:37
+msgid "We are calling your phone right now, please enter the digits you hear."
+msgstr "در حال تماس با شما هستیم. لطفاً ارقامی را که می‌شنوید وارد کنید."
+
+#: templates/two_factor/core/setup.html:40
+msgid "We sent you a text message, please enter the tokens we sent."
+msgstr "یک پیامک برای شما ارسال شده است. لطفاً توکن‌های ارسال‌شده را وارد کنید."
+
+#: templates/two_factor/core/setup.html:44
+msgid ""
+"We've encountered an issue with the selected authentication method. Please "
+"go back and verify that you entered your information correctly, try again, "
+"or use a different authentication method instead. If the issue persists, "
+"contact the site administrator."
+msgstr ""
+"در روش احراز هویت انتخاب‌شده مشکلی رخ داده است. لطفاً بازگردید و اطلاعات وارد "
+"شده را بررسی کنید، دوباره تلاش نمایید یا از روش دیگری استفاده کنید. در صورت "
+"ادامه مشکل، با مدیر سایت تماس بگیرید."
+
+#: templates/two_factor/core/setup.html:51
+msgid ""
+"To identify and verify your YubiKey, please insert a token in the field "
+"below. Your YubiKey will be linked to your account."
+msgstr ""
+"برای شناسایی و تأیید YubiKey خود، لطفاً یک توکن در کادر زیر وارد کنید. "
+"YubiKey شما به حساب کاربری‌تان متصل خواهد شد."
+
+#: templates/two_factor/core/setup_complete.html:7
+msgid "Congratulations, you've successfully enabled two-factor authentication."
+msgstr "تبریک! احراز هویت دو مرحله‌ای با موفقیت فعال شد."
+
+#: templates/two_factor/core/setup_complete.html:14
+msgid ""
+"However, it might happen that you don't have access to your primary token "
+"device. To enable account recovery, add a phone number."
+msgstr ""
+"ممکن است زمانی به دستگاه توکن اصلی خود دسترسی نداشته باشید. برای فعال‌سازی "
+"بازیابی حساب، یک شماره تلفن اضافه کنید."
+
+#: templates/two_factor/core/setup_complete.html:21
+msgid "Add Phone Number"
+msgstr "افزودن شماره تلفن"
+
+#: vendor/models.py:112
 msgid "Congratulations! Your vendor account has been approved."
 msgstr "تبریک! حساب فروشندگی شما تایید شد."
 
-#: vendor/models.py:115
+#: vendor/models.py:113
 #, python-brace-format
 msgid ""
 "Congratulations! Your vendor account '{self.vendor_name}' has been approved."
 msgstr "تبریک! حساب فروشندگی شما با نام '{self.vendor_name}' تایید شد."
 
-#: vendor/views.py:1061
-msgid "Order Rejected"
-msgstr "سفارش رد شد"
-
-#: vendor/views.py:1063
+#: vendor/views.py:1148
 msgid "sorry! your order has been rejected by restuarant!"
-msgstr "متأسفیم! سفارش شما توسط رستورانت رد شد."
+msgstr "متأسفیم! فروشنده سفارش شما را رد کرد"
 
-#: vendor/views.py:1311
+#: vendor/views.py:1149
+#, fuzzy
+#| msgid "Order Delivered"
+msgid "Order Rejected"
+msgstr "سفارش تحویل شد"
+
+#: vendor/views.py:1151
+msgid "your order has been accepted by restuarant!"
+msgstr "فروشنده سفارش شما را پذیرفت"
+
+#: vendor/views.py:1152
+#, fuzzy
+#| msgid "order accepted by buyer!"
+msgid "Order Accepted"
+msgstr "سفارش توسط مشتری پذیرفته شد."
+
+#: vendor/views.py:1271
 msgid "Order set as carrying"
 msgstr "سفارش در حالت انتقال قرار گرفت"
 
-#: vendor/views.py:1316
+#: vendor/views.py:1276
 msgid "Your order is being carried, click to live track."
 msgstr "سفارش شما در حال انتقال است. برای پیگیری لحظه‌ای کلیک کنید."
+
+#: vendor/views.py:1301
+msgid "New Order Assigned"
+msgstr "شما سفارشی برای انتقال دارید"
+
+#~ msgid "Qoraa Vendor"
+#~ msgstr "فروشنده لاتری"

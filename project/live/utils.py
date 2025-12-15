@@ -16,7 +16,7 @@ def is_user_online(user_id):
 
 
 @shared_task(bind=True, max_retries=5, default_retry_delay=10)
-def send_notification(self, user_id: int, title: str, body: str, data=None):
+def push_notification(self, user_id: int, title: str, body: str, data=None):
     """
     Send a notification to a user: via WebSocket if online, otherwise via FCM to their registered devices.
     Args:
