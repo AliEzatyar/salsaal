@@ -1,5 +1,6 @@
 from decimal import Decimal
 from uuid import uuid4
+from venv import logger
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
@@ -27,7 +28,7 @@ class Category(models.Model):
         try:
             return self.icon.url
         except ValueError:
-            print("error: category has no icon")
+            logger.error("error: category has no icon : {}".format(self.id))
             return None
 
 
@@ -131,7 +132,7 @@ class Food(models.Model):
         try:
             return self.image.url
         except ValueError:
-            print("error: food has no image")
+            logger.error("error: food has no image : {}".format(self.id))
             return None
 
     def __str__(self):

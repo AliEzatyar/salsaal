@@ -1,3 +1,4 @@
+from asyncio.log import logger
 from locale import strxfrm
 from marketplace.models import Category, Discount, Food, Rating
 from accounts.models import CUSTOMER
@@ -141,7 +142,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 ).count()
 
         except Exception as e:
-            print("error", e)
+            logger.exception("error in django marketplace home ")
             return Response(
                 {
                     "cart_count": 0,
@@ -241,9 +242,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         distance_reach_time(top_vendors, lat, lon, "vendor")
         top_vendors_ser = VendorSerializerMany(top_vendors, many=True)
         top_vendors = top_vendors_ser.data
-        print(time.time() - now, "seconds")
         # final response
-        print(user_cart_items_count,"-----")
         return Response(
             {
                 "cart_count": user_cart_items_count,
@@ -284,7 +283,6 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 is_active=True,
                 vendor__city=city,
             ).values_list("id", flat=True)
-            # print(all_discounts_in_city, "this is discounts ids")
             cache.set(key, all_discounts_in_city, 10 * 60)
             # updating discounted foods
             discounted_foods_ids = Food.objects.filter(
@@ -514,7 +512,6 @@ class RatingViewSet(viewsets.ModelViewSet):
         object_id = self.request.query_params.get("obj_id", None)
         qs = self.get_queryset()
         vendor_name = None
-        # print(object_id)
         if object_id:
 
             vendor = Vendor.objects.filter(id=object_id).only("vendor_name").first()
@@ -531,7 +528,6 @@ class RatingViewSet(viewsets.ModelViewSet):
             rating["rating"]: (rating["num_rating"] / total_ratings) * 100
             for rating in ratings
         }
-        # print(total_ratings, total_reviews, star_percentages)
         return Response(
             {
                 "vendor_name": vendor_name,
@@ -570,7 +566,7 @@ class RatingViewSet(viewsets.ModelViewSet):
                 except Food.DoesNotExist:
                     pass
                 except Exception as e:
-                    print("error in like food:",e)
+                    logger.exception(f"error in like food {e}")
         # -------------  handling rating update if updated
         if previous:
             # prviously exists, performing update
@@ -703,7 +699,7 @@ class PublicVendorDetail(views.APIView):
             except Vendor.DoesNotExist:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             except Exception as e:
-                print("error occured in vendor detail", e, e.args)
+                logger.exception(f"error occured in vendor detail {e}")
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
         else:
             return Response(
@@ -749,7 +745,7 @@ class ListVendorFoods(views.APIView):
             data = ser.data
             return Response(data)
         except Exception as e:
-            print("error occured in vendor foods list", e)
+            logger.exception(f"error occured in vendor foods list {e}")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def get_cache_key(self, vendor_id):
@@ -803,8 +799,6 @@ class FoodsByCategory(generics.ListAPIView):
                     "user_profile",
                 )
             )
-            # explain by postgres
-            # print(local_vendors_matching_category.explain(verbose=True, DiscountedFoodSerializerManyanalyze=True),"==============")
             # adding reach time and distance to each vendor
             lat, lon = geohash.decode(user_location)
             for vendor in local_vendors_matching_category:
@@ -821,5 +815,5 @@ class FoodsByCategory(generics.ListAPIView):
                 vendor.reach_time = round(distance_to_travel_time(distance), 0)
             return local_vendors_matching_category
         except Exception as e:
-            print("error in foods by category",e)
+            logger.exception(f"error in foods by category {e}")
             return Vendor.objects.none()

@@ -9,5 +9,4 @@ app_name = "live"
 
 urlpatterns = [
     path("read-notifications/", views.NotificationReadApiView.as_view()),
-    path("generate-call-token/", views.GenerateCallToken.as_view())
 ]

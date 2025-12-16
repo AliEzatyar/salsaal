@@ -11,6 +11,8 @@ from django.contrib.gis.geos import Point
 from h3 import latlng_to_cell as h3_latlng_to_cell
 from marketplace.utils import DEFAULT_H3_RESOLUTION
 from django.utils.translation import activate, deactivate, gettext as _
+from logging import getLogger
+logger = getLogger(__name__)
 
 
 # Create your models here.
@@ -129,7 +131,7 @@ class Vendor(models.Model):
         try:
             return self.image.url
         except ValueError:
-            print("vendor has no image")
+            logger.error(f"Error accessing image URL for vendor :{self.vendor_name} {self.id}")
             return None
 
     @property

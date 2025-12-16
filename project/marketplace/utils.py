@@ -200,7 +200,6 @@ def get_user_info(request):
     request_data = request.query_params
     city = request_data.get("city")
     location = request_data.get("location")
-    print(request_data)
 
     # fallback to user profile if missing
     if not city or not location:
@@ -227,6 +226,5 @@ def get_user_info(request):
                 city = request.user.profile.city
             else:
                 raise ValidationError({"detail": "Invalid location"})
-    print(city, lat, lon,"return of taabi")
     city = str(city).lower()
     return city, lat, lon

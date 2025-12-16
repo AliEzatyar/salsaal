@@ -38,8 +38,11 @@ from marketplace.utils import r
 from django.utils import timezone
 from datetime import timedelta
 from django.db.transaction import atomic
-
+from logging import getLogger
 """Account API Views"""
+
+
+logger = getLogger(__name__)
 
 
 class UserViewset(viewsets.ModelViewSet):
@@ -126,7 +129,7 @@ class LoginApiView(views.APIView):
                 {"type": "new_user", "message": "otp_sent"}, status=status.HTTP_200_OK
             )
         except Exception as e:
-            print("exception in login", e)
+            logger.error(f"Exception in login: {e}")    
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def post(self, *args, **kwargs):
@@ -197,7 +200,7 @@ class LoginApiView(views.APIView):
                     {"detail": "no_user_found"}, status=status.HTTP_404_NOT_FOUND
                 )
             except Exception as e:
-                print("exception in login", e, e.args)
+                logger.error(f"Exception in login: {e}")    
                 return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
         elif typ == "new_user":
@@ -224,7 +227,7 @@ class LoginApiView(views.APIView):
                     try:
                         user_ser.is_valid(raise_exception=True)
                     except Exception as e:
-                        print("validation error in new user data", e)
+                        logger.error(f"Validation error in new user data: {e}")
                         return Response(
                             {"detail": "invalid_user_data"},
                             status=status.HTTP_400_BAD_REQUEST,
@@ -372,7 +375,6 @@ class UpsertDeviceToken(views.APIView):
             )
         # Normalize token
         new_token = str(new_token).strip()
-        print("new token",new_token)
         # Fast-path: if user already has a device with same token, nothing to do
         existing_for_user = request.user.devices.filter(token=new_token).first()
         if existing_for_user:
@@ -395,16 +397,13 @@ class UpsertDeviceToken(views.APIView):
                 return Response(status=status.HTTP_200_OK)
             with atomic():
                 # justing keeping last 3 devices for vendor users
-                print("counting user devices")
                 devices_count = Device.objects.filter(user=request.user).count()
                 if devices_count > 2:
-                    print("devices > 2")
-                    amount_to_remove = devices_count - 2
                     Device.objects.filter(user=request.user).first().delete()
                     
                 Device.objects.create(user=request.user, token=new_token)
         except Exception as e:
-            print("error in upsert device token", e)
+            logger.error(f"Error in upsert device token: {e}")
             # token creation raced with another request; try to fetch and reassign
             try:
                 device = Device.objects.get(token=new_token)
@@ -412,7 +411,7 @@ class UpsertDeviceToken(views.APIView):
                 device.save()
                 return Response(status=status.HTTP_200_OK)
             except Device.DoesNotExist:
-                print("device does not exist after")
+                logger.error("Device does not exist after exception")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
         
         return Response(status=status.HTTP_201_CREATED)
@@ -427,7 +426,6 @@ class ResendOtpApiView(views.APIView):
         phone_number = data.get("phone_number", None)
         typ = data.get("type", None)
         new_otp = generate_otp()
-        print(data)
         if not phone_number or not typ:
             return Response(
                 {"detail": "provide_phone_number_and_type"}, status=status.HTTP_400_BAD_REQUEST

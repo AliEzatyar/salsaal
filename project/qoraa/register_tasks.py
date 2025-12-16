@@ -28,9 +28,6 @@ def register_periodic_tasks():
         task.crontab = create_morning_schedule
         task.enabled = True
         task.save()
-        print("morning qoraa schedulaed")
-    else:
-        print("morning already scheduled")
     # finalize morning at 12:00
     finalize_morning_schedule, _ = CrontabSchedule.objects.get_or_create(
         minute="0", hour="12", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
@@ -44,9 +41,6 @@ def register_periodic_tasks():
         task.crontab = finalize_morning_schedule
         task.enabled = True
         task.save()
-        print("finalize morning qoraa scheduled")
-    else:
-        print("finalizing morning qoraa already schedueled")
     # create evening at 18:00
     create_evening_schedule, _ = CrontabSchedule.objects.get_or_create(
         minute="0", hour="18", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
@@ -60,9 +54,6 @@ def register_periodic_tasks():
         task.crontab = create_evening_schedule
         task.enabled = True
         task.save()
-        print("evening qoraa schedulaed")
-    else:
-        print("evening already scheduled")
 
     # finalize evening at 19:00
     finalize_evening_schedule, _ = CrontabSchedule.objects.get_or_create(
@@ -77,8 +68,4 @@ def register_periodic_tasks():
         task.crontab = finalize_evening_schedule
         task.enabled = True
         task.save()
-        print("finalize morning qoraa scheduled")
-    else:
-        print("finalizing morning qoraa already schedueled")
-    print("tasks scheduled")
     return True

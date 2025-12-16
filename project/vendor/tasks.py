@@ -7,7 +7,9 @@ from order.models import ORDER_STATUS_CHOICES, Order
 from vendor.models import Vendor
 from vendor.utils import get_vendor_carriers_key, revert_discount
 from django.db.transaction import atomic
+from logging import getLogger
 
+logger = getLogger(__name__)
 
 @shared_task
 def deactivate_discounts():
@@ -30,14 +32,14 @@ def reset_vendors_carriers_in_redis():
     """
     this task resets f_c_c, b_c_c and total_c_c in redis for all vendors
     """
-    print("revert carriers status for all vendors")
+    logger.info("reverting carriers status for all vendors")
 
     vendors = Vendor.objects.all().prefetch_related("carriers")
     for vendor in vendors:
         if Order.objects.filter(
             vendor=vendor, status=ORDER_STATUS_CHOICES[3][0]
         ).exists():
-            print("order in carrying, no reset for this vendor ", vendor.id)
+            logger.info(f"order in carrying, no reset for this vendor {vendor.id}")
             continue
         vendor_carriers_key = get_vendor_carriers_key(vendor.id)
         # setting all carriers of this vendor free

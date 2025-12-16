@@ -1,6 +1,9 @@
+from asyncio.log import logger
 from json import dumps
 from marketplace.utils import r
+from logging import getLogger   
 
+logger = getLogger(__name__)
 
 def to_af_weekday(index):
     return (9 + index) % 7 + 1
@@ -41,8 +44,7 @@ def get_vendor_key(id):
 def get_vendor_status(id):
     """this saves availability of vendor in redis for 1 hours"""
     key = get_vendor_key(id)
-    status_raw = r.get(key)
-    print(status_raw,">>>>>>>")
+    status_raw = r.get(key) 
     if not status_raw:
         r.set(key, dumps(True), 1 * 60)
         return False

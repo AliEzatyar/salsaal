@@ -7,8 +7,9 @@ from rest_framework_simplejwt.serializers import (
 )
 from rest_framework import serializers
 from rest_framework_simplejwt.state import token_backend
-from rest_framework_simplejwt.settings import api_settings
 from django.conf import settings
+from logging import getLogger
+logger = getLogger(__name__)
 
 class UserCreationSerializer(ModelSerializer):
     class Meta:
@@ -76,7 +77,7 @@ class UserProfileCreationSerializer(ModelSerializer):
             longitude = validated_data.get("longitude")
             
             if not all(isinstance(coord, (int, float)) for coord in [latitude, longitude]):
-                print("lat lon incorrect", latitude, longitude)
+                logger.info("lat lon incorrect", latitude, longitude)
                 raise ValidationError("provide_correct_lat_lon")
             
             return super().create(validated_data)

@@ -10,6 +10,9 @@ from qoraa.tasks import end_vendor_qoraa, start_vendor_qoraa
 from vendor.models import Vendor
 from qoraa.models import MIN_QORAA_PRICE_VALUE, Qoraa
 from rest_framework.serializers import ValidationError
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class QoraaSerializer(ModelSerializer):
@@ -152,29 +155,21 @@ class VendorQoraaSerializer(ModelSerializer):
         price_value = validated_data.get("price_value", None)
         joiners_limit = validated_data.get("joiners_limit", 0)
         try:
-            print("Creating Qoraa with data:", validated_data)
             food = validated_data.get("food", None)
             if not price_value:
-                print("not food price provided")
                 raise ValidationError("provide_price_value")
             if not price_value in food.prices:
-                print("food price not in prices")
                 raise ValidationError("price_value_not_in_prices")
             if price_value < MIN_QORAA_PRICE_VALUE:
-                print("food price is low")
                 raise ValidationError("price_value_is_low")
             if joiners_limit < 100:
-                print("joiners limit is less than 100")
                 raise ValidationError("min_joinsers_limit_100")
             if validated_data["start"] >= validated_data["end"]:
-                print("start time must be before end time")
                 raise ValidationError("start_must_be_before_end")
             if validated_data["start"] < timezone.now() - timezone.timedelta(minutes=1):
                 validated_data["start"] = timezone.now() - timezone.timedelta(minutes=1)
-                print("start time must be in future")
                 # raise ValidationError("start_must_be_in_future")
             if validated_data["end"] <= timezone.now():
-                print("end time must be in future")
                 raise ValidationError("end_must_be_in_future")
 
             validated_data["vendor"] = Vendor.objects.get(
@@ -187,7 +182,7 @@ class VendorQoraaSerializer(ModelSerializer):
             end_vendor_qoraa.apply_async((qoraa.id,), eta=qoraa.end)
             return qoraa
         except Exception as e:
-            print(e,"error in creating qoraa for vendor")
+            logger.exception(f"Error in creating qoraa for vendor: {e}")
             return
 
 

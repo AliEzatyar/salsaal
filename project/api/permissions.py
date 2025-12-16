@@ -25,7 +25,6 @@ class IsOrderPreparingState(BasePermission):
 
     def has_object_permission(self, request, view, order_obj):
         if order_obj.status != ORDER_STATUS_CHOICES[2][0]:
-            print("order not in preparing state")
             return False
         return True
 
@@ -35,7 +34,6 @@ class IsOrderCarryingState(BasePermission):
 
     def has_object_permission(self, request, view, order_obj):
         if order_obj.status != ORDER_STATUS_CHOICES[3][0]:
-            print("order not in carrying mode")
             return False
         return True
 
@@ -68,7 +66,6 @@ class IsVendorOfObject(BasePermission):
 class IsCustomer(BasePermission):
     def has_permission(self, request, view):
         if request.user.role != CUSTOMER:
-            print("user_not_customer")
             raise PermissionDenied(detail="user_not_customer")
         return True
 

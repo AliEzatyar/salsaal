@@ -33,7 +33,6 @@ from live.models import Notification
 from django.db.transaction import atomic
 from django.core.serializers.json import DjangoJSONEncoder
 import json
-from live.serializers import NotificationSerializer
 from django.utils.translation import activate, deactivate, gettext as _
 from marketplace.utils import r
 from rest_framework.permissions import IsAuthenticated
@@ -45,6 +44,9 @@ from accounts.models import (
 from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
 from live.utils import push_notification
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -253,7 +255,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
             return response
         except Exception as e:
-            print("error in creating order", e)
+            logger.exception(f"error in creating order: {e}")
             Order.objects.filter(
                 user=request.user,
                 status=ORDER_STATUS_CHOICES[1][1],
@@ -388,6 +390,7 @@ class AcceptRejectOrderView(views.APIView):
                         order.transaction_id = transaction_id
                         order.is_epay = True
                         order.paid = True
+                        logger.info(f"order {order.id} paid online with transaction id {transaction_id}")
                         vendor_hesab_pay_account_number = self.get_vendor_account_number(order.vendor)
                         vendors = [
                             {
@@ -395,6 +398,7 @@ class AcceptRejectOrderView(views.APIView):
                                 "amount": int(order.total_price),  # delivery + items price
                             }
                         ]
+                        logger.info(f"initiating multi vendor payment for order {order.id}")
                         # any error in reward is not important, multi-vendor payment necessary
                         try:
                             self.handle_reward_increment(order, existing_reward)
@@ -403,6 +407,7 @@ class AcceptRejectOrderView(views.APIView):
                         try:
                             create_multi_vendor_payment(vendors)
                         except Exception as e:
+                            logger.exception(f"multi vendor payment failed for order {order.id}: {e}")
                             FailedMultiVendorPayment.objects.create(
                                 order=order,
                                 error_message=str(e)
@@ -434,7 +439,7 @@ class AcceptRejectOrderView(views.APIView):
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print("error in ar-order:", e.args, e)
+            logger.exception(f"error in ar-order: {e}")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def handle_reward_increment(self, order, existing_reward):
@@ -475,6 +480,7 @@ class AcceptRejectOrderView(views.APIView):
         """returns vendor hesab pay account number"""
         return "0" + str(vendor.user.phone_number).split("+93")[1]
 
+
 class OnlinePaymentView(views.APIView):
     """
     this is the first view the customer hits to start online payment
@@ -492,6 +498,7 @@ class OnlinePaymentView(views.APIView):
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             order = Order.objects.filter(id=order_id, is_epay=False).first()
             if order:
+                logger.info(f"starting online payment session for user {request.user.id} order {order.id}")  
                 items = order.items.all()
                 items_ser = OrderItemSerializerLessDetail(items, many=True)
                 data = items_ser.data.copy()
@@ -507,7 +514,7 @@ class OnlinePaymentView(views.APIView):
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print("error in online payment view", e)
+            logger.exception(f"error in online payment view: {e}")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
@@ -533,7 +540,6 @@ class SetOrderStateDelivered(views.APIView):
         data = self.request.data
         order_id = data.get("id")
         input_otp = data.get("pass")
-        print(data)
         try:
             order_id = int(decrypt_32(order_id))
             otp = int(decrypt_32(input_otp))
@@ -626,7 +632,7 @@ class SetOrderStateDelivered(views.APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         except Exception as e:
-            print("error in set order as delivered:", e, e.args)
+            logger.exception(f"error in set order as delivered: {e}")
             return Response(
                 {"detail": "uknown error occured"},
                 status=status.HTTP_501_NOT_IMPLEMENTED,
@@ -672,7 +678,7 @@ class ReOrder(views.APIView):
                     )
                 return Response()
             except Exception as e:
-                print("error in re-order", e)
+                logger.exception(f"error in re-order: {e}")
                 pass
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(
@@ -688,11 +694,8 @@ class RedirectPaymentSuccess(views.APIView):
 
     def get(self, *args, **kwargs):
         try:
-            print(self.request.query_params, "this was request whole data")
             params_data = self.request.query_params.get("data", None)
-            print(params_data, "this was params")
             data_dict = json.loads(params_data)
-            print(data_dict, "this was data dict")
             if data_dict.get("success") != True:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             transaction_id = data_dict.get("transaction_id", None)
@@ -703,7 +706,7 @@ class RedirectPaymentSuccess(views.APIView):
             response["Location"] = app_link
             return response
         except Exception as e:
-            print("error in redirect payment success view", e)
+            logger.exception(f"error in redirect payment success view: {e}")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -716,7 +719,6 @@ class RedirectPaymentFailure(views.APIView):
     def get(self, *args, **kwargs):
         try:
             params_data = self.request.query_params
-            print(params_data, "this was gateway response params")
             data_dict = json.loads(params_data)
             message = data_dict.get("message", None)
             if not message:

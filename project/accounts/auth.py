@@ -24,5 +24,4 @@ class CustomJWTAuthentication(JWTAuthentication):
                 raise AuthenticationFailed()
             if user.is_active is False:
                 raise AuthenticationFailed()
-        print("user authenticated successfully")
         return user

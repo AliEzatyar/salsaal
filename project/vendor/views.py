@@ -64,13 +64,14 @@ from django.utils.translation import activate as activate_language
 from live.utils import push_notification
 from django.db.models.functions import ExtractDay
 from rest_framework.decorators import action
-
+from logging import getLogger
 
 # Create your views here.
 
 
 """Vendor API Views"""
 
+logger = getLogger(__name__)
 
 class VendorAPIView(views.APIView):
     """
@@ -117,13 +118,13 @@ class ConvertToVendorAPIView(views.APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         data = self.request.data
-        print(data,"ssss")
         ser = VendorSerializerDetailed(data=data, context={"request": self.request})
         try:
             ser.is_valid(raise_exception=True)
         except Exception as e:
-            print("error in validation", e)
-
+            logger.exception("Validation error in ConvertToVendorAPIView")  
+            return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+        
         with atomic():
             vendor = ser.save()
             vendor.is_approved = True # temporary needed for first vendors
@@ -272,7 +273,6 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 id__in=ids_foods_to_remove_discount
             ).only("id", "min_price", "prices", "discount")
             for food in foods_to_remove_discount:
-                print("discount removed...", food.id)
                 # reverting food prices to original ones
                 revert_discount(food, pre_discount_amount)
                 # applying discount to all prices of food
@@ -288,7 +288,6 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 .only("id", "min_price", "prices", "discount")
             )
             for food in foods_to_add_discount:
-                print("discount added...", food.id)
                 # applying discount to all prices of food
                 if food.discount != None:
                     revert_discount(food, food.discount.amount)
@@ -327,12 +326,10 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                     Food.objects.bulk_update(foods, ["min_price", "prices"])
                     discount.is_active = enable
                     discount.save()
-                else:
-                    print("no changes in discount...")
             return Response()
 
         except Exception as e:
-            print("error in deactivate of discount", e)
+            logger.exception("error in deactivate of discount")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=["post"], url_path="remove-food")
@@ -352,7 +349,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
             return Response()
 
         except Exception as e:
-            print("error in remove food from discount", e)
+            logger.exception(f"error in remove food from discount {food_id} {e}")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=["post"], url_path="add-food")
@@ -374,7 +371,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
             return Response()
 
         except Exception as e:
-            print("error in add food to discount", e)
+            logger.exception(f"error in add food to discount {food_id} {e}")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -397,14 +394,12 @@ class AddCarrierAPIView(views.APIView):
         # ---- authorization and validation
         data = self.request.data
         phone_number = data.get("phone_number", None)
-        print(data, "----")
         if not phone_number:
             return Response(status=status.HTTP_404_NOT_FOUND)
         phone_number = str(phone_number).strip()
         # phone_number = "+"+phone_number
         account = User.objects.filter(phone_number=phone_number).first()
         if not account or not account.is_active:
-            print("not found")
             raise serializers.ValidationError(
                 {"detail": "no_account_found_by_that_phone"}
             )
@@ -484,7 +479,7 @@ class AddCarrierAPIView(views.APIView):
                 {"detail": "no_matching_otp"}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            print("error", e)
+            logger.exception(f"error in add carrier {e}")
             return Response(
                 {"detail": "UKNOWN_ERROR"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -527,6 +522,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
                 }
             )
         except Exception as e:
+            logger.exception(f"error in list carriers, recalculating counts {e}")
             vendor = self.request.user.vendor
             vendor_carriers_key = get_vendor_carriers_key(vendor.id)
             total_c_c = vendor.carriers.count()
@@ -538,8 +534,6 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
             r.hset(vendor_carriers_key, "total_c_c", total_c_c)
             queryset = self.filter_queryset(self.get_queryset())
             ser = self.get_serializer(queryset, many=True)
-            print("error in list carriers", e)
-            print("reseting carries status in redis")
             return Response(
                 {
                     "total_carriers": total_c_c,
@@ -827,7 +821,7 @@ class VendorSalesView(views.APIView):
         ]
         # --------------------- platform share
         platform_share = (this_month_total_sales or 0) * PLATFORM_SHARE
-        print("elapsed time:", time.time() - now)
+        
         return Response(
             {
                 "monthly_sale_amount": int(this_month_total_sales or 0),
@@ -922,7 +916,7 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         today_orders = queryset.filter(created_at__date=tz.now().date())
         vendor = self.request.user.vendor
         is_vendor_available = get_vendor_status(vendor.id)
-        print(is_vendor_available)
+        logger.info(f"vendor is available status: {is_vendor_available}")
         if not is_vendor_available:
             if not vendor.is_available:
                 vendor.is_available = True
@@ -1137,7 +1131,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         }
                     )
         except Exception as e:
-            print("error in order time calculation view\n", e, "\n", e.args)
+            logger.exception(f"error in calculating order time and delivery cost {e}")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def send_notification(self, order,type_):
@@ -1193,13 +1187,12 @@ class SetOrderStateCarrying(views.APIView):
         carrier_id = data.get("carrier_id")
         try:
             order = Order.objects.get(id=order_id)
-            print(order, order.otp, "---order---", order.id)
             carrier = Carrier.objects.get(pk=carrier_id)
 
             if (
                 carrier.vendor != self.request.user.vendor
             ):  # vendor should own this carrier
-                print("does not sdfjsdlfj")
+                logger.info("Carrier does not belong to the vendor")
                 return Response(status=status.HTTP_403_FORBIDDEN)
             if carrier.status == CARRIER_STATUS_CHOICES[1][0]:  # carrerir busy
                 return Response(
@@ -1302,7 +1295,6 @@ class SetOrderStateCarrying(views.APIView):
                 body=None,
                 data={"order_id": order.id},
             )
-            print("notification sent to customer", f"pub:user:{order.user.id}")
             # --------------------- sending notification to carrier's room
 
             r.publish(
@@ -1326,10 +1318,10 @@ class SetOrderStateCarrying(views.APIView):
                 {"detail": "no such order"}, status=status.HTTP_403_FORBIDDEN
             )
         except PermissionDenied as pd:
-            print(pd, pd.args)
+            logger.warning(f"Permission denied: {pd}, {pd.args}")
             return Response({"detail": "not_allowed"}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
-            print("error in set order as carrying", e)
+            logger.exception(f"error in set order as carrying: {e}")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1364,7 +1356,7 @@ class AddHesabPayAccount(views.APIView):
                     status=status.HTTP_200_OK,
                 )
         except Exception as e:
-            print("error in getting hesab pay account", e)
+            logger.exception(f"error in reading hesab pay account {e}")
 
     def post(self,request,*args, **kwargs):
         """adds hesab pay account to vendor"""
@@ -1386,7 +1378,7 @@ class AddHesabPayAccount(views.APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            print("error in adding hesab pay account", e)
+            logger.exception(f"error in adding hesab pay account {e}")
             return Response(
                 {"detail": "error in adding hesab pay account"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1404,7 +1396,7 @@ class AddHesabPayAccount(views.APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
-            print("error in deleting hesab pay account", e)
+            logger.exception("error in deleting hesab pay account {e}")
             return Response(
                 {"detail": "error in deleting hesab pay account"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

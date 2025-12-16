@@ -99,26 +99,3 @@ class DeliveredOrdersApiView(views.APIView):
         ser = CarrierOrderSerializerMany(page_orders, many=True)
         return pg.get_paginated_response(ser.data)
 
-
-def run_script(request, which=None):
-    """
-    Render a test client page based on the `which` parameter.
-
-    Args:
-        request: The HTTP request object.
-        which: Specifies the type of client to render (vendor, customer, or carrier).
-
-    Returns:
-        - Rendered HTML page for the specified client type.
-        - 400 Bad Request if the `which` parameter is invalid.
-    """
-    allowed_values = {"vendor", "customer", "carrier"}
-    if which not in allowed_values:
-        return Response({"detail": "Invalid parameter."}, status=status.HTTP_400_BAD_REQUEST)
-
-    if which == "vendor":
-        return render(request, "test_client/vendor.html")
-    elif which == "customer":
-        return render(request, "test_client/customer.html")
-
-    return render(request, "test_client/carrier.html")
