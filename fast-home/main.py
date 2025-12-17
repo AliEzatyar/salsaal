@@ -55,14 +55,12 @@ async def home(
         if is_request_allowed is False:
             return {"detail": "Too many requests, please try later."}
         # ----------- user cart and notf count if auth provided
-        user_notf_count = (
-            db.scalar(
-                select(Notification.id).where(
-                    Notification.receiver_id == user.id, Notification.is_read == False
-                )
+        user_notf_count = db.scalar(
+            select(func.count(Notification.id)).where(
+                Notification.receiver_id == user.id,
+                Notification.is_read.is_(False)
             )
-            or 0
-        )
+        ) or 0
         user_cart_count = get_total_cart_items(user.id)
     # --------------- decoding location and getting city
     try:

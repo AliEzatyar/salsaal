@@ -278,7 +278,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             with atomic():
                 for order in orders:
                     order.cancel_order()
-                activate(request.user.profile.pf_lang)
+                activate(order.vendor.user_profile.pf_lang)
                 notf = Notification.objects.create(
                     title=_("order has been cancelled by buyer!"),
                     type="ORDER_CANCELLED",
@@ -463,7 +463,7 @@ class AcceptRejectOrderView(views.APIView):
 
     def send_notification(self, order):
         """creates notification for vendor when order is accepted by buyer"""
-        activate_language(self.request.user.profile.pf_lang)
+        activate_language(order.vendor.user_profile.pf_lang)
         notf = Notification.objects.create(
             title=_("order accepted by buyer!"),
             type="ORDER_ACCEPTED",

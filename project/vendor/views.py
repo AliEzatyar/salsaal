@@ -41,7 +41,7 @@ from marketplace.backends import FoodFilterSet, VOrderFilterSet
 from marketplace.serializers import VFoodSerializerDetail
 from rest_framework import permissions, viewsets, views, status, filters
 from rest_framework.response import Response
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch, Count
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Prefetch
 from django.utils import timezone as tz
 from django.db.transaction import atomic
 from django.contrib.gis.geos import Point
@@ -52,7 +52,6 @@ from rest_framework.exceptions import NotAcceptable
 from rest_framework import parsers, serializers
 from .utils import (
     get_vendor_carriers_key,
-    get_vendor_status,
     r,
     revert_discount,
     apply_discount,
@@ -163,8 +162,7 @@ class VendorFoodsManageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """any queryset should be of the requesting vendor"""
         vendor = self.request.user.vendor
-        is_vendor_available = get_vendor_status(vendor.id)
-        if not is_vendor_available:
+        if not vendor.is_available:
             vendor.is_available = True
             vendor.save()
         query_set = Food.objects.filter(vendor__user__id=self.request.user.id)
@@ -502,8 +500,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         try:
             # ---- making vendor available if not yet
             vendor = self.request.user.vendor
-            is_vendor_available = get_vendor_status(vendor.id)
-            if not is_vendor_available:
+            if not vendor.is_available:
                 vendor.is_available = True
                 vendor.save()
             vendor_carriers_key = get_vendor_carriers_key(self.request.user.vendor.id)
@@ -658,8 +655,7 @@ class CarriersNow(views.APIView):
     def get(self, *args, **kwargs):
         # ---- makeing vendor available if not yet
         vendor = self.request.user.vendor
-        is_vendor_available = get_vendor_status(vendor.id)
-        if not is_vendor_available:
+        if not vendor.is_available:
             vendor.is_available = True
             vendor.save()
             
@@ -915,14 +911,9 @@ class ListVendorOrders(viewsets.ReadOnlyModelViewSet):
         queryset = self.get_queryset()
         today_orders = queryset.filter(created_at__date=tz.now().date())
         vendor = self.request.user.vendor
-        is_vendor_available = get_vendor_status(vendor.id)
-        logger.info(f"vendor is available status: {is_vendor_available}")
-        if not is_vendor_available:
-            if not vendor.is_available:
-                vendor.is_available = True
-                vendor.save()
-            else:
-                pass
+        if not vendor.is_available:
+            vendor.is_available = True
+            vendor.save()
         # details
         name = vendor.vendor_name
         image = vendor.image.url if vendor.image else None

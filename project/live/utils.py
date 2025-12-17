@@ -4,11 +4,6 @@ from pyfcm import FCMNotification
 from django.conf import settings
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
-import hmac
-import hashlib
-import base64
-import time
-import json
 
 from logging import getLogger
 
@@ -35,8 +30,6 @@ def push_notification(self, user_id: int, title: str, body: str, data=None):
 
     try:
         # Check if user is online via Redis
-        if is_user_online(id):
-            return "Sent via WebSocket"
         devices = Device.objects.filter(user__id=user_id)
         if not devices.exists():
             return f"NoDevice{user_id}"

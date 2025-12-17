@@ -37,15 +37,3 @@ def apply_discount(food, discount_amount):
     return food
 
 
-def get_vendor_key(id):
-    return f"vendor:{id}:status"
-
-
-def get_vendor_status(id):
-    """this saves availability of vendor in redis for 1 hours"""
-    key = get_vendor_key(id)
-    status_raw = r.get(key) 
-    if not status_raw:
-        r.set(key, dumps(True), 1 * 3600)
-        return False
-    return True

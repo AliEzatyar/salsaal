@@ -257,7 +257,7 @@ app.ws("/*", {
                         type: "VENDOR_REJECTED",
                         data: null
                     };
-
+                    
                     const jsonData = JSON.stringify(payload);
                     await redisPub.set(key, jsonData, { EX: orderStatusTTL });
                     console.log("order status saved in server rejected", jsonData);
