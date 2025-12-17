@@ -24,7 +24,7 @@ class Carrier(models.Model):
     id_document = models.ImageField(upload_to="carrier/ids/", null=True, blank=True)
     vendor = models.ForeignKey('vendor.Vendor',on_delete=models.CASCADE,related_name="carriers")
     status = models.CharField(choices=CARRIER_STATUS_CHOICES,default=CARRIER_STATUS_CHOICES[0][0])
-    is_active  = models.BooleanField(default=False)
+    is_active  = models.BooleanField(default=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
 

@@ -46,6 +46,6 @@ def get_vendor_status(id):
     key = get_vendor_key(id)
     status_raw = r.get(key) 
     if not status_raw:
-        r.set(key, dumps(True), 1 * 60)
+        r.set(key, dumps(True), 1 * 3600)
         return False
     return True

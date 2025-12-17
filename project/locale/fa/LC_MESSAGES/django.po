@@ -63,8 +63,6 @@ msgid "Zaytoon Food"
 msgstr "زیتون فود"
 
 #: qoraa/tasks.py:133 qoraa/tasks.py:217
-#, fuzzy, python-brace-format
-#| msgid "Congratulations! You have won the Qoraa sponsored by {vendor}"
 msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgstr "تبریک! شما لاتری‌ای را برنده شده‌اید که توسط {vendor} حمایت شده است."
 
@@ -305,8 +303,6 @@ msgid "sorry! your order has been rejected by restuarant!"
 msgstr "متأسفیم! فروشنده سفارش شما را رد کرد"
 
 #: vendor/views.py:1149
-#, fuzzy
-#| msgid "Order Delivered"
 msgid "Order Rejected"
 msgstr "سفارش تحویل شد"
 
@@ -315,8 +311,6 @@ msgid "your order has been accepted by restuarant!"
 msgstr "فروشنده سفارش شما را پذیرفت"
 
 #: vendor/views.py:1152
-#, fuzzy
-#| msgid "order accepted by buyer!"
 msgid "Order Accepted"
 msgstr "سفارش توسط مشتری پذیرفته شد."
 
