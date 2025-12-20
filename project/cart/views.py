@@ -1,5 +1,5 @@
 from marketplace.models import Food
-from api.permissions import IsHavingCart
+from api.permissions import IsCustomer, IsHavingCart
 from marketplace.serializers import FoodSerializerMany
 from .models import CartItem
 from .serializers import CartSerializer
@@ -20,7 +20,7 @@ class CartApiView(views.APIView):
     This view allows users to add, edit, delete, and retrieve cart items.
     """
 
-    permission_classes = [IsAuthenticated, IsHavingCart]
+    permission_classes = [IsAuthenticated, IsHavingCart, IsCustomer]
 
     def get(self, *args, **kwargs):
         """

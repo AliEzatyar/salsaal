@@ -54,13 +54,12 @@ class Vendor(models.Model):
     license_valid_until = models.DateField(auto_now_add=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
-    
     mfdd = models.PositiveSmallIntegerField(
         default=0, blank=True
     )  # max free distance delivery
     mfcfd = models.PositiveSmallIntegerField(
         null=True, blank=True
-    )  # min food count free delivery
+    )  # min food cost for free delivery
     min_order_price = models.PositiveSmallIntegerField(default=100)  # AFS
     delivery_fee_km = models.PositiveSmallIntegerField(
         default=3

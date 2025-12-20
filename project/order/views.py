@@ -75,6 +75,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     http_method_names = ["delete", "post", "get"]
     serializer_class = COrderSerializer
+    permission_classes = [permissions.IsAuthenticated, IsCustomer]
 
     def get_queryset(self):
         """overrding it to get orders of specific user"""

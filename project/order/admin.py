@@ -5,7 +5,7 @@ from .models import FailedMultiVendorPayment, Order, OrderItem
 # Register your models here.
 class OrderAdmin(admin.ModelAdmin):
     model = Order
-    list_display = ["id", "status", "user", "total_price", "is_epay"]
+    list_display = ["id", "status", "user", "total_price", "is_epay","created_at"]
     list_editable = ["status"]
 
 

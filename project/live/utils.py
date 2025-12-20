@@ -3,7 +3,6 @@ from accounts.models import Device
 from pyfcm import FCMNotification
 from django.conf import settings
 from celery import shared_task
-from django.core.exceptions import ObjectDoesNotExist
 
 from logging import getLogger
 

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-15 17:57+0430\n"
+"POT-Creation-Date: 2025-12-20 08:23+0430\n"
 "PO-Revision-Date: 2025-09-19 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Persian\n"
@@ -11,34 +11,42 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: order/views.py:221
+#: order/views.py:224
 msgid "you have a new order!"
 msgstr "شما یک سفارش جدید دارید!"
 
-#: order/views.py:225
+#: order/views.py:228
 msgid "you have received a new order from a customer."
 msgstr "شما سفارش جدیدی از مشتری دارید."
 
-#: order/views.py:281
+#: order/views.py:284
 msgid "order has been cancelled by buyer!"
 msgstr "سفارش توسط مشتری لغو شد."
 
-#: order/views.py:463
+#: order/views.py:469
 msgid "order accepted by buyer!"
 msgstr "سفارش توسط مشتری پذیرفته شد."
 
-#: order/views.py:589 order/views.py:597
+#: order/views.py:596 order/views.py:604
 msgid "Order Delivered"
 msgstr "سفارش تحویل شد"
 
-#: order/views.py:590
+#: order/views.py:597
 msgid "Your order has been delivered successfully."
 msgstr "سفارش شما با موفقیت تحویل شد."
 
-#: order/views.py:598
+#: order/views.py:605
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "سفارش {order_id} با موفقیت تحویل شد."
+
+#: qoraa/models.py:13
+msgid "Daily Lottery"
+msgstr "لاتری چاشت"
+
+#: qoraa/models.py:14
+msgid "Evening Lottery"
+msgstr "لاتری شام"
 
 #: qoraa/models.py:107
 #, python-brace-format
@@ -63,6 +71,8 @@ msgid "Zaytoon Food"
 msgstr "زیتون فود"
 
 #: qoraa/tasks.py:133 qoraa/tasks.py:217
+#, fuzzy, python-brace-format
+#| msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgstr "تبریک! شما لاتری‌ای را برنده شده‌اید که توسط {vendor} حمایت شده است."
 
@@ -288,41 +298,41 @@ msgstr ""
 msgid "Add Phone Number"
 msgstr "افزودن شماره تلفن"
 
-#: vendor/models.py:112
+#: vendor/models.py:113
 msgid "Congratulations! Your vendor account has been approved."
 msgstr "تبریک! حساب فروشندگی شما تایید شد."
 
-#: vendor/models.py:113
+#: vendor/models.py:114
 #, python-brace-format
 msgid ""
 "Congratulations! Your vendor account '{self.vendor_name}' has been approved."
 msgstr "تبریک! حساب فروشندگی شما با نام '{self.vendor_name}' تایید شد."
 
-#: vendor/views.py:1148
+#: vendor/views.py:1133
 msgid "sorry! your order has been rejected by restuarant!"
 msgstr "متأسفیم! فروشنده سفارش شما را رد کرد"
 
-#: vendor/views.py:1149
+#: vendor/views.py:1134
 msgid "Order Rejected"
-msgstr "سفارش تحویل شد"
+msgstr "سفارش رد شد"
 
-#: vendor/views.py:1151
+#: vendor/views.py:1136
 msgid "your order has been accepted by restuarant!"
 msgstr "فروشنده سفارش شما را پذیرفت"
 
-#: vendor/views.py:1152
+#: vendor/views.py:1137
 msgid "Order Accepted"
-msgstr "سفارش توسط مشتری پذیرفته شد."
+msgstr "سفارش پذیرفته شد."
 
-#: vendor/views.py:1271
+#: vendor/views.py:1255
 msgid "Order set as carrying"
 msgstr "سفارش در حالت انتقال قرار گرفت"
 
-#: vendor/views.py:1276
+#: vendor/views.py:1260
 msgid "Your order is being carried, click to live track."
 msgstr "سفارش شما در حال انتقال است. برای پیگیری لحظه‌ای کلیک کنید."
 
-#: vendor/views.py:1301
+#: vendor/views.py:1285
 msgid "New Order Assigned"
 msgstr "شما سفارشی برای انتقال دارید"
 

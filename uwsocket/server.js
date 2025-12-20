@@ -16,7 +16,7 @@ try {
     const res = await fetch(djangoServerUrl + "/jwtks/");
     if (res.ok) {
         JWT_PUBLIC_KEY = await res.text();
-        console.log("JWT public key loade successfully");
+        console.log("JWT public key loaded successfully");
     } else {
         console.error("Failed to fetch JWT public key:", res.status, res.statusText);
         JWT_PUBLIC_KEY = null;
@@ -26,7 +26,6 @@ try {
     JWT_PUBLIC_KEY = null;
 }
 
-console.log("this is the public key", JWT_PUBLIC_KEY)
 
 // creating and connecting redis publisher and subscriber
 const redisPub = createClient({
@@ -38,7 +37,6 @@ const redisSub = createClient({
 try {
     await redisPub.connect();
     await redisSub.connect();
-    console.log("Redis connections established successfully");
 } catch (error) {
     console.error("Failed to connect to Redis:", error);
     process.exit(1);
@@ -59,7 +57,7 @@ function verifyJWT(token) {
     try {
         return jwt.verify(token, JWT_PUBLIC_KEY, { "algorithms": "RS256" })
     } catch (error) {
-        console.log("JWT verification error:", error.message)
+        console.error("JWT verification error:", error.message)
         return null
     }
 }
@@ -96,7 +94,6 @@ app.ws("/*", {
             const claims = verifyJWT(token);
 
             if (!claims) {
-                console.log("not okay")
                 res.writeStatus('401 Unauthorized').end();
                 return;
             }
@@ -117,9 +114,7 @@ app.ws("/*", {
     open: async (ws, req) => {
         const claims = ws.claims;
         const userId = claims.user_id;
-        console.log("connection......", claims)
         if (userId) {
-            console.log("user connected to uwsocket server, id: ", userId)
             ws.id = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
             // Default personal room
             const userRoom = `user:${userId}`;
@@ -132,9 +127,7 @@ app.ws("/*", {
     },
     // this messages only come from client web sockets, e.g. mobil apps + web browsers
     message: async (ws, message, isBinary) => {
-        
             // setting message type like notification or location and its related data
-            console.log("message.......", Buffer.from(message).toString())
             let messageData;
             try {
                 messageData = JSON.parse(Buffer.from(message).toString());
@@ -144,16 +137,13 @@ app.ws("/*", {
                 return;
             }
             const { type, data } = messageData;
-            // console.log("message came from client to channel", type, data)
             switch (type) {
                 case "SUBSCRIBE_ORDER": {
-                    console.log("subscribed to order ", data.orderId)
                     const key = `order:${data.orderId}:status`;
                     const exists = await redisPub.exists(key);
                     let room = `order:${data.orderId}`;
                     subscribeToRoom(ws, room); // always subscribe
                     if (exists) {
-                        console.log("exists");
                         ws.send(JSON.stringify({
                             ok: true,
                             type: "SUBSCRIBED",
@@ -170,7 +160,6 @@ app.ws("/*", {
                     }
 
                     else {
-                        console.log("it did not exist")
                         ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED', data: null }))
 
                     }
@@ -178,13 +167,11 @@ app.ws("/*", {
                 }
                 case "UNSUBSCRIBE_ORDER": {
                     let room = `order:${data.orderId}`;
-                    console.log("unsubscribed from order", data.orderId)
                     ws.unsubscribe(room);
                     ws.send(JSON.stringify({ ok: true, type: 'UNSUBSCRIBED', room }))
                     break
                 }
                 case "SUBSCRIBE_CARRIER": {
-                    console.log("subscribed to carrier ", data.carrierId)
                     let room = `carrier:${data.carrierId}`;
                     subscribeToRoom(ws, room);
                     var lastCarrierLocation = await redisPub.get(`carrier_last_${data.carrierId}`)
@@ -195,20 +182,17 @@ app.ws("/*", {
                     }
                     ws.send(JSON.stringify({ ok: true, type: 'SUBSCRIBED' }))
                     if (lastCarrierLocation.latitude && lastCarrierLocation.longitude) {
-                        console.log("sending locaiotn", lastCarrierLocation.latitude)
                         ws.send(JSON.stringify({ type: "CARRIER_LOCATION", data: { lat: lastCarrierLocation.latitude, lon: lastCarrierLocation.longitude,  ts: Date.now().toString() } }))
                     }
                     break;
                 }
                 case "UNSUBSCRIBE_CARRIER": {
-                    console.log("leaving carrier room");
                     let room = `carrier:${data.carrierId}`;
                     ws.unsubscribe(room)
                     ws.send(JSON.stringify({ ok: true, type: 'UNSUBSCRIBED', room }))
                     break
                 }
                 case "SUBSCRIBE_VENDOR": {
-                    console.log("subscription to vendor room")
                     let room = `vendor:${data.vendorId}`;
                     subscribeToRoom(ws, room);
                     ws.send(JSON.stringify({ ok: true, type: "SUBSCRIBED", room }))
@@ -216,11 +200,8 @@ app.ws("/*", {
                 }
 
                 case "CARRIER_LOCATION": {
-                    console.log("carrier location", data)
-                    console.log(data.latitude)
                     redisPub.set(`carrier_last_${data.carrierId}`, JSON.stringify({ latitude: data.latitude, longitude: data.longitude }));
                     redisPub.publish(`pub:carrier:${data.carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", data: { latitude: data.latitude, longitude: data.longitude } }));
-                    console.log('send')
                     break
 
                 }
@@ -228,7 +209,6 @@ app.ws("/*", {
                 case "VENDOR_ACCEPTED": {
                     const orderId = data.orderId;
                     const key = `order:${orderId}:status`;
-                    console.log(key)
                     const payload = {
                         type: "VENDOR_ACCEPTED",
                         data: data
@@ -243,7 +223,6 @@ app.ws("/*", {
                     // -------- unsubscribing vendor from this order-----------
                     setTimeout(()=>{
                         let room = `order:${data.orderId}`;
-                        console.log("unsubscribed from order", orderId)
                         ws.unsubscribe(room);
                     },2000)
                     break;
@@ -260,7 +239,6 @@ app.ws("/*", {
                     
                     const jsonData = JSON.stringify(payload);
                     await redisPub.set(key, jsonData, { EX: orderStatusTTL });
-                    console.log("order status saved in server rejected", jsonData);
                     redisPub.publish(
                         `pub:order:${orderId}`,
                         JSON.stringify({ type: "VENDOR_REJECTED", data: data })
@@ -268,7 +246,6 @@ app.ws("/*", {
                     // -------- unsubscribing vendor from this order-----------
                     setTimeout(() => {
                         let room = `order:${data.orderId}`;
-                        console.log("unsubscribed from order", orderId)
                         ws.unsubscribe(room);
                     }, 2000)
                     break;
@@ -283,7 +260,7 @@ app.ws("/*", {
                 }
 
                 default:
-                    console.log("unkow type", )
+                    console.error("unknown message type to uWS server", )
                     ws.send(JSON.stringify({ ok: false, error: "UNKNOWN_TYPE" }));
                 }
 
@@ -292,7 +269,6 @@ app.ws("/*", {
 
     close: (ws) => {
         const { sub: userId } = ws.claims;
-        console.log("user left", userId)
         if (userId) {
             redisPub.hDel("ws:users", userId)
         }
@@ -302,9 +278,7 @@ app.ws("/*", {
 // this is where messages come from django or any server connected to redis and call redis.publish
 // sending messages comming from redis publisher to all clients connected to its room
 redisSub.pSubscribe("pub:*", (message, channel) => {
-    // console.log("message come to redis subsciber")
     const room = channel.replace(/^pub:/, "");
-    // console.log(room)
     app.publish(room, message)
 });
 

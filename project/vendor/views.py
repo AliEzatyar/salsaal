@@ -1090,12 +1090,12 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     # ------------------ calculating delivery cost -------------------------
                     delivery_cost = None
                     v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
-                    v_mfcfd = vendor.mfcfd  # vendor's minimum food count free delivery
+                    v_mfcfd = vendor.mfcfd  # vendor's minimum food cost for free delivery
                     if (
-                        vendor.mfcfd
-                        and vendor.mfdd > 0
+                        v_mfcfd
+                        and v_mfdd > 0
                         and distance_km < v_mfdd
-                        and order.total_items > v_mfcfd
+                        and order.total_price > v_mfcfd
                     ):
                         delivery_cost = 0
                     else:

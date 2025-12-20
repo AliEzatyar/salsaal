@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-15 17:57+0430\n"
+"POT-Creation-Date: 2025-12-20 08:23+0430\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Pashto\n"
@@ -11,34 +11,42 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: order/views.py:221
+#: order/views.py:224
 msgid "you have a new order!"
 msgstr "تاسو یو نوی امر ترلاسه کړی!"
 
-#: order/views.py:225
+#: order/views.py:228
 msgid "you have received a new order from a customer."
 msgstr "تاسو د یو پېرېدونکي څخه نوې فرمایش ترلاسه کړی دی."
 
-#: order/views.py:281
+#: order/views.py:284
 msgid "order has been cancelled by buyer!"
 msgstr "امر د پېرودونکي لخوا لغوه شو!"
 
-#: order/views.py:463
+#: order/views.py:469
 msgid "order accepted by buyer!"
 msgstr "امر د پېرودونکي لخوا منل شوی!"
 
-#: order/views.py:589 order/views.py:597
+#: order/views.py:596 order/views.py:604
 msgid "Order Delivered"
 msgstr "امر وسپارل شو"
 
-#: order/views.py:590
+#: order/views.py:597
 msgid "Your order has been delivered successfully."
 msgstr "ستاسو امر په بریالیتوب سره وسپارل شو."
 
-#: order/views.py:598
+#: order/views.py:605
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "امر {order_id} په بریالیتوب سره وسپارل شو."
+
+#: qoraa/models.py:13
+msgid "Daily Lottery"
+msgstr "د غرمې لاټري"
+
+#: qoraa/models.py:14
+msgid "Evening Lottery"
+msgstr "د ماښام لاټري"
 
 #: qoraa/models.py:107
 #, python-brace-format
@@ -63,6 +71,8 @@ msgid "Zaytoon Food"
 msgstr ""
 
 #: qoraa/tasks.py:133 qoraa/tasks.py:217
+#, fuzzy, python-brace-format
+#| msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgstr "مبارک شه! تاسو هغه لاتری ګټلې چې د {vendor} لخوا ملاتړ شوې."
 
@@ -284,41 +294,41 @@ msgstr ""
 msgid "Add Phone Number"
 msgstr "تلیفون شمېر اضافه کړئ"
 
-#: vendor/models.py:112
+#: vendor/models.py:113
 msgid "Congratulations! Your vendor account has been approved."
 msgstr "مبارک شه! ستاسو د پلورونکي حساب تایید شو."
 
-#: vendor/models.py:113
+#: vendor/models.py:114
 #, python-brace-format
 msgid ""
 "Congratulations! Your vendor account '{self.vendor_name}' has been approved."
 msgstr "مبارک شه! ستاسو د پلورونکي حساب '{self.vendor_name}' تایید شو."
 
-#: vendor/views.py:1148
+#: vendor/views.py:1133
 msgid "sorry! your order has been rejected by restuarant!"
 msgstr "امر د پېرودونکي لخوا لغوه شو!"
 
-#: vendor/views.py:1149
+#: vendor/views.py:1134
 msgid "Order Rejected"
 msgstr "امر رد شو"
 
-#: vendor/views.py:1151
+#: vendor/views.py:1136
 msgid "your order has been accepted by restuarant!"
 msgstr "ستاسو امر د پېرودونکي لخوا تایید شو."
 
-#: vendor/views.py:1152
+#: vendor/views.py:1137
 msgid "Order Accepted"
 msgstr "امر تایید شو"
 
-#: vendor/views.py:1271
+#: vendor/views.py:1255
 msgid "Order set as carrying"
 msgstr "امر د لېږد په حالت کې ټاکل شوی"
 
-#: vendor/views.py:1276
+#: vendor/views.py:1260
 msgid "Your order is being carried, click to live track."
 msgstr "ستاسو امر لېږدول کېږي، د ژوندۍ څارنې لپاره کلیک وکړئ."
 
-#: vendor/views.py:1301
+#: vendor/views.py:1285
 msgid "New Order Assigned"
 msgstr "نوې فرمایش وټاکل شوه"
 

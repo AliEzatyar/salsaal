@@ -20,7 +20,8 @@ class ListQoraaApiView(views.APIView):
     """
     A simple ViewSet for viewing active and past qoraas.
     """
-
+    permission_classes = [IsAuthenticated, IsCustomer]
+    
     def get(self, request, *args, **kwargs):
         """Returns a list of active qoraas."""
         now = timezone.now()
