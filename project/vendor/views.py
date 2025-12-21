@@ -1046,6 +1046,11 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     else:
                         total_carriers_count = vendor.carriers.count()
                         r.hset(vendor_carriers_key, "total_c_c", total_carriers_count)
+                        if total_carriers_count == 0:
+                            return Response(
+                                {"detail": "no_carriers_available"},
+                                status=status.HTTP_501_NOT_IMPLEMENTED
+                            )  # no carriers available
                     total_time = estimated
                     # ----------------- applying conditions and finalizing estimation of time  ...
                     if preparing_orders_count <= total_carriers_count:

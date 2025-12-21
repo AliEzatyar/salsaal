@@ -49,6 +49,7 @@ class CartApiView(views.APIView):
                     "cart": serializer.data,
                     "vendor_id": vendor.id,
                     "vendor_name": vendor.vendor_name,
+                    "vendor_min_order_price": vendor.min_order_price,
                     "drinks": drinks_serializer.data,
                     "hesab_pay": hesab_pay,
                 },

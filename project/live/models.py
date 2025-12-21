@@ -1,6 +1,6 @@
 from django.db import models
 
-OLD_NOTIFICAITON_EXPIRE_DAYS = 10
+OLD_NOTIFICAITON_EXPIRE_DAYS = 3
 
 NOTIFICATION_TARGET_TYPES = [
     ("order", "order"),

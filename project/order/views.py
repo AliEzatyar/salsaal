@@ -145,8 +145,20 @@ class OrderViewSet(viewsets.ModelViewSet):
                 {"detail": "cart_empty"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
+            # getting total and enforcing vendor
+            vendor = CartItem.objects.filter(cart=cart).last().food.vendor
+            total_price =  cart.calculate_total()
+            if total_price < vendor.min_order_price:
+                return Response(
+                    {
+                        "detail": "min_order_price_not_met",
+                        "min_order_price": vendor.min_order_price,
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             # getting vendor id
-            vendor_id = CartItem.objects.filter(cart=cart).last().food.vendor.id
+            vendor_id = vendor.id
+            
             # -------------------- deleting waiting orders
             previous_waiting_orders = Order.objects.filter(
                 user=request.user,
@@ -298,7 +310,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                     json.dumps(
                         {
                             "type": "ORDER_CANCELLED",
-                            "data": {"orderId": order.id},
+                            "data": {"orderId": order.id,
+                                     "orderStatus": order.status},
                         }
                     ),
                 )
