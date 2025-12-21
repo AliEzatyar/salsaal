@@ -80,7 +80,7 @@ def register_periodic_tasks():
             period=IntervalSchedule.HOURS,
         )
 
-        # Disable vendors every  hour
+        # Disable vendors every 5 hour
         _ensure_interval_task(
             name="Disable Vendors Every 5 hours",
             task_path="vendor.tasks.disable_vendors",

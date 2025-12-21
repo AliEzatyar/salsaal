@@ -15,9 +15,9 @@ def register_periodic_tasks():
     Uses timezone 'Asia/Kabul' to match other registered tasks in the project.
     """
     timezone = "Asia/Kabul"
-    # create morning at 11:00
+    # create morning at 8:00
     create_morning_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0", hour="11", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
+        minute="0", hour="8", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
     )
     task, created = PeriodicTask.objects.get_or_create(
         name="Create Platform Morning Qoraa",
@@ -28,9 +28,9 @@ def register_periodic_tasks():
         task.crontab = create_morning_schedule
         task.enabled = True
         task.save()
-    # finalize morning at 12:00
+    # finalize morning at 11:45
     finalize_morning_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0", hour="12", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
+        minute="45", hour="11", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
     )
     task, created = PeriodicTask.objects.get_or_create(
         name="Finalize Morning Qoraa",
@@ -41,9 +41,9 @@ def register_periodic_tasks():
         task.crontab = finalize_morning_schedule
         task.enabled = True
         task.save()
-    # create evening at 18:00
+    # create evening at 15:00
     create_evening_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0", hour="18", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
+        minute="0", hour="15", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
     )
     task, created = PeriodicTask.objects.get_or_create(
         name="Create Platform Evening Qoraa",
@@ -55,9 +55,9 @@ def register_periodic_tasks():
         task.enabled = True
         task.save()
 
-    # finalize evening at 19:00
+    # finalize evening at 18:00
     finalize_evening_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0", hour="19", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
+        minute="0", hour="18", day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
     )
     task, created = PeriodicTask.objects.get_or_create(
         name="Finalize Evening Qoraa",

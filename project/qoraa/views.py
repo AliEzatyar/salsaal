@@ -25,11 +25,11 @@ class ListQoraaApiView(views.APIView):
     def get(self, request, *args, **kwargs):
         """Returns a list of active qoraas."""
         now = timezone.now()
-        one_day_ago = now - timezone.timedelta(days=1)
+        six_hour_ago = now - timezone.timedelta(hours=6)
         qoraas = (
             Qoraa.objects.filter(
                 start__lte=now,
-                end__gte=one_day_ago,
+                end__gte=six_hour_ago,
                 status__in=[Qoraa.STATUS_RUNNING, Qoraa.STATUS_FINISHED],
             )
             .prefetch_related(Prefetch("joiners", queryset=User.objects.only("id")))
