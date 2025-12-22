@@ -8,6 +8,7 @@ from live.utils import push_notification
 from .models import (
     PLATFORM_DEFAULT_EVENING_QORAA_TITLE,
     PLATFORM_DEFAULT_MORNING_QORAA_TITLE,
+    PLATFORM_EVENING_QORAA_END_HOUR,
     PLATFORM_EVENING_QORAA_START_HOUR,
     PLATFORM_MORNING_QORAA_START_HOUR,
     Qoraa,
@@ -51,7 +52,7 @@ def _send_qoraa_creation_notification(vendor, qoraa, end_time):
     deactivate_language()
 
 
-def _create_qoraas_for_time(hour, platform_qoraa_title):
+def _create_qoraas_for_time(start_hour, platform_qoraa_title,end_hour):
     """
     Generic function to create qoraas for a specific time.
 
@@ -60,8 +61,7 @@ def _create_qoraas_for_time(hour, platform_qoraa_title):
         platform_qoraa_title (str): The title for the platform-wide qoraa.
     """
     now = timezone.localtime()
-    start = now.replace(hour=hour, minute=0, second=0, microsecond=0)
-    end = start + timezone.timedelta(hours=1)
+    start = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
     # ----------- platform's default qoraa --------------
     if not Qoraa.objects.filter(start=start, is_platform=True).exists():
         platform_qoraa_vendors = PlatformQoraaVendor.objects.filter(is_active=True)
@@ -74,14 +74,14 @@ def _create_qoraas_for_time(hour, platform_qoraa_title):
                 q = Qoraa.objects.create(
                     vendor=random_qv.vendor,
                     food=food,
-                    start=start,
-                    end=end,
+                    start=start_hour,
+                    end=end_hour,
                     status=Qoraa.STATUS_RUNNING,
                     title=_(platform_qoraa_title),
                     is_platform=True,
                 )
                 deactivate_language()
-                _send_qoraa_creation_notification(random_qv.vendor, q, end)
+                _send_qoraa_creation_notification(random_qv.vendor, q, end_hour)
                 logger.info(f"Platform Qoraa created with id {q.id} for vendor {random_qv.vendor.vendor_name}.")
                 return f"Platform Qoraa created with id {q.id}."
             else:
@@ -90,7 +90,7 @@ def _create_qoraas_for_time(hour, platform_qoraa_title):
         else:
             logger.info("No active platform qoraa vendors or not selected food_items.")
             return "No Active Platform Qoraa Vendors"
-        
+
     else:
         logger.info("Platform Qoraa for this time already exists.")
         return "Qoraa Already Exists"
@@ -111,7 +111,7 @@ def create_evening_qoraa():
     """
     Creates the evening qoraa (lottery) which runs from 15:00 to 18:00 local time.
     """
-    _create_qoraas_for_time(PLATFORM_EVENING_QORAA_START_HOUR, PLATFORM_DEFAULT_EVENING_QORAA_TITLE)
+    _create_qoraas_for_time(PLATFORM_EVENING_QORAA_START_HOUR, PLATFORM_DEFAULT_EVENING_QORAA_TITLE,PLATFORM_EVENING_QORAA_END_HOUR)
     return "Evening Qoraas Created"
 
 

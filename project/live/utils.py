@@ -35,6 +35,7 @@ def push_notification(self, user_id: int, title: str, body: str, data=None):
         for device in devices:
             try:
                 send_fcm(device.token, title, body, data)
+                return "Notification sent via FCM"
             except Exception as e:
                 logger.exception(f"Error sending FCM to device {device.id} for user {user_id}: {e}")
                 raise self.retry(exc=e)

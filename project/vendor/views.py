@@ -1293,7 +1293,7 @@ class SetOrderStateCarrying(views.APIView):
             push_notification.delay(
                 carrier_id,
                 _("New Order Assigned"),
-                body=None,
+                body=_("You have been assigned a new order to deliver."),
                 data={"order_id": order.id},
             )
             # --------------------- sending notification to carrier's room
