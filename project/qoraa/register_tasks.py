@@ -1,7 +1,7 @@
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 import json
 
-from qoraa.models import PLATFORM_EVENING_QORAA_END_HOUR, PLATFORM_EVENING_QORAA_START_HOUR, PLATFORM_MORNING_QORAA_END_HOUR, PLATFORM_MORNING_QORAA_START_HOUR
+from qoraa.models import PLATFORM_EVENING_QORAA_END_HOUR, PLATFORM_EVENING_QORAA_END_MINUTE, PLATFORM_EVENING_QORAA_START_HOUR, PLATFORM_EVENING_QORAA_START_MINUTE, PLATFORM_MORNING_QORAA_END_HOUR, PLATFORM_MORNING_QORAA_END_MINUTE, PLATFORM_MORNING_QORAA_END_MINUTE, PLATFORM_MORNING_QORAA_START_HOUR, PLATFORM_MORNING_QORAA_START_MINUTE, PLATFORM_MORNING_QORAA_START_MINUTE
 
 
 def register_periodic_tasks():
@@ -19,7 +19,7 @@ def register_periodic_tasks():
     timezone = "Asia/Kabul"
     # create morning at 8:00
     create_morning_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0",
+        minute=str(PLATFORM_MORNING_QORAA_START_MINUTE),
         hour=str(PLATFORM_MORNING_QORAA_START_HOUR),
         day_of_week="*",
         day_of_month="*",
@@ -37,7 +37,7 @@ def register_periodic_tasks():
         task.save()
     # finalize morning at 12:00
     finalize_morning_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0", hour=str(PLATFORM_MORNING_QORAA_END_HOUR), day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
+        minute=str(PLATFORM_MORNING_QORAA_END_MINUTE), hour=str(PLATFORM_MORNING_QORAA_END_HOUR), day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
     )
     task, created = PeriodicTask.objects.get_or_create(
         name="Finalize Morning Qoraa",
@@ -50,7 +50,7 @@ def register_periodic_tasks():
         task.save()
     # create evening at 15:00
     create_evening_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0", hour=str(PLATFORM_EVENING_QORAA_START_HOUR), day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
+        minute=str(PLATFORM_EVENING_QORAA_START_MINUTE), hour=str(PLATFORM_EVENING_QORAA_START_HOUR), day_of_week="*", day_of_month="*", month_of_year="*", timezone=timezone
     )
     task, created = PeriodicTask.objects.get_or_create(
         name="Create Platform Evening Qoraa",
@@ -64,7 +64,7 @@ def register_periodic_tasks():
 
     # finalize evening at 18:00
     finalize_evening_schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0",
+        minute=str(PLATFORM_EVENING_QORAA_END_MINUTE),
         hour=str(PLATFORM_EVENING_QORAA_END_HOUR),
         day_of_week="*",
         day_of_month="*",
