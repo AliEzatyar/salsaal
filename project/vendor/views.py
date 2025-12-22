@@ -397,7 +397,7 @@ class AddCarrierAPIView(views.APIView):
         phone_number = str(phone_number).strip()
         # phone_number = "+"+phone_number
         account = User.objects.filter(phone_number=phone_number).first()
-        if not account or not account.is_active:
+        if not account :
             raise serializers.ValidationError(
                 {"detail": "no_account_found_by_that_phone"}
             )
@@ -424,6 +424,7 @@ class AddCarrierAPIView(views.APIView):
         otp = data.get("otp")
         try:
             otp = UserOtp.objects.get(otp=otp)
+            
             if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
                 return Response(
                     {"detail": "otp_expired"}, status=status.HTTP_400_BAD_REQUEST

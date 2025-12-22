@@ -39,6 +39,12 @@ from django.db.transaction import atomic
 from logging import getLogger
 """Account API Views"""
 
+AUTO_LOGIN_NUMBERS = [
+    "+93733333333",  # customer
+    "+93722222222",  # delivery
+    "+93711111111" # vendor
+]
+
 
 logger = getLogger(__name__)
 
@@ -150,6 +156,21 @@ class LoginApiView(views.APIView):
                 if not otp:
                     return Response(
                         {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+                    )
+                # --------- TEMP autologin APPLE/GOOGLE devs ----------------
+                if phone_number in AUTO_LOGIN_NUMBERS:
+                    user = User.objects.get(phone_number=phone_number)
+                    user.token_valid_after = get_token_valid_after()
+                    user.is_active = True
+                    user.save()
+                    refresh = RefreshToken.for_user(user)
+                    return Response(
+                        {
+                            "access": str(refresh.access_token),
+                            "refresh": str(refresh),
+                            "id": user.id,
+                        },
+                        status=status.HTTP_200_OK,
                     )
                 # verifying otp
                 otp_tries_key = get_user_otp_tries_key(phone_number)
