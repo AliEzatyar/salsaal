@@ -16,6 +16,7 @@ class UserAd(UserAdmin):
 class UserDeviceAdmin(admin.ModelAdmin):
     list_display = ["id","user","created_at","token"]
 
+
 admin.site.register(UserOtp)
 admin.site.register(NoUserOtp)
 

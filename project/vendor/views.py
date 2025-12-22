@@ -441,8 +441,12 @@ class AddCarrierAPIView(views.APIView):
             )
             carrier_user_account.role = CARRIER
             otp.delete()
-            carrier_user_account.cart.delete()
-            carrier_user_account.save()
+            try:
+                carrier_user_account.cart.delete()
+                carrier_user_account.save()
+            except Exception as e:
+                logger.exception(f"error deleting cart of new carrier {e}")
+                pass
             # --------------- re-balancing carriers status of vendor
             # increasing carrier's count for vendor
             vendor_carriers_key = get_vendor_carriers_key(vendor.id)
