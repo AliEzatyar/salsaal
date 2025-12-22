@@ -1,7 +1,7 @@
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 import json
 
-from project.qoraa.models import PLATFORM_EVENING_QORAA_END_HOUR, PLATFORM_EVENING_QORAA_START_HOUR, PLATFORM_MORNING_QORAA_END_HOUR, PLATFORM_MORNING_QORAA_START_HOUR
+from qoraa.models import PLATFORM_EVENING_QORAA_END_HOUR, PLATFORM_EVENING_QORAA_START_HOUR, PLATFORM_MORNING_QORAA_END_HOUR, PLATFORM_MORNING_QORAA_START_HOUR
 
 
 def register_periodic_tasks():
@@ -9,10 +9,10 @@ def register_periodic_tasks():
     Register daily crontab tasks to create and finalize Qoraa lotteries.
 
     Four tasks are created:
-      - create morning lottery at 11:00
+      - create morning lottery at 8:00
       - finalize morning lottery at 12:00
-      - create evening lottery at 18:00
-      - finalize evening lottery at 19:00
+      - create evening lottery at 15:00
+      - finalize evening lottery at 18:00
 
     Uses timezone 'Asia/Kabul' to match other registered tasks in the project.
     """
