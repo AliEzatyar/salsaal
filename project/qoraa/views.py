@@ -6,12 +6,18 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from api.permissions import IsCustomer, IsVendor, IsVendorOfObject
 from accounts.models import User
+from order.models import ORDER_STATUS_CHOICES, VALID_PAYMENT_TYPES, Order
+from accounts.utils import generate_otp
+from live.utils import push_notification
 from qoraa.models import MIN_QORAA_PRICE_VALUE, Qoraa
 from .serializers import (
     QoraaReadOnlySerializer,
     VendorQoraaFoodSerializer,
     VendorQoraaSerializer,
 )
+from django.utils.translation import gettext as _
+from django.utils.translation import deactivate as deactivate_language
+from django.utils.translation import activate as activate_language
 
 # Create your views here.
 
@@ -124,3 +130,56 @@ class ManageQoraaViewset(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return super().perform_destroy(instance)
+
+
+class ClaimQoraaPrizeApiView(views.APIView):
+    """
+    Customers who have won a Qoraa can claim their prize, which creates an order for them.
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomer]
+
+    def post(self, request, *args, **kwargs):
+        """Allows a user to claim their prize for a specific ."""
+        qoraa_id = request.data.get("qoraa_id")
+        if not qoraa_id:
+            return Response(
+                {"detail": "qoraa_id_required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            q = Qoraa.objects.get(pk=qoraa_id, status=Qoraa.STATUS_FINISHED)
+        except Qoraa.DoesNotExist:
+            return Response(
+                {"detail": "no_finished_lottery_with_id"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not q.winner == request.user:
+            return Response(
+                {"detail": "user_not_a_winner"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # creating the order and setting in preparing state
+        new_order = Order.objects.create(
+            user=request.user,
+            status=ORDER_STATUS_CHOICES[2][0],  # preparing
+            total_price=0,
+            total_items=1,
+            delivery_cost=0,
+            paid=True,
+            otp=generate_otp(8),
+            destination=request.user.profile.location,
+            vendor=q.vendor,
+            payment_type=VALID_PAYMENT_TYPES[3][0],  # qoraa_payment
+            is_epay=False,
+        )
+        # sending notificaiton to vendor
+        activate_language(q.vendor.user_profile.pf_lang)
+        push_notification(
+            user=q.vendor.user.id,
+            title=_("Qoraa Prize Claimed"),
+            body=_(f"The Qoraa winner has claimed their prize. Order ID: {new_order.id}. Please prepare the order and deliver it."),
+            data={"order_id": new_order.id}
+        )
+        deactivate_language()
+        return Response({"detail": "prize_claimed"}, status=status.HTTP_200_OK)

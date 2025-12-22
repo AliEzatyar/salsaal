@@ -12,6 +12,7 @@ from h3 import latlng_to_cell as h3_latlng_to_cell
 from marketplace.utils import DEFAULT_H3_RESOLUTION
 from django.utils.translation import activate, deactivate, gettext as _
 from logging import getLogger
+
 logger = getLogger(__name__)
 
 
@@ -22,6 +23,7 @@ VENDOR_TYPES = [
     (3, "juiceshop"),
 ]
 
+DEFAULT_VENDOR_ORDER_MIN_PRICE = 200  # AFS
 
 class Vendor(models.Model):
 
@@ -60,7 +62,7 @@ class Vendor(models.Model):
     mfcfd = models.PositiveSmallIntegerField(
         null=True, blank=True
     )  # min food cost for free delivery
-    min_order_price = models.PositiveSmallIntegerField(default=100)  # AFS
+    min_order_price = models.PositiveSmallIntegerField(default=DEFAULT_VENDOR_ORDER_MIN_PRICE)  # AFS
     delivery_fee_km = models.PositiveSmallIntegerField(
         default=3
     )  # delivery fee per km AFS

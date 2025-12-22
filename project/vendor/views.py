@@ -56,8 +56,8 @@ from .utils import (
     revert_discount,
     apply_discount,
 )
-from django.utils.translation import gettext as _
 from rest_framework.exceptions import PermissionDenied
+from django.utils.translation import gettext as _
 from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
 from live.utils import push_notification
@@ -1198,6 +1198,7 @@ class SetOrderStateCarrying(views.APIView):
             self.check_object_permissions(self.request, order)
             if order.is_epay:
                 if not order.paid:
+                    logger.error(f"Payment not completed for e-pay order {order.id}, set as carrying denied.")
                     return Response({"detail": "payment not completed"}, status=400)
 
             with atomic():
@@ -1207,7 +1208,6 @@ class SetOrderStateCarrying(views.APIView):
                 UserOtp.objects.create(user=order.user, otp=order.otp)
                 # setting order in carrying state
                 order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
-                # order.otp = otp
                 carrier.save()
                 # setting carrier live status in redis
                 order_user = order.user

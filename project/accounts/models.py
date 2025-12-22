@@ -14,10 +14,10 @@ REST = 1
 CUSTOMER = 2
 CARRIER = 3
 
-DEFAULT_OTP_EXPIRATION = 10  # minutes
-FOOD_DELIVERY_OTP_EXPIRATION = 3 * 60  # 3 hours
-CARRIER_ADD_OTP_EXPIRATION = 1440
-OTP_RETRY_DELAY = 600
+DEFAULT_OTP_EXPIRATION = 10 * 60  # minutes
+CARRIER_ADD_OTP_EXPIRATION = 1 * 3600  # 1 hour
+OTP_RETRY_DELAY = 300  # 5 minutes
+VENDOR_OTP_RETRY_DELAY = 15 * 60  # 15 minutes
 DEFAULT_CITY = "kabul"
 
 
@@ -173,7 +173,7 @@ class UserOtp(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):
-        return timezone.now() > self.created_at + timezone.timedelta(minutes=expire)
+        return timezone.now() > self.created_at + timezone.timedelta(seconds=expire)
 
 
 class NoUserOtp(models.Model):
@@ -182,4 +182,4 @@ class NoUserOtp(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_expired(self, expire=DEFAULT_OTP_EXPIRATION):
-        return timezone.now() > self.created_at + timezone.timedelta(minutes=expire)
+        return timezone.now() > self.created_at + timezone.timedelta(seconds=expire)

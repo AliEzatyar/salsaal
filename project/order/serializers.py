@@ -165,7 +165,8 @@ class VOrderSerializer(ModelSerializer):
             "carrier",
             "items",
             "destination",
-            "items"
+            "items",
+            "payment_type",
         ]
         read_only_fields = ["id", "created_at"]
 

@@ -49,6 +49,14 @@ def get_cpaas_token():
 def send_otp(self,otp=None, user_id=None, phone_number=None, **kwargs):
     """
     sends otp using OBD compaign
+    this function is a celery task 
+    this function handles non-user otp (for sign up) and user otp (for login, password reset etc)
+    Params:
+        otp (int): the otp to be sent
+        user_id (int): the user id to whom otp is sent, if None, it is considered as no-user otp
+        phone_number (str): the phone number to which otp is sent
+    Returns:
+        str: success or error message
     """
     try:
         if not user_id:

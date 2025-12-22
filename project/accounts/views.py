@@ -5,6 +5,7 @@ from accounts.models import (
     CUSTOMER,
     OTP_RETRY_DELAY,
     REST,
+    VENDOR_OTP_RETRY_DELAY,
     NoUserOtp,
     User,
     UserOtp,
@@ -20,7 +21,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
     OutstandingToken,
 )
 from order.models import Reward
-from .utils import OTP_LOGIN, OTP_VERIFY_PHONE, generate_otp, get_user_otp_tries_key
+from .utils import generate_otp, get_user_otp_tries_key
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import send_otp
 from .serializers import (
@@ -29,14 +30,11 @@ from .serializers import (
     UserProfileCreationSerializer,
 )
 from rest_framework import permissions
-from rest_framework import generics
 from rest_framework import views, viewsets
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenRefreshView
 from marketplace.utils import r
-from django.utils import timezone
-from datetime import timedelta
 from django.db.transaction import atomic
 from logging import getLogger
 """Account API Views"""
@@ -64,8 +62,6 @@ class UserViewset(viewsets.ModelViewSet):
         """limiting queryset to only  one instance"""
         new_qs = User.objects.filter(id=self.request.user.id)
         return new_qs
-
-    
 
 
 class UserRewardsViewset(viewsets.ReadOnlyModelViewSet):
@@ -151,37 +147,51 @@ class LoginApiView(views.APIView):
             # -------------------------------- sending tokens
             try:
                 otp = data.get("otp", None)
-                # if not otp:
-                #     return Response(
-                #         {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
-                #     )
+                if not otp:
+                    return Response(
+                        {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+                    )
                 # verifying otp
-                # otp_tries_key = get_user_otp_tries_key(phone_number)
-                # tries = r.get(otp_tries_key)
-                # r.incrby(otp_tries_key, 1)
-                # if tries and int(tries) > 5:
-                #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 10 minutes delay
-                #     return Response(
-                #         {"detail": "max_attempts_reached"},
-                #         status=status.HTTP_403_FORBIDDEN,
-                #     )
+                otp_tries_key = get_user_otp_tries_key(phone_number)
+                tries = r.get(otp_tries_key)
+                r.incrby(otp_tries_key, 1)
+                # --------------------- vendor login throttling
+                if role == REST:
+                    if tries and int(tries) > 2:
+                        logger.warning(f"vendor login attempt failed {phone_number}")
+                        r.expire(
+                            otp_tries_key, VENDOR_OTP_RETRY_DELAY
+                        )  # 15 minutes delay
+                        # vendor should request new otp after 15 minutes and retry
+                        return Response(
+                            {"detail": "max_attempts_reached"},
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
+                if tries and int(tries) > 5:
+                    logger.warning(f"max otp attempts reached for existing user login: {phone_number}")
 
-                # saved_otp = UserOtp.objects.get(otp=otp)
-                # if (
-                #     saved_otp.is_expired()
-                #     or saved_otp.user.phone_number != phone_number
-                # ):
-                #     return Response(
-                #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-                #     )
-                # # finding user
+                    r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 5 minutes delay
+                    return Response(
+                        {"detail": "max_attempts_reached"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                # verifying otp
+                saved_otp = UserOtp.objects.get(otp=otp)
+                if (
+                    saved_otp.is_expired()
+                    or saved_otp.user.phone_number != phone_number
+                ):
+                    return Response(
+                        {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                    )
+                # finding user
                 user = User.objects.get(phone_number=phone_number)
-                # user.token_valid_after = get_token_valid_after()
+                user.token_valid_after = get_token_valid_after()
                 user.is_active = True
                 user.save()
                 refresh = RefreshToken.for_user(user)
-                # saved_otp.delete()
-                # r.delete(otp_tries_key)
+                saved_otp.delete()
+                r.delete(otp_tries_key)
 
                 return Response(
                     {
@@ -274,10 +284,10 @@ class VerifyOtpSignUpApiView(views.APIView):
         data = self.request.data
         otp = data.get("otp", None)
         phone_number = data.get("phone_number", None)
-        # if not otp:
-        #     return Response(
-        #         {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
-        #     )
+        if not otp:
+            return Response(
+                {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+            )
         if not phone_number:
             return Response(
                 {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
@@ -285,31 +295,34 @@ class VerifyOtpSignUpApiView(views.APIView):
 
         try:
             # ----- preventing auto retries
-            # otp_tries_key = get_user_otp_tries_key(phone_number)
-            # tries = r.get(otp_tries_key)
-            # r.incrby(otp_tries_key, 1)
-            # if tries and int(tries) > 5:
-            #     r.expire(otp_tries_key, OTP_RETRY_DELAY)  #
-            #     return Response(
-            #         {"detail": "max_attempts_reached"},
-            #         status=status.HTTP_403_FORBIDDEN,
-            #     )
+            otp_tries_key = get_user_otp_tries_key(phone_number)
+            tries = r.get(otp_tries_key)
+            r.incrby(otp_tries_key, 1)
+            if tries and int(tries) > 5:
+                r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 5 minutes delay
+                logger.warning(f"max otp attempts reached for new user login: {phone_number}")
+                return Response(
+                    {"detail": "max_attempts_reached"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             # ----- verifying otp
-            # saved_otp = NoUserOtp.objects.get(otp=otp)
-            # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-            #     return Response(
-            #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-            #     )
-            # saved_otp = NoUserOtp.objects.get(otp=otp)
-            # if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-            #     return Response(
-            #         {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-            #     )
+            saved_otp = NoUserOtp.objects.get(otp=otp)
+            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+                return Response(
+                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                )
+            saved_otp = NoUserOtp.objects.get(otp=otp)
+            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+                return Response(
+                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                )
             user = User.objects.filter(phone_number=phone_number).first()
             if user:
                 user.is_active = True
+                user.token_valid_after = get_token_valid_after()
                 user.save()
-                # saved_otp.delete()
+                saved_otp.delete()
+                r.delete(otp_tries_key)
                 refresh = RefreshToken.for_user(user)
                 return Response(
                     {
@@ -418,7 +431,9 @@ class UpsertDeviceToken(views.APIView):
 
 
 class ResendOtpApiView(views.APIView):
-    
+    """
+        users can resend otp 3 times per 10 minutes
+    """
     permission_classes = [permissions.AllowAny]
     
     def post(self,*args, **kwargs):

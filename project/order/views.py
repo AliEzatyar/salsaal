@@ -15,7 +15,7 @@ from django.contrib.gis.geos import Point
 from cart.models import CartItem
 from .models import (
     MAX_ORDER_DELIVERY_TRIES_COUNT,
-    ORDER_DELIVERY_ATTEPMTS_DELAY,
+    ORDER_DELIVERY_ATTEMPTS_DELAY,
     VALID_PAYMENT_TYPES,
     ORDER_DELIVERY_OTP_EXPIRATION,
     FailedMultiVendorPayment,
@@ -287,6 +287,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 ORDER_STATUS_CHOICES[2][1],
             ],  # preparing order
         )[:5]
+        
         if len(orders) > 0:
             with atomic():
                 for order in orders:
@@ -577,7 +578,8 @@ class SetOrderStateDelivered(views.APIView):
                 or not otp
                 or otp.is_expired(expire=ORDER_DELIVERY_OTP_EXPIRATION)
             ):
-                r.expire(order_delivery_tries_key, ORDER_DELIVERY_ATTEPMTS_DELAY)
+                r.expire(order_delivery_tries_key, ORDER_DELIVERY_ATTEMPTS_DELAY)
+                logger.warning("max order delivery attempts reached. invalid/expired otp provided for setting order delivered")
                 return Response(
                     {"detail": "otp_invalid_or_expired"},
                     status=status.HTTP_403_FORBIDDEN,
