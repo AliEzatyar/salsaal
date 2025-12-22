@@ -8,6 +8,8 @@ from live.utils import push_notification
 from .models import (
     PLATFORM_DEFAULT_EVENING_QORAA_TITLE,
     PLATFORM_DEFAULT_MORNING_QORAA_TITLE,
+    PLATFORM_EVENING_QORAA_START_HOUR,
+    PLATFORM_MORNING_QORAA_START_HOUR,
     Qoraa,
     PlatformQoraaVendor,
 )
@@ -15,7 +17,9 @@ from random import choice
 from django.utils.translation import gettext as _
 from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
+from logging import getLogger
 
+logger = getLogger(__name__)
 
 def _send_qoraa_creation_notification(vendor, qoraa, end_time):
     """Sends notification to vendor about qoraa creation."""
@@ -78,23 +82,36 @@ def _create_qoraas_for_time(hour, platform_qoraa_title):
                 )
                 deactivate_language()
                 _send_qoraa_creation_notification(random_qv.vendor, q, end)
-
+                logger.info(f"Platform Qoraa created with id {q.id} for vendor {random_qv.vendor.vendor_name}.")
+                return f"Platform Qoraa created with id {q.id}."
+            else:
+                logger.error("Selected food item for platform qoraa does not exist.")
+                return "Selected Food Item Does Not Exist"
+        else:
+            logger.info("No active platform qoraa vendors or not selected food_items.")
+            return "No Active Platform Qoraa Vendors"
+        
+    else:
+        logger.info("Platform Qoraa for this time already exists.")
+        return "Qoraa Already Exists"
 
 @shared_task
 def create_morning_qoraa():
     """
     Creates the morning qoraa (lottery) which runs from 11:00 to 12:00 local time.
     """
-    _create_qoraas_for_time(11, PLATFORM_DEFAULT_MORNING_QORAA_TITLE)
+    _create_qoraas_for_time(
+        PLATFORM_MORNING_QORAA_START_HOUR, PLATFORM_DEFAULT_MORNING_QORAA_TITLE
+    )
     return "Morning Qoraas Created"
 
 
 @shared_task
 def create_evening_qoraa():
     """
-    Creates the evening qoraa (lottery) which runs from 18:00 to 19:00 local time.
+    Creates the evening qoraa (lottery) which runs from 15:00 to 18:00 local time.
     """
-    _create_qoraas_for_time(18, PLATFORM_DEFAULT_EVENING_QORAA_TITLE)
+    _create_qoraas_for_time(PLATFORM_EVENING_QORAA_START_HOUR, PLATFORM_DEFAULT_EVENING_QORAA_TITLE)
     return "Evening Qoraas Created"
 
 
@@ -113,7 +130,7 @@ def finalize_qoraa():
         list: A list of dictionaries, where each dictionary contains the primary
               key of the finalized qoraa and its winner's primary key (or None).
     """
-    now = timezone.now()
+    now = timezone.now() + timezone.timedelta(minutes=1)
     to_finalize = Qoraa.objects.filter(status=Qoraa.STATUS_RUNNING, end__lte=now)
     results = []
     for q in to_finalize:
