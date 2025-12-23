@@ -200,7 +200,7 @@ app.ws("/*", {
                 }
 
                 case "CARRIER_LOCATION": {
-                    redisPub.set(`carrier_last_${data.carrierId}`, JSON.stringify({ latitude: data.latitude, longitude: data.longitude }));
+                    redisPub.set(`carrier_last_${data.carrierId}`, JSON.stringify({ latitude: data.latitude, longitude: data.longitude }), { EX: 3600 }); // 1 hour ttl
                     redisPub.publish(`pub:carrier:${data.carrierId}`, JSON.stringify({ type: "CARRIER_LOCATION", data: { latitude: data.latitude, longitude: data.longitude } }));
                     break
 

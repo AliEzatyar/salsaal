@@ -80,7 +80,8 @@ class Qoraa(models.Model):
         default=QORAA_JOINERS_LIMIT_DEFAULT,
         help_text="Maximum number of joiners allowed",
     )
-
+    is_claimed = models.BooleanField(default=False)
+    
     class Meta:
         # ensure we don't accidentally create overlapping identical start times
         ordering = ["-start"]

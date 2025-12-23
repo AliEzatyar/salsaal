@@ -36,6 +36,7 @@ CACHES = {
             # also supply password explicitly; some environments/clients pick this up more reliably
             "PASSWORD": REDIS_PASSWORD,
         },
+        "KEY_PREFIX": "dj",
     }
 }
 # django channels
@@ -60,10 +61,8 @@ CURRENT_DOMAIN_NAME = env.get("CURRENT_DOMAIN_NAME")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Celery settings
-CELERY_BROKER_URL = (
-    f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"  # or use RabbitMQ
-)
-CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
+CELERY_BROKER_URL = env.get("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = env.get("CELERY_RESULT_BACKEND")
 DJANGO_CELERY_BEAT_MAX_LOOP_INTERVAL = 50  # every 50 seconds, jobs re-taken from db
 # Use django-celery-beat DatabaseScheduler so periodic tasks stored in the DB are used.
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"

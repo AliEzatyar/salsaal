@@ -27,11 +27,13 @@ FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
 
 async def cache_set(key: str, value, ttl=600):
+    key = "fast:"+key
     await redis.set(key, j_dumps(value), ttl)
     return True
 
 
 async def cache_get(key: str):
+    key = "fast:"+key
     value = await redis.get(key)
     if not value:
         return None

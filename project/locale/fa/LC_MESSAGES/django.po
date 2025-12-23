@@ -71,8 +71,6 @@ msgid "Zaytoon Food"
 msgstr "زیتون فود"
 
 #: qoraa/tasks.py:133 qoraa/tasks.py:217
-#, fuzzy, python-brace-format
-#| msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgstr "تبریک! شما لاتری‌ای را برنده شده‌اید که توسط {vendor} حمایت شده است."
 

@@ -88,12 +88,12 @@ class LoginApiView(views.APIView):
     Methods:
       - PATCH: request OTP for phone_number. Sends OTP for existing users (OTP_LOGIN)
                or for new numbers (OTP_VERIFY_PHONE).
+               checks role consistency for existing users.
+               
       - POST: verify OTP. typ="existing_user" issues JWTs after updating token_valid_after.
               typ="new_user" validates user_data, creates User/profile (role=CUSTOMER),
-              sets token_valid_after and issues JWTs.
-
+              
     Notes:
-      - OTP verification and retry logic exist but are commented out here.
       - Uses send_otp Celery task and RefreshToken.for_user to issue tokens.
       - Returns standard 200/400/403/404/409/501 responses for the described cases.
     """
@@ -101,6 +101,13 @@ class LoginApiView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def patch(self, *args, **kwargs):
+        """
+        1. if existing user, sends otp for login
+        2. if new user, just says new user
+        3. prevents multiple otp requests by redis key
+        4. throttles vendor otp requests to 3 per 15 minutes
+        5. throttles normal user otp requests to 5 per 5 minutes
+        """
         data = self.request.data
         phone_number = data.get("phone_number", None)
         role = data.get("role", None)
@@ -135,6 +142,13 @@ class LoginApiView(views.APIView):
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def post(self, *args, **kwargs):
+        """
+            this method issues token for existing users after verifying otp
+            or creates new user account but does not verify otp and issue tokens for new users 
+            for new users, otp verification is done in a separate view called VerifyOtpSignUpApiView
+            for new users, otp is created and sent
+            *** marking user as active is for existing users, for new users is_active False until otp verified by VerifyOtpSignUpApiView
+        """
         data = self.request.data
         typ = data.get("type", None)
         phone_number = data.get("phone_number", None)
@@ -374,7 +388,7 @@ class DeleteAccountView(views.APIView):
             user.delete()
             return Response(status=status.HTTP_200_OK)
         # just logout vendor or admin
-        user.token_valid_after = get_token_valid_after() # 5 seconds later 
+        user.token_valid_after = get_token_valid_after() # 5 seconds before 
         user.save()
         return Response(status=status.HTTP_200_OK)
 

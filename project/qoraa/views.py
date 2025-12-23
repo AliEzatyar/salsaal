@@ -18,6 +18,10 @@ from .serializers import (
 from django.utils.translation import gettext as _
 from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 
 # Create your views here.
 
@@ -141,22 +145,47 @@ class ClaimQoraaPrizeApiView(views.APIView):
 
     def post(self, request, *args, **kwargs):
         """Allows a user to claim their prize for a specific ."""
-        qoraa_id = request.data.get("qoraa_id")
+        # ----------------- updating user's location
+        data = request.data
+        lat = data.get("latitude", None)
+        lon = data.get("longitude", None)
+        qoraa_id = data.get("qoraa_id")
+        if lat and lon:
+            try:
+
+                float(lat)
+                float(lon)
+            except ValueError:
+                return Response(
+                    {"detail": "provide_correct_location"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user_profile = request.user.profile
+            user_profile.latitude = str(lat)
+            user_profile.longitude = str(lon)
+            user_profile.save()
+        else:
+            return Response(
+                {"detail": "provide_correct_location"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if not qoraa_id:
             return Response(
                 {"detail": "qoraa_id_required"}, status=status.HTTP_400_BAD_REQUEST
             )
+        q = None
         try:
-            q = Qoraa.objects.get(pk=qoraa_id, status=Qoraa.STATUS_FINISHED)
-        except Qoraa.DoesNotExist:
+            q = Qoraa.objects.get(pk=qoraa_id, status=Qoraa.STATUS_FINISHED, winner=request.user)
+            if q.is_claimed:
+                return Response(
+                    {"detail": "prize_already_claimed"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except Exception as e:
+            logger.error(f"Error fetching finished Qoraa for user {request.user.id}: qoraa_id {qoraa_id}: {e}")
             return Response(
                 {"detail": "no_finished_lottery_with_id"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not q.winner == request.user:
-            return Response(
-                {"detail": "user_not_a_winner"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # creating the order and setting in preparing state
@@ -173,6 +202,9 @@ class ClaimQoraaPrizeApiView(views.APIView):
             payment_type=VALID_PAYMENT_TYPES[3][0],  # qoraa_payment
             is_epay=False,
         )
+        q.is_claimed = True
+        q.save()
+        
         # sending notificaiton to vendor
         activate_language(q.vendor.user_profile.pf_lang)
         push_notification(
