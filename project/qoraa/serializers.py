@@ -86,7 +86,8 @@ class QoraaReadOnlySerializer(ModelSerializer):
             "is_platform",
             "joiners_count",
             "is_joined",
-            "is_winner"
+            "is_winner",
+            "is_claimed",
         ]
 
     def get_vendor_name(self, obj):
@@ -156,7 +157,9 @@ class VendorQoraaSerializer(ModelSerializer):
         joiners_limit = validated_data.get("joiners_limit", 0)
         try:
             food = validated_data.get("food", None)
+            print(validated_data,"fasdfasdf")
             if not price_value:
+                logger.error("")
                 raise ValidationError("provide_price_value")
             if not price_value in food.prices:
                 raise ValidationError("price_value_not_in_prices")

@@ -223,7 +223,11 @@ app.ws("/*", {
                     // -------- unsubscribing vendor from this order-----------
                     setTimeout(()=>{
                         let room = `order:${data.orderId}`;
-                        ws.unsubscribe(room);
+                        try {
+                            ws.unsubscribe(room);
+                        } catch (e) {
+                            // socket already closed, ignore
+                        }
                     },2000)
                     break;
                 }

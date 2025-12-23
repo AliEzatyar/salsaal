@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from api.permissions import IsCustomer, IsVendor, IsVendorOfObject
 from accounts.models import User
-from order.models import ORDER_STATUS_CHOICES, VALID_PAYMENT_TYPES, Order
+from order.models import ORDER_STATUS_CHOICES, VALID_PAYMENT_TYPES, Order, OrderItem
 from accounts.utils import generate_otp
 from live.utils import push_notification
 from qoraa.models import MIN_QORAA_PRICE_VALUE, Qoraa
@@ -202,13 +202,20 @@ class ClaimQoraaPrizeApiView(views.APIView):
             payment_type=VALID_PAYMENT_TYPES[3][0],  # qoraa_payment
             is_epay=False,
         )
+        # creating the order item for the won food
+        OrderItem.objects.create(
+            order=new_order,
+            food=q.food,
+            quantity=1,
+            price=q.price_value,
+            vendor=q.vendor,
+        )
         q.is_claimed = True
         q.save()
-        
         # sending notificaiton to vendor
         activate_language(q.vendor.user_profile.pf_lang)
         push_notification(
-            user=q.vendor.user.id,
+            user_id=q.vendor.user.id,
             title=_("Qoraa Prize Claimed"),
             body=_(f"The Qoraa winner has claimed their prize. Order ID: {new_order.id}. Please prepare the order and deliver it."),
             data={"order_id": new_order.id}

@@ -192,7 +192,7 @@ class LoginApiView(views.APIView):
                 r.incrby(otp_tries_key, 1)
                 # --------------------- vendor login throttling
                 if role == REST:
-                    if tries and int(tries) > 2:
+                    if tries and int(tries) > 3:
                         logger.warning(f"vendor login attempt failed {phone_number}")
                         r.expire(
                             otp_tries_key, VENDOR_OTP_RETRY_DELAY
@@ -211,7 +211,7 @@ class LoginApiView(views.APIView):
                         status=status.HTTP_403_FORBIDDEN,
                     )
                 # verifying otp
-                saved_otp = UserOtp.objects.get(otp=otp)
+                saved_otp = UserOtp.objects.filter(otp=otp).first()
                 if (
                     saved_otp.is_expired()
                     or saved_otp.user.phone_number != phone_number
@@ -338,18 +338,18 @@ class VerifyOtpSignUpApiView(views.APIView):
                 logger.warning(f"max otp attempts reached for new user login: {phone_number}")
                 return Response(
                     {"detail": "max_attempts_reached"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             # ----- verifying otp
-            saved_otp = NoUserOtp.objects.get(otp=otp)
+            saved_otp = NoUserOtp.objects.filter(otp=otp).first()
             if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
                 return Response(
-                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                    {"detail": "invalid_otp"}, status=status.HTTP_400_BAD_REQUEST
                 )
-            saved_otp = NoUserOtp.objects.get(otp=otp)
+            saved_otp = NoUserOtp.objects.filter(otp=otp).first()
             if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
                 return Response(
-                    {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                    {"detail": "invalid_otp"}, status=status.HTTP_400_BAD_REQUEST
                 )
             user = User.objects.filter(phone_number=phone_number).first()
             if user:
@@ -371,7 +371,7 @@ class VerifyOtpSignUpApiView(views.APIView):
             )
         except NoUserOtp.DoesNotExist:
             return Response(
-                {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "invalid_otp"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 

@@ -241,20 +241,23 @@ def end_vendor_qoraa(qoraa_id):
             qoraa.save()
             # Notify the winner if there is one
             if winner:
-                activate_language(winner.profile.pf_lang)
-                title = _("Qoraa Winner")
-                description = _(
-                    "Congratulations! You have won the Qoraa sponsored by {sponser}"
-                ).format(sponser= qoraa.vendor.vendor_name)
-                notf = Notification.objects.create(
-                    receiver=winner,
-                    title=title,
-                    description=description,
-                    type="QORAA_WINNER",
-                    data={},
-                    target_id=qoraa.id,
-                )
-    
+                try:
+                    activate_language(winner.profile.pf_lang)
+                    title = _("Qoraa Winner")
+                    description = _(
+                        "Congratulations! You have won the Qoraa sponsored by {sponser}"
+                    ).format(sponser= qoraa.vendor.vendor_name)
+                    notf = Notification.objects.create(
+                        receiver=winner,
+                        title=title,
+                        description=description,
+                        type="QORAA_WINNER",
+                        data={},
+                        target_id=qoraa.id,
+                    )
+                except Exception as e:
+                    logger.error(f"Error creating notification for Qoraa winner: {e}")
+   
                 push_notification.delay(
                     winner.id,
                     notf.title,

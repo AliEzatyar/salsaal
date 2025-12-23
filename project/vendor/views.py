@@ -423,7 +423,7 @@ class AddCarrierAPIView(views.APIView):
         phone_number = data.get("phone_number")
         otp = data.get("otp")
         try:
-            otp = UserOtp.objects.get(otp=otp)
+            otp = UserOtp.objects.filter(otp=otp).first()
             
             if otp.is_expired(CARRIER_ADD_OTP_EXPIRATION):
                 return Response(
@@ -1100,7 +1100,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     # ------------------ calculating delivery cost -------------------------
                     delivery_cost = None
                     v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
-                    v_mfcfd = vendor.mfcfd  # vendor's minimum food cost for free delivery
+                    v_mfcfd = vendor.mfcfd  # vendor's minimum food price for free delivery
                     if (
                         v_mfcfd
                         and v_mfdd > 0
@@ -1282,6 +1282,7 @@ class SetOrderStateCarrying(views.APIView):
                         }  # customer app should extract order id and subscribe it for live tracking
                     ),
                 )
+            activate_language(order.user.profile.pf_lang)
             # sending notification to customer
             push_notification.delay(
                 order.user.id,
@@ -1289,13 +1290,16 @@ class SetOrderStateCarrying(views.APIView):
                 body=notf.description,
                 data={"order_id": order.id},
             )
+            deactivate_language
             # sending notification to carrier
+            activate_language(carrier.user.profile.pf_lang)
             push_notification.delay(
-                carrier_id,
+                carrier.user.id,
                 _("New Order Assigned"),
                 body=_("You have been assigned a new order to deliver."),
                 data={"order_id": order.id},
             )
+            deactivate_language()
             # --------------------- sending notification to carrier's room
 
             r.publish(
