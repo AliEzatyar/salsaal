@@ -121,10 +121,43 @@ class User(AbstractBaseUser):
         return self.phone_number
 
     def has_perm(self, perm, obj=None):
-        return self.is_admin
+        """
+        Return True if the user has the given permission. This checks:
+        1. User permissions directly assigned to the user
+        2. Permissions from all groups the user belongs to
+        3. Superuser status (if applicable)
+        """
+        # Check if user has permission directly
+        if self.user_permissions.filter(
+            content_type__app_label=perm.split('.')[0],
+            codename=perm.split('.')[1]
+        ).exists():
+            return True
 
-    def has_module_perms(self, app_lable: str):
-        return True
+        # Check if any of user's groups have the permission
+        for group in self.groups.all():
+            if group.permissions.filter(
+                content_type__app_label=perm.split('.')[0],
+                codename=perm.split('.')[1]
+            ).exists():
+                return True
+
+        return False
+
+    def has_module_perms(self, app_label):
+        """
+        Return True if the user has any permissions for the given app_label.
+        """
+        # Check user permissions
+        if self.user_permissions.filter(content_type__app_label=app_label).exists():
+            return True
+
+        # Check group permissions
+        for group in self.groups.all():
+            if group.permissions.filter(content_type__app_label=app_label).exists():
+                return True
+
+        return False
 
 
 class UserProfile(g_models.Model):
