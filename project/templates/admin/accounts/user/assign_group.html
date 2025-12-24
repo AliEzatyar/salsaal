@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls %}
+
+{% block title %}Assign Users to Group{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h1>Assign Users to Group</h1>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-row">
+                <label for="id_group">Select Group:</label>
+                <select name="group" id="id_group" required>
+                    <option value="">Choose a group...</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <h3>Selected Users:</h3>
+                <ul>
+                    {% for user in users %}
+                    <li>
+                        <input type="checkbox" name="users" value="{{ user.id }}" checked readonly>
+                        {{ user.name }} ({{ user.phone_number }})
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="submit-row">
+                <input type="submit" value="Assign to Group" class="default">
+                <a href="{% url 'admin:accounts_user_changelist' %}" class="button">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

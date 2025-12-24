@@ -1,7 +1,7 @@
 from datetime import timedelta
 from uuid import uuid4
 from django.db import models
-from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, Group, Permission
 from django.contrib.gis.db import models as g_models
 from django.contrib.gis.geos import Point
 from h3 import latlng_to_cell as h3_latlng_to_cell
@@ -96,6 +96,22 @@ class User(AbstractBaseUser):
     is_superadmin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     region = models.CharField(blank=True, null=True, default="AF")
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        related_name="custom_user_set",
+        related_query_name="user",
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name="custom_user_set",
+        related_query_name="user",
+    )
 
     USERNAME_FIELD = "phone_number"
 
