@@ -13,6 +13,21 @@ class UserAd(UserAdmin):
     readonly_fields = ["created_date", "modified_date", "last_login", "date_joined"]
     filter_horizontal = ()
 
+    fieldsets = (
+        (None, {'fields': ('phone_number', 'password')}),
+        ('Personal info', {'fields': ('name', 'email', 'region')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superadmin')}),
+        ('Role', {'fields': ('role',)}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('phone_number', 'name', 'email', 'password1', 'password2', 'role', 'is_active', 'is_staff', 'is_superadmin'),
+        }),
+    )
+
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ["id", "user", "pf_lang", "city", "country", "created_at"]
     list_filter = ["pf_lang", "city", "country"]
