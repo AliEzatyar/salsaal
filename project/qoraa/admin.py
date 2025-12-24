@@ -24,6 +24,7 @@ from .models import PlatformQoraaVendor, Qoraa
 @admin.register(Qoraa)
 class QoraaAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "title",
         "vendor",
         "start",
@@ -31,17 +32,24 @@ class QoraaAdmin(admin.ModelAdmin):
         "status",
         "winner",
         "is_platform",
+        "joiners_limit",
+        "is_claimed",
+        "created_at",
     )
-    list_filter = ("status", "is_platform", "start")
-    search_fields = ("title", "vendor__name", "winner__username")
+    list_filter = ("status", "is_platform", "is_claimed", "start", "end")
+    search_fields = ("title", "vendor__vendor_name", "winner__name")
+    ordering = ("-start",)
+    readonly_fields = ["created_at"]
 
 
 @admin.register(PlatformQoraaVendor)
 class PlatformQoraaVendorAdmin(admin.ModelAdmin):
     form = PlatformQoraaVendorForm
-    list_display = ("vendor", "is_active")
+    list_display = ("id", "vendor", "is_active")
+    list_editable = ["is_active"]
     list_filter = ("is_active",)
     search_fields = ("vendor__vendor_name", "vendor__id")
+    ordering = ("-id",)
 
     def get_form(self, request, obj=None, **kwargs):
         Form = super().get_form(request, obj, **kwargs)

@@ -4,8 +4,11 @@ from .models import Notification
 
 
 class NotificationAdmin(admin.ModelAdmin):
-    model = Notification
-    list_display = ["id", "receiver", "created_at", "target_id"]
+    list_display = ["id", "receiver", "title", "type", "is_read", "created_at", "target_id"]
+    list_editable = ["is_read"]
+    list_filter = ["type", "is_read", "created_at"]
+    search_fields = ["receiver__name", "receiver__phone_number", "title", "description"]
+    ordering = ("-created_at",)
+    readonly_fields = ["created_at"]
 
-
-admin.site.register(Notification,NotificationAdmin)
+admin.site.register(Notification, NotificationAdmin)
