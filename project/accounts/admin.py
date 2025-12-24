@@ -167,7 +167,7 @@ class GroupAdmin(admin.ModelAdmin):
     ordering = ['name']
 
     def get_user_count(self, obj):
-        return obj.user_set.count()
+        return obj.custom_user_set.count()
     get_user_count.short_description = 'Users'
 
     def get_permissions_count(self, obj):
