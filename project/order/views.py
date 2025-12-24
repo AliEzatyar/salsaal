@@ -284,9 +284,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             user=request.user,
             status__in=[
                 ORDER_STATUS_CHOICES[1][1],  # waiting order
-                ORDER_STATUS_CHOICES[2][1],
+                ORDER_STATUS_CHOICES[2][1],  # preparing
             ],  # preparing order
-        )[:5]
+        )[:1]
         
         if len(orders) > 0:
             with atomic():

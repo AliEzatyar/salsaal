@@ -6,6 +6,7 @@ from celery import shared_task
 
 from logging import getLogger
 
+
 logger = getLogger(__name__)
 
 @shared_task(bind=True, max_retries=5, default_retry_delay=10)
@@ -42,8 +43,10 @@ def push_notification(self, user_id: int, title: str, body: str, data=None):
 fcm_api_key = settings.FCM_API_KEY
 fcm = FCMNotification(service_account_file=fcm_api_key)
 
+fcm
 
 def send_fcm(token, title, body, data=None):
+    data = None
     android_cfg = {
         "priority": "high",
         "notification": {
