@@ -8,10 +8,6 @@ from logging import getLogger
 
 logger = getLogger(__name__)
 
-def is_user_online(user_id):
-    return r.exists(f"user:{user_id}")  # returns 1 if online, 0 if offline
-
-
 @shared_task(bind=True, max_retries=5, default_retry_delay=10)
 def push_notification(self, user_id: int, title: str, body: str, data=None):
     """
@@ -26,7 +22,6 @@ def push_notification(self, user_id: int, title: str, body: str, data=None):
     Raises:
         May invoke Celery retry on delivery errors.
     """
-
     try:
         # Check if user is online via Redis
         devices = Device.objects.filter(user__id=user_id)
@@ -35,10 +30,10 @@ def push_notification(self, user_id: int, title: str, body: str, data=None):
         for device in devices:
             try:
                 send_fcm(device.token, title, body, data)
-                return "Notification sent via FCM"
             except Exception as e:
                 logger.exception(f"Error sending FCM to device {device.id} for user {user_id}: {e}")
                 raise self.retry(exc=e)
+        return "Notification sent via FCM"
     except Exception as e:
         logger.exception(f"Error in celery task push_notification: {e}")
         raise self.retry(exc=e)

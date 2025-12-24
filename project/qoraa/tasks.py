@@ -53,6 +53,7 @@ def _send_qoraa_creation_notification(vendor, qoraa, end_time):
         vendor.user.id,
         notf.title,
         body=notf.description,
+        data={"qoraa_id": qoraa.id},
     )
     deactivate_language()
 

@@ -303,7 +303,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 deactivate()
                 # ------------- sending notification to vendor
                 push_notification.delay(
-                    order.vendor.user.id, notf.title, body="", data={"order_id": order.id}
+                    order.vendor.user.id, notf.title, body=_("We are sorry to inform you that the order has been cancelled."), data={"order_id": order.id}
                 )
 
                 r.publish(
@@ -480,10 +480,10 @@ class AcceptRejectOrderView(views.APIView):
         """creates notification for vendor when order is accepted by buyer"""
         activate_language(order.vendor.user_profile.pf_lang)
         notf = Notification.objects.create(
-            title=_("order accepted by buyer!"),
+            title=_("order finalized by buyer!"),
             type="ORDER_ACCEPTED",
             data={},
-            description="",
+            description=_("Order has been accepted by the buyer."),
             receiver=order.vendor.user,
             target_id=order.id,
         )
@@ -624,14 +624,11 @@ class SetOrderStateDelivered(views.APIView):
                 target_id=order.id,
             )
             deactivate_language()
-            r.publish(
-                f"pub:vendor:{vendor.user.id}",
-                json.dumps(
-                    {
-                        "type": "ORDER_DELIVERED",
-                        "data": {"order_id": order_id},
-                    }
-                ),
+            push_notification.delay(
+                order.vendor.user.id,
+                _("Order Delivered"),
+                body=_(f"Order {order_id} delivered successfully."),
+                data={"order_id": order_id},
             )
             ser = COrderSerializer(order)
             return Response(

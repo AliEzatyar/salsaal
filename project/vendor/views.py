@@ -1145,7 +1145,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         else:
             description = _("your order has been accepted by restuarant!")
             title = _("Order Accepted")
-        # ------------- creating notification for user  
+        # ------------- creating notification for user
         notf = Notification.objects.create(
                 title=title,
                 type=type_,
@@ -1155,6 +1155,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                 target_id=order.id,
             )
         deactivate_language()
+        logger.info(f"notificaiton sent {notf.id}:{order.user.id}")
         # ------------- sending notification to vendor
         push_notification.delay(order.user.id, notf.title, body=notf.description,data={"order_id": order.id})
 

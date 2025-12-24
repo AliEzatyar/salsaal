@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-23 17:51+0430\n"
+"POT-Creation-Date: 2025-12-24 19:48+0430\n"
 "PO-Revision-Date: 2025-09-19 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Persian\n"
@@ -23,19 +23,27 @@ msgstr "شما سفارش جدیدی از مشتری دارید."
 msgid "order has been cancelled by buyer!"
 msgstr "سفارش توسط مشتری لغو شد."
 
-#: order/views.py:483
-msgid "order accepted by buyer!"
-msgstr "سفارش توسط مشتری پذیرفته شد."
+#: order/views.py:306
+msgid "We are sorry to inform you that the order has been cancelled."
+msgstr "متاسفیم،‌سفارش  توسط مشتری لغو شده است."
 
-#: order/views.py:612 order/views.py:620
+#: order/views.py:483
+msgid "order finalized by buyer!"
+msgstr "سفارش توسط مشتری نهایی شد."
+
+#: order/views.py:486
+msgid "Order has been accepted by the buyer."
+msgstr "مشتری سفارش را نهایی کرد،‌لطفا غذا را آماده کنید."
+
+#: order/views.py:611 order/views.py:619 order/views.py:629
 msgid "Order Delivered"
 msgstr "سفارش تحویل شد"
 
-#: order/views.py:613
+#: order/views.py:612
 msgid "Your order has been delivered successfully."
 msgstr "سفارش شما با موفقیت تحویل شد."
 
-#: order/views.py:621
+#: order/views.py:620 order/views.py:630
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "سفارش {order_id} با موفقیت تحویل شد."
@@ -62,28 +70,32 @@ msgstr "حمایت لاتری"
 msgid "You are a sponsor of this Qoraa at {time}."
 msgstr "شما در {time} حامی این لاتری هستید."
 
-#: qoraa/tasks.py:160 qoraa/tasks.py:245
+#: qoraa/tasks.py:161 qoraa/tasks.py:247
 msgid "Qoraa Winner"
 msgstr "برنده لاتری"
 
-#: qoraa/tasks.py:161
+#: qoraa/tasks.py:162
 msgid "Zaytoon Food"
 msgstr "زیتون فود"
 
-#: qoraa/tasks.py:163 qoraa/tasks.py:247
+#: qoraa/tasks.py:164 qoraa/tasks.py:249
+#, fuzzy, python-brace-format
+#| msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgstr "تبریک! شما لاتری‌ای را برنده شده‌اید که توسط {vendor} حمایت شده است."
 
-#: qoraa/views.py:212
+#: qoraa/views.py:219
 msgid "Qoraa Prize Claimed"
-msgstr ""
+msgstr "غذای لاتری سفارش شد"
 
-#: qoraa/views.py:213
+#: qoraa/views.py:220
 #, python-brace-format
 msgid ""
 "The Qoraa winner has claimed their prize. Order ID: {new_order.id}. Please "
 "prepare the order and deliver it."
 msgstr ""
+"برنده لاتری خوراک خویش را سفارش داده، آی دی {new_order.id}، لطفا سفارش را "
+"آماده و تحویل کنید"
 
 #: templates/two_factor/_wizard_actions.html:5
 msgid "Cancel"
@@ -333,19 +345,19 @@ msgstr "فروشنده سفارش شما را پذیرفت"
 msgid "Order Accepted"
 msgstr "سفارش پذیرفته شد."
 
-#: vendor/views.py:1265
+#: vendor/views.py:1266
 msgid "Order set as carrying"
 msgstr "سفارش در حالت انتقال قرار گرفت"
 
-#: vendor/views.py:1270
+#: vendor/views.py:1271
 msgid "Your order is being carried, click to live track."
 msgstr "سفارش شما در حال انتقال است. برای پیگیری لحظه‌ای کلیک کنید."
 
-#: vendor/views.py:1298
+#: vendor/views.py:1299
 msgid "New Order Assigned"
 msgstr "شما سفارشی برای انتقال دارید"
 
-#: vendor/views.py:1299
+#: vendor/views.py:1300
 msgid "You have been assigned a new order to deliver."
 msgstr "شما سفارش جدید برای انتقال دارید."
 

@@ -168,9 +168,6 @@ class StandardResultSetPagination(PageNumberPagination):
         self.page_size = page_size
 
 
-def is_user_online(user_id):
-    return r.hexists(f"ws:users:{user_id}")  # returns 1 if online, 0 if offline
-
 
 def distance_reach_time(qs, lat, lon, typ="food"):
     """

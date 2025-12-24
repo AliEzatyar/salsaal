@@ -42,6 +42,24 @@ try {
     process.exit(1);
 }
 
+
+redisPub.on("error", (err) => {
+    console.error("Redis error:", err);
+});
+
+redisPub.on("reconnecting", () => {
+    console.log("Redis reconnecting...");
+});
+
+redisSub.on("error", (err) => {
+    console.error("Redis error:", err);
+});
+
+redisSub.on("reconnecting", () => {
+    console.log("Redis reconnecting...");
+});
+
+
 // default ttl for order
 const orderStatusTTL = 2 * 60 * 60 // 2 hours 
 
@@ -136,6 +154,7 @@ app.ws("/*", {
                 ws.send(JSON.stringify({ error: "Invalid message format" }));
                 return;
             }
+            
             const { type, data } = messageData;
             switch (type) {
                 case "SUBSCRIBE_ORDER": {
@@ -228,7 +247,7 @@ app.ws("/*", {
                         } catch (e) {
                             // socket already closed, ignore
                         }
-                    },2000)
+                    },1000)
                     break;
                 }
 
