@@ -300,12 +300,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                     receiver=order.vendor.user,
                     target_id=order.id,
                 )
-                deactivate()
                 # ------------- sending notification to vendor
                 push_notification.delay(
                     order.vendor.user.id, notf.title, body=_("We are sorry to inform you that the order has been cancelled."), data={"order_id": order.id}
                 )
 
+                deactivate()
                 r.publish(
                     f"pub:vendor:{order.vendor.user.id}",
                     json.dumps(
@@ -614,7 +614,9 @@ class SetOrderStateDelivered(views.APIView):
                 receiver=order.user,
                 target_id=order.id,
             )
+            deactivate_language
             # notificaiton for vendor + send by websocket
+            activate_language(vendor.user_profile.pf_lang)
             Notification.objects.create(
                 title=_("Order Delivered"),
                 description=_(f"Order {order_id} delivered successfully."),
@@ -623,13 +625,13 @@ class SetOrderStateDelivered(views.APIView):
                 data={"order_id": order_id},
                 target_id=order.id,
             )
-            deactivate_language()
             push_notification.delay(
                 order.vendor.user.id,
                 _("Order Delivered"),
                 body=_(f"Order {order_id} delivered successfully."),
                 data={"order_id": order_id},
             )
+            deactivate_language()
             ser = COrderSerializer(order)
             return Response(
                 ser.data,
