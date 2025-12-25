@@ -8,6 +8,7 @@ from django.utils.html import format_html
 
 from accounts.models import NoUserOtp, User, UserOtp, UserProfile,Device
 from order.models import Reward
+from admins.admin import revenue_admin_site
 # Register your models here.
 
 class UserAd(UserAdmin):
@@ -151,13 +152,13 @@ class RewardAdmin(admin.ModelAdmin):
     search_fields = ["user__name", "user__phone_number", "vendor__vendor_name"]
     ordering = ("-id",)
 
-admin.site.register(UserOtp, UserOtpAdmin)
-admin.site.register(NoUserOtp, NoUserOtpAdmin)
+revenue_admin_site.register(UserOtp, UserOtpAdmin)
+revenue_admin_site.register(NoUserOtp, NoUserOtpAdmin)
 
-admin.site.register(User,UserAd)
-admin.site.register(Reward, RewardAdmin)
-admin.site.register(UserProfile, UserProfileAdmin)
-admin.site.register(Device,UserDeviceAdmin)
+revenue_admin_site.register(User,UserAd)
+revenue_admin_site.register(Reward, RewardAdmin)
+revenue_admin_site.register(UserProfile, UserProfileAdmin)
+revenue_admin_site.register(Device,UserDeviceAdmin)
 
 
 # Custom Group Admin for better group management
@@ -181,6 +182,5 @@ class GroupAdmin(admin.ModelAdmin):
             form.base_fields['permissions'].widget.attrs['style'] = 'height: 300px;'
         return form
 
-# Unregister the default Group admin and register our custom one
-admin.site.unregister(Group)
-admin.site.register(Group, GroupAdmin)
+# Register the custom Group admin with the custom admin site
+revenue_admin_site.register(Group, GroupAdmin)

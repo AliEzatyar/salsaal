@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django import forms
 from .models import PlatformQoraaVendor, Food
+from admins.admin import revenue_admin_site
 
 
 class PlatformQoraaVendorForm(forms.ModelForm):
@@ -60,3 +61,9 @@ class PlatformQoraaVendorAdmin(admin.ModelAdmin):
                 super().__init__(*args, **kw)
 
         return WrappedForm
+
+
+# Import the custom admin site and register models
+from admins.admin import revenue_admin_site
+revenue_admin_site.register(Qoraa, QoraaAdmin)
+revenue_admin_site.register(PlatformQoraaVendor, PlatformQoraaVendorAdmin)

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Notification
+from admins.admin import revenue_admin_site
 # Register your models here.
 
 
@@ -11,4 +12,4 @@ class NotificationAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
     readonly_fields = ["created_at"]
 
-admin.site.register(Notification, NotificationAdmin)
+revenue_admin_site.register(Notification, NotificationAdmin)

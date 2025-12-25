@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Promotion, Vendor
+from admins.admin import revenue_admin_site
 
 
 # Register your models here.
@@ -22,5 +23,5 @@ class PromotionAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at", "modified_at"]
 
 
-admin.site.register(Vendor, VendAdmin)
-admin.site.register(Promotion,PromotionAdmin)
+revenue_admin_site.register(Vendor, VendAdmin)
+revenue_admin_site.register(Promotion,PromotionAdmin)

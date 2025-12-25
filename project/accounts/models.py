@@ -123,10 +123,14 @@ class User(AbstractBaseUser):
     def has_perm(self, perm, obj=None):
         """
         Return True if the user has the given permission. This checks:
-        1. User permissions directly assigned to the user
-        2. Permissions from all groups the user belongs to
-        3. Superuser status (if applicable)
+        1. Superuser status (superusers have all permissions)
+        2. User permissions directly assigned to the user
+        3. Permissions from all groups the user belongs to
         """
+        # Superusers have all permissions
+        if getattr(self, 'is_superadmin', False):
+            return True
+
         # Check if user has permission directly
         if self.user_permissions.filter(
             content_type__app_label=perm.split('.')[0],
@@ -148,6 +152,10 @@ class User(AbstractBaseUser):
         """
         Return True if the user has any permissions for the given app_label.
         """
+        # Superusers have access to all modules
+        if getattr(self, 'is_superadmin', False):
+            return True
+
         # Check user permissions
         if self.user_permissions.filter(content_type__app_label=app_label).exists():
             return True

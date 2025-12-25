@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Category, Food, Rating, Discount
+from admins.admin import revenue_admin_site
 
 # Register your models here.
 
@@ -48,8 +49,8 @@ class DiscountAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at"]
 
 
-admin.site.register(Discount, DiscountAdmin)
+revenue_admin_site.register(Discount, DiscountAdmin)
 
-admin.site.register(Rating, RatingAdmin)
-admin.site.register(Food, FoodAdmin)
-admin.site.register(Category, CategoryAdmin)
+revenue_admin_site.register(Rating, RatingAdmin)
+revenue_admin_site.register(Food, FoodAdmin)
+revenue_admin_site.register(Category, CategoryAdmin)

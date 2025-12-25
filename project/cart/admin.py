@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Cart, CartItem
+from admins.admin import revenue_admin_site
 
 # Register your models here.
 class CartItemInline(admin.TabularInline):
@@ -21,5 +22,5 @@ class CartItemAdmin(admin.ModelAdmin):
     ordering = ("-id",)
     readonly_fields = ["total_price"]
 
-admin.site.register(Cart, CartAdmin)
-admin.site.register(CartItem, CartItemAdmin)
+revenue_admin_site.register(Cart, CartAdmin)
+revenue_admin_site.register(CartItem, CartItemAdmin)

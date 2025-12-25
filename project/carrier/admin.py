@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Carrier
+from admins.admin import revenue_admin_site
 # Register your models here.
 
 class CarrierAdmin(admin.ModelAdmin):
@@ -10,4 +11,4 @@ class CarrierAdmin(admin.ModelAdmin):
     ordering = ("-avg_rating",)
     readonly_fields = ["avg_rating", "rating_count"]
 
-admin.site.register(Carrier, CarrierAdmin)
+revenue_admin_site.register(Carrier, CarrierAdmin)

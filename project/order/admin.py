@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import FailedMultiVendorPayment, Order, OrderItem
+from admins.admin import revenue_admin_site
 
 
 # Register your models here.
@@ -27,6 +28,6 @@ class FailedMultiVendorPaymentAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at"]
 
 
-admin.site.register(Order, OrderAdmin)
-admin.site.register(OrderItem, OrderItemAdmin)
-admin.site.register(FailedMultiVendorPayment, FailedMultiVendorPaymentAdmin)
+revenue_admin_site.register(Order, OrderAdmin)
+revenue_admin_site.register(OrderItem, OrderItemAdmin)
+revenue_admin_site.register(FailedMultiVendorPayment, FailedMultiVendorPaymentAdmin)
