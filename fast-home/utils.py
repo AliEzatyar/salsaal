@@ -155,3 +155,30 @@ def set_image_url_to_scalars(qs, keyword="image"):
             if item.image.startswith("https://"):
                 continue
             item.image = generate_image_url(item.image)
+
+# List of (city_name, lat, lon)
+CITIES = [
+    ("Kabul", 34.53, 69.17),
+    ("Baghlan", 36.13, 68.71),
+    ("Balkh", 36.76, 66.90),
+    ("Bamyan", 34.82, 67.83),
+    ("Bazarak", 35.31, 69.52),
+    ("Charikar", 35.01, 69.17),
+    ("Gardez", 33.60, 69.23),
+
+    ("Ghazni", 33.55, 68.42),
+    ("Herat", 34.35, 62.20),
+    ("Jalalabad", 34.43, 70.45),
+    ("Kandahar", 31.61, 65.71),
+    ("Khanabad", 36.68, 69.12),
+    ("Khulm", 36.70, 67.70),
+    ("Khost", 33.34, 69.92),
+
+    ("Kunduz", 36.73, 68.86),
+    ("Maymana", 35.92, 64.78),
+    ("Mazar-e Sharif", 36.71, 67.11),
+    ("Pul-e Khumri", 35.94, 68.72),
+    ("Sar-e Pul", 36.22, 65.93),
+    ("Shibirghan", 36.67, 65.75),
+    ("Taloqan", 36.74, 69.53),
+]
