@@ -24,6 +24,8 @@ from utils import (
     generate_image_url,
     get_total_cart_items,
     set_image_url_to_scalars,
+    CITIES,
+    nearest_city
 )
 from schemas import CategorySchema
 from auth import get_user, throttle_request
@@ -62,7 +64,10 @@ async def home(
         # last-resort fallback, because APIs should not rage-quit
         lat, lon = h3.cell_to_latlng(DEFAULT_H3)
         city = DEFAULT_CITY
-
+    # --------------- falling to lat lon city if city is not correct
+    if not city in CITIES.keys():
+        print("invalid city:",city)
+        city = nearest_city(lat,lon)
     # ---------------- counters
     user_notf_count = 0
     user_cart_count = 0
