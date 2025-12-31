@@ -36,11 +36,6 @@ def reset_vendors_carriers_in_redis():
 
     vendors = Vendor.objects.all().prefetch_related("carriers")
     for vendor in vendors:
-        if Order.objects.filter(
-            vendor=vendor, status=ORDER_STATUS_CHOICES[3][0]
-        ).exists():
-            logger.info(f"order in carrying, no reset for this vendor {vendor.id}")
-            continue
         vendor_carriers_key = get_vendor_carriers_key(vendor.id)
         # setting all carriers of this vendor free
         vendor.carriers.update(status=CARRIER_STATUS_CHOICES[0][0])
