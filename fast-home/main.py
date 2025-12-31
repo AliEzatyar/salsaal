@@ -65,7 +65,7 @@ async def home(
         lat, lon = h3.cell_to_latlng(DEFAULT_H3)
         city = DEFAULT_CITY
     # --------------- falling to lat lon city if city is not correct
-    if not city in CITIES.keys():
+    if not city in [i[0] for i in CITIES]:
         print("invalid city:",city)
         city = nearest_city(lat,lon)
     # ---------------- counters
