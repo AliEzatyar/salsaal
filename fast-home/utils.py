@@ -155,6 +155,24 @@ def set_image_url_to_scalars(qs, keyword="image"):
             if item.image.startswith("https://"):
                 continue
             item.image = generate_image_url(item.image)
+def nearest_city(lat, lon):
+    """
+    Returns nearest city name using squared distance.
+    Fallback city is 'Kabul'.
+    """
+    best_city = "Kabul"
+    best_dist = float("inf")
+
+    for name, clat, clon in CITIES:
+        dx = lat - clat
+        dy = lon - clon
+        d = dx * dx + dy * dy  # no sqrt (faster)
+
+        if d < best_dist:
+            best_dist = d
+            best_city = name
+
+    return best_city
 
 # List of (city_name, lat, lon)
 CITIES = [
