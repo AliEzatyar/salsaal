@@ -146,7 +146,7 @@ async def home(
 
     # ---------------- local vendors (H3 grid)
     user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-    nearest_h3s = h3.grid_disk(user_h3,20)
+    nearest_h3s = h3.grid_disk(user_h3,40)
 
     local_vendors = db.scalars(
         city_vendors_qs.where(Vendor.h3_id.in_(nearest_h3s))
