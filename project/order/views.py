@@ -593,6 +593,8 @@ class SetOrderStateDelivered(views.APIView):
                 order.paid = True
                 otp.delete()
                 order.save()
+                # ------------- deleting order delivery tries key------
+                r.delete(order_delivery_tries_key)
                 # ---------------- updating vendor's carriers in redis
                 vendor = order.vendor
                 vendor_carriers_key = get_vendor_carriers_key(vendor.id)
