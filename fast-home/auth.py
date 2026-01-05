@@ -11,7 +11,8 @@ from requests import get
 from os import environ as env
 from utils import redis
 
-THROTTLE_PER_HOUR=300
+ANON_THROTTLE_PER_HOUR=5000
+USER_THROTTLE_PER_HOUR=50
 PUBLIC_KEY = None
 ALGORITHM = "RS256"
 security = HTTPBearer(auto_error=False)
@@ -44,17 +45,21 @@ async def throttle_request(http_request=None,user_id=None):
     """throttle requests to prevent abuse"""
     raw= None
     key = None
+    throttle_amount = USER_THROTTLE_PER_HOUR
     if http_request:
         real_ip_addr = http_request.client.host
         key = get_throttle_cache_key("anon", ip=real_ip_addr)
         raw = await redis.get(key)
+        throttle_amount = ANON_THROTTLE_PER_HOUR
+        
     elif user_id:
         key = get_throttle_cache_key("user",user_id=user_id)
         raw = await redis.get(key)
+        
 
     if raw:
         val = int(raw) 
-        if val >= THROTTLE_PER_HOUR:
+        if val >= throttle_amount:
             return False
         await redis.incrby(key)
         return True

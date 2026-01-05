@@ -24,6 +24,8 @@ from utils import (
     generate_image_url,
     get_total_cart_items,
     set_image_url_to_scalars,
+    CITIES,
+    nearest_city
 )
 from schemas import CategorySchema
 from auth import get_user, throttle_request
@@ -62,7 +64,10 @@ async def home(
         # last-resort fallback, because APIs should not rage-quit
         lat, lon = h3.cell_to_latlng(DEFAULT_H3)
         city = DEFAULT_CITY
-
+    # --------------- falling to lat lon city if city is not correct
+    if not city in [i[0] for i in CITIES]:
+        print("invalid city:",city)
+        city = nearest_city(lat,lon)
     # ---------------- counters
     user_notf_count = 0
     user_cart_count = 0
@@ -141,7 +146,7 @@ async def home(
 
     # ---------------- local vendors (H3 grid)
     user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-    nearest_h3s = h3.grid_disk(user_h3,20)
+    nearest_h3s = h3.grid_disk(user_h3,40)
 
     local_vendors = db.scalars(
         city_vendors_qs.where(Vendor.h3_id.in_(nearest_h3s))

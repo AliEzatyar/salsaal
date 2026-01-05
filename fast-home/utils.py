@@ -155,3 +155,48 @@ def set_image_url_to_scalars(qs, keyword="image"):
             if item.image.startswith("https://"):
                 continue
             item.image = generate_image_url(item.image)
+def nearest_city(lat, lon):
+    """
+    Returns nearest city name using squared distance.
+    Fallback city is 'Kabul'.
+    """
+    best_city = "Kabul"
+    best_dist = float("inf")
+
+    for name, clat, clon in CITIES:
+        dx = lat - clat
+        dy = lon - clon
+        d = dx * dx + dy * dy  # no sqrt (faster)
+
+        if d < best_dist:
+            best_dist = d
+            best_city = name
+
+    return best_city
+
+# List of (city_name, lat, lon)
+CITIES = [
+    ("kabul", 34.53, 69.17),
+    ("baghlan", 36.13, 68.71),
+    ("balkh", 36.76, 66.90),
+    ("bamyan", 34.82, 67.83),
+    ("bazarak", 35.31, 69.52),
+    ("charikar", 35.01, 69.17),
+    ("gardez", 33.60, 69.23),
+
+    ("ghazni", 33.55, 68.42),
+    ("herat", 34.35, 62.20),
+    ("jalalabad", 34.43, 70.45),
+    ("kandahar", 31.61, 65.71),
+    ("khanabad", 36.68, 69.12),
+    ("khulm", 36.70, 67.70),
+    ("khost", 33.34, 69.92),
+
+    ("kunduz", 36.73, 68.86),
+    ("maymana", 35.92, 64.78),
+    ("mazar-e Sharif", 36.71, 67.11),
+    ("pul-e Khumri", 35.94, 68.72),
+    ("sar-e Pul", 36.22, 65.93),
+    ("shibirghan", 36.67, 65.75),
+    ("taloqan", 36.74, 69.53),
+]
