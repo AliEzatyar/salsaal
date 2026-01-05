@@ -217,7 +217,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
         # ----------------------- local vendors
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-        nearest_h3s = h3.grid_disk(user_h3, 10)
+        nearest_h3s = h3.grid_disk(user_h3, 40)
         # filter in db for existing nearby  open city vendors
         local_vendors = city_vendors.filter(
             h3_id__in=nearest_h3s,
@@ -314,7 +314,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         city, lat, lon = get_user_info(request)
         city_vendors_ids = self.get_city_vendors(city)
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-        nearest_h3s = h3.grid_disk(user_h3, 10)
+        nearest_h3s = h3.grid_disk(user_h3, 40)
         vendors = Vendor.objects.filter(
             id__in=city_vendors_ids,
             h3_id__in=nearest_h3s,
@@ -412,7 +412,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         city, lat, lon = get_user_info(request)
         city_vendors_ids = self.get_city_vendors(city)
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-        nearest_h3s = h3.grid_disk(user_h3, 20)
+        nearest_h3s = h3.grid_disk(user_h3, 40)
         # filter in db for existing nearby  open city vendors
         vendors = Vendor.objects.filter(
             id__in=city_vendors_ids,
@@ -771,7 +771,7 @@ class FoodsByCategory(generics.ListAPIView):
             city = str(city).lower()
             lat, lon = geohash.decode(user_location)
             user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
-            nearest_h3s = h3.grid_disk(user_h3, 20)
+            nearest_h3s = h3.grid_disk(user_h3, 40)
 
             local_vendors_matching_category = (
                 Vendor.objects.filter(
