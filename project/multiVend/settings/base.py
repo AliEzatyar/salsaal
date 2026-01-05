@@ -201,7 +201,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '10000/hour',
-        'user': '1000/hour', # vendors may have higher requests
+        'user': '700/hour', # vendors may have higher requests
     }
 }
 
