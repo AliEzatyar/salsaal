@@ -1086,14 +1086,16 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     for item in order.items.all():
                         if item.food.is_ready_type:
                             today = tz.now().date()
+                            now_local_time = tz.localtime(tz.now()).time()
                             # combine today's date with both times
                             ready_dt = datetime.combine(today, item.food.ready_time)
-                            now_dt = datetime.combine(today, tz.now().time())
+                            now_dt = datetime.combine(today, now_local_time)
                             delta = ready_dt - now_dt
                             minutes = delta.total_seconds() / 60
                             if minutes > 0:
                                 if prep_time < minutes:
                                     prep_time = minutes
+
                         else:
                             if prep_time < item.food.duration:
                                 prep_time = item.food.duration
