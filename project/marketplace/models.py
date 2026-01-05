@@ -76,7 +76,7 @@ class Food(models.Model):
         db_index=True,
     )
     image = models.ImageField(upload_to="foods-images/")
-    description = models.TextField(max_length=250,blank=True,null=True)
+    description = models.TextField(max_length=500,blank=True,null=True)
     is_available = models.BooleanField(default=True, db_index=True)
     modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
