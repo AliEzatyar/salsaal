@@ -993,8 +993,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         if not new_order_id or not accepted:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
+            half_hour_ago = tz.now() - tz.timedelta(minutes=30)
             order = (
-                Order.objects.filter(id=new_order_id)
+                Order.objects.filter(id=new_order_id,created_at__gte=half_hour_ago)
                 .prefetch_related(
                     Prefetch("items", queryset=OrderItem.objects.select_related("food"))
                 )
@@ -1002,6 +1003,8 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
             )
             if order:
                 # if vendor has rejected order, no calculation, just notify user
+                # check if the vendor owns this order
+                self.check_object_permissions(self.request, order)
                 if str(accepted) == "false":
                     order.cancel_order()
                     self.send_notification(order,"VENDOR_REJECTED")
@@ -1017,8 +1020,6 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     return Response({"message": "order_order_rejected_by_vendor"})
                 else:
                     # vendor accepted order, set otp
-                    # check if the vendor owns this order
-                    self.check_object_permissions(self.request, order)
                     # ------------------ estimateing travel time for new order
                     vendor = self.request.user.vendor
                     user_location = order.user.profile.location
