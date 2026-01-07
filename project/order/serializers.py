@@ -6,7 +6,7 @@ from rest_framework.serializers import (
 from rest_framework import serializers
 from marketplace.serializers import CustomDecimalField
 from carrier.utils import encrypt_32
-from .models import Order, OrderItem
+from .models import Order, OrderItem, ORDER_STATUS_CHOICES
 from accounts.models import User
 
 
@@ -184,7 +184,7 @@ class VOrderSerializer(ModelSerializer):
             return obj.user.name
 
     def get_phone(self,obj):
-        if obj.user:
+        if obj.user and obj.status==ORDER_STATUS_CHOICES[2][0]:
             return obj.user.phone_number
             
     def get_destination(self, obj):
