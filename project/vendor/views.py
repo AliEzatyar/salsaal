@@ -55,7 +55,7 @@ from .utils import (
     r,
     revert_discount,
     apply_discount,
-    mark_order_delivered
+    
 )
 from rest_framework.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
@@ -65,7 +65,7 @@ from live.utils import push_notification
 from django.db.models.functions import ExtractDay
 from rest_framework.decorators import action
 from logging import getLogger
-
+from .tasks import mark_order_delivered
 # Create your views here.
 
 
