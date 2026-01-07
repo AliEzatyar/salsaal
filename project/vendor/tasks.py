@@ -56,3 +56,21 @@ def disable_vendors():
     """
     Vendor.objects.all().update(is_available=False)
     return "Vendors disabled"    
+
+
+@shared_task
+def mark_order_delivered(order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+        if not order.carrier.is_online:
+            order.status = ORDER_STATUS_CHOICES[4][1]  # delivered
+            order.paid = True
+            order.save()
+        return "Order carrier online, no auto deliver"
+    except Exception as e:
+        return "Error in mark order delivered task for legacy carriers" + str(e.args)
+
+
+
+
+
