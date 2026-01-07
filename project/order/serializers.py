@@ -150,12 +150,13 @@ class VOrderSerializer(ModelSerializer):
     items = VOrderItemSerializerDetail(read_only=True, many=True)
     total_price = CustomDecimalField(read_only=True)
     destination = SerializerMethodField("get_destination")
-
+    user_phone = SerializerMethodField("get_phone")
     class Meta:
         model = Order
         fields = [
             "id",
             "customer_name",
+            "user_phone",
             "total_items",
             "total_price",
             "status",
@@ -174,6 +175,10 @@ class VOrderSerializer(ModelSerializer):
         if obj.user:
             return obj.user.name
 
+    def get_phone(self,obj):
+        if obj.user:
+            return obj.user.phone_number
+            
     def get_destination(self, obj):
         if obj.destination:
             return [obj.destination.x, obj.destination.y]
