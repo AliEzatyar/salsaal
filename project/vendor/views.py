@@ -55,6 +55,7 @@ from .utils import (
     r,
     revert_discount,
     apply_discount,
+    mark_order_delivered
 )
 from rest_framework.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
@@ -1213,7 +1214,8 @@ class SetOrderStateCarrying(views.APIView):
             with atomic():
                 # ----------------  making necessary things atomic
                 order.carrier = carrier
-                carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
+                if order.carrier.is_online:
+                    carrier.status = CARRIER_STATUS_CHOICES[1][0]  # busy
                 UserOtp.objects.create(user=order.user, otp=order.otp)
                 # setting order in carrying state
                 order.status = ORDER_STATUS_CHOICES[3][1]  # carrying
@@ -1245,22 +1247,28 @@ class SetOrderStateCarrying(views.APIView):
                     ),
                 )
                 # ---------------- updating vendor's carriers in redis
-                vendor_carriers_key = get_vendor_carriers_key(vendor.id)
-                b_c_c = r.hget(vendor_carriers_key, "b_c_c")
-                if b_c_c:
-                    b_c_c = json.loads(b_c_c)
+                if order.carrier.is_online:
+                    vendor_carriers_key = get_vendor_carriers_key(vendor.id)
+                    b_c_c = r.hget(vendor_carriers_key, "b_c_c")
+                    if b_c_c:
+                        b_c_c = json.loads(b_c_c)
+                    else:
+                        b_c_c = 0
+                        r.hset(vendor_carriers_key, "b_c_c", b_c_c)
+    
+                    b_c_c = int(b_c_c) + 1  # increase it by one
+    
+                    r.hset(
+                        vendor_carriers_key, "b_c_c", b_c_c
+                    )  # updating busy carriers count
+                    f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
+                    f_c_c = int(f_c_c) - 1
+                    r.hset(vendor_carriers_key, "f_c_c", f_c_c)
                 else:
-                    b_c_c = 0
-                    r.hset(vendor_carriers_key, "b_c_c", b_c_c)
-
-                b_c_c = int(b_c_c) + 1  # increase it by one
-
-                r.hset(
-                    vendor_carriers_key, "b_c_c", b_c_c
-                )  # updating busy carriers count
-                f_c_c = json.loads(r.hget(vendor_carriers_key, "f_c_c"))
-                f_c_c = int(f_c_c) - 1
-                r.hset(vendor_carriers_key, "f_c_c", f_c_c)
+                    mark_order_delivered.apply_async(
+                                    args=(order.id,),
+                                    countdown=carrier_return_estimate * 60
+                                )
                 # ---------------------- creating notification for customer
                 profile = order.user.profile
 
