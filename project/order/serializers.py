@@ -16,7 +16,7 @@ class COrderItemSerializerMany(ModelSerializer):
     price = CustomDecimalField()
     image = serializers.ReadOnlyField(source="food.image_url")
     id = serializers.ReadOnlyField(source="food.id")
-
+    
     class Meta:
         model = OrderItem
         fields = ["id", "food_name", "quantity", "price", "subtotal", "image"]
@@ -67,7 +67,7 @@ class COrderSerializer(ModelSerializer):
     carrier_name = serializers.ReadOnlyField(source="carrier.user.name")
     carrier = serializers.ReadOnlyField(source="carrier.user.id")
     customer_name = serializers.ReadOnlyField(source="user.name")
-
+    is_carrier_online = SerializerMethodField("get_is_carrier_online")
     class Meta:
         model = Order
         fields = [
@@ -88,15 +88,19 @@ class COrderSerializer(ModelSerializer):
             "payment_type",
             "vendor_image",
             "customer_name",
+            "is_carrier_online",
         ]
         read_only_fields = ["__all__"]
 
     def create(self, validated_data):
         validated_data["user"] = User.objects.get(id=self.context["user"])
-
         return super().create(validated_data)
 
-
+    def get_is_carrier_online(self,obj):
+        if obj.carrier:
+            return obj.carrier.is_online
+        return False
+        
 class COrderSerializerLessDetail(ModelSerializer):
     """
     this serializer is used by customer  order objects
@@ -108,7 +112,7 @@ class COrderSerializerLessDetail(ModelSerializer):
     vendor_name = serializers.ReadOnlyField(source="vendor.vendor_name")
     items = COrderItemSerializerMany(many=True, read_only=True)
     carrier = serializers.ReadOnlyField(source="carrier.user.id")
-
+    is_carrier_online = SerializerMethodField("get_is_carrier_online")
     class Meta:
         model = Order
         fields = [
@@ -122,8 +126,12 @@ class COrderSerializerLessDetail(ModelSerializer):
             "vendor_image",
             "vendor_name",
             "items",
+            "is_carrier_online",
         ]
-
+    def get_is_carrier_online(self,obj):
+        if obj.carrier:
+            return obj.carrier.is_online
+        return False
 
 class VOrderItemSerializerDetail(ModelSerializer):
     class Meta:
