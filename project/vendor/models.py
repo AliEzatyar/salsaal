@@ -96,9 +96,10 @@ class Vendor(models.Model):
             object_id=self.pk,
             content_type=ct,
         ).aggregate(avg=models.Avg("rating"), count=models.Count("rating"))
-        self.avg_rating = avg_and_count["avg"] or 0.0
+        self.avg_rating = round(float(avg_and_count["avg"]),1) if avg_and_count['avg'] else None or 0.0
         self.rating_count = avg_and_count["count"] or 0
         self.save()
+
 
     def save(self, *args, **kwargs):
         """overriding to send approve email and save location"""
