@@ -27,7 +27,8 @@ class Carrier(models.Model):
     is_active  = models.BooleanField(default=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
-
+    is_online = models.BooleanField(default=True)
+    
     class Meta:
         ordering = ["name"]
 
