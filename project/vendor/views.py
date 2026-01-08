@@ -1234,7 +1234,7 @@ class SetOrderStateCarrying(views.APIView):
                 vendor_location = (vendor_location.y, vendor_location.x)
                 carrier_return_estimate = 2 * estimate_travel_time_graphhopper(
                     vendor_location, customer_location
-                )
+                )[0]
                 carrier_key = get_carrier_key(carrier_id)
                 r.set(
                     carrier_key,
@@ -1267,7 +1267,7 @@ class SetOrderStateCarrying(views.APIView):
                 else:
                     mark_order_delivered.apply_async(
                                     args=(order.id,),
-                                    countdown=carrier_return_estimate * 60
+                                    countdown=carrier_return_estimate / 2 * 60
                                 )
                 # ---------------------- creating notification for customer
                 profile = order.user.profile
