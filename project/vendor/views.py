@@ -580,7 +580,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         phone_number = str(phone_number).strip()
         phone_number = "+" + phone_number
         try:
-            user = User.objects.get(phone_number=phone_number).first()
+            user = User.objects.filter(phone_number=phone_number).first()
             if user and  user.role == CARRIER:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             if not user:
@@ -594,12 +594,14 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
                                                           city=vendor_profile.city,
                                                           latitude = vendor_profile.latitude,
                                                           longitude=vendor_profile.longitude,
-                                                          address=vendor_profile.address
+                                                          address=vendor_profile.address,
+                                                          user=user
                                                           )
                 user.user_profile = user_profile
                 user.save()                                           
             
         except Exception as e:
+            logger.error(f"error in searching carrier by phone {e}")
             return Response(status=status.HTTP_404_NOT_FOUND)
         ser = UserDetailSerializer(user)
         return Response(ser.data)
@@ -637,7 +639,15 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         carrier.save()
         return Response(status=status.HTTP_200_OK)
 
-
+    @action(detail=True, methods=["get"], url_path="enable-disable-livetracking")
+    def enable_disable_carrier(self, request, *args, **kwargs):
+        # ---------------- updating vendor's carriers in redis
+        carrier = self.get_object()
+        is_online = carrier.is_online
+        carrier.is_online = not is_online
+        carrier.save()
+        return Response(status=status.HTTP_200_OK)
+    
 class CarriersNow(views.APIView):
     """
     API view that returns live carriers for the authenticated vendor along with approximate return times.
