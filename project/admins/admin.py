@@ -14,7 +14,7 @@ from multiVend.country.info import PLATFORM_SHARE
 
 def is_order_manager(user):
     """Check if user is an order manager or superuser"""
-    return user.groups.filter(name='Order Manager').exists() or user.is_superuser
+    return user.groups.filter(name='Order Manager').exists() or user.is_superadmin
 
 
 @admin.register(TOTPDevice)
