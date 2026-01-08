@@ -617,7 +617,15 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         carrier.is_active = not carrier.is_active
         carrier.save()
         return Response(status=status.HTTP_200_OK)
-
+        
+    @action(detail=True, methods=["get"], url_path="enable-disable-livetracking")
+    def enable_disable_carrier(self, request, *args, **kwargs):
+        # ---------------- updating vendor's carriers in redis
+        carrier = self.get_object()
+        is_online = carrier.is_online
+        carrier.is_online = not is_online
+        carrier.save()
+        return Response(status=status.HTTP_200_OK)
 
 class CarriersNow(views.APIView):
     """
