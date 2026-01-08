@@ -18,6 +18,7 @@ class CarrierSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "is_active",
+            "is_online",
             "vendor",
             "user",
             "name",
