@@ -17,6 +17,7 @@ from accounts.models import (
     REST,
     User,
     UserOtp,
+    UserProfile,
 )
 from carrier.models import CARRIER_STATUS_CHOICES, Carrier
 from carrier.serializers import CarrierSerializer
@@ -571,15 +572,33 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="search-carrier")
     def search_carrier(self, request, *args, **kwargs):
         data = request.query_params
+        vendor = request.user.vendor
+        vendor_profile = vendor.user_profile
         phone_number = data.get("phone_number", None)
         if not phone_number:
             return Response(status=status.HTTP_404_NOT_FOUND)
         phone_number = str(phone_number).strip()
         phone_number = "+" + phone_number
         try:
-            user = User.objects.get(phone_number=phone_number)
-            if user.role == CARRIER:
+            user = User.objects.get(phone_number=phone_number).first()
+            if user and  user.role == CARRIER:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+            if not user:
+                # creating new user since offline phone
+                logger.info("creating new carrier user, since no user created before")
+                user = User.objects.create(name="C"+phone_number,
+                                           phone_number=phone_number,
+                                          )
+                user_profile = UserProfile.objects.create(pf_lang=vendor_profile.pf_lang,
+                                                          country=vendor_profile.country,
+                                                          city=vendor_profile.city,
+                                                          latitude = vendor_profile.latitude,
+                                                          longitude=vendor_profile.longitude,
+                                                          address=vendor_profile.address
+                                                          )
+                user.user_profile = user_profile
+                user.save()                                           
+            
         except Exception as e:
             return Response(status=status.HTTP_404_NOT_FOUND)
         ser = UserDetailSerializer(user)
@@ -617,15 +636,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
         carrier.is_active = not carrier.is_active
         carrier.save()
         return Response(status=status.HTTP_200_OK)
-        
-    @action(detail=True, methods=["get"], url_path="enable-disable-livetracking")
-    def enable_disable_carrier(self, request, *args, **kwargs):
-        # ---------------- updating vendor's carriers in redis
-        carrier = self.get_object()
-        is_online = carrier.is_online
-        carrier.is_online = not is_online
-        carrier.save()
-        return Response(status=status.HTTP_200_OK)
+
 
 class CarriersNow(views.APIView):
     """
