@@ -106,6 +106,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let mainChart, ordersChart, trendsChart;
+let currentChartType = 'vendor_revenue';
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
@@ -170,10 +171,37 @@ function initializeCharts() {
             plugins: {
                 legend: {
                     position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            if (currentChartType === 'vendor_performance') {
+                                return context.label + ': ' + value.toLocaleString() + ' AFN';
+                            } else {
+                                return context.label + ': ' + value.toLocaleString() + ' AFN';
+                            }
+                        }
+                    }
                 }
             }
         }
     });
+}
+
+function setMainChartFormatter(format) {
+    if (mainChart && mainChart.options.scales && mainChart.options.scales.y) {
+        mainChart.options.scales.y.ticks.callback = function(value) {
+            if (format === 'afn') {
+                return value.toLocaleString() + ' AFN';
+            } else if (format === 'percent') {
+                return value.toFixed(1) + '%';
+            } else {
+                return value.toLocaleString();
+            }
+        };
+        mainChart.update();
+    }
 }
 
 function toggleCustomDates() {
@@ -198,6 +226,7 @@ function updateCharts() {
     const period = document.getElementById('period').value;
     const vendor = document.getElementById('vendor').value;
     const chartType = document.getElementById('chart_type').value;
+    currentChartType = chartType;
     
     let startDate = null;
     let endDate = null;
@@ -261,8 +290,8 @@ function loadRevenueData(period, vendor, startDate, endDate) {
             // Update charts with real data
             mainChart.data.labels = data.labels;
             mainChart.data.datasets[0].data = data.revenue_data;
-            mainChart.update();
-
+            setMainChartFormatter('afn');
+            
             ordersChart.data.labels = data.labels;
             ordersChart.data.datasets[0].data = data.order_data;
             ordersChart.update();
@@ -306,8 +335,8 @@ function loadTrendsData(period, vendor, startDate, endDate) {
             // Update main chart with trends data
             mainChart.data.labels = data.labels;
             mainChart.data.datasets[0].data = data.revenue_data;
-            mainChart.update();
-
+            setMainChartFormatter('afn');
+            
             // Hide orders chart for trends
             document.getElementById('ordersChart').style.display = 'none';
 
@@ -351,8 +380,8 @@ function loadStatusData(period, vendor, startDate, endDate) {
             // Update charts with status data
             mainChart.data.labels = data.labels;
             mainChart.data.datasets[0].data = data.count_data;
-            mainChart.update();
-
+            setMainChartFormatter('number');
+            
             ordersChart.data.labels = data.labels;
             ordersChart.data.datasets[0].data = data.revenue_data;
             ordersChart.update();
@@ -397,8 +426,8 @@ function loadPaymentData(period, vendor, startDate, endDate) {
             // Update charts with payment data
             mainChart.data.labels = data.labels;
             mainChart.data.datasets[0].data = data.count_data;
-            mainChart.update();
-
+            setMainChartFormatter('number');
+            
             ordersChart.data.labels = data.labels;
             ordersChart.data.datasets[0].data = data.revenue_data;
             ordersChart.update();
@@ -443,8 +472,8 @@ function loadHourlyData(period, vendor, startDate, endDate) {
             // Update charts with hourly data
             mainChart.data.labels = data.labels;
             mainChart.data.datasets[0].data = data.count_data;
-            mainChart.update();
-
+            setMainChartFormatter('number');
+            
             ordersChart.data.labels = data.labels;
             ordersChart.data.datasets[0].data = data.revenue_data;
             ordersChart.update();
@@ -489,8 +518,8 @@ function loadOrderValueData(period, vendor, startDate, endDate) {
             // Update charts with order value data
             mainChart.data.labels = data.labels;
             mainChart.data.datasets[0].data = data.count_data;
-            mainChart.update();
-
+            setMainChartFormatter('number');
+            
             ordersChart.data.labels = data.labels;
             ordersChart.data.datasets[0].data = data.revenue_data;
             ordersChart.update();
@@ -525,18 +554,22 @@ function loadVendorPerformanceData(period, vendor, startDate, endDate) {
     fetch(url)
         .then(response => response.json())
         .then(data => {
+            // Calculate total revenue from avg order value data
+            const totalOrders = data.total_orders_data.reduce((a, b) => a + b, 0);
+            const totalRevenue = data.avg_order_value_data.reduce((a, b) => a + b, 0);
+            
             // Update summary cards
-            document.getElementById('totalRevenue').textContent = 'N/A';
-            document.getElementById('totalOrders').textContent = data.total_orders_data.reduce((a, b) => a + b, 0);
+            document.getElementById('totalRevenue').textContent = totalRevenue.toLocaleString() + ' AFN';
+            document.getElementById('totalOrders').textContent = totalOrders;
             document.getElementById('mainChartTitle').textContent = 'Vendor Delivery Rates (%) (' + period.charAt(0).toUpperCase() + period.slice(1) + ')';
-            document.getElementById('ordersChartTitle').textContent = 'Average Order Values (' + period.charAt(0).toUpperCase() + period.slice(1) + ')';
+            document.getElementById('ordersChartTitle').textContent = 'Average Order Value (AFN) (' + period.charAt(0).toUpperCase() + period.slice(1) + ')';
             document.getElementById('summaryCards').style.display = 'flex';
 
             // Update charts with vendor performance data
             mainChart.data.labels = data.labels;
             mainChart.data.datasets[0].data = data.delivery_rate_data;
-            mainChart.update();
-
+            setMainChartFormatter('percent');
+            
             ordersChart.data.labels = data.labels;
             ordersChart.data.datasets[0].data = data.avg_order_value_data;
             ordersChart.update();

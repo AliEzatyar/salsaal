@@ -518,16 +518,17 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
             if vendor_id:
                 orders = orders.filter(vendor_id=vendor_id)
 
-            # Create value ranges based on platform revenue (after applying platform share)
-            # So if platform share is 10%, then ranges represent the platform's cut
+            # Create value ranges based on order total price (before platform share)
+            # These are the actual order values in AFN
             ranges = [
-                (50, 100),      # 0-5 AFN (platform gets 10% of 0-50 AFN orders)
-                (100, 250),     # 5-10 AFN (platform gets 10% of 50-100 AFN orders)
-                (250, 500),    # 10-20 AFN (platform gets 10% of 100-200 AFN orders)
-                (500, 750),    # 20-30 AFN (platform gets 10% of 200-300 AFN orders)
-                (750, 1250),    # 30-50 AFN (platform gets 10% of 300-500 AFN orders)
-                (1250, 2500),   # 50-100 AFN (platform gets 10% of 500-1000 AFN orders)
-                (2500, float('inf'))  # 100+ AFN (platform gets 10% of 1000+ AFN orders)
+                (0, 50),        # 0-50 AFN
+                (50, 100),      # 50-100 AFN
+                (100, 250),     # 100-250 AFN
+                (250, 500),     # 250-500 AFN
+                (500, 750),     # 500-750 AFN
+                (750, 1250),    # 750-1250 AFN
+                (1250, 2500),   # 1250-2500 AFN
+                (2500, float('inf'))  # 2500+ AFN
             ]
 
             labels = []
@@ -536,16 +537,16 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
 
             for min_val, max_val in ranges:
                 if max_val == float('inf'):
-                    # For platform revenue >= min_val
-                    range_orders = orders.filter(total_price__gte=min_val / PLATFORM_SHARE)
+                    # For orders >= min_val
+                    range_orders = orders.filter(total_price__gte=min_val)
                     label = f"{min_val}+ AFN"
                 else:
-                    # For platform revenue in range [min_val, max_val)
+                    # For orders in range [min_val, max_val)
                     range_orders = orders.filter(
-                        total_price__gte=min_val / PLATFORM_SHARE,
-                        total_price__lt=max_val / PLATFORM_SHARE
+                        total_price__gte=min_val,
+                        total_price__lt=max_val
                     )
-                    label = f"{min_val}-{max_val-1} AFN"
+                    label = f"{min_val}-{max_val} AFN"
 
                 labels.append(label)
                 count_data.append(range_orders.count())
@@ -554,7 +555,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
 
             # If no data, provide empty state
             if not any(count_data):
-                labels = [f"{min_val}{'+' if max_val == float('inf') else f'-{max_val-1}'} AFN" for min_val, max_val in ranges]
+                labels = [f"{min_val}{'+' if max_val == float('inf') else f'-{max_val}'} AFN" for min_val, max_val in ranges]
                 count_data = [0] * len(ranges)
                 revenue_data = [0] * len(ranges)
 
