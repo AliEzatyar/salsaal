@@ -646,9 +646,3 @@ revenue_admin_site = RevenueAnalyticsAdminSite(name='revenue_admin')
 
 # Register TOTPDevice with the custom admin site
 revenue_admin_site.register(TOTPDevice, TOTPDeviceAdmin)
-
-from django_celery_beat.models import PeriodicTask, IntervalSchedule, CrontabSchedule  ,ClockedSchedule
-revenue_admin_site.register(PeriodicTask)
-revenue_admin_site.register(IntervalSchedule)
-revenue_admin_site.register(CrontabSchedule)
-revenue_admin_site.register(ClockedSchedule)
