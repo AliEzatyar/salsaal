@@ -184,7 +184,7 @@ class VOrderSerializer(ModelSerializer):
             return obj.user.name
 
     def get_phone(self,obj):
-        if obj.user and obj.status==ORDER_STATUS_CHOICES[2][0]:
+        if obj.user and obj.status in [ORDER_STATUS_CHOICES[2][0], ORDER_STATUS_CHOICES[3][0]]:
             return obj.user.phone_number
             
     def get_destination(self, obj):

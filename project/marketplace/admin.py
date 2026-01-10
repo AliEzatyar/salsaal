@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from .models import Category, Food, Rating, Discount
 from admins.admin import revenue_admin_site
 
@@ -22,6 +22,33 @@ class FoodAdmin(admin.ModelAdmin):
     search_fields = ["name", "vendor__vendor_name", "category__name"]
     ordering = ("-created_at",)
     readonly_fields = ["created_at", "modified_at", "min_price", "likes"]
+    actions = ["duplicate_food"]
+
+    def duplicate_food(self, request, queryset):
+        duplicated_count = 0
+        for food in queryset:
+            # Create a copy of the food
+            new_food = Food(
+                vendor=food.vendor,
+                name=f"{food.name} (Copy)",
+                min_price=food.min_price,
+                prices=food.prices,
+                category=food.category,
+                image=food.image,
+                description=food.description,
+                is_available=food.is_available,
+                discount=food.discount,
+                is_featured=food.is_featured,
+                likes=0,  # Reset likes for new food
+                is_drink=food.is_drink,
+                is_ready_type=food.is_ready_type,
+                ready_time=food.ready_time,
+                duration=food.duration,
+            )
+            new_food.save()
+            duplicated_count += 1
+        self.message_user(request, f"Successfully duplicated {duplicated_count} food item(s).", messages.SUCCESS)
+    duplicate_food.short_description = "Duplicate selected food(s)"
 
 
 class CategoryAdmin(admin.ModelAdmin):
