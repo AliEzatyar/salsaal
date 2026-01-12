@@ -17,7 +17,7 @@ class FoodAdmin(admin.ModelAdmin):
         "likes",
         "created_at",
     ]
-    list_editable = ["is_available", "is_featured", "vendor"," category"]
+    list_editable = ["is_available", "is_featured", "vendor","category"]
     list_filter = ["is_available", "is_featured", "vendor", "category", "is_drink", "is_ready_type", "created_at"]
     search_fields = ["name", "vendor__vendor_name", "category__name"]
     ordering = ("-created_at",)
