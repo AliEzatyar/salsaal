@@ -63,20 +63,20 @@ def send_otp(self,otp=None, user_id=None, phone_number=None, **kwargs):
     """
     try:
         # cleaning old otps before sending new one
-        yesterday = now() - timedelta(days=1)
+        hours_ago = now() - timedelta(hours=6)
         if not user_id:
             # no-user otp for sign up
             logger.info("no user id, creating no user otp")
             if not phone_number:
                 return "no phone number provided for sending otp"
             # deleting previous
-            NoUserOtp.objects.filter(phone_number=phone_number, created_at__lt=yesterday).delete()
+            NoUserOtp.objects.filter(phone_number=phone_number, created_at__lt=hours_ago).delete()
             # creating new one
             NoUserOtp.objects.create(otp=otp, phone_number=phone_number)
         else:
             # removing previous otp if existing
             user = User.objects.get(id=user_id)
-            UserOtp.objects.filter(user__id=user_id, created_at__lt=yesterday).delete()
+            UserOtp.objects.filter(user__id=user_id, created_at__lt=hours_ago).delete()
             # creating new otp
             UserOtp.objects.create(user=user, otp=otp)
 

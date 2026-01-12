@@ -126,7 +126,6 @@ class LoginApiView(views.APIView):
             if role != user.role:
                 return Response(status=status.HTTP_409_CONFLICT)
             otp = generate_otp()
-            UserOtp.objects.create(user=user, otp=otp)
             send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},

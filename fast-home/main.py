@@ -57,7 +57,6 @@ async def home(
 
     # ---------------- decode H3 safely
     try:
-
         lat, lon = lat, lon = geohash.decode(location)
     except Exception as e :
         print("error decoding H3:", e)

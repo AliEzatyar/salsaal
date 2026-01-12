@@ -11,7 +11,7 @@ from requests import get
 from os import environ as env
 from utils import redis
 
-ANON_THROTTLE_PER_HOUR=5000
+ANON_THROTTLE_PER_HOUR=36000
 USER_THROTTLE_PER_HOUR=50
 PUBLIC_KEY = None
 ALGORITHM = "RS256"
