@@ -519,6 +519,7 @@ class OnlinePaymentView(views.APIView):
                 data = items_ser.data.copy()
                 data.append(
                     {
+                        "id":1,
                         "name": "Delivery Cost",
                         "price": int(order.delivery_cost),
                     }
