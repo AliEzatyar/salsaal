@@ -85,13 +85,15 @@ class UserProfileCreationSerializer(ModelSerializer):
 class UserDetailSerializer(ModelSerializer):
     profile = UserProfileSerializer()
     whatsapp_support = serializers.SerializerMethodField()
+    is_online = serializers.ReadOnlyField(source="is_active")
     class Meta:
         model = User
-        fields = ["id", "name", "phone_number", "profile", "created_date","whatsapp_support"]
+        fields = ["id", "name", "phone_number", "profile", "created_date","whatsapp_support", "is_online"]
         read_only_fields = [
             "id",
             "phone_number",
             "created_date",
+            "is_online",
         ]  # Prevent updating the email, seperate view is made
 
     def update(self, instance, validated_data):
