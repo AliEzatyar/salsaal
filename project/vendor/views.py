@@ -1134,6 +1134,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     delivery_cost = None
                     v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
                     v_mfcfd = vendor.mfcfd  # vendor's minimum food price for free delivery
+
                     if (
                         v_mfcfd
                         and v_mfdd > 0
@@ -1142,7 +1143,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     ):
                         delivery_cost = 0
                     else:
-                        delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
+                        delivery_cost = (2 * (distance_km * vendor.delivery_fee_km)) - 2*(vendor.delivery_fee_km * v_mfdd)
                     # adding delivery cost to total price of order
                     order.delivery_cost = delivery_cost
                     # since accepted by vendor, otp is set on and used in filter waiting orders of vendor
