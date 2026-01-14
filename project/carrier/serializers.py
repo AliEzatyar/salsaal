@@ -66,10 +66,9 @@ class CarrierOrderSerializer(serializers.ModelSerializer):
         return None
 
     def get_destination(self, obj):
-        try:
-            return reversed(list(obj.destination))
-        except:
-            return
+        if obj.destination:
+            return [obj.destination.x, obj.destination.y]
+        return
 
     def get_otp(self, obj):
         return encrypt_32(obj.otp)
