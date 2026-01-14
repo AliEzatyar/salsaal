@@ -1255,7 +1255,7 @@ class SetOrderStateCarrying(views.APIView):
                 customer_location = order_user.profile.location
                 customer_location = (customer_location.y, customer_location.x)
                 order.destination = Point(
-                    float(customer_location[1]), float(customer_location[0]), srid=4326
+                    float(customer_location[0]), float(customer_location[1]), srid=4326
                 )
                 order.save()
                 # estimation

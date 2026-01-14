@@ -15,6 +15,8 @@ from .serializers import (
     VendorQoraaFoodSerializer,
     VendorQoraaSerializer,
 )
+from django.contrib.gis.geos import Point
+
 from django.utils.translation import gettext as _
 from django.utils.translation import deactivate as deactivate_language
 from django.utils.translation import activate as activate_language
@@ -197,7 +199,7 @@ class ClaimQoraaPrizeApiView(views.APIView):
             delivery_cost=0,
             paid=True,
             otp=generate_otp(8),
-            destination=request.user.profile.location,
+            destination=Point(float(request.user.profile.latitude), float(request.user.profile.longitude), srid=4326),
             vendor=q.vendor,
             payment_type=VALID_PAYMENT_TYPES[3][0],  # qoraa_payment
             is_epay=False,
