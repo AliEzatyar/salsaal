@@ -271,7 +271,6 @@ class LoginApiView(views.APIView):
                     try:
                         user_ser.is_valid(raise_exception=True)
                     except Exception as e:
-                        logger.error(f"Validation error in new user data: {e}")
                         return Response(
                             {"detail": "invalid_user_data"},
                             status=status.HTTP_400_BAD_REQUEST,
@@ -341,12 +340,7 @@ class VerifyOtpSignUpApiView(views.APIView):
                 )
             # ----- verifying otp
             saved_otp = NoUserOtp.objects.filter(otp=otp).first()
-            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
-                return Response(
-                    {"detail": "invalid_otp"}, status=status.HTTP_400_BAD_REQUEST
-                )
-            saved_otp = NoUserOtp.objects.filter(otp=otp).first()
-            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+            if saved_otp and (saved_otp.is_expired() or saved_otp.phone_number != phone_number):
                 return Response(
                     {"detail": "invalid_otp"}, status=status.HTTP_400_BAD_REQUEST
                 )
@@ -384,7 +378,7 @@ class DeleteAccountView(views.APIView):
             tokens = OutstandingToken.objects.filter(user=user)
             for token in tokens:
                 BlacklistedToken.objects.get_or_create(token=token)
-            user.delete()
+            logger.warning(f"user {user.phone_number} account deletion prompted")
             return Response(status=status.HTTP_200_OK)
         # just logout vendor or admin
         user.token_valid_after = get_token_valid_after() # 5 seconds before 
