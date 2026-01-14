@@ -1131,24 +1131,24 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                                 prep_time = item.food.duration
 
                     # ------------------ calculating delivery cost -------------------------
-                    delivery_cost = None
+                    delivery_cost = 0
                     v_mfdd = vendor.mfdd  # vendor's maximum free distance delivery
                     v_mfcfd = vendor.mfcfd  # vendor's minimum food price for free delivery
-
-                    if (
+                    # if order is not fully capable of free delivery
+                    if not (
                         v_mfcfd > 0
                         and v_mfdd > 0
                         and distance_km < v_mfdd
                         and order.total_price > v_mfcfd
                     ):
-                        delivery_cost = 0
-                    else:
                         # if order price is capable of free delivery
                         if order.total_price > v_mfcfd:
                             # but distance is higher than free delivery distance
                             if distance_km > v_mfdd:
                                 # calculating delivery cost for extra distance
                                 delivery_cost = 2 * (distance_km - v_mfdd) * vendor.delivery_fee_km
+                            else:
+                                delivery_cost = 0
                         # order price is not capable of free delivery 
                         else:   
                             # calculating delivery cost for whole distance
@@ -1163,6 +1163,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     total_time = round(float(prep_time) + float(estimated))
                     self.send_notification(order,"VENDOR_ACCEPTED")
                     order.extra_data = {
+                            "distance_km": round(distance_km,2),
                             "travel_estimation": round(estimated), 
                             "preparation_time": round(prep_time),
                             "delivery_cost": delivery_cost,
