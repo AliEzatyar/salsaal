@@ -90,6 +90,7 @@ class Order(models.Model):
         max_length=60, choices=VALID_PAYMENT_TYPES, default=VALID_PAYMENT_TYPES[0][0]
     )
     is_epay = models.BooleanField(default=False)
+    extra_data = models.JSONField(default=dict, blank=True,null=True)
 
     class Meta:
         indexes = [models.Index(fields=["-created_at"])]

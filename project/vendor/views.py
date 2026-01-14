@@ -1136,14 +1136,23 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     v_mfcfd = vendor.mfcfd  # vendor's minimum food price for free delivery
 
                     if (
-                        v_mfcfd
+                        v_mfcfd > 0
                         and v_mfdd > 0
                         and distance_km < v_mfdd
                         and order.total_price > v_mfcfd
                     ):
                         delivery_cost = 0
                     else:
-                        delivery_cost = (2 * (distance_km * vendor.delivery_fee_km)) - 2*(vendor.delivery_fee_km * v_mfdd)
+                        # if order price is capable of free delivery
+                        if order.total_price > v_mfcfd:
+                            # but distance is higher than free delivery distance
+                            if distance_km > v_mfdd:
+                                # calculating delivery cost for extra distance
+                                delivery_cost = 2 * (distance_km - v_mfdd) * vendor.delivery_fee_km
+                        # order price is not capable of free delivery 
+                        else:   
+                            # calculating delivery cost for whole distance
+                            delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
                     # adding delivery cost to total price of order
                     order.delivery_cost = delivery_cost
                     # since accepted by vendor, otp is set on and used in filter waiting orders of vendor
@@ -1153,7 +1162,16 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     food_price = order.total_price - order.delivery_cost
                     total_time = round(float(prep_time) + float(estimated))
                     self.send_notification(order,"VENDOR_ACCEPTED")
+                    order.extra_data = {
+                            "travel_estimation": round(estimated), 
+                            "preparation_time": round(prep_time),
+                            "delivery_cost": delivery_cost,
+                            "order_cost": round(food_price),
+                            "total_cost": round(order.total_price),
+                            "total_time": total_time,
+                            }
                     order.save()
+
                     return Response(
                         {
                             "estimation": round(estimated),
