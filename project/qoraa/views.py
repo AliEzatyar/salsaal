@@ -86,6 +86,11 @@ class JoinQoraaApiView(views.APIView):
                 {"detail": "joiners_limit_reached"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if q.vendor.user_profile.city != request.user.profile.city:
+            return Response(
+                {"detail": "user_and_vendor_city_mismatch"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         added = q.add_joiner(request.user)
         if not added:
             return Response(

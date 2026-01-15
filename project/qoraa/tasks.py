@@ -151,6 +151,9 @@ def finalize_qoraa():
         joiners = list(q.joiners.all())
         winner = None
         if joiners:
+            vendor_city_only_joiners = [j for j in joiners if j.profile.city == q.vendor.user_profile.city]
+            if vendor_city_only_joiners:
+                joiners = vendor_city_only_joiners
             winner = choice(joiners)
             q.winner = winner
         q.status = Qoraa.STATUS_FINISHED
