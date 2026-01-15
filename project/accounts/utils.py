@@ -34,6 +34,7 @@ def get_cpaas_token():
     if token:
         return token.decode()
     else:
+        logger.info("No CPAAS token in cache, requesting new one")
         # making a request to get new token
         response = requests.post(
             settings.CPAAS_AUTHENTICATION_URL,
@@ -44,10 +45,13 @@ def get_cpaas_token():
             if token:
                 r.set("cpaas_token", token)
                 r.expire("cpaas_token", 3600)  # setting expiry to 1 hour
+                logger.info("New CPAAS token obtained and cached")
                 return token
             else:
                 logger.info(f"No token found in response of CPAAS {response.text}")
-
+        else:
+            logger.error(f"Failed to get CPAAS token, status code: {response.status_code}, response: {response.text}")
+    return "no_token"
 @shared_task(bind=True, max_retries=5, default_retry_delay=3)
 def send_otp(self,otp=None, user_id=None, phone_number=None, **kwargs):
     """
@@ -96,6 +100,7 @@ def send_otp(self,otp=None, user_id=None, phone_number=None, **kwargs):
             "Records": [{"msisdn": int(phone_number), "otp": str(otp_text)}],
             "campaign_ID": settings.CPAAS_OBD_CAMPAIGN_ID,
         }
+        logger.info(f"Sending OTP to {phone_number} via CPAAS, data: {data}, headers: {headers}")
         response = requests.post(
                 settings.CPAAS_UPLOAD_BASELOAD_URL, json=data, headers=headers
             )
