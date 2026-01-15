@@ -79,7 +79,7 @@ class Order(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
     total_items = models.SmallIntegerField(default=0)
     carrier = models.ForeignKey(
-        "carrier.Carrier", null=True, on_delete=models.SET_NULL, related_name="orders"
+        "carrier.Carrier", null=True, blank=True, on_delete=models.SET_NULL, related_name="orders"
     )
     otp = models.IntegerField(null=True, blank=True)
     vendor = models.ForeignKey(
