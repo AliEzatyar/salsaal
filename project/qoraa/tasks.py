@@ -86,7 +86,7 @@ def _create_qoraas_for_time(
                     start=start,
                     end=end,
                     status=Qoraa.STATUS_RUNNING,
-                    title=_(platform_qoraa_title) +" - "+ food.name,
+                    title=_(platform_qoraa_title) +" - "+ food.name+" - "+ random_qv.vendor.user_profile.city.title(),
                     is_platform=True,
                 )
                 deactivate_language()
