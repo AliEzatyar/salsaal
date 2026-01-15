@@ -580,7 +580,13 @@ class SetOrderStateDelivered(views.APIView):
                 or otp.is_expired(expire=ORDER_DELIVERY_OTP_EXPIRATION)
             ):
                 r.expire(order_delivery_tries_key, ORDER_DELIVERY_ATTEMPTS_DELAY)
-                logger.warning("max order delivery attempts reached. invalid/expired otp provided for setting order delivered")
+                if tries > MAX_ORDER_DELIVERY_TRIES_COUNT:
+                    logger.warning("max order delivery attempts reached for order {}.".format(order_id))
+                if not otp:
+                    logger.warning("invalid otp provided for setting order {} delivered.".format(order_id))
+                if otp and otp.is_expired(expire=ORDER_DELIVERY_OTP_EXPIRATION):
+                    logger.warning("expired otp provided for setting order {} delivered.".format(order_id)) 
+                    
                 return Response(
                     {"detail": "otp_invalid_or_expired"},
                     status=status.HTTP_403_FORBIDDEN,

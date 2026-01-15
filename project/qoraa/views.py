@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Prefetch
 from api.permissions import IsCustomer, IsVendor, IsVendorOfObject
-from accounts.models import User
+from accounts.models import User, UserOtp
 from order.models import ORDER_STATUS_CHOICES, VALID_PAYMENT_TYPES, Order, OrderItem
 from accounts.utils import generate_otp
 from live.utils import push_notification
@@ -196,6 +196,8 @@ class ClaimQoraaPrizeApiView(views.APIView):
             )
 
         # creating the order and setting in preparing state
+        otp = generate_otp(8)
+        UserOtp.objects.create(user=request.user, otp=otp)
         new_order = Order.objects.create(
             user=request.user,
             status=ORDER_STATUS_CHOICES[2][0],  # preparing
@@ -203,7 +205,7 @@ class ClaimQoraaPrizeApiView(views.APIView):
             total_items=1,
             delivery_cost=0,
             paid=True,
-            otp=generate_otp(8),
+            otp=otp,
             destination=Point(float(request.user.profile.latitude), float(request.user.profile.longitude), srid=4326),
             vendor=q.vendor,
             payment_type=VALID_PAYMENT_TYPES[3][0],  # qoraa_payment
