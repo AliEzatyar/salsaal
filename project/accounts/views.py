@@ -340,10 +340,15 @@ class VerifyOtpSignUpApiView(views.APIView):
                 )
             # ----- verifying otp
             saved_otp = NoUserOtp.objects.filter(otp=otp).first()
-            if saved_otp and (saved_otp.is_expired() or saved_otp.phone_number != phone_number):
+            if not saved_otp:
                 return Response(
                     {"detail": "invalid_otp"}, status=status.HTTP_400_BAD_REQUEST
                 )
+            if saved_otp.is_expired() or saved_otp.phone_number != phone_number:
+                return Response(
+                    {"detail": "invalid_otp"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            
             user = User.objects.filter(phone_number=phone_number).first()
             if user:
                 user.is_active = True
