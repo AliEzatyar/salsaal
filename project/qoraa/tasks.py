@@ -155,6 +155,8 @@ def finalize_qoraa():
             if vendor_city_only_joiners:
                 joiners = vendor_city_only_joiners
             winner = choice(joiners)
+            if Qoraa.objects.filter(winner=winner, status=Qoraa.STATUS_FINISHED).exists():
+                winner = choice(joiners)
             q.winner = winner
         q.status = Qoraa.STATUS_FINISHED
         q.save()

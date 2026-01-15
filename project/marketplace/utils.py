@@ -93,7 +93,7 @@ class BestFoodsCounter:
 
     def __init__(self, city):
         self.redis = r
-        self.best_foods_key = "best_foods:{city}:city"
+        self.best_foods_key = f"best_foods:{city}:city"
 
     def update_counts(self, pk):
         """increases view count of a food in the sorted set"""
