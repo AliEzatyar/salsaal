@@ -145,14 +145,13 @@ class VOrderFilterSet(django_filters.FilterSet):
         elif value == "preparing":
             today = now()
             return queryset.filter(
-                # created_at__date=today.date(),
+                created_at__date=today.date(),
                 status=ORDER_STATUS_CHOICES[2][0]
             )
 
         elif value == "carrying":
-            today = now()
             return queryset.filter(
-                created_at__date=today.date(), status=ORDER_STATUS_CHOICES[3][0]
+                status=ORDER_STATUS_CHOICES[3][0]
             )
         elif value == "delivered":
             return queryset.filter(status=ORDER_STATUS_CHOICES[4][0])

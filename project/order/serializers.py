@@ -194,9 +194,10 @@ class VOrderSerializer(ModelSerializer):
             
     def get_destination(self, obj):
         if obj.status == ORDER_STATUS_CHOICES[3][0] and obj.carrier:
-            last_location = jloads(uws_redis.get(f"carrier_last_${obj.carrier.id}"))
-            logger.info(f"last location for carrier {obj.carrier.id} is {last_location}")
-            return [float(last_location["latitude"]), float(last_location["longitude"])]
+            raw = uws_redis.get(f"carrier_last_{obj.carrier.user.id}")
+            if raw:
+                last_location = jloads(raw)
+                return [float(last_location["latitude"]), float(last_location["longitude"])]
         if obj.destination:
             return [obj.destination.x, obj.destination.y]
         return [obj.vendor.latitude, obj.vendor.longitude]
