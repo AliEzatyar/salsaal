@@ -13,6 +13,7 @@ DEFAULT_H3_RESOLUTION = 9
 DEFAULT_H3_EDGE_LENGTH = 0.357
 DEFAULT_AVG_SPEED = 5
 
+uws_redis = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, "1",password=s.REDIS_PASSWORD)
 
 class BoughtTogetherRecommender:
     """

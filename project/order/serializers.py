@@ -8,6 +8,11 @@ from marketplace.serializers import CustomDecimalField
 from carrier.utils import encrypt_32
 from .models import Order, OrderItem, ORDER_STATUS_CHOICES
 from accounts.models import User
+from marketplace.utils import uws_redis
+from json import loads as jloads
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class COrderItemSerializerMany(ModelSerializer):
@@ -188,6 +193,10 @@ class VOrderSerializer(ModelSerializer):
             return obj.user.phone_number
             
     def get_destination(self, obj):
+        if obj.status == ORDER_STATUS_CHOICES[3][0] and obj.carrier:
+            last_location = jloads(uws_redis.get(f"carrier_last_${obj.carrier.id}"))
+            logger.info(f"last location for carrier {obj.carrier.id} is {last_location}")
+            return [float(last_location["latitude"]), float(last_location["longitude"])]
         if obj.destination:
             return [obj.destination.x, obj.destination.y]
-        return
+        return [obj.vendor.latitude, obj.vendor.longitude]
