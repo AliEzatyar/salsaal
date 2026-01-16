@@ -175,7 +175,7 @@ def nearest_city(lat, lon):
     return best_city
 
 # List of (city_name, lat, lon)
-CITIES = [
+CITIES_CENTER_POINTS = [
     ("kabul", 34.53, 69.17),
     ("baghlan", 36.13, 68.71),
     ("balkh", 36.76, 66.90),
@@ -200,3 +200,28 @@ CITIES = [
     ("shibirghan", 36.67, 65.75),
     ("taloqan", 36.74, 69.53),
 ]
+
+CITIES_ENGLISH_TO_DARI_NAMES_MAP = {
+    "kabul": "کابل",
+    "baghlan": "بغلان",
+    "balkh": "بلخ",
+    "bamyan": "بامیان",
+    "bazarak": "بزرک",
+    "charikar": "چارکار",
+    "gardez": "گردز",
+    "ghazni": "غزنی",
+    "herat": "هرات",
+    "jalalabad": "جلال آباد",
+    "kandahar": "کندهار",
+    "khost": "خوست",
+    "kunduz": "کندوز",
+    "maymana": "میمنه",
+    "mazar-e Sharif": "مزارشریف",
+    "pul-e Khumri": "پلخمری",
+    "sar-e Pul": "سرپل",
+    "shibirghan": "شبرغان",
+    }
+
+CITIES_DARI_TO_ENGLISH_NAMES_MAP = {
+    v: k for k, v in CITIES_ENGLISH_TO_DARI_NAMES_MAP.items()
+}

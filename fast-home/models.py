@@ -150,7 +150,7 @@ class Vendor(Base):
     location = Column(String(60))
     h3_id = Column(String(60))
     is_open_now = synonym("is_available")
-
+    hesabpay_number  = Column(String(30), nullable=True)
 
 # ------------------ FOOD & DISCOUNT MODELS ------------------
 class Food(Base):

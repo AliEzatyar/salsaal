@@ -17,6 +17,9 @@ import geohash
 from sqlalchemy import select
 import h3
 from utils import (
+    CITIES_CENTER_POINTS,
+    CITIES_DARI_TO_ENGLISH_NAMES_MAP,
+    CITIES_ENGLISH_TO_DARI_NAMES_MAP,
     BestVendorsCounter,
     cache_get,
     cache_set,
@@ -24,7 +27,6 @@ from utils import (
     generate_image_url,
     get_total_cart_items,
     set_image_url_to_scalars,
-    CITIES,
     nearest_city
 )
 from schemas import CategorySchema
@@ -63,9 +65,16 @@ async def home(
         # last-resort fallback, because APIs should not rage-quit
         lat, lon = h3.cell_to_latlng(DEFAULT_H3)
         city = DEFAULT_CITY
-    # --------------- falling to lat lon city if city is not correct
-    if not city in [i[0] for i in CITIES]:
-        print("invalid city:",city)
+    is_foreign = False
+    # if persian city name given, convert to english
+    if city in CITIES_DARI_TO_ENGLISH_NAMES_MAP.keys():
+        city = CITIES_DARI_TO_ENGLISH_NAMES_MAP[city]
+    # foreign city name given, alter home data to only online vendors
+    if not city in CITIES_ENGLISH_TO_DARI_NAMES_MAP.keys():
+        is_foreign = True
+        city = DEFAULT_CITY
+        
+    if not city in [i[0] for i in CITIES_CENTER_POINTS]:
         city = nearest_city(lat,lon)
     # ---------------- counters
     user_notf_count = 0
@@ -105,6 +114,15 @@ async def home(
     # ---------------- city vendors
     city_vendor_ids_key = f"vdrs:{city}:ids"
     city_vendor_ids = await cache_get(city_vendor_ids_key)
+    if is_foreign:
+        city = DEFAULT_CITY
+        user_h3 = DEFAULT_H3
+        ids = (
+            db.query(Vendor.id)
+            .filter(Vendor.city == city, Vendor.hesabpay_number != None, Vendor.is_approved.is_(True))
+            .all()
+        )
+        city_vendor_ids = [v.id for v in ids]
     if not city_vendor_ids:
         ids = (
             db.query(Vendor.id)
@@ -113,7 +131,7 @@ async def home(
         )
         city_vendor_ids = [v.id for v in ids]
         await cache_set(city_vendor_ids_key, city_vendor_ids)
-
+    
     # ---------------- city foods
     city_foods_ids_key = f"foods:{city}:ids"
     city_foods_ids = await cache_get(city_foods_ids_key)
