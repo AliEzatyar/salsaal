@@ -122,14 +122,14 @@ class UserAd(UserAdmin):
     bulk_assign_by_role.short_description = "Assign users to groups based on their role"
 
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ["id", "user", "pf_lang", "city", "country", "created_at","location_link"]
+    list_display = ["id", "user", "pf_lang", "city","location_link", "country", "created_at"]
     list_filter = ["pf_lang", "city", "country"]
     search_fields = ["user__name", "user__email", "user__phone_number", "city"]
     ordering = ("-created_at",)
     readonly_fields = ["created_at", "modified_at"] 
     
     def location_link(self, obj):
-        if not obj.destination:
+        if not obj.latitude or not obj.longitude:
             return "-"
         return format_html('<a href="https://www.google.com/maps?q={},{}" target="_blank">Map</a>',obj.latitude,obj.longitude)
 
