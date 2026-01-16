@@ -365,8 +365,11 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     )
     def all_vendors_in_city(self, request):
         """this returns all active vendors in the city"""
+        
         city, lat, lon = get_user_info(request)
         vendors_ids = self.get_city_vendors(city)
+        # limiting foreign users to hesab pay vendors only
+        
         # foods limited to 3 IMPORTANT FOR PERFORMANCE
         foods_with_limit = (
             Food.objects.annotate(

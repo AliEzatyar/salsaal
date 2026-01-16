@@ -42,7 +42,7 @@ import h3
 
 
 DEFAULT_CITY = "kabul"
-DEFAULT_H3 = "8920962e01bffff"
+DEFAULT_H3 = "8920905b437ffff"
 
 
 @app.get("/api/marketplace/home/", response_model=HomeSchema)
@@ -65,6 +65,8 @@ async def home(
         # last-resort fallback, because APIs should not rage-quit
         lat, lon = h3.cell_to_latlng(DEFAULT_H3)
         city = DEFAULT_CITY
+    user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
+    
     is_foreign = False
     # if persian city name given, convert to english
     if city in CITIES_DARI_TO_ENGLISH_NAMES_MAP.keys():
@@ -76,6 +78,7 @@ async def home(
         
     if not city in [i[0] for i in CITIES_CENTER_POINTS]:
         city = nearest_city(lat,lon)
+    
     # ---------------- counters
     user_notf_count = 0
     user_cart_count = 0
@@ -162,7 +165,6 @@ async def home(
     distance_reach_time(discounted_foods, lat, lon, "food")
 
     # ---------------- local vendors (H3 grid)
-    user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
     nearest_h3s = h3.grid_disk(user_h3,40)
 
     local_vendors = db.scalars(
