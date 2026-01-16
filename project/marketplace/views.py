@@ -649,7 +649,7 @@ class PublicVendorDetail(views.APIView):
                 # ------------------------ getting vendor details either cache or db
                 ser_data = None
                 vendor_in_cache = cache.get(self.vendor_detail_key(vendor_id))
-                vendor = Vendor.objects.get(is_approved=True, id=vendor_id, city=city)
+                vendor = Vendor.objects.get(is_approved=True, id=vendor_id)
                 # ---------------- cache
                 if vendor_in_cache:
                     ser_data = vendor_in_cache.copy()

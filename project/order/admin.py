@@ -1,17 +1,23 @@
 from django.contrib import admin
 from .models import FailedMultiVendorPayment, Order, OrderItem
 from admins.admin import revenue_admin_site
-
+from django.utils.html import format_html
 
 # Register your models here.
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ["id", "user", "vendor", "status", "total_price", "delivery_cost", "paid", "payment_type", "is_epay", "created_at"]
+    list_display = ["id", "user", "vendor", "status", "total_price", "delivery_cost", "paid", "payment_type", "is_epay","location_link", "created_at"]
     list_editable = ["status", "paid"]
     list_filter = ["status", "paid", "payment_type", "is_epay", "created_at", "vendor"]
     search_fields = ["user__name", "user__phone_number", "vendor__vendor_name", "id"]
     ordering = ("-created_at",)
     readonly_fields = ["created_at", "modified_at", "total_price", "delivery_cost", "total_items"]
+    def location_link(self, obj):
+        if not obj.destination:
+            return "-"
+        return format_html('<a href="https://www.google.com/maps?q={},{}" target="_blank">Map</a>',obj.destination.x,obj.destination.y)
 
+    location_link.allow_tags = True
+    location_link.short_description = "Location"
 
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ["id", "order", "food", "vendor", "quantity", "price", "subtotal"]
