@@ -131,7 +131,7 @@ class UserProfileAdmin(admin.ModelAdmin):
     def location_link(self, obj):
         if not obj.destination:
             return "-"
-        return format_html('<a href="https://www.google.com/maps?q={},{}" target="_blank">Map</a>',obj.destination.x,obj.destination.y)
+        return format_html('<a href="https://www.google.com/maps?q={},{}" target="_blank">Map</a>',obj.latitude,obj.longitude)
 
     location_link.allow_tags = True
     location_link.short_description = "Location"
