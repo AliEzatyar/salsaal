@@ -126,9 +126,11 @@ def create_multi_vendor_payment(vendors):
     try:
         response = requests.post(endpoint, json=payload, headers=headers)
         response.raise_for_status()
+        logger.info(f"Multi-vendor payment api call response: {response.text}")
         return response.json()
 
     except requests.exceptions.RequestException as e:
+        logger.error(f"Request to create multi-vendor payment failed: {e}")
         return {"error": "Request failed", "message": str(e)}
 
 

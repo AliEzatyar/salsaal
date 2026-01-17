@@ -35,7 +35,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 import json
 from django.utils.translation import activate, deactivate, gettext as _
 from marketplace.utils import r
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
 from api.permissions import IsBuyer, IsCustomer, IsOrderCarryingState
 from accounts.models import (
@@ -421,6 +421,7 @@ class AcceptRejectOrderView(views.APIView):
                             pass
                         try:
                             create_multi_vendor_payment(vendors)
+                            logger.info(f"multi vendor payment successful for order {order.id}")
                         except Exception as e:
                             logger.exception(f"multi vendor payment failed for order {order.id}: {e}")
                             FailedMultiVendorPayment.objects.create(
@@ -491,7 +492,7 @@ class AcceptRejectOrderView(views.APIView):
         # ------------- sending notification to vendor
         push_notification.delay(order.vendor.user.id, notf.title, body=notf.description,data={"order_id": order.id})
 
-    def get_vendor_account_number(vendor):
+    def get_vendor_account_number(self,vendor):
         """returns vendor hesab pay account number"""
         return "0" + str(vendor.user.phone_number).split("+93")[1]
 
@@ -715,7 +716,7 @@ class RedirectPaymentSuccess(views.APIView):
     this endpoint is called by hesab pay after payment is successful
     it redirects the request to customer app with transaction_id
     """
-
+    permission_classes = [AllowAny]
     def get(self, *args, **kwargs):
         try:
             params_data = self.request.query_params.get("data", None)
@@ -739,6 +740,7 @@ class RedirectPaymentFailure(views.APIView):
     this endpoint is called by hesab pay after payment is failed
     this view redirects success url to mobile app and sends session id.
     """
+    permission_classes = [AllowAny]
 
     def get(self, *args, **kwargs):
         try:
