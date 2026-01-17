@@ -201,6 +201,7 @@ class CustomVendorSearch(SearchFilter):
         request_data = request.query_params
         search_param = request_data.get(self.search_param)
         location = request_data.get("location", None)
+       
         city = request_data.get("city", None)
         max_distance = request_data.get("max_distance", None)
         if not (location and city):
