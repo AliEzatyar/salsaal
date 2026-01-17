@@ -6,7 +6,7 @@ import requests as req
 from rest_framework.pagination import PageNumberPagination
 import geohash
 from rest_framework.exceptions import ValidationError
-from info import CITY_TRANSLATIONS, CITY_TRANSLATIONS_REVERSED
+from .info import CITY_TRANSLATIONS, CITY_TRANSLATIONS_REVERSED
  
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB,password=s.REDIS_PASSWORD)
 DEFAULT_H3_RESOLUTION = 9
