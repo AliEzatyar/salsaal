@@ -218,3 +218,4 @@ class FailedMultiVendorPayment(models.Model):
     )
     error_message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)    
+    request_data = models.JSONField(null=True, blank=True)

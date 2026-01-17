@@ -8,6 +8,8 @@ from Crypto.Util.Padding import pad
 import base64
 from logging import getLogger
 
+from order.models import FailedMultiVendorPayment
+
 logger = getLogger(__name__)
 
 
@@ -101,7 +103,7 @@ def encrypt_pin(data, key):
     return encrypted_data
 
 
-def create_multi_vendor_payment(vendors):
+def create_multi_vendor_payment(vendors,order):
     """
     Distribute payment to multiple vendors
 
@@ -132,7 +134,12 @@ def create_multi_vendor_payment(vendors):
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Request to create multi-vendor payment failed: {e}")
-        return {"error": "Request failed", "message": str(e)}
+        FailedMultiVendorPayment.objects.create(
+                                order=order,
+                                error_message=str(e),
+                                request_data=vendors
+                            )
+        return None
 
 
 # Example usage

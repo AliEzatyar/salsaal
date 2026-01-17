@@ -420,13 +420,10 @@ class AcceptRejectOrderView(views.APIView):
                         except Exception as e:
                             pass
                         try:
-                            create_multi_vendor_payment(vendors)
+                            create_multi_vendor_payment(vendors,order)
                         except Exception as e:
                             logger.exception(f"multi vendor payment failed for order {order.id}: {e}")
-                            FailedMultiVendorPayment.objects.create(
-                                order=order,
-                                error_message=str(e)
-                            )
+                            
                             pass
                 # ------------- either payment type, this general part should be done
                 self.request.user.cart.clear()
