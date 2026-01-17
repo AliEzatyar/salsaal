@@ -1,5 +1,5 @@
 from django.core.mail import EmailMessage
-from .models import NoUserOtp, User, UserOtp
+from models import NoUserOtp, User, UserOtp
 from celery import shared_task
 from random import randint
 import requests
