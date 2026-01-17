@@ -170,3 +170,5 @@ CITY_TRANSLATIONS = {
     "Wardak": "وردک",
     "Maidan Shahr": "میدان‌شهر",
 }
+
+CITY_TRANSLATIONS_REVERSED = {v: k for k, v in CITY_TRANSLATIONS.items()}

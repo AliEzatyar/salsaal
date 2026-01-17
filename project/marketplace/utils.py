@@ -6,7 +6,7 @@ import requests as req
 from rest_framework.pagination import PageNumberPagination
 import geohash
 from rest_framework.exceptions import ValidationError
-
+from accounts.utils import CITY_TRANSLATIONS, CITY_TRANSLATIONS_REVERSED
 
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB,password=s.REDIS_PASSWORD)
 DEFAULT_H3_RESOLUTION = 9
@@ -200,29 +200,36 @@ def get_user_info(request):
     location = request_data.get("location")
 
     # fallback to user profile if missing
-    if not city or not location:
+    if not city:
         if hasattr(request.user, "profile"):
             city = request.user.profile.city
+        else:
+            raise ValidationError({"detail": "city_required"})
+    if not location:
+        if hasattr(request.user, "profile"):
             lat = float(request.user.profile.latitude)
             lon = float(request.user.profile.longitude)
         else:
-            raise ValidationError({"detail": "City and location required"})
+            raise ValidationError({"detail": "Location_required"})
     else:
         try:
             lat, lon = geohash.decode(location)
-            if not city:
-                # try to get city from user profile
-                if hasattr(request.user, "profile"):
-                    city = request.user.profile.city
-                else:
-                    raise ValidationError({"detail": "City required"})
         except Exception:
-            # fallback to profile if decoding fails
             if hasattr(request.user, "profile"):
                 lat = float(request.user.profile.latitude)
                 lon = float(request.user.profile.longitude)
-                city = request.user.profile.city
             else:
-                raise ValidationError({"detail": "Invalid location"})
+                raise ValidationError({"detail": "Location_required"})
+    # ----- identifying foreign users
+    # if dari city name given, convert to english
+    if city in CITY_TRANSLATIONS_REVERSED.keys():
+        # converting to english
+        city = CITY_TRANSLATIONS_REVERSED[city]
+    # user is foreign
+    is_foreign = False
+    if city.title() not in CITY_TRANSLATIONS.keys():
+        city = "kabul"  # default city for foreign users
+        lat, lon = 34.53429766405601, 69.17093145586269  # Kabul coordinates
+        is_foreign = True
     city = str(city).lower()
-    return city, lat, lon
+    return city, lat, lon, is_foreign

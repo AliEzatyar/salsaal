@@ -212,6 +212,8 @@ class LoginApiView(views.APIView):
                 # verifying otp
                 saved_otp = UserOtp.objects.filter(otp=otp).first()
                 if (
+                    not saved_otp 
+                    or
                     saved_otp.is_expired()
                     or saved_otp.user.phone_number != phone_number
                 ):

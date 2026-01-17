@@ -100,7 +100,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         )  # this prompts filter_queryset, city existence is ensured so
         vendor = obj.vendor
         try:
-            city, lat, lon = get_user_info(request)
+            city, lat, lon, is_foreign = get_user_info(request)
             distance = haversine_distance(
                 float(vendor.latitude),
                 float(vendor.longitude),
@@ -134,7 +134,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         user_cart_items_count = 0
         user_notf_count = 0
         try:
-            city, lat, lon = get_user_info(request)
+            city, lat, lon, is_foreign = get_user_info(request)
             if self.request.user.is_authenticated:
                 user_cart_items_count = self.request.user.cart.calculate_total_items()
                 user_notf_count = Notification.objects.filter(
@@ -166,7 +166,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
             categories = ser.data
             cache.set(cat_key, categories, timeout=10 * 60)
         # ------------------ciy vendors-------------------
-        city_vendors_ids = self.get_city_vendors(city)
+        city_vendors_ids = self.get_city_vendors(city, is_foreign)
         city_vendors = (
             Vendor.objects.filter(id__in=city_vendors_ids)
             .only(
@@ -272,7 +272,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], url_path="discounted")
     def discounted_foods(self, request):
         """this endpoint returns discounted foods"""
-        city, lat, lon = get_user_info(request)
+        city, lat, lon, is_foreign = get_user_info(request)
         # getting ids of all discounts avaialbe in city from cache
         key = f"discounts:{city}:city"
         foods_key = f"city:{city}:dis_foods"
@@ -311,8 +311,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="local-vendors")
     def local_vendors(self, request):
-        city, lat, lon = get_user_info(request)
-        city_vendors_ids = self.get_city_vendors(city)
+        city, lat, lon, is_foreign = get_user_info(request)
+        city_vendors_ids = self.get_city_vendors(city, is_foreign)
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
         nearest_h3s = h3.grid_disk(user_h3, 40)
         vendors = Vendor.objects.filter(
@@ -328,8 +328,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="cheapest-vendors")
     def cheapest_vendors(self, request):
-        city, lat, lon = get_user_info(request)
-        city_vendors_ids = self.get_city_vendors(city)
+        city, lat, lon, is_foreign = get_user_info(request)
+        city_vendors_ids = self.get_city_vendors(city, is_foreign)
         vendors = (
             Vendor.objects.filter(id__in=city_vendors_ids)
             .annotate(avg_price=Avg("foods__min_price"))
@@ -344,7 +344,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], url_path="top-vendors")
     def top_vendors(self, request):
         """this endpoint returns top rating and most viewed vendors in the city"""
-        city, lat, lon = get_user_info(request)
+        city, lat, lon, is_foreign = get_user_info(request)
         counter = BestVendorsCounter(city)
         top = counter.read_counts(10)
         top_vendors = Vendor.objects.filter(
@@ -365,9 +365,9 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
     )
     def all_vendors_in_city(self, request):
         """this returns all active vendors in the city"""
-        
-        city, lat, lon = get_user_info(request)
-        vendors_ids = self.get_city_vendors(city)
+
+        city, lat, lon, is_foreign = get_user_info(request)
+        vendors_ids = self.get_city_vendors(city, is_foreign)
         # limiting foreign users to hesab pay vendors only
         
         # foods limited to 3 IMPORTANT FOR PERFORMANCE
@@ -388,6 +388,12 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 "min_price",
             )
         )
+        if is_foreign:
+            vendors_ids = (
+                Vendor.objects.filter(id__in=vendors_ids)
+                .exclude(hesabpay_number=None)
+                .values_list("id", flat=True)
+            )
         vendors = (
             Vendor.objects.filter(id__in=vendors_ids)
             .prefetch_related(
@@ -412,8 +418,8 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         note: h3.grid_disk returns amount of n-times hexagons away
         as circle from current hex
         """
-        city, lat, lon = get_user_info(request)
-        city_vendors_ids = self.get_city_vendors(city)
+        city, lat, lon, is_foreign = get_user_info(request)
+        city_vendors_ids = self.get_city_vendors(city, is_foreign)
         user_h3 = h3.latlng_to_cell(lat, lon, DEFAULT_H3_RESOLUTION)
         nearest_h3s = h3.grid_disk(user_h3, 40)
         # filter in db for existing nearby  open city vendors
@@ -424,18 +430,30 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         ser = AbstractVendorSerializer(vendors, many=True)
         return Response(ser.data)
 
-    def get_city_vendors(self, city):
+    def get_city_vendors(self, city, is_foreign=False):
         """this utility method returns ids of city vendors"""
+        
         city = str(city).lower()
-        city_vendors = cache.get(f"city:{city}:vendors")
-
-        if not city_vendors:
-            # cache miss
-            vendors_dict = Vendor.objects.filter(
-                is_approved=True, city=city
-            ).values_list("id", flat=True)
-            city_vendors = list(vendors_dict)
-            cache.set(f"city:{city}:vendors", city_vendors, 3600 * 1)
+        if is_foreign:
+            city_vendors = cache.get(f"city:{city}:hesabpay_vendors")
+            if not city_vendors:
+                # cache miss
+                vendors_dict = Vendor.objects.filter(
+                    is_approved=True, city=city
+                ).exclude(hesabpay_number=None).values_list("id", flat=True)
+                city_vendors = list(vendors_dict)
+                cache.set(
+                    f"city:{city}:hesabpay_vendors", city_vendors, 60 * 30
+                )
+        else:
+            city_vendors = cache.get(f"city:{city}:vendors")
+            if not city_vendors:
+                # cache miss
+                vendors_dict = Vendor.objects.filter(
+                    is_approved=True, city=city
+                ).values_list("id", flat=True)
+                city_vendors = list(vendors_dict)
+                cache.set(f"city:{city}:vendors", city_vendors, 60 * 30)
         return city_vendors
 
 
@@ -642,7 +660,7 @@ class PublicVendorDetail(views.APIView):
         """
         request = self.request
         request_data = request.query_params
-        city, lat, lon = get_user_info(request)
+        city, lat, lon, is_foreign = get_user_info(request)
         vendor_id = request_data.get("id", None)
         if vendor_id:
             try:
