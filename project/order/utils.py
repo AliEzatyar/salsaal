@@ -7,6 +7,7 @@ from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad
 import base64
 from logging import getLogger
+from marketplace.utils import r
 
 from order.models import FailedMultiVendorPayment
 
@@ -128,8 +129,17 @@ def create_multi_vendor_payment(vendors,order):
     try:
         response = requests.post(endpoint, json=payload, headers=headers)
         response.raise_for_status()
-        logger.info(f"Multi-vendor payment api call response: {response.text}")
-        logger.info("multi vendor payment successful for order")
+        response = response.json()
+        logger.info(f"Multi-vendor payment api call response: {response}")
+        if response.get("success") == False:
+            # multivendor payment faild, release lock so other tries get succeded
+            release_payment_lock(order.id)
+            logger.error(f"multi vendor payment failed for order :  {order.id}")
+
+        else:
+            # multivendor payment successful, keep it for 24 hours
+            mark_payment_success(order.id)
+            logger.info(f"multi vendor payment successful for order : {order.id}")
         return response.json()
 
     except requests.exceptions.RequestException as e:
@@ -142,10 +152,41 @@ def create_multi_vendor_payment(vendors,order):
         return None
 
 
-# Example usage
+PAYMENT_TTL = 300  # 5 minutes
+
+def get_order_payment_key(order_id):
+    key = f"ordr_mltv_pmnt:{order_id}"
+    return key
+    
+
+def acquire_payment_lock(order_id: int) -> bool:
+    """
+    Returns True if we can proceed with payment.
+    Returns False if payment is already processing or completed.
+    """
+    key = get_order_payment_key(order_id)
+    # SET key value NX EX is atomic
+    return r.set(
+        name=key,
+        value="processing",
+        nx=True,
+        ex=PAYMENT_TTL
+    )
 
 
+def mark_payment_success(order_id: int):
+    key = get_order_payment_key(order_id)
+    # keep success longer to prevent replays
+    r.set(
+        name=key,
+        value="success",
+        ex=86400  # 24 hours
+    )
 
-vendors = [
-    {"account_number": "0794825911", "amount": 20},
-]
+
+def release_payment_lock(order_id: int):
+    """
+    Use ONLY if payment failed and you want retries.
+    """
+    key = f"order_payment:{order_id}"
+    r.delete(key)

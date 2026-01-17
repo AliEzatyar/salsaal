@@ -85,6 +85,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         """
 
         city = self.request.query_params.get("city", None)
+        city, lat, lon, is_foreign = get_user_info(self.request)
         if not city:
             return Food.objects.none()
         city = str(city).lower()

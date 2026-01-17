@@ -1,10 +1,13 @@
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
 from order.utils import (
+    acquire_payment_lock,
     create_multi_vendor_payment,
     get_order_delivery_tries_key,
+    get_order_payment_key,
     start_payment_session,
 )
+from multiVend.country.info import ONLINE_PAYMENT_PLATFORM_SHARE, PLATFORM_SHARE
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
     COrderSerializer,
@@ -398,7 +401,14 @@ class AcceptRejectOrderView(views.APIView):
                             this part handles import online payment
                             after succesfull payment, user is redirected to app and request is made 
                             to this endpoint. Here we transfer vendor's share to his account.
-                        """                        
+                        """
+                        
+                        status = r.get(get_order_payment_key(order_id))
+                        # payment already in process
+                        if status or order.paid:
+                            logger.warning(f"online payment attempt on already paid order: {order_id}")
+                            return Response()
+                        acquire_payment_lock(order_id)
                         transaction_id = data.get("transaction_id", None)
                         if not transaction_id:
                             logger.info(f"transaction id not provided for order {order.id} online payment")
@@ -411,7 +421,7 @@ class AcceptRejectOrderView(views.APIView):
                         vendors = [
                             {
                                 "account_number": vendor_hesab_pay_account_number,
-                                "amount": int(order.total_price),  # delivery + items price
+                                "amount": int(order.total_price) - (int(order.total_price) * ONLINE_PAYMENT_PLATFORM_SHARE),  # delivery + items price
                             }
                         ]
                         logger.info(f"initiating multi vendor payment for order {order.id}")
@@ -421,6 +431,7 @@ class AcceptRejectOrderView(views.APIView):
                         except Exception as e:
                             pass
                         try:
+                            # check redis
                             create_multi_vendor_payment(vendors,order)
                         except Exception as e:
                             logger.exception(f"multi vendor payment failed for order {order.id}: {e}")

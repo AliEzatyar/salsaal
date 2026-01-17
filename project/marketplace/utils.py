@@ -146,10 +146,15 @@ def estimate_travel_time_graphhopper(origin, destination):
         f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false"
     )
     response = response.json()
-    return (
-        int(response["paths"][0]["time"]) / 60000,
-        round(float(response["paths"][0]["distance"]) / 1000, 1),
-    )
+    distance = 0
+    travel_time = 0
+    if not response.get("paths",None):
+        distance = haversine_distance(origin[0],origin[1],destination[0],destination[1])
+        travel_time = distance_to_travel_time(distance)
+    else:
+        distance = round(float(response["paths"][0]["distance"]) / 1000, 1)
+        travel_time = int(response["paths"][0]["time"]) / 60000
+    return (distance, travel_time)
 
 
 def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
