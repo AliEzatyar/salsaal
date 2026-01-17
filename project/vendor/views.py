@@ -1148,6 +1148,8 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             if distance_km > v_mfdd:
                                 # calculating delivery cost for extra distance
                                 delivery_cost = 2 * (distance_km - v_mfdd) * vendor.delivery_fee_km
+                                if distance_km > 100:
+                                    delivery_cost = 0
                             else:
                                 delivery_cost = 0
                         # order price is not capable of free delivery 
