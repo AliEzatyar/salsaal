@@ -401,6 +401,7 @@ class AcceptRejectOrderView(views.APIView):
                         """                        
                         transaction_id = data.get("transaction_id", None)
                         if not transaction_id:
+                            logger.info(f"transaction id not provided for order {order.id} online payment")
                             return Response(status=status.HTTP_400_BAD_REQUEST)
                         order.transaction_id = transaction_id
                         order.is_epay = True

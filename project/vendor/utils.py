@@ -2,11 +2,19 @@ from asyncio.log import logger
 from json import dumps
 from marketplace.utils import r
 from logging import getLogger   
+from re import sub
 
 logger = getLogger(__name__)
 
 def to_af_weekday(index):
     return (9 + index) % 7 + 1
+
+def normalize_phone(number: str, local_length: int = 9) -> str:
+    # keep digits only
+    digits = sub(r"\D", "", number)
+
+    # keep last N digits (local number)
+    return digits[-local_length:]
 
 
 def get_vendor_carriers_key(id):

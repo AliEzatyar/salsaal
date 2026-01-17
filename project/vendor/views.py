@@ -53,6 +53,7 @@ from rest_framework.exceptions import NotAcceptable
 from rest_framework import parsers, serializers
 from .utils import (
     get_vendor_carriers_key,
+    normalize_phone,
     r,
     revert_discount,
     apply_discount,
@@ -1435,6 +1436,7 @@ class AddHesabPayAccount(views.APIView):
             )
         vendor = request.user.vendor
         try:
+            hesabpay_account = normalize_phone(hesabpay_account)
             vendor.hesabpay_number = hesabpay_account
             vendor.save()
             return Response(
