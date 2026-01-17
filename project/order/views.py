@@ -421,7 +421,6 @@ class AcceptRejectOrderView(views.APIView):
                             pass
                         try:
                             create_multi_vendor_payment(vendors)
-                            logger.info(f"multi vendor payment successful for order {order.id}")
                         except Exception as e:
                             logger.exception(f"multi vendor payment failed for order {order.id}: {e}")
                             FailedMultiVendorPayment.objects.create(
@@ -494,7 +493,9 @@ class AcceptRejectOrderView(views.APIView):
 
     def get_vendor_account_number(self,vendor):
         """returns vendor hesab pay account number"""
-        return "0" + str(vendor.user.phone_number).split("+93")[1]
+        if vendor.hesabpay_number:
+            return vendor.hesabpay_number
+        return "0000000000000000"  # default account number
 
 
 class OnlinePaymentView(views.APIView):
