@@ -140,7 +140,7 @@ def create_multi_vendor_payment(vendors,order):
             # multivendor payment successful, keep it for 24 hours
             mark_payment_success(order.id)
             logger.info(f"multi vendor payment successful for order : {order.id}")
-        return response.json()
+        return response
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Request to create multi-vendor payment failed: {e}")

@@ -29,7 +29,7 @@ from .models import (
     Reward,
 )
 from rest_framework.decorators import action
-from rest_framework import viewsets, views, status, permissions
+from rest_framework import viewsets, views, permissions, status as rsp_status
 from rest_framework.response import Response
 from marketplace.utils import BoughtTogetherRecommender
 from live.models import Notification
@@ -130,7 +130,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             except ValueError:
                 return Response(
                     {"detail": "provide_correct_location"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    status=rsp_status.HTTP_400_BAD_REQUEST,
                 )
             user_profile = request.user.profile
             user_profile.latitude = str(lat)
@@ -139,13 +139,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         else:
             return Response(
                 {"detail": "provide_correct_location"},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=rsp_status.HTTP_400_BAD_REQUEST,
             )
         # ----------------- validating cart has items
         cart = request.user.cart
         if cart.calculate_total_items() < 1:
             return Response(
-                {"detail": "cart_empty"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "cart_empty"}, status=rsp_status.HTTP_400_BAD_REQUEST
             )
         try:
             # getting total and enforcing vendor
@@ -157,7 +157,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                         "detail": "min_order_price_not_met",
                         "min_order_price": vendor.min_order_price,
                     },
-                    status=status.HTTP_403_FORBIDDEN,
+                    status=rsp_status.HTTP_403_FORBIDDEN,
                 )
             # getting vendor id
             vendor_id = vendor.id
@@ -179,7 +179,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             if waiting_orders_count >= 1:
                 return Response(
                     {"detail": "order_already_in_process"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    status=rsp_status.HTTP_403_FORBIDDEN,
                 )
             r.incrby(f"user:{request.user.id}:waiting", 1)
             # -------------- checking if user has reached limit of preparing orders
@@ -197,7 +197,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 # prevent duplicate order if user has one 'waiting' order already
                 return Response(
                     {"detail": "order_already_in_process"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    status=rsp_status.HTTP_403_FORBIDDEN,
                 )
             # --------------- data validating and creating new order
             data["vendor"] = vendor_id
@@ -267,7 +267,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             recommender.update_together_bought(pks)
             response = Response(
                 {"order_id": new_order.id},
-                status=status.HTTP_201_CREATED,
+                status=rsp_status.HTTP_201_CREATED,
             )
             return response
         except Exception as e:
@@ -277,7 +277,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=ORDER_STATUS_CHOICES[1][1],
             ).delete()
             return Response(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=rsp_status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @action(detail=False, methods=["delete"], url_path="cancel")
@@ -319,7 +319,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                         }
                     ),
                 )
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=rsp_status.HTTP_200_OK)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -367,7 +367,7 @@ class AcceptRejectOrderView(views.APIView):
             if not order.status == ORDER_STATUS_CHOICES[1][0]:
                 return Response(
                     {"detail": "order_not_waiting_state"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    status=rsp_status.HTTP_403_FORBIDDEN,
                 )
             # ------------- check if this user owns the order
             self.check_object_permissions(self.request, order)
@@ -377,7 +377,7 @@ class AcceptRejectOrderView(views.APIView):
             ]:
                 return Response(
                     {"detail": "invalid_payment_type"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    status=rsp_status.HTTP_400_BAD_REQUEST,
                 )
             existing_reward = Reward.objects.filter(
                 vendor__id=order.vendor.id, user=self.request.user
@@ -390,7 +390,7 @@ class AcceptRejectOrderView(views.APIView):
                     ):
                         return Response(
                             {"detail": "ineffecient_amount"},
-                            status=status.HTTP_403_FORBIDDEN,
+                            status=rsp_status.HTTP_403_FORBIDDEN,
                         )
                     existing_reward.amount -= float(order.total_price)
                     order.paid = True
@@ -412,7 +412,7 @@ class AcceptRejectOrderView(views.APIView):
                         transaction_id = data.get("transaction_id", None)
                         if not transaction_id:
                             logger.info(f"transaction id not provided for order {order.id} online payment")
-                            return Response(status=status.HTTP_400_BAD_REQUEST)
+                            return Response(status=rsp_status.HTTP_400_BAD_REQUEST)
                         order.transaction_id = transaction_id
                         order.is_epay = True
                         order.paid = True
@@ -421,7 +421,7 @@ class AcceptRejectOrderView(views.APIView):
                         vendors = [
                             {
                                 "account_number": vendor_hesab_pay_account_number,
-                                "amount": int(order.total_price) - (int(order.total_price) * ONLINE_PAYMENT_PLATFORM_SHARE),  # delivery + items price
+                                "amount": int(int(order.total_price) - (int(order.total_price) * ONLINE_PAYMENT_PLATFORM_SHARE)),  # delivery + items price
                             }
                         ]
                         logger.info(f"initiating multi vendor payment for order {order.id}")
@@ -461,10 +461,10 @@ class AcceptRejectOrderView(views.APIView):
             self.send_notification(order)
             return Response()
         except Order.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=rsp_status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.exception(f"error in ar-order: {e}")
-            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+            return Response(status=rsp_status.HTTP_501_NOT_IMPLEMENTED)
 
     def handle_reward_increment(self, order, existing_reward):
         """handles reward increment logic"""
@@ -521,7 +521,7 @@ class OnlinePaymentView(views.APIView):
             data = request.data
             order_id = data.get("order_id", None)
             if not order_id:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=rsp_status.HTTP_400_BAD_REQUEST)
             order = Order.objects.filter(id=order_id, is_epay=False).first()
             if order:
                 logger.info(f"starting online payment session for user {request.user.id} order {order.id}")  
@@ -537,12 +537,12 @@ class OnlinePaymentView(views.APIView):
                 )
                 session_url = start_payment_session(data, order_id)
                 return Response({"session_url": session_url["url"]})
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=rsp_status.HTTP_400_BAD_REQUEST)
         except Order.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=rsp_status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.exception(f"error in online payment view: {e}")
-            return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+            return Response(status=rsp_status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class SetOrderStateDelivered(views.APIView):
@@ -600,7 +600,7 @@ class SetOrderStateDelivered(views.APIView):
                     
                 return Response(
                     {"detail": "otp_invalid_or_expired"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    status=rsp_status.HTTP_403_FORBIDDEN,
                 )
 
             with atomic():
@@ -655,7 +655,7 @@ class SetOrderStateDelivered(views.APIView):
             ser = COrderSerializer(order)
             return Response(
                 ser.data,
-                status=status.HTTP_202_ACCEPTED,
+                status=rsp_status.HTTP_202_ACCEPTED,
             )
         except Order.DoesNotExist:
             return Response({"detail": "no_macthing_order"}, status=404)
@@ -664,13 +664,13 @@ class SetOrderStateDelivered(views.APIView):
         except PermissionDenied:
             return Response(
                 {"detail": "not_allowed"},
-                status=status.HTTP_403_FORBIDDEN,
+                status=rsp_status.HTTP_403_FORBIDDEN,
             )
         except Exception as e:
             logger.exception(f"error in set order as delivered: {e}")
             return Response(
                 {"detail": "uknown error occured"},
-                status=status.HTTP_501_NOT_IMPLEMENTED,
+                status=rsp_status.HTTP_501_NOT_IMPLEMENTED,
             )
 
 
@@ -715,9 +715,9 @@ class ReOrder(views.APIView):
             except Exception as e:
                 logger.exception(f"error in re-order: {e}")
                 pass
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(status=rsp_status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(
-            {"detail": "provide_order_id"}, status=status.HTTP_400_BAD_REQUEST
+            {"detail": "provide_order_id"}, status=rsp_status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -732,17 +732,17 @@ class RedirectPaymentSuccess(views.APIView):
             params_data = self.request.query_params.get("data", None)
             data_dict = json.loads(params_data)
             if data_dict.get("success") != True:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=rsp_status.HTTP_400_BAD_REQUEST)
             transaction_id = data_dict.get("transaction_id", None)
             if transaction_id is None:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=rsp_status.HTTP_400_BAD_REQUEST)
             app_link = f"zaytonfood://hesabpay/success?transaction_id={transaction_id}"
-            response = Response(status=status.HTTP_302_FOUND)
+            response = Response(status=rsp_status.HTTP_302_FOUND)
             response["Location"] = app_link
             return response
         except Exception as e:
             logger.exception(f"error in redirect payment success view: {e}")
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(status=rsp_status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RedirectPaymentFailure(views.APIView):
@@ -760,8 +760,8 @@ class RedirectPaymentFailure(views.APIView):
             if not message:
                 message = "impossible_to_process_payment"
             app_link = f"zaytonfood://hesabpay/failure?reason={message}"
-            response = Response(status=status.HTTP_302_FOUND)
+            response = Response(status=rsp_status.HTTP_302_FOUND)
             response["Location"] = app_link
             return response
         except Exception as e:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(status=rsp_status.HTTP_500_INTERNAL_SERVER_ERROR)
