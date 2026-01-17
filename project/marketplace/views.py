@@ -101,12 +101,14 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
         vendor = obj.vendor
         try:
             city, lat, lon, is_foreign = get_user_info(request)
-            distance = haversine_distance(
-                float(vendor.latitude),
-                float(vendor.longitude),
-                float(lat),
-                float(lon),
-            )
+            distance = 0.0
+            if not is_foreign:
+                distance = haversine_distance(
+                    float(vendor.latitude),
+                    float(vendor.longitude),
+                    float(lat),
+                    float(lon),
+                )
             # serializer for the item
             serializer = CVFoodSerializerDetail(instance=obj)
             # listing and serializing recommended foods
@@ -126,6 +128,7 @@ class MarketplaceViewset(viewsets.ReadOnlyModelViewSet):
                 }
             )
         except Exception as e:
+            logger.error(f"error fetching food data")
             return Response(status=status.HTTP_404_NOT_FOUND)
 
     def list(self, request, *args, **kwargs):
