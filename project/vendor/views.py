@@ -532,7 +532,7 @@ class ManageCarrierViewSet(viewsets.ModelViewSet):
             vendor_carriers_key = get_vendor_carriers_key(vendor.id)
             total_c_c = vendor.carriers.count()
             b_c_c = Carrier.objects.filter(
-                vendor=vendor, status=CARRIER_STATUS_CHOICES[1][0]
+                vendor=vendor, status=CARRIER_STATUS_CHOICES[3][0]
             ).count() 
             f_c_c = total_c_c - b_c_c
             r.hset(vendor_carriers_key, "f_c_c", f_c_c)
