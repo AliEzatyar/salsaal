@@ -9,7 +9,7 @@ from datetime import timedelta
 from order.models import Order
 from vendor.models import Vendor
 from django.contrib import messages
-from multiVend.country.info import PLATFORM_SHARE
+from multiVend.country.info import PLATFORM_CASH_PAYMENT_SHARE
 
 
 def is_order_manager(user):
@@ -172,7 +172,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
                 vendor_name = item['vendor__vendor_name'] or 'Unknown Vendor'
                 labels.append(vendor_name)
 
-                total_revenue = float(item['total_revenue'] or 0) * float(PLATFORM_SHARE)
+                total_revenue = float(item['total_revenue'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE)
                 revenue_data.append(total_revenue)
 
                 order_data.append(item['order_count'])
@@ -257,7 +257,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
 
                 total = orders.aggregate(total=Sum('total_price'))['total'] or 0
                 # Apply platform share
-                total = float(total) * float(PLATFORM_SHARE)
+                total = float(total) * float(PLATFORM_CASH_PAYMENT_SHARE)
                 labels.append(time_point.strftime(date_format))
                 revenue_data.append(total)
 
@@ -306,7 +306,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
                 labels.append(item['status'].title())
                 count_data.append(item['count'])
                 # Apply platform share to revenue
-                revenue = float(item['revenue'] or 0) * float(PLATFORM_SHARE)
+                revenue = float(item['revenue'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE)
                 revenue_data.append(revenue)
 
             # If no data, provide empty state
@@ -365,7 +365,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
             for item in payment_analysis:
                 labels.append(item['payment_type'].replace('_', ' ').title())
                 count_data.append(item['count'])
-                revenue = float(item['revenue'] or 0) * float(PLATFORM_SHARE)
+                revenue = float(item['revenue'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE)
                 revenue_data.append(revenue)
                 avg_order_data.append(float(item['avg_order_value'] or 0))
 
@@ -413,7 +413,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
                             day_orders = day_orders.filter(vendor_id=vendor_id)
                         
                         count_data.append(day_orders.count())
-                        revenue = float(day_orders.aggregate(total=Sum('total_price'))['total'] or 0) * float(PLATFORM_SHARE)
+                        revenue = float(day_orders.aggregate(total=Sum('total_price'))['total'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE)
                         revenue_data.append(revenue)
                 else:
                     if period == 'day':
@@ -454,7 +454,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
                             labels.append(f"{hour:02d}:00")
                             hour_data = next((item for item in hourly_data if int(item['hour']) == hour), None)
                             count_data.append(hour_data['count'] if hour_data else 0)
-                            revenue = float(hour_data['revenue'] or 0) * float(PLATFORM_SHARE) if hour_data else 0
+                            revenue = float(hour_data['revenue'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE) if hour_data else 0
                             revenue_data.append(revenue)
                     else:
                         # For week/month, group by day
@@ -465,7 +465,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
                                 created_at__date=day_start.date()
                             )
                             count_data.append(day_orders.count())
-                            revenue = float(day_orders.aggregate(total=Sum('total_price'))['total'] or 0) * float(PLATFORM_SHARE)
+                            revenue = float(day_orders.aggregate(total=Sum('total_price'))['total'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE)
                             revenue_data.append(revenue)
 
                 # If no data, provide empty state
@@ -550,7 +550,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
 
                 labels.append(label)
                 count_data.append(range_orders.count())
-                revenue = float(range_orders.aggregate(total=Sum('total_price'))['total'] or 0) * float(PLATFORM_SHARE)
+                revenue = float(range_orders.aggregate(total=Sum('total_price'))['total'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE)
                 revenue_data.append(revenue)
 
             # If no data, provide empty state
@@ -613,7 +613,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
                 delivery_rate = (delivered_orders / total_orders * 100) if total_orders > 0 else 0
                 delivery_rate_data.append(round(delivery_rate, 1))
 
-                total_revenue = float(item['total_revenue'] or 0) * float(PLATFORM_SHARE)
+                total_revenue = float(item['total_revenue'] or 0) * float(PLATFORM_CASH_PAYMENT_SHARE)
                 avg_order_value = total_revenue / delivered_orders if delivered_orders > 0 else 0
                 avg_order_value_data.append(round(avg_order_value, 2))
 

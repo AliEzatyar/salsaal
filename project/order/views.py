@@ -7,7 +7,7 @@ from order.utils import (
     get_order_payment_key,
     start_payment_session,
 )
-from multiVend.country.info import ONLINE_PAYMENT_PLATFORM_SHARE, PLATFORM_SHARE
+from multiVend.country.info import PLATFORM_ONLINE_PAYMENT_SHARE
 from vendor.utils import get_vendor_carriers_key
 from .serializers import (
     COrderSerializer,
@@ -421,7 +421,7 @@ class AcceptRejectOrderView(views.APIView):
                         vendors = [
                             {
                                 "account_number": vendor_hesab_pay_account_number,
-                                "amount": int(int(order.total_price) - (int(order.total_price) * ONLINE_PAYMENT_PLATFORM_SHARE)),  # delivery + items price
+                                "amount": int(int(order.total_price) - (int(order.total_price) * PLATFORM_ONLINE_PAYMENT_SHARE)),  # delivery + items price
                             }
                         ]
                         logger.info(f"initiating multi vendor payment for order {order.id}")

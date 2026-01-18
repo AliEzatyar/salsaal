@@ -32,7 +32,7 @@ from cart.models import Cart
 from carrier.utils import get_carrier_key
 from live.models import Notification
 from live.utils import push_notification
-from multiVend.country.info import PLATFORM_SHARE
+from multiVend.country.info import PLATFORM_CASH_PAYMENT_SHARE, PLATFORM_ONLINE_PAYMENT_SHARE
 from accounts.serializers import UserDetailSerializer
 from .serializers import (
     DiscountSerializer,
@@ -776,7 +776,7 @@ class VendorSalesView(views.APIView):
         - today_sale_amount (int)
         - month_sales_per_day: [{"day": int, "total_sale": int}, ...]
         - top_sale_foods: [{"food": str, "total_sale": int}, ...]
-        - platform_share (int) = monthly total * PLATFORM_SHARE
+        - platform_share (int) = monthly total * PLATFORM_CASH_PAYMENT_SHARE
     POST:
     - Computes total sales in a custom datetime range.
     - Body: {"start_date": "YYYY-MM-DDTHH:MM:SSZ", "end_date": "YYYY-MM-DDTHH:MM:SSZ"} (UTC)
@@ -817,11 +817,12 @@ class VendorSalesView(views.APIView):
         this_year = tz.now().year
         this_month = tz.now().month
         this_year_orders = Order.objects.filter(
-            status="delivered", vendor=vendor, created_at__year=this_year
+            status=ORDER_STATUS_CHOICES[4][0], vendor=vendor, created_at__year=this_year
         )
         # --------------- this month sales
         this_month_orders = this_year_orders.filter(created_at__month=this_month)
-        this_month_total_sales = this_month_orders.aggregate(total=Sum("total_price"))[
+        this_month_total_sales = this_month_orders.aggregate(total=Sum("total_price"))["total"]
+        this_month_total_cash_sales = this_month_orders.filter(is_epay=False).aggregate(total=Sum("total_price"))[
             "total"
         ]
         today_orders = this_month_orders.filter(created_at__date=tz.now().date())
@@ -852,7 +853,12 @@ class VendorSalesView(views.APIView):
             for food in per_food_sales_qs
         ]
         # --------------------- platform share
-        platform_share = (this_month_total_sales or 0) * PLATFORM_SHARE
+        online_paid_orders = this_month_orders.filter(is_epay=True, paid=True)
+        this_month_total_online_paid= online_paid_orders.aggregate(
+            total=Sum("total_price")
+        )["total"]
+        online_paid_platform_share = (this_month_total_online_paid or 0) * PLATFORM_ONLINE_PAYMENT_SHARE
+        cash_paid_platform_share = (this_month_total_cash_sales  or 0) * PLATFORM_CASH_PAYMENT_SHARE
         
         return Response(
             {
@@ -860,7 +866,7 @@ class VendorSalesView(views.APIView):
                 "today_sale_amount": int(today_total_sales or 0),
                 "month_sales_per_day": per_day_dict,
                 "top_sale_foods": per_food_dict,
-                "platform_share": int(platform_share),
+                "platform_share": int(cash_paid_platform_share),
             }
         )
 

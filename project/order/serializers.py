@@ -11,6 +11,9 @@ from accounts.models import User
 from marketplace.utils import uws_redis
 from json import loads as jloads
 from logging import getLogger
+from django.utils.translation import gettext as _
+from django.utils.translation import activate as activate_language
+from django.utils.translation import deactivate as deactivate_language
 
 logger = getLogger(__name__)
 
@@ -190,7 +193,14 @@ class VOrderSerializer(ModelSerializer):
 
     def get_phone(self,obj):
         if obj.user:
-            return obj.user.phone_number
+            if obj.status in [ORDER_STATUS_CHOICES[2][0], ORDER_STATUS_CHOICES[3][0], ORDER_STATUS_CHOICES[4][0]]:
+                return obj.user.phone_number
+        else:
+            activate_language(obj.vendor.user_profile.pf_lang)
+            message = _("Accept Order to see phone number")
+            deactivate_language()
+            return message
+        
             
     def get_destination(self, obj):
         if obj.status == ORDER_STATUS_CHOICES[3][0] and obj.carrier:
