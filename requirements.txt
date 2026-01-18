@@ -96,6 +96,7 @@ python-dotenv
 python-geohash
 python-json-logger
 PyYAML
+qrcode
 redis
 referencing
 requests
