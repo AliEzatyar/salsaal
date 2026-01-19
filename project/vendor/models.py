@@ -56,6 +56,9 @@ class Vendor(models.Model):
     license_valid_until = models.DateField(auto_now_add=True)
     avg_rating = models.FloatField(default=0)
     rating_count = models.PositiveSmallIntegerField(default=0)
+    mdd = models.PositiveSmallIntegerField(
+        default=3, blank=True
+    )  # mxn delivery distance
     mfdd = models.PositiveSmallIntegerField(
         default=0, blank=True
     )  # max free distance delivery

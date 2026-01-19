@@ -31,7 +31,7 @@ from .models import (
 from rest_framework.decorators import action
 from rest_framework import viewsets, views, permissions, status as rsp_status
 from rest_framework.response import Response
-from marketplace.utils import BoughtTogetherRecommender
+from marketplace.utils import BoughtTogetherRecommender, haversine_distance
 from live.models import Notification
 from django.db.transaction import atomic
 from django.core.serializers.json import DjangoJSONEncoder
@@ -132,10 +132,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                     {"detail": "provide_correct_location"},
                     status=rsp_status.HTTP_400_BAD_REQUEST,
                 )
+            
             user_profile = request.user.profile
             user_profile.latitude = str(lat)
             user_profile.longitude = str(lon)
             user_profile.save()
+            
         else:
             return Response(
                 {"detail": "provide_correct_location"},
@@ -150,6 +152,20 @@ class OrderViewSet(viewsets.ModelViewSet):
         try:
             # getting total and enforcing vendor
             vendor = CartItem.objects.filter(cart=cart).last().food.vendor
+            # checking distance limit can be added here
+            distance_km = haversine_distance(
+                float(vendor.latitude),
+                float(vendor.longitude),
+                float(lat),
+                float(lon),
+            )
+            if distance_km > vendor.mdd:
+                logger.warning(f"order creation attempt out of delivery zone for user {request.user.id} vendor {vendor.id} distance {distance_km} km.")
+                return Response(
+                    {"error": "OUT_OF_DELIVERY_ZONE",
+                     "message":  "The delivery address is outside the restaurant delivery area."},
+                    status=rsp_status.HTTP_422_UNPROCESSABLE_ENTITY,
+                )
             total_price =  cart.calculate_total()
             if total_price < vendor.min_order_price:
                 return Response(
