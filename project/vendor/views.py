@@ -1163,6 +1163,8 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             # calculating delivery cost for whole distance
                             delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
                     # adding delivery cost to total price of order
+                    if delivery_cost < 10:
+                        delivery_cost = 0
                     order.delivery_cost = delivery_cost
                     # since accepted by vendor, otp is set on and used in filter waiting orders of vendor
                     otp = generate_otp(8)

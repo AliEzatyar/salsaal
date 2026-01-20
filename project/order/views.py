@@ -724,7 +724,7 @@ class ReOrder(views.APIView):
                     CartItem.objects.create(
                         cart=user_cart,
                         food=item.food,
-                        price=item.price,
+                        price=item.food.price,
                         quantity=item.quantity,
                     )
                 return Response()

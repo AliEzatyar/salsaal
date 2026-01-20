@@ -99,7 +99,7 @@ def send_otp(self,otp=None, user_id=None, phone_number=None, **kwargs):
             "Records": [{"msisdn": int(phone_number), "otp": str(otp_text)}],
             "campaign_ID": settings.CPAAS_OBD_CAMPAIGN_ID,
         }
-        logger.info(f"Sending OTP to {phone_number} via CPAAS, data: {data}, headers: {headers}")
+        # logger.info(f"Sending OTP to {phone_number} via CPAAS, data: {data}, headers: {headers}")
         response = requests.post(
                 settings.CPAAS_UPLOAD_BASELOAD_URL, json=data, headers=headers
             )

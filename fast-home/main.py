@@ -75,7 +75,8 @@ async def home(
     if not city in CITIES_ENGLISH_TO_DARI_NAMES_MAP.keys():
         is_foreign = True
         city = DEFAULT_CITY
-        
+        user_h3 = DEFAULT_H3
+        lat, lon = h3.cell_to_latlng(DEFAULT_H3)
     if not city in [i[0] for i in CITIES_CENTER_POINTS]:
         city = nearest_city(lat,lon)
     
@@ -119,7 +120,8 @@ async def home(
     city_vendor_ids = await cache_get(city_vendor_ids_key)
     if is_foreign:
         city = DEFAULT_CITY
-        user_h3 = DEFAULT_H3
+        
+        
         ids = (
             db.query(Vendor.id)
             .filter(Vendor.city == city, Vendor.hesabpay_number != None, Vendor.is_approved.is_(True))
