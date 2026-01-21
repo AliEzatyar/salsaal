@@ -201,7 +201,7 @@ class LoginApiView(views.APIView):
                             {"detail": "max_attempts_reached"},
                             status=status.HTTP_403_FORBIDDEN,
                         )
-                if tries and int(tries) > 5:
+                if tries and int(tries) > 7:
                     logger.warning(f"max otp attempts reached for existing user login: {phone_number}")
 
                     r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 5 minutes delay
@@ -333,7 +333,7 @@ class VerifyOtpSignUpApiView(views.APIView):
             otp_tries_key = get_user_otp_tries_key(phone_number)
             tries = r.get(otp_tries_key)
             r.incrby(otp_tries_key, 1)
-            if tries and int(tries) > 5:
+            if tries and int(tries) > 10:
                 r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 5 minutes delay
                 logger.warning(f"max otp attempts reached for new user login: {phone_number}")
                 return Response(

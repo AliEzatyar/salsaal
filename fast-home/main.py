@@ -76,7 +76,7 @@ async def home(
         is_foreign = True
         city = DEFAULT_CITY
         user_h3 = DEFAULT_H3
-        lat, lon = h3.cell_to_latlng(DEFAULT_H3)
+        
     if not city in [i[0] for i in CITIES_CENTER_POINTS]:
         city = nearest_city(lat,lon)
     
@@ -167,7 +167,7 @@ async def home(
     distance_reach_time(discounted_foods, lat, lon, "food")
 
     # ---------------- local vendors (H3 grid)
-    nearest_h3s = h3.grid_disk(user_h3,40)
+    nearest_h3s = h3.grid_disk(user_h3,20)
 
     local_vendors = db.scalars(
         city_vendors_qs.where(Vendor.h3_id.in_(nearest_h3s))

@@ -33,7 +33,6 @@ def decode_token(token):
         print("error decoding user token in fastAPI:", e)
         return None
 
-
 def get_throttle_cache_key(typ, ip=None,user_id=None):
     if typ == "anon":
         return f"anon:{ip}:trtl"
