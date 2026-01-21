@@ -159,7 +159,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                 float(lat),
                 float(lon),
             )
-            if distance_km > vendor.mdd:
+            # vendor max delivery distance check and if foreign, allow
+            if distance_km < 200 and  distance_km > vendor.mdd :
                 logger.warning(f"order creation attempt out of delivery zone for user {request.user.id} vendor {vendor.id} distance {distance_km} km.")
                 return Response(
                     {"error": "OUT_OF_DELIVERY_ZONE",
