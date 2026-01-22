@@ -1,3 +1,4 @@
+from django.conf import settings
 from carrier.models import CARRIER_STATUS_CHOICES
 from carrier.utils import decrypt_32
 from order.utils import (
@@ -6,6 +7,7 @@ from order.utils import (
     get_order_delivery_tries_key,
     get_order_payment_key,
     start_payment_session,
+    verify_hesab_pay_transaction,
 )
 from multiVend.country.info import PLATFORM_ONLINE_PAYMENT_SHARE
 from vendor.utils import get_vendor_carriers_key
@@ -429,6 +431,13 @@ class AcceptRejectOrderView(views.APIView):
                         if not transaction_id:
                             logger.info(f"transaction id not provided for order {order.id} online payment")
                             return Response(status=rsp_status.HTTP_400_BAD_REQUEST)
+                        # ----- verifying whether transaction id is valid can be added here
+                        if not verify_hesab_pay_transaction(settings.HESAB_PAY_API_KEY, transaction_id) == True:
+                            return Response(
+                                {"detail": "invalid_transaction_id"},
+                                status=rsp_status.HTTP_403_FORBIDDEN,
+                            )
+                        
                         order.transaction_id = transaction_id
                         order.is_epay = True
                         order.paid = True

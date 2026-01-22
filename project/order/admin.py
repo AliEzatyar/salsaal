@@ -2,6 +2,9 @@ from django.contrib import admin
 from .models import FailedMultiVendorPayment, Order, OrderItem
 from admins.admin import revenue_admin_site
 from django.utils.html import format_html
+from django.conf import settings
+from .utils import get_hesab_pay_transaction_detail
+import json
 
 # Register your models here.
 class OrderAdmin(admin.ModelAdmin):
@@ -10,7 +13,26 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ["status", "paid", "payment_type", "is_epay", "created_at", "vendor"]
     search_fields = ["user__name", "user__phone_number", "vendor__vendor_name", "id"]
     ordering = ("-created_at",)
-    readonly_fields = ["created_at", "modified_at", "total_price", "delivery_cost", "total_items"]
+    readonly_fields = ["created_at", "modified_at", "total_price", "delivery_cost", "total_items", "transaction_details"]
+
+    def transaction_details(self, obj):
+        """Display HesabPay transaction details for e-pay orders"""
+        if not obj.is_epay or not obj.transaction_id:
+            return "-"
+        
+        details = get_hesab_pay_transaction_detail(settings.HESAB_PAY_API_KEY, obj.transaction_id)
+        if not details:
+            return "Unable to fetch transaction details"
+        
+        # Format the details as HTML for better display
+        formatted_details = json.dumps(details, indent=2, ensure_ascii=False)
+        return format_html(
+            '<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; max-width: 600px; overflow-x: auto;">{}</pre>',
+            formatted_details
+        )
+    
+    transaction_details.short_description = "HesabPay Transaction Details"
+
     def location_link(self, obj):
         if not obj.destination:
             return "-"

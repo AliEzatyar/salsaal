@@ -190,3 +190,62 @@ def release_payment_lock(order_id: int):
     """
     key = f"order_payment:{order_id}"
     r.delete(key)
+
+
+def verify_hesab_pay_transaction(api_key, transaction_id):
+    """
+    Verify transaction details with HesabPay
+
+    Args:
+        api_key (str): Your API key
+        transaction_id (str): Transaction ID to verify
+
+    Returns:
+        dict: API response with transaction details
+    """
+    endpoint = settings.HESAB_PAY_TRANSACTION_DETAILS_ENDPOINT + str(transaction_id)
+
+    headers = {
+        "Authorization": f"API-KEY {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    try:
+        response = requests.get(endpoint, headers=headers)
+        response.raise_for_status()
+        success = response.json().get("success", False)
+        if not success:
+            logger.error(f"Transaction verification failed for transaction ID: {transaction_id}")
+            return False
+        logger.info(f"Transaction verified successfully for transaction ID: {transaction_id}")
+        return True
+    except requests.exceptions.RequestException as e:
+        logger.exception(f"Request to verify transaction details failed: {e}")
+        return False
+    
+
+def get_hesab_pay_transaction_detail(api_key, transaction_id):
+    """
+    Get transaction details from HesabPay
+
+    Args:
+        api_key (str): Your API key
+        transaction_id (str): Transaction ID to get details for
+
+    Returns:
+        dict: API response with transaction details
+    """
+    endpoint = settings.HESAB_PAY_TRANSACTION_DETAILS_ENDPOINT + str(transaction_id)
+
+    headers = {
+        "Authorization": f"API-KEY {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    try:
+        response = requests.get(endpoint, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        logger.exception(f"Request to get transaction details failed: {e}")
+        return {}
