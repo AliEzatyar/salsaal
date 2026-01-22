@@ -20,16 +20,23 @@ class OrderAdmin(admin.ModelAdmin):
         if not obj.is_epay or not obj.transaction_id:
             return "-"
         
-        details = get_hesab_pay_transaction_detail(settings.HESAB_PAY_API_KEY, obj.transaction_id)
-        if not details:
-            return "Unable to fetch transaction details"
+        # Check if required settings are configured
+        if not getattr(settings, 'HESAB_PAY_TRANSACTION_DETAILS_ENDPOINT', None) or not getattr(settings, 'HESAB_PAY_API_KEY', None):
+            return "HesabPay settings not configured"
         
-        # Format the details as HTML for better display
-        formatted_details = json.dumps(details, indent=2, ensure_ascii=False)
-        return format_html(
-            '<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; max-width: 600px; overflow-x: auto;">{}</pre>',
-            formatted_details
-        )
+        try:
+            details = get_hesab_pay_transaction_detail(settings.HESAB_PAY_API_KEY, obj.transaction_id)
+            if not details:
+                return "Unable to fetch transaction details"
+            
+            # Format the details as HTML for better display
+            formatted_details = json.dumps(details, indent=2, ensure_ascii=False)
+            return format_html(
+                '<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; max-width: 600px; overflow-x: auto;">{}</pre>',
+                formatted_details
+            )
+        except Exception as e:
+            return f"Error fetching transaction details: {str(e)}"
     
     transaction_details.short_description = "HesabPay Transaction Details"
 
