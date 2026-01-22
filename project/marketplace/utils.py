@@ -159,7 +159,7 @@ def estimate_travel_time_graphhopper(origin, destination):
         distance = round(float(response["paths"][0]["distance"]) / 1000, 1)
         travel_time = int(response["paths"][0]["time"]) / 60000
         logger.info(f"graphhopper response: distance:{distance} travel_time:{travel_time}")
-    return (distance, travel_time)
+    return (travel_time,distance)
 
 
 def h3_distance_to_km(val, edge_length=DEFAULT_H3_EDGE_LENGTH):
