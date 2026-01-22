@@ -124,7 +124,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         lon = data.get("longitude", None)
         if lat and lon:
             try:
-                
                 float(lat)
                 float(lon)
             except ValueError:
