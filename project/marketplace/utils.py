@@ -7,7 +7,9 @@ from rest_framework.pagination import PageNumberPagination
 import geohash
 from rest_framework.exceptions import ValidationError
 from .info import CITY_TRANSLATIONS, CITY_TRANSLATIONS_REVERSED
- 
+from logging import getLogger
+logger = getLogger(__name__)
+
 r = redis.Redis(s.REDIS_HOST, s.REDIS_PORT, s.REDIS_DB,password=s.REDIS_PASSWORD)
 DEFAULT_H3_RESOLUTION = 9
 DEFAULT_H3_EDGE_LENGTH = 0.357
@@ -141,6 +143,7 @@ def estimate_travel_time_graphhopper(origin, destination):
     Faced a lot of errors when first set up: see
 
     """
+    logger.info(f"estimating travel time using graphhopper from {origin[0]},{origin[1]} to {destination[0]},{destination[1]}")
     hopper_host = env.get("GRAPHHOPPER_HOST")
     response = req.get(
         f"http://{hopper_host}:8989/route?point={origin[0]},{origin[1]}&point={destination[0]},{destination[1]}&profile=car&calc_points=false&instructions=false"
@@ -151,9 +154,11 @@ def estimate_travel_time_graphhopper(origin, destination):
     if not response.get("paths",None):
         distance = haversine_distance(origin[0],origin[1],destination[0],destination[1])
         travel_time = distance_to_travel_time(distance)
+        logger.info(f"graphhopper no paths response, fallback to haversine: distance:{distance} travel_time:{travel_time}")
     else:
         distance = round(float(response["paths"][0]["distance"]) / 1000, 1)
         travel_time = int(response["paths"][0]["time"]) / 60000
+        logger.info(f"graphhopper response: distance:{distance} travel_time:{travel_time}")
     return (distance, travel_time)
 
 

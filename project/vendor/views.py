@@ -1059,10 +1059,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     # vendor accepted order, set otp
                     # ------------------ estimateing travel time for new order
                     vendor = self.request.user.vendor
-                    user_location = order.user.profile.location
-                    user_location = (user_location.y, user_location.x)  # as lat,lon
-                    vendor_location = vendor.user_profile.location
-                    vendor_location = (vendor_location.y, vendor_location.x)  # lat,lon
+                    user_location = [order.destination.x, order.destination.y]  # lat,lon
+                    user_location = (user_location[0], user_location[1])  # as lat,lon
+                    vendor_location = (vendor.latitude, vendor.longitude)  # lat,lon
                     estimated, distance_km = estimate_travel_time_graphhopper(
                         vendor_location, user_location
                     ) # raw estimation in minutes
@@ -1154,6 +1153,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             if distance_km > v_mfdd:
                                 # calculating delivery cost for extra distance
                                 delivery_cost = 2 * (distance_km - v_mfdd) * vendor.delivery_fee_km
+                                logger.info(f"calculated delivery cost for extra distance since order price is capable: {delivery_cost}")
                                 if distance_km > 100:
                                     delivery_cost = 0
                             else:
@@ -1162,6 +1162,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                         else:   
                             # calculating delivery cost for whole distance
                             delivery_cost = 2 * (distance_km * vendor.delivery_fee_km)
+                            logger.info(f"calculated delivery cost for whole distance since order price is not capable: {delivery_cost}")
                     # adding delivery cost to total price of order
                     if delivery_cost < 10:
                         delivery_cost = 0
