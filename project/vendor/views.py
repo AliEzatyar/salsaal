@@ -1328,7 +1328,7 @@ class SetOrderStateCarrying(views.APIView):
                 else:
                     mark_order_delivered.apply_async(
                                     args=(order.id,),
-                                    countdown=carrier_return_estimate / 2 * 60
+                                    countdown=carrier_return_estimate * 60
                                 )
                 # ---------------------- creating notification for customer
                 profile = order.user.profile

@@ -194,13 +194,13 @@ class VOrderSerializer(ModelSerializer):
 
     def get_phone(self,obj):
         if obj.user:
-            if obj.status in [ORDER_STATUS_CHOICES[1][0],ORDER_STATUS_CHOICES[2][0], ORDER_STATUS_CHOICES[3][0], ORDER_STATUS_CHOICES[4][0]]:
-                return obj.user.phone_number
-            else:
-                activate_language(obj.vendor.user_profile.pf_lang)
-                message = _("Accept Order to see phone number")
-                deactivate_language()
-                return message
+            # if obj.status in [ORDER_STATUS_CHOICES[1][0],ORDER_STATUS_CHOICES[2][0], ORDER_STATUS_CHOICES[3][0], ORDER_STATUS_CHOICES[4][0]]:
+            return obj.user.phone_number
+            # else:
+            #     activate_language(obj.vendor.user_profile.pf_lang)
+            #     message = _("Accept Order to see phone number")
+            #     deactivate_language()
+            #     return message
         
             
     def get_destination(self, obj):
