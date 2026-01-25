@@ -111,11 +111,12 @@ class LoginApiView(views.APIView):
         data = self.request.data
         phone_number = data.get("phone_number", None)
         role = data.get("role", None)
+        is_foreign = True if data.get("is_foreign", False) else False
         if not phone_number or not role:
             return Response(
                 {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
-        if len(str(phone_number)) > 12:
+        if len(str(phone_number)) > 15:
             return Response(
                 {"detail": "invalid_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -125,8 +126,9 @@ class LoginApiView(views.APIView):
             user = User.objects.get(phone_number=phone_number)
             if role != user.role:
                 return Response(status=status.HTTP_409_CONFLICT)
-            otp = generate_otp()
-            send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
+            if not is_foreign:
+                otp = generate_otp()
+                send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
@@ -152,7 +154,8 @@ class LoginApiView(views.APIView):
         typ = data.get("type", None)
         phone_number = data.get("phone_number", None)
         role = data.get("role", None)
-
+        is_foreign = True if data.get("is_foreign", False) else False
+        
         if not typ:
             return Response(
                 {"detail": "provide_type"}, status=status.HTTP_400_BAD_REQUEST
@@ -166,10 +169,13 @@ class LoginApiView(views.APIView):
             # -------------------------------- sending tokens
             try:
                 otp = data.get("otp", None)
+                password = data.get("password", None)
+                
                 if not otp:
-                    return Response(
-                        {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
-                    )
+                    if not password:
+                        return Response(
+                            {"detail": "provide_otp"}, status=status.HTTP_400_BAD_REQUEST
+                        )
                 # --------- TEMP autologin APPLE/GOOGLE devs ----------------
                 if phone_number in AUTO_LOGIN_NUMBERS:
                     user = User.objects.get(phone_number=phone_number)
@@ -185,50 +191,63 @@ class LoginApiView(views.APIView):
                         },
                         status=status.HTTP_200_OK,
                     )
-                # verifying otp
-                otp_tries_key = get_user_otp_tries_key(phone_number)
-                tries = r.get(otp_tries_key)
-                r.incrby(otp_tries_key, 1)
-                # --------------------- vendor login throttling
-                if role == REST:
-                    if tries and int(tries) > 3:
-                        logger.warning(f"vendor login attempt failed {phone_number}")
-                        r.expire(
-                            otp_tries_key, VENDOR_OTP_RETRY_DELAY
-                        )  # 15 minutes delay
-                        # vendor should request new otp after 15 minutes and retry
+                # verifying otp or password
+                #--------------------- password verification flow
+                if is_foreign:
+                    if not password:
+                        return Response(
+                            {"detail": "provide_password"}, status=status.HTTP_400_BAD_REQUEST
+                        )
+                    user = User.objects.get(phone_number=phone_number)
+                    if not user.check_password(password):
+                        return Response(
+                            {"detail": "invalid_password"}, status=status.HTTP_403_FORBIDDEN
+                        )
+                # --------------------- OTP verification flow
+                else:
+                    otp_tries_key = get_user_otp_tries_key(phone_number)
+                    tries = r.get(otp_tries_key)
+                    r.incrby(otp_tries_key, 1)
+                    # --------------------- vendor login throttling
+                    if role == REST:
+                        if tries and int(tries) > 3:
+                            logger.warning(f"vendor login attempt failed {phone_number}")
+                            r.expire(
+                                otp_tries_key, VENDOR_OTP_RETRY_DELAY
+                            )  # 15 minutes delay
+                            # vendor should request new otp after 15 minutes and retry
+                            return Response(
+                                {"detail": "max_attempts_reached"},
+                                status=status.HTTP_403_FORBIDDEN,
+                            )
+                    if tries and int(tries) > 7:
+                        logger.warning(f"max otp attempts reached for existing user login: {phone_number}")
+
+                        r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 5 minutes delay
                         return Response(
                             {"detail": "max_attempts_reached"},
                             status=status.HTTP_403_FORBIDDEN,
                         )
-                if tries and int(tries) > 7:
-                    logger.warning(f"max otp attempts reached for existing user login: {phone_number}")
-
-                    r.expire(otp_tries_key, OTP_RETRY_DELAY)  # 5 minutes delay
-                    return Response(
-                        {"detail": "max_attempts_reached"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-                # verifying otp
-                saved_otp = UserOtp.objects.filter(otp=otp).first()
-                if (
-                    not saved_otp 
-                    or
-                    saved_otp.is_expired()
-                    or saved_otp.user.phone_number != phone_number
-                ):
-                    return Response(
-                        {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
-                    )
-                # finding user
+                    # verifying otp
+                    saved_otp = UserOtp.objects.filter(otp=otp).first()
+                    if (
+                        not saved_otp 
+                        or
+                        saved_otp.is_expired()
+                        or saved_otp.user.phone_number != phone_number
+                        ):
+                        return Response(
+                            {"detail": "invalid_otp"}, status=status.HTTP_403_FORBIDDEN
+                        )
+                    saved_otp.delete()
+                    r.delete(otp_tries_key)
+                    
+                #----------------- issuing tokens after verification are successful
                 user = User.objects.get(phone_number=phone_number)
                 user.token_valid_after = get_token_valid_after()
                 user.is_active = True
                 user.save()
                 refresh = RefreshToken.for_user(user)
-                saved_otp.delete()
-                r.delete(otp_tries_key)
-
                 return Response(
                     {
                         "access": str(refresh.access_token),
@@ -278,6 +297,14 @@ class LoginApiView(views.APIView):
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                     user = User(phone_number=phone_number, is_active=True, name=name)
+                    if is_foreign:
+                        password = new_user_data.get("password", None)
+                        if not password:
+                            return Response(
+                                {"detail": "provide_password"},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                        user.set_password(password)
                     if role == REST:
                         user.role = REST
                     else:
@@ -289,13 +316,26 @@ class LoginApiView(views.APIView):
                     profile_ser = UserProfileCreationSerializer(data=new_user_data)
                     profile_ser.is_valid(raise_exception=True)
                     profile_ser.save(user=user)
-                    # ------ sending otp
-                    otp = generate_otp()
-                    NoUserOtp.objects.create(phone_number=phone_number, otp=otp)
-                    send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
-                    return Response(
-                        status=status.HTTP_200_OK,
-                    )
+                    if not is_foreign:
+                        # ------ sending otp if not foreign user
+                        otp = generate_otp()
+                        NoUserOtp.objects.create(phone_number=phone_number, otp=otp)
+                        send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
+                        return Response(
+                            status=status.HTTP_200_OK,
+                        )
+                    else:
+                        #------ issuing tokens for foreign users
+                        refresh = RefreshToken.for_user(user)
+                        return Response(
+                            {
+                                "access": str(refresh.access_token),
+                                "refresh": str(refresh),
+                                "id": user.id,
+                            },
+                            status=status.HTTP_200_OK,
+                        )
+                        
             except IntegrityError:
                 return Response(
                     {"detail": "user_already_exists"},

@@ -81,11 +81,11 @@ class User(AbstractBaseUser):
 
     name = models.CharField(max_length=60)
     email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
-    phone_number = models.CharField(max_length=12, unique=True)
+    phone_number = models.CharField(max_length=15, unique=True)
     role = models.PositiveSmallIntegerField(
         choices=ROLE_CHOICES, blank=True, default=CUSTOMER
     )
-
+    is_foreign = models.BooleanField(default=False)
     # django required fields
     date_joined = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now_add=True)

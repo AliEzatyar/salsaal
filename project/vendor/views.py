@@ -1030,9 +1030,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         if not new_order_id or not accepted:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
-            half_hour_ago = tz.now() - tz.timedelta(minutes=30)
+            an_hour_ago = tz.now() - tz.timedelta(minutes=60)
             order = (
-                Order.objects.filter(id=new_order_id,created_at__gte=half_hour_ago)
+                Order.objects.filter(id=new_order_id,created_at__gte=an_hour_ago)
                 .prefetch_related(
                     Prefetch("items", queryset=OrderItem.objects.select_related("food"))
                 )
@@ -1196,6 +1196,11 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             "total_time": total_time,
                         }
                     )
+            else:
+                return Response(
+                    {"detail":"order_not_found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         except Exception as e:
             logger.exception(f"error in calculating order time and delivery cost {e}")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
