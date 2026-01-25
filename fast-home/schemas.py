@@ -44,7 +44,7 @@ class DiscountedFoodsSchema(BaseModel):
     id: int
     name: str
     image: str
-    original_price: Optional[int]
+    original_price: Decimal
     discount_amount: Optional[int]
     min_price: Decimal
     vendor: int
