@@ -124,6 +124,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         # ----------------- updating user's location
         lat = data.get("latitude", None)
         lon = data.get("longitude", None)
+        address = data.get("address", None)
+        receiver_address = data.get("receiver", None)
+        receiver_number = data.get("receiver_number", None)
+        is_foreign = data.get("is_foreign", False)
+        
         if lat and lon:
             try:
                 float(lat)

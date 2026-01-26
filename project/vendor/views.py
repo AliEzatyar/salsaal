@@ -359,20 +359,21 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         this endpoint adds a food to discount
         request must be sent out of update and exact.
         """
-        food_id = request.data.get("food_id", None)
+        food_ids = request.data.get("food_ids", None)
         discount = self.get_object()
         try:
-            food = Food.objects.get(id=food_id, vendor__id=request.user.vendor.id)
-            # adding discount to food
-            if food.discount != None:
-                revert_discount(food, food.discount.amount)
-            apply_discount(food, discount.amount)
-            food.discount = discount
-            food.save()
-            return Response()
+            for i in food_ids:
+                food = Food.objects.get(id=int(i), vendor__id=request.user.vendor.id)
+                # adding discount to food
+                if food.discount != None:
+                    revert_discount(food, food.discount.amount)
+                apply_discount(food, discount.amount)
+                food.discount = discount
+                food.save()
+                return Response()
 
         except Exception as e:
-            logger.exception(f"error in add food to discount {food_id} {e}")
+            logger.exception(f"error in add food to discount, id: {i} {e}")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1030,9 +1031,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         if not new_order_id or not accepted:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
-            an_hour_ago = tz.now() - tz.timedelta(minutes=60)
+            half_hour_ago = tz.now() - tz.timedelta(minutes=30)
             order = (
-                Order.objects.filter(id=new_order_id,created_at__gte=an_hour_ago)
+                Order.objects.filter(id=new_order_id,created_at__gte=half_hour_ago)
                 .prefetch_related(
                     Prefetch("items", queryset=OrderItem.objects.select_related("food"))
                 )
@@ -1196,11 +1197,6 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             "total_time": total_time,
                         }
                     )
-            else:
-                return Response(
-                    {"detail":"order_not_found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
         except Exception as e:
             logger.exception(f"error in calculating order time and delivery cost {e}")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
