@@ -5,8 +5,9 @@ from json import  loads, dumps
 
 class AppInfoAPIView(views.APIView):
     
+    permission_classes = []
     def get(self, request):
-        app_info  = r.get("app_info_data")
+        app_info = r.get("app_info_data")
         if app_info:
             app_info = loads(app_info)
         else:

@@ -7,6 +7,11 @@ from .utils import get_hesab_pay_transaction_detail
 import json
 
 # Register your models here.
+class OrderItemInline(admin.StackedInline):
+    model = OrderItem
+    extra = 0
+    readonly_fields = ["subtotal"]
+
 class OrderAdmin(admin.ModelAdmin):
     list_display = ["id", "user", "vendor", "status", "total_price", "delivery_cost", "paid", "payment_type", "is_epay","location_link", "created_at"]
     list_editable = ["status", "paid"]
@@ -14,6 +19,7 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ["user__name", "user__phone_number", "vendor__vendor_name", "id"]
     ordering = ("-created_at",)
     readonly_fields = ["created_at", "modified_at", "total_price", "delivery_cost", "total_items", "transaction_details"]
+    inlines = [OrderItemInline]
 
     def transaction_details(self, obj):
         """Display HesabPay transaction details for e-pay orders"""

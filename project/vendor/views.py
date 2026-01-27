@@ -1199,6 +1199,9 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             "total_time": total_time,
                         }
                     )
+            else:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+                
         except Exception as e:
             logger.exception(f"error in calculating order time and delivery cost {e}")
             return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

@@ -161,8 +161,19 @@ async def home(
 
     # ---------------- discounted foods
     discounted_foods = db.scalars(
-        city_foods_qs.join(Discount).where(Discount.is_active.is_(True))
+    city_foods_qs
+        .join(Discount, Food.discount_id == Discount.id)
+        .where(
+            Discount.is_active.is_(True),
+            Food.is_available.is_(True),
+        )
+        .distinct(Food.vendor_id)
+        .order_by(
+            Food.vendor_id,
+            Food.min_price.asc()
+        )
     ).all()
+
     set_image_url_to_scalars(discounted_foods, "image")
     distance_reach_time(discounted_foods, lat, lon, "food")
 
