@@ -304,11 +304,17 @@ def get_new_order_message(order):
         "Customer: %(customer)s\n"
         "Total price: %(total_price)s\n"
         "Vendor: %(vendor)s\n"
+        "Vendor Phone: %(vendor_phone)s\n"
+        "Date:  %(date)s\n"
+        "link: %(link)s\n"
     ) % {
         "order_id": order.id,
         "customer": order.user.phone_number if order.user else _("Unknown user"),
         "total_price": order.total_price,
         "vendor": order.vendor,
+        "vendor_phone": order.vendor.user.phone_number,
+        "date": order.created_at,
+        "link": "https://api.zayton.llc/hello-world-3000/order/order/"
     }
 
     deactivate()
@@ -332,7 +338,7 @@ def send_message(chat_id: str, text: str):
             f"{response.status_code} {response.text}"
         )
         response.raise_for_status()
-        
+
     return response.json()
 
 
