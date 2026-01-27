@@ -1,5 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from .views import AppInfoAPIView
 
 # importing urls
 # Router Setup for
@@ -16,4 +17,5 @@ urlpatterns = [
     path("vendor/", include("vendor.urls", namespace="vendor")),
     path("live/", include("live.urls", namespace="live")),
     path("qoraa/", include("qoraa.urls", namespace="qoraa")),
+    path("app/info/",AppInfoAPIView.as_view(), name="app-info"),
 ]
