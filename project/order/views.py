@@ -50,7 +50,7 @@ from django.utils.translation import activate as activate_language
 from django.utils.translation import deactivate as deactivate_language
 from live.utils import push_notification
 from logging import getLogger
-
+from accounts.models import User
 logger = getLogger(__name__)
 
 
@@ -125,25 +125,25 @@ class OrderViewSet(viewsets.ModelViewSet):
         lat = data.get("latitude", None)
         lon = data.get("longitude", None)
         address = data.get("address", None)
-        receiver_address = data.get("receiver", None)
-        receiver_number = data.get("receiver_number", None)
+        phone_number = data.get("receiver_number", None)
         is_foreign = data.get("is_foreign", False)
-        
+        logger.info("this is request data for order creation: ", extra={"data": data})
         if lat and lon:
-            try:
-                float(lat)
-                float(lon)
-            except ValueError:
-                return Response(
-                    {"detail": "provide_correct_location"},
-                    status=rsp_status.HTTP_400_BAD_REQUEST,
-                )
-            
-            user_profile = request.user.profile
-            user_profile.latitude = str(lat)
-            user_profile.longitude = str(lon)
-            user_profile.save()
-            
+                try:
+                    float(lat)
+                    float(lon)
+                except ValueError:
+                    return Response(
+                        {"detail": "provide_correct_location"},
+                        status=rsp_status.HTTP_400_BAD_REQUEST,
+                    )
+                
+                if not is_foreign:
+                    user_profile = request.user.profile
+                    user_profile.latitude = str(lat)
+                    user_profile.longitude = str(lon)
+                    user_profile.save()
+                
         else:
             return Response(
                 {"detail": "provide_correct_location"},
@@ -166,7 +166,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 float(lon),
             )
             # vendor max delivery distance check and if foreign, allow
-            if distance_km < 200 and  distance_km > vendor.mdd :
+            if not is_foreign and  distance_km > vendor.mdd :
                 logger.warning(f"order creation attempt out of delivery zone for user {request.user.id} vendor {vendor.id} distance {distance_km} km.")
                 return Response(
                     {"error": "OUT_OF_DELIVERY_ZONE",
@@ -249,6 +249,9 @@ class OrderViewSet(viewsets.ModelViewSet):
                 new_order.calculate_total_price()  # setting total price field value
                 new_order.set_total_items()  # setting total items amount field value
                 new_order.destination = Point(float(lat), float(lon), srid=4326)
+                #----------- adding extra data for foreign users
+                if is_foreign:
+                    new_order.extra_data = {"address": address, "is_foreign": True,"phone_number": phone_number}
                 new_order.save()
                 # ------------------------- creating notification for vendor
                 profile = new_order.vendor.user.profile
@@ -418,7 +421,18 @@ class AcceptRejectOrderView(views.APIView):
                     existing_reward.amount -= float(order.total_price)
                     order.paid = True
                     existing_reward.save()
-                else:  # -------- payment type not reward -> increment reward  points
+                # -------- payment type not reward -> increment reward  points
+                else:  
+                    # ------------------- preventing qoraa payment here
+                    if payment_type == VALID_PAYMENT_TYPES[3][0]:
+                        return Response({"detail":"qoraa_payment_not_allowed"})
+                    # ------------------ preventing foreign users using cash as payment method
+                    user_region = self.request.user.region
+                    if user_region != User.REGION_CHOICES[0][0]:
+                        if payment_type == VALID_PAYMENT_TYPES[0][0]:  # cash
+                            logger.warning(f"foreign user {self.request.user.phone_number} attempted cash payment for order {order.id}")
+                            return Response({"detail":"foreign_users_cash_not_allowed"},status=rsp_status.HTTP_403_FORBIDDEN)
+                    # ---------------------- handling online payment    
                     if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
                         """
                             this part handles import online payment

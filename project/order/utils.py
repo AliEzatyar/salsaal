@@ -214,7 +214,7 @@ def verify_hesab_pay_transaction(api_key, transaction_id):
         response = requests.get(endpoint, headers=headers)
         response.raise_for_status()
         success = response.json().get("success", False)
-        if not success:
+        if not success or success in ["false", "False"]:
             logger.error(f"Transaction verification failed for transaction ID: {transaction_id}")
             return False
         logger.info(f"Transaction verified successfully for transaction ID: {transaction_id}")

@@ -116,10 +116,7 @@ class LoginApiView(views.APIView):
             return Response(
                 {"detail": "provide_phone_number"}, status=status.HTTP_400_BAD_REQUEST
             )
-        if len(str(phone_number)) > 15:
-            return Response(
-                {"detail": "invalid_phone_number"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        # Removed phone number length check to allow any country code/length
         try:
             # -------- if existing user, send otp for login
             role = int(role)
@@ -155,7 +152,7 @@ class LoginApiView(views.APIView):
         phone_number = data.get("phone_number", None)
         role = data.get("role", None)
         is_foreign = True if data.get("is_foreign", False) else False
-        
+        logger.info(f"Login POST request for phone number: {data}")
         if not typ:
             return Response(
                 {"detail": "provide_type"}, status=status.HTTP_400_BAD_REQUEST
@@ -274,6 +271,7 @@ class LoginApiView(views.APIView):
                 with atomic():
                     # ----- validating user data and creating new account
                     new_user_data = data.get("user_data", None)
+                    password = data.get("password", None)
                     if not new_user_data:
                         return Response(
                             {"detail": "provide_user_data"},
@@ -298,7 +296,6 @@ class LoginApiView(views.APIView):
                         )
                     user = User(phone_number=phone_number, is_active=True, name=name)
                     if is_foreign:
-                        password = new_user_data.get("password", None)
                         if not password:
                             return Response(
                                 {"detail": "provide_password"},
@@ -309,6 +306,7 @@ class LoginApiView(views.APIView):
                         user.role = REST
                     else:
                         user.role = CUSTOMER
+                    # this is used for sign ups, don't change
                     user.is_active = False
                     user.token_valid_after = get_token_valid_after()
                     user.save()
@@ -326,6 +324,9 @@ class LoginApiView(views.APIView):
                         )
                     else:
                         #------ issuing tokens for foreign users
+                        user.is_active = True
+                        user.region = User.REGION_CHOICES[1][0]
+                        user.save()
                         refresh = RefreshToken.for_user(user)
                         return Response(
                             {

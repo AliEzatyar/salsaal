@@ -78,14 +78,17 @@ class User(AbstractBaseUser):
         (CUSTOMER, "Customer"),
         (CARRIER, "Carrier"),
     ]
-
+    REGION_CHOICES = [
+        ("AF", "Afghanistan"),
+        ("ELS", "Elsewhere"),
+    ]
     name = models.CharField(max_length=60)
     email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
-    phone_number = models.CharField(max_length=15, unique=True)
+    phone_number = models.CharField(max_length=20, unique=True)
     role = models.PositiveSmallIntegerField(
         choices=ROLE_CHOICES, blank=True, default=CUSTOMER
     )
-    is_foreign = models.BooleanField(default=False)
+
     # django required fields
     date_joined = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now_add=True)
@@ -95,7 +98,7 @@ class User(AbstractBaseUser):
     is_staff = models.BooleanField(default=False)
     is_superadmin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
-    region = models.CharField(blank=True, null=True, default="AF")
+    region = models.CharField(blank=True, null=True, default=REGION_CHOICES[0][0], max_length=3)
     groups = models.ManyToManyField(
         Group,
         verbose_name='groups',
@@ -234,7 +237,7 @@ class UserOtp(models.Model):
 
 
 class NoUserOtp(models.Model):
-    phone_number = models.CharField(max_length=12)
+    phone_number = models.CharField(max_length=20)
     otp = models.CharField(max_length=6, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

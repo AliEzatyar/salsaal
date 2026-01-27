@@ -167,6 +167,7 @@ class VOrderSerializer(ModelSerializer):
     total_price = CustomDecimalField(read_only=True)
     destination = SerializerMethodField("get_destination")
     user_phone = SerializerMethodField("get_phone")
+    is_foreign = serializers.ReadOnlyField("get_is_foreign")
     class Meta:
         model = Order
         fields = [
@@ -185,6 +186,7 @@ class VOrderSerializer(ModelSerializer):
             "items",
             "payment_type",
             "delivery_cost",
+            "is_foreign",
         ]
         read_only_fields = ["id", "created_at"]
 
@@ -201,7 +203,12 @@ class VOrderSerializer(ModelSerializer):
             #     message = _("Accept Order to see phone number")
             #     deactivate_language()
             #     return message
-        
+    
+    def get_is_foreign(self,obj):
+        if obj.user and obj.extra_data:
+            is_foreign = obj.extra_data.get("is_foreign",False)
+            return is_foreign
+        return False
             
     def get_destination(self, obj):
         if obj.status == ORDER_STATUS_CHOICES[3][0] and obj.carrier:

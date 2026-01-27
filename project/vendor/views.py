@@ -1175,7 +1175,8 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                     food_price = order.total_price - order.delivery_cost
                     total_time = round(float(prep_time) + float(estimated))
                     self.send_notification(order,"VENDOR_ACCEPTED")
-                    order.extra_data = {
+                    extra_data = order.extra_data if order.extra_data else {}
+                    extra_data["calculation_details"] = {
                             "distance_km": round(distance_km,2),
                             "travel_estimation": round(estimated), 
                             "preparation_time": round(prep_time),
@@ -1184,6 +1185,7 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
                             "total_cost": round(order.total_price),
                             "total_time": total_time,
                             }
+                    order.extra_data = extra_data
                     order.save()
 
                     return Response(

@@ -29,13 +29,10 @@ class UserCreationSerializer(ModelSerializer):
         super().validate(attrs)
         phone_number = attrs.get("phone_number", None)
         if phone_number:
-            okay = True
-            if not phone_number.startswith("+"):
-                okay = False
-            if not phone_number[1:].isnumeric():
-                okay = False
-            if not okay:
+            if not phone_number.startswith("+") or not phone_number[1:].isdigit():
                 raise ValidationError({"detail": "phone_invalid"})
+            if len(phone_number) > 20:
+                raise ValidationError({"detail": "phone_too_long"})
         return attrs
 
 
