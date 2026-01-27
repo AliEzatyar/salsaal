@@ -8,8 +8,12 @@ from Crypto.Util.Padding import pad
 import base64
 from logging import getLogger
 from marketplace.utils import r
-
+import json
 from order.models import FailedMultiVendorPayment
+from celery import shared_task
+from django.utils.translation import gettext as _ 
+
+from multiVend.settings.dev import TELEGRAM_API_URL, TELEGRAM_BOT_URL
 
 logger = getLogger(__name__)
 
@@ -249,3 +253,107 @@ def get_hesab_pay_transaction_detail(api_key, transaction_id):
     except requests.exceptions.RequestException as e:
         logger.exception(f"Request to get transaction details failed: {e}")
         return {}
+
+
+
+def get_order_manager_chat_ids():
+    """
+    Get order managers' chat IDs from Redis or DB.
+    Returns:
+        list[str]
+    """
+    cached = r.get('order_manager_chat_ids')
+    if cached:
+        return json.loads(cached)
+
+    from accounts.models import User
+
+    try:
+        chat_ids = list(
+            User.objects
+            .filter(groups__name="Order Manager")
+            .values_list("name", flat=True)
+        )
+        logger.info(f"Fetched order manager chat ids from DB: {chat_ids}")
+        if chat_ids:
+            r.set(
+                'order_manager_chat_ids',
+                json.dumps(chat_ids),
+                ex= 24 * 3600  # cache for 24 hours
+            )
+
+        return chat_ids
+
+    except Exception as e:
+        logger.error(f"Error fetching order manager chat ids: {e}")
+        return []
+
+
+from django.utils.translation import activate, deactivate, gettext as _
+
+
+def get_new_order_message(order):
+    """
+    Generate a new order message (translated via gettext).
+    """
+    activate("fa")
+
+    message = _(
+        "New order received!\n\n"
+        "Order ID: %(order_id)s\n"
+        "Customer: %(customer)s\n"
+        "Total price: %(total_price)s\n"
+        "Vendor: %(vendor)s\n"
+    ) % {
+        "order_id": order.id,
+        "customer": order.user.phone_number if order.user else _("Unknown user"),
+        "total_price": order.total_price,
+        "vendor": order.vendor,
+    }
+
+    deactivate()
+    return message
+
+
+def send_message(chat_id: str, text: str):
+    """
+    Send a Telegram message to a chat ID.
+    """
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+    }
+
+    response = requests.post(TELEGRAM_BOT_URL, json=payload, timeout=10)
+    logger.info(f"Telegram API response for chat_id {chat_id}: {response.status_code} {response.text}")
+    if response.status_code != 200:
+        logger.error(
+            f"Telegram API error for chat_id {chat_id}: "
+            f"{response.status_code} {response.text}"
+        )
+        response.raise_for_status()
+        
+    return response.json()
+
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=5, retry_kwargs={"max_retries": 3})
+def send_message_to_order_managers(self, message: str):
+    """
+    Send a message to all order managers.
+    """
+    logger.info("Sending message to order managers, message: %s", message)
+    chat_ids = get_order_manager_chat_ids()
+
+    if not chat_ids:
+        logger.warning("No order manager chat IDs found in redis")
+        return
+
+    for chat_id in chat_ids:
+        try:
+            send_message(chat_id, message)
+            
+        except Exception as e:
+            logger.error(f"Failed to send message to {chat_id}: {e}")
+            # keep going, one bad manager shouldn't silence the rest
+
+

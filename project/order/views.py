@@ -4,8 +4,10 @@ from carrier.utils import decrypt_32
 from order.utils import (
     acquire_payment_lock,
     create_multi_vendor_payment,
+    get_new_order_message,
     get_order_delivery_tries_key,
     get_order_payment_key,
+    send_message_to_order_managers,
     start_payment_session,
     verify_hesab_pay_transaction,
 )
@@ -270,6 +272,9 @@ class OrderViewSet(viewsets.ModelViewSet):
                     target_id=new_order.id,
                 )
                 deactivate()
+                # ---------------- sending notification to admin
+                message = get_new_order_message(new_order)
+                send_message_to_order_managers.delay(message)
                 # ------------- sending notification to vendor
                 push_notification.delay(
                     new_order.vendor.user.id,

@@ -167,7 +167,7 @@ class VOrderSerializer(ModelSerializer):
     total_price = CustomDecimalField(read_only=True)
     destination = SerializerMethodField("get_destination")
     user_phone = SerializerMethodField("get_phone")
-    is_foreign = serializers.ReadOnlyField("get_is_foreign")
+    is_foreign = serializers.SerializerMethodField("get_is_foreign")
     class Meta:
         model = Order
         fields = [
