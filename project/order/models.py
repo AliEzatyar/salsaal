@@ -171,7 +171,12 @@ class OrderItem(models.Model):
 
     @property
     def subtotal(self):
-        return int(self.quantity * self.price)
+        if self.quantity is None or self.price is None:
+            return 0
+        try:
+            return int(self.quantity * self.price)
+        except Exception:
+            return 0
 
     @property
     def food_name(self):
