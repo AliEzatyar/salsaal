@@ -124,8 +124,9 @@ class LoginApiView(views.APIView):
             if role != user.role:
                 return Response(status=status.HTTP_409_CONFLICT)
             # if not is_foreign:
-            otp = generate_otp()
-            send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
+            if str(phone_number).startswith("+93"):
+                otp = generate_otp()
+                send_otp.delay(otp=otp, user_id=user.id, phone_number=phone_number)
             return Response(
                 {"type": "existing_user", "message": "otp_sent"},
                 status=status.HTTP_200_OK,
