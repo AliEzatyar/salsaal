@@ -172,6 +172,8 @@ app.ws("/*", {
                         latestStatus = JSON.parse(latestStatus)
                         const type = latestStatus.type
                         const data = latestStatus.data
+                        console.log("existed before status type:",type)
+                        console.log("data:",data)
                         ws.send(JSON.stringify({
                             type: type,
                             data: data
@@ -257,9 +259,9 @@ app.ws("/*", {
 
                     const payload = {
                         type: "VENDOR_REJECTED",
-                        data: null
+                        data: data
                     };
-                    
+                    console.log("vendor rejected payload:",payload)
                     const jsonData = JSON.stringify(payload);
                     await redisPub.set(key, jsonData, { EX: orderStatusTTL });
                     redisPub.publish(

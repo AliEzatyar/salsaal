@@ -127,7 +127,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         lat = data.get("latitude", None)
         lon = data.get("longitude", None)
         address = data.get("address", None)
-        phone_number = data.get("receiver_number", None)
+        phone_number = data.get("phone_number", None)
         is_foreign = data.get("is_foreign", False)
         logger.info("this is request data for order creation: ", extra={"data": data})
         if lat and lon:
