@@ -202,7 +202,7 @@ class VOrderSerializer(ModelSerializer):
                 return obj.user.phone_number
             else:
                 activate_language(obj.vendor.user_profile.pf_lang)
-                message = _("Accept Order to see phone number")
+                message = _("Accept or reject order")
                 deactivate_language()
                 return message
     

@@ -199,7 +199,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         ser = DiscountSerializer(data=data)
         ser.is_valid(raise_exception=True)
         # preventing duplicate
-        if Discount.objects.filter(amount=amount).exists():
+        if Discount.objects.filter(amount=amount,vendor=self.request.user.vendor).exists():
             return Response(
                 {"detail": "discount_already_exists"}, status=status.HTTP_403_FORBIDDEN
             )
@@ -235,7 +235,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         ser.is_valid(raise_exception=True)
         new_discount_amount = ser.validated_data.get("amount", None)
         if (
-            Discount.objects.filter(amount=new_discount_amount)
+            Discount.objects.filter(amount=new_discount_amount, vendor=self.request.user.vendor)
             .exclude(id=pre_discount.id)
             .exists()
         ):
@@ -344,7 +344,8 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
         try:
             food = discount.foods.get(id=food_id)
             # removing discount from food
-            revert_discount(food, discount.amount)
+            if discount.is_active:
+                revert_discount(food, discount.amount)
             food.discount = None
             food.save()
             return Response()
@@ -367,8 +368,9 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 # adding discount to food
                 if food.discount != None:
                     revert_discount(food, food.discount.amount)
-                apply_discount(food, discount.amount)
                 food.discount = discount
+                if discount.is_active:
+                    apply_discount(food, discount.amount)
                 food.save()
             return Response()
 
@@ -1031,9 +1033,8 @@ class CalculateOrderTimeAndDeliveryCost(views.APIView):
         if not new_order_id or not accepted:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         try:
-            half_hour_ago = tz.now() - tz.timedelta(minutes=30)
             order = (
-                Order.objects.filter(id=new_order_id,created_at__gte=half_hour_ago)
+                Order.objects.filter(id=new_order_id)
                 .prefetch_related(
                     Prefetch("items", queryset=OrderItem.objects.select_related("food"))
                 )

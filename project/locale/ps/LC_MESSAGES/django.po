@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-25 22:39+0430\n"
+"POT-Creation-Date: 2026-01-29 19:32+0430\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Pashto\n"
@@ -11,41 +11,72 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: order/views.py:236
+#: order/serializers.py:205
+msgid "Accept or reject order"
+msgstr "سفارش ومنئ يا رد يې کړئ"
+
+#: order/utils.py:302
+#, python-format
+msgid ""
+"New order received!\n"
+"\n"
+"Order ID: %(order_id)s\n"
+"Customer: %(customer)s\n"
+"Total price: %(total_price)s\n"
+"Vendor: %(vendor)s\n"
+"Vendor Phone: %(vendor_phone)s\n"
+"Date:  %(date)s\n"
+"link: %(link)s\n"
+msgstr ""
+"نوی سفارش ترلاسه شو!\n"
+"\n"
+"د سفارش شمېره: %(order_id)s\n"
+"پېرېدونکی: %(customer)s\n"
+"ټول قیمت: %(total_price)s\n"
+"پلورونکی: %(vendor)s\n"
+"د پلورونکي د تماس شمېره: %(vendor_phone)s\n"
+"نېټه: %(date)s\n"
+"لینک: %(link)s\n"
+
+#: order/utils.py:312
+msgid "Unknown user"
+msgstr "نامعلوم کارن"
+
+#: order/views.py:267
 msgid "you have a new order!"
 msgstr "تاسو یو نوی امر ترلاسه کړی!"
 
-#: order/views.py:240
+#: order/views.py:271
 msgid "you have received a new order from a customer."
 msgstr "تاسو د یو پېرېدونکي څخه نوې فرمایش ترلاسه کړی دی."
 
-#: order/views.py:297
+#: order/views.py:331
 msgid "order has been cancelled by buyer!"
 msgstr "امر د پېرودونکي لخوا لغوه شو!"
 
-#: order/views.py:305
+#: order/views.py:339
 msgid "We are sorry to inform you that the order has been cancelled."
 msgstr "موږ بخښنه غواړو چې تاسو ته خبر درکوو چې فرمایش لغوه شوی دی."
 
-#: order/views.py:483
+#: order/views.py:541
 msgid "order finalized by buyer!"
 msgstr "امر د پېرودونکي لخوا منل شوی!"
 
-#: order/views.py:486
+#: order/views.py:544
 #, fuzzy
 #| msgid "order has been cancelled by buyer!"
 msgid "Order has been accepted by the buyer."
 msgstr "امر د پېرودونکي لخوا لغوه شو!"
 
-#: order/views.py:611 order/views.py:621 order/views.py:630
+#: order/views.py:680 order/views.py:690 order/views.py:699
 msgid "Order Delivered"
 msgstr "امر وسپارل شو"
 
-#: order/views.py:612
+#: order/views.py:681
 msgid "Your order has been delivered successfully."
 msgstr "ستاسو امر په بریالیتوب سره وسپارل شو."
 
-#: order/views.py:622 order/views.py:631
+#: order/views.py:691 order/views.py:700
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "امر {order_id} په بریالیتوب سره وسپارل شو."
@@ -72,25 +103,25 @@ msgstr "د لاتری ملاتړ"
 msgid "You are a sponsor of this Qoraa at {time}."
 msgstr "تاسو په {time} وخت کې د دې لاتری ملاتړی یاست."
 
-#: qoraa/tasks.py:161 qoraa/tasks.py:247
+#: qoraa/tasks.py:166 qoraa/tasks.py:252
 msgid "Qoraa Winner"
 msgstr "د لاتری ګټونکی"
 
-#: qoraa/tasks.py:162
+#: qoraa/tasks.py:167
 msgid "Zaytoon Food"
 msgstr "زیتون فود"
 
-#: qoraa/tasks.py:164 qoraa/tasks.py:249
+#: qoraa/tasks.py:169 qoraa/tasks.py:254
 #, fuzzy, python-brace-format
 #| msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgid "Congratulations! You have won the Qoraa sponsored by {sponser}"
 msgstr "مبارک شه! تاسو هغه لاتری ګټلې چې د {vendor} لخوا ملاتړ شوې."
 
-#: qoraa/views.py:219
+#: qoraa/views.py:228
 msgid "Qoraa Prize Claimed"
 msgstr "د قُرعه جایزه ترلاسه شوه"
 
-#: qoraa/views.py:220
+#: qoraa/views.py:229
 #, python-brace-format
 msgid ""
 "The Qoraa winner has claimed their prize. Order ID: {new_order.id}. Please "
@@ -317,45 +348,45 @@ msgstr ""
 msgid "Add Phone Number"
 msgstr "تلیفون شمېر اضافه کړئ"
 
-#: vendor/models.py:115
+#: vendor/models.py:119
 msgid "Congratulations! Your vendor account has been approved."
 msgstr "مبارک شه! ستاسو د پلورونکي حساب تایید شو."
 
-#: vendor/models.py:116
+#: vendor/models.py:120
 #, python-brace-format
 msgid ""
 "Congratulations! Your vendor account '{self.vendor_name}' has been approved."
 msgstr "مبارک شه! ستاسو د پلورونکي حساب '{self.vendor_name}' تایید شو."
 
-#: vendor/views.py:1143
+#: vendor/views.py:1215
 msgid "sorry! your order has been rejected by restuarant!"
 msgstr "امر د پېرودونکي لخوا لغوه شو!"
 
-#: vendor/views.py:1144
+#: vendor/views.py:1216
 msgid "Order Rejected"
 msgstr "امر رد شو"
 
-#: vendor/views.py:1146
+#: vendor/views.py:1218
 msgid "your order has been accepted by restuarant!"
 msgstr "ستاسو امر د پېرودونکي لخوا تایید شو."
 
-#: vendor/views.py:1147
+#: vendor/views.py:1219
 msgid "Order Accepted"
 msgstr "امر تایید شو"
 
-#: vendor/views.py:1266
+#: vendor/views.py:1345
 msgid "Order set as carrying"
 msgstr "امر د لېږد په حالت کې ټاکل شوی"
 
-#: vendor/views.py:1271
+#: vendor/views.py:1350
 msgid "Your order is being carried, click to live track."
 msgstr "ستاسو امر لېږدول کېږي، د ژوندۍ څارنې لپاره کلیک وکړئ."
 
-#: vendor/views.py:1299
+#: vendor/views.py:1378
 msgid "New Order Assigned"
 msgstr "نوې فرمایش وټاکل شوه"
 
-#: vendor/views.py:1300
+#: vendor/views.py:1379
 msgid "You have been assigned a new order to deliver."
 msgstr "تاسو د یو پېرېدونکي څخه نوې فرمایش ترلاسه کړی دی."
 
