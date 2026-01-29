@@ -155,7 +155,7 @@ async def home(
 
     # ---------------- promotions
     promotions = db.scalars(
-        select(Promotion).where(Promotion.city == city)
+        select(Promotion).where(Promotion.city == city,Promotion.is_active.is_(True)).order_by(func.random())
     ).all()
     set_image_url_to_scalars(promotions, "image")
 
@@ -170,7 +170,7 @@ async def home(
         .distinct(Food.vendor_id)
         .order_by(
             Food.vendor_id,
-            Food.min_price.asc()
+            Food.min_price.desc()
         )
     ).all()
 

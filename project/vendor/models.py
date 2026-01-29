@@ -20,7 +20,7 @@ logger = getLogger(__name__)
 VENDOR_TYPES = [
     (1, "restaurant"),
     (2, "coffeshop"),
-    (3, "juiceshop"),
+    (3, "cakeshop"),
 ]
 
 DEFAULT_VENDOR_ORDER_MIN_PRICE = 200  # AFS

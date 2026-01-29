@@ -370,7 +370,7 @@ class ManageDiscountViewSet(viewsets.ModelViewSet):
                 apply_discount(food, discount.amount)
                 food.discount = discount
                 food.save()
-                return Response()
+            return Response()
 
         except Exception as e:
             logger.exception(f"error in add food to discount, id: {i} {e}")

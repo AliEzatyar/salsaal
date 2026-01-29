@@ -785,6 +785,7 @@ class RedirectPaymentSuccess(views.APIView):
             transaction_id = data_dict.get("transaction_id", None)
             if transaction_id is None:
                 return Response(status=rsp_status.HTTP_400_BAD_REQUEST)
+            
             app_link = f"zaytonfood://hesabpay/success?transaction_id={transaction_id}"
             response = Response(status=rsp_status.HTTP_302_FOUND)
             response["Location"] = app_link
