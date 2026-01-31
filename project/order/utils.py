@@ -292,24 +292,27 @@ def get_order_manager_chat_ids():
 from django.utils.translation import activate, deactivate, gettext as _
 
 
-def get_new_order_message(order):
+def get_new_order_message(order,distance=0):
     """
     Generate a new order message (translated via gettext).
     """
     activate("fa")
-
+    if order.user.phone_number == "+93733333333":
+        return _("Test order - no notification")
     message = _(
         "New order received!\n\n"
         "Order ID: %(order_id)s\n"
-        "Customer: %(customer)s\n"
+        "Customer Phone: %(customer)s\n"
         "Total price: %(total_price)s\n"
         "Vendor: %(vendor)s\n"
         "Vendor Phone: %(vendor_phone)s\n"
+        "Distance: %(distance)s km\n"
         "Date:  %(date)s\n"
         "link: %(link)s\n"
     ) % {
         "order_id": order.id,
         "customer": order.user.phone_number if order.user else _("Unknown user"),
+        "distance": distance,
         "total_price": order.total_price,
         "vendor": order.vendor,
         "vendor_phone": order.vendor.user.phone_number,

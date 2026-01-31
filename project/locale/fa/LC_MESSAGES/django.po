@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-29 19:32+0430\n"
+"POT-Creation-Date: 2026-01-31 21:04+0430\n"
 "PO-Revision-Date: 2025-09-19 00:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Persian\n"
@@ -15,16 +15,31 @@ msgstr ""
 msgid "Accept or reject order"
 msgstr "سفارش را قبول یا رد کنید"
 
-#: order/utils.py:302
-#, python-format
+#: order/utils.py:301
+msgid "Test order - no notification"
+msgstr ""
+
+#: order/utils.py:303
+#, fuzzy, python-format
+#| msgid ""
+#| "New order received!\n"
+#| "\n"
+#| "Order ID: %(order_id)s\n"
+#| "Customer: %(customer)s\n"
+#| "Total price: %(total_price)s\n"
+#| "Vendor: %(vendor)s\n"
+#| "Vendor Phone: %(vendor_phone)s\n"
+#| "Date:  %(date)s\n"
+#| "link: %(link)s\n"
 msgid ""
 "New order received!\n"
 "\n"
 "Order ID: %(order_id)s\n"
-"Customer: %(customer)s\n"
+"Customer Phone: %(customer)s\n"
 "Total price: %(total_price)s\n"
 "Vendor: %(vendor)s\n"
 "Vendor Phone: %(vendor_phone)s\n"
+"Distance: %(distance)s km\n"
 "Date:  %(date)s\n"
 "link: %(link)s\n"
 msgstr ""
@@ -35,10 +50,11 @@ msgstr ""
 "قیمت مجموعی: %(total_price)s\n"
 "فروشنده: %(vendor)s\n"
 "شماره فروشنده: %(vendor_phone)s\n"
+"فاصله از فروشنده: %(distance)s\n"
 "تاریخ: %(date)s\n"
 "لینک: %(link)s\n"
 
-#: order/utils.py:312
+#: order/utils.py:314
 msgid "Unknown user"
 msgstr "کاربر ناشناس"
 
@@ -50,31 +66,31 @@ msgstr "شما یک سفارش جدید دارید!"
 msgid "you have received a new order from a customer."
 msgstr "شما سفارش جدیدی از مشتری دارید."
 
-#: order/views.py:331
+#: order/views.py:332
 msgid "order has been cancelled by buyer!"
 msgstr "سفارش توسط مشتری لغو شد."
 
-#: order/views.py:339
+#: order/views.py:340
 msgid "We are sorry to inform you that the order has been cancelled."
 msgstr "متاسفیم،‌سفارش  توسط مشتری لغو شده است."
 
-#: order/views.py:541
+#: order/views.py:542
 msgid "order finalized by buyer!"
 msgstr "سفارش توسط مشتری نهایی شد."
 
-#: order/views.py:544
+#: order/views.py:545
 msgid "Order has been accepted by the buyer."
 msgstr "مشتری سفارش را نهایی کرد،‌لطفا غذا را آماده کنید."
 
-#: order/views.py:680 order/views.py:690 order/views.py:699
+#: order/views.py:681 order/views.py:691 order/views.py:700
 msgid "Order Delivered"
 msgstr "سفارش تحویل شد"
 
-#: order/views.py:681
+#: order/views.py:682
 msgid "Your order has been delivered successfully."
 msgstr "سفارش شما با موفقیت تحویل شد."
 
-#: order/views.py:691 order/views.py:700
+#: order/views.py:692 order/views.py:701
 #, python-brace-format
 msgid "Order {order_id} delivered successfully."
 msgstr "سفارش {order_id} با موفقیت تحویل شد."

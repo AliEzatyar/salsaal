@@ -18,4 +18,6 @@ urlpatterns = [
     path("live/", include("live.urls", namespace="live")),
     path("qoraa/", include("qoraa.urls", namespace="qoraa")),
     path("app/info/",AppInfoAPIView.as_view(), name="app-info"),
+    path("api/app/info/",AppInfoAPIView.as_view(), name="app-info"),
+    
 ]

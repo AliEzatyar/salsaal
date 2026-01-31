@@ -273,7 +273,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
                 deactivate()
                 # ---------------- sending notification to admin
-                message = get_new_order_message(new_order)
+                
+                message = get_new_order_message(new_order,distance=round(distance_km,2))
                 send_message_to_order_managers.delay(message)
                 # ------------- sending notification to vendor
                 push_notification.delay(

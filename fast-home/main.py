@@ -31,6 +31,8 @@ from utils import (
 )
 from schemas import CategorySchema
 from auth import get_user, throttle_request
+from collections import defaultdict
+
 
 DEFAULT_H3_RESOLUTION = 9
 
@@ -155,24 +157,37 @@ async def home(
 
     # ---------------- promotions
     promotions = db.scalars(
-        select(Promotion).where(Promotion.city == city,Promotion.is_active.is_(True)).order_by(func.random())
+        select(Promotion)
+        .where(Promotion.city == city, Promotion.is_active.is_(True))
+        .order_by(Promotion.cost_per_day.desc())
     ).all()
     set_image_url_to_scalars(promotions, "image")
 
     # ---------------- discounted foods
-    discounted_foods = db.scalars(
-    city_foods_qs
+    # Get all discounted foods for the city
+    all_discounted_foods = db.scalars(
+        city_foods_qs
         .join(Discount, Food.discount_id == Discount.id)
         .where(
             Discount.is_active.is_(True),
             Food.is_available.is_(True),
         )
-        .distinct(Food.vendor_id)
-        .order_by(
-            Food.vendor_id,
-            Food.min_price.desc()
-        )
+        .order_by(Food.vendor_id, Food.min_price)
     ).all()
+
+    # Group foods by vendor
+    vendor_foods = defaultdict(list)
+    for food in all_discounted_foods:
+        vendor_foods[food.vendor_id].append(food)
+
+    # For each vendor, select up to 2 random foods
+    import random
+    discounted_foods = []
+    for foods in vendor_foods.values():
+        if not foods:
+            continue
+        random.shuffle(foods)
+        discounted_foods.extend(foods[:2])
 
     set_image_url_to_scalars(discounted_foods, "image")
     distance_reach_time(discounted_foods, lat, lon, "food")
@@ -185,7 +200,9 @@ async def home(
     ).all()
     set_image_url_to_scalars(local_vendors, "vendor")
     distance_reach_time(local_vendors, lat, lon, "vendor")
-
+    # Sort local vendors by distance (nearest to farthest)
+    local_vendors.sort(key=lambda v: getattr(v, "distance", float('inf')))
+    
     # ---------------- cheapest vendors
     cheapest_vendors = db.scalars(
         city_vendors_qs.join(Food)

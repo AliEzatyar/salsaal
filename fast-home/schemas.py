@@ -26,7 +26,7 @@ class VendorOut(VendorBase):
     reach_time: Optional[int] = None  # e.g., in minutes
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class FoodSchema(BaseModel):
