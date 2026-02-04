@@ -47,7 +47,6 @@ GROUPS = {
         "carrier": ["change_carrier", "delete_carrier", "view_carrier"],
         "accounts": ["view_user", "view_userprofile"],
         "vendor": ["view_vendor"],
-        "qoraa": ["view_qoraa"],
     },
     "Support Staff": {
         "order": ["view_order"],

@@ -198,13 +198,22 @@ class VOrderSerializer(ModelSerializer):
 
     def get_phone(self,obj):
         if obj.user:
-            if obj.status in [ORDER_STATUS_CHOICES[2][0], ORDER_STATUS_CHOICES[3][0], ORDER_STATUS_CHOICES[4][0]]:
-                return obj.user.phone_number
+            is_foreign = False
+            phone = obj.user.phone_number
+            # if order is foreign get phone from extra data
+            if obj.extra_data:
+                is_foreign = obj.extra_data.get("is_foreign",False)
+            if is_foreign:
+                phone = obj.extra_data.get("phone_number",phone)
+            # phone number or message
+            if obj.status in [ORDER_STATUS_CHOICES[2][0], ORDER_STATUS_CHOICES[3][0], ORDER_STATUS_CHOICES[4][0],ORDER_STATUS_CHOICES[0][0]]:
+                return phone
             else:
                 activate_language(obj.vendor.user_profile.pf_lang)
                 message = _("Accept or reject order")
                 deactivate_language()
                 return message
+        return "NoUser"
     
     def get_is_foreign(self,obj):
         if obj.user and obj.extra_data:
