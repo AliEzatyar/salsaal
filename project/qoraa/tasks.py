@@ -146,7 +146,7 @@ def finalize_qoraa():
               key of the finalized qoraa and its winner's primary key (or None).
     """
     now = timezone.now() + timezone.timedelta(minutes=1)
-    to_finalize = Qoraa.objects.filter(status=Qoraa.STATUS_RUNNING, end__lte=now)
+    to_finalize = Qoraa.objects.filter(status=Qoraa.STATUS_RUNNING, end__lte=now,is_platform=True)
     results = []
     for q in to_finalize:
         joiners = list(q.joiners.all())

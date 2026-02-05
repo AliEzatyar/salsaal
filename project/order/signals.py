@@ -31,10 +31,9 @@ def prevent_delivered_order_status_change(sender, instance, **kwargs):
     if not instance.pk:
         return  # New order, nothing to check
     try:
-        previous = Order.objects.get(pk=instance.pk)
+        pre_save_order = Order.objects.get(pk=instance.pk)
     except Order.DoesNotExist:
-        return
-    delivered_status = ORDER_STATUS_CHOICES[4][0]
-    if previous.status == delivered_status and instance.status != delivered_status:
-        raise ValidationError("Cannot change status of a delivered order.")
+        return  # Order doesn't exist, nothing to check
+    if pre_save_order.status == ORDER_STATUS_CHOICES[4][0]:
+        raise ValidationError("Cannot change delivered order.")
 

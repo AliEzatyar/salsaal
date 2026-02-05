@@ -129,8 +129,6 @@ class ConvertToVendorAPIView(views.APIView):
         
         with atomic():
             vendor = ser.save()
-            vendor.is_approved = True # temporary needed for first vendors
-            vendor.save()
             user.cart.delete()
             # setting vendor's carriers in redis
             vendor_carriers_key = get_vendor_carriers_key(vendor.id)
