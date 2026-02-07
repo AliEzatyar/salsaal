@@ -56,6 +56,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
             **self.each_context(request),
             'title': 'Revenue Analytics',
             'vendors': Vendor.objects.all().order_by('vendor_name'),
+            'customer_tracking_url': self.reverse('customer_tracking'),
         }
         return render(request, 'admin/admins/revenue_analytics.html', context)
 
