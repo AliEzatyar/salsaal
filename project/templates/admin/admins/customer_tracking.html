@@ -1,0 +1,65 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Customer Tracking</h1>
+<div>
+  <label>Period:
+    <select id="period">
+      <option value="month">This Month</option>
+      <option value="week">Last 7 days</option>
+      <option value="day">Today</option>
+      <option value="custom">Custom</option>
+    </select>
+  </label>
+  <button id="refresh">Refresh</button>
+</div>
+
+<h2>Top Customers (by orders)</h2>
+<table id="top_customers" border="1" cellpadding="4"></table>
+
+<h2>Top Processed (delivered)</h2>
+<table id="top_processed" border="1" cellpadding="4"></table>
+
+<h2>Top Cancelled</h2>
+<table id="top_cancelled" border="1" cellpadding="4"></table>
+
+<h2>Customers</h2>
+<table id="customers" border="1" cellpadding="4"></table>
+
+<script>
+function renderTable(elId, rows, headers) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  const thead = document.createElement('thead');
+  const tr = document.createElement('tr');
+  headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; tr.appendChild(th); });
+  thead.appendChild(tr);
+  el.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    headers.forEach(h => {
+      const key = h.toLowerCase().replace(/ /g,'_');
+      const td = document.createElement('td');
+      td.textContent = r[key] !== undefined ? r[key] : '';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  el.appendChild(tbody);
+}
+
+async function loadData() {
+  const period = document.getElementById('period').value;
+  const resp = await fetch('../api/customer-data/?period='+period);
+  if (!resp.ok) { alert('Failed to load data'); return; }
+  const data = await resp.json();
+  renderTable('top_customers', data.top_customers || [], ['user_id','name','phone_number','total_orders','delivered_orders','cancelled_orders','total_spent']);
+  renderTable('top_processed', data.top_processed || [], ['user_id','name','phone_number','total_orders','delivered_orders','cancelled_orders','total_spent']);
+  renderTable('top_cancelled', data.top_cancelled || [], ['user_id','name','phone_number','total_orders','delivered_orders','cancelled_orders','total_spent']);
+  renderTable('customers', data.customers || [], ['user_id','name','phone_number','total_orders','delivered_orders','cancelled_orders','total_spent','last_order','loyalty_score']);
+}
+
+document.getElementById('refresh').addEventListener('click', loadData);
+window.addEventListener('load', loadData);
+</script>
+{% endblock %}

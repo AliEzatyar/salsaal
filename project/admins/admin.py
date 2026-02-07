@@ -3,7 +3,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 from django.urls import path
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.db.models import Sum, Count, F, Q
+from django.db.models import Sum, Count, F, Q, Max
 from django.utils import timezone
 from datetime import timedelta
 from order.models import Order
@@ -39,6 +39,9 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
         custom_urls = [
             path('revenue-analytics/', self.admin_view(self.revenue_analytics_view), name='revenue_analytics'),
             path('api/revenue-data/', self.admin_view(self.revenue_data_api), name='revenue_data_api'),
+            # customer tracking endpoints
+            path('customer-tracking/', self.admin_view(self.revenue_customer_tracking_view), name='customer_tracking'),
+            path('api/customer-data/', self.admin_view(self.customer_data_api), name='customer_data_api'),
         ]
         return custom_urls + urls
 
@@ -640,6 +643,123 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
             logger.error(f"Error in _get_vendor_performance: {str(e)}", exc_info=True)
             return JsonResponse({'error': 'Failed to retrieve vendor performance data.'}, status=500)
 
+    # ----------------- NEW CUSTOMER TRACKING VIEW & API -----------------
+    def revenue_customer_tracking_view(self, request):
+        """Customer tracking admin page (UI calls api/customer-data/)"""
+        if not is_order_manager(request.user):
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden("You don't have permission to access this page.")
+        context = {
+            **self.each_context(request),
+            'title': 'Customer Tracking',
+        }
+        return render(request, 'admin/admins/customer_tracking.html', context)
+
+    def customer_data_api(self, request):
+        """
+        JSON metrics about customers:
+          - top_customers (by total orders)
+          - top_processed (by delivered orders)
+          - top_cancelled (by cancelled orders)
+          - customers: list with loyalty_score
+        Query params:
+          - period: day|week|month|custom (default month)
+          - start_date,end_date (ISO) for custom
+          - vendor_id optional
+          - limit default 20
+        """
+        try:
+            period = request.GET.get('period', 'month')
+            vendor_id = request.GET.get('vendor_id')
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+            limit = int(request.GET.get('limit', 20))
+
+            now = timezone.now()
+            if period == 'day':
+                start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                end = now
+            elif period == 'week':
+                start = now - timedelta(days=7)
+                end = now
+            elif period == 'custom' and start_date and end_date:
+                try:
+                    start = timezone.datetime.fromisoformat(start_date).replace(tzinfo=timezone.get_current_timezone())
+                    end = timezone.datetime.fromisoformat(end_date).replace(tzinfo=timezone.get_current_timezone())
+                except Exception:
+                    return JsonResponse({'error': 'Invalid date format for custom period.'}, status=400)
+            else:
+                start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                end = now
+
+            orders = Order.objects.filter(created_at__range=(start, end))
+            if vendor_id:
+                try:
+                    vendor_id = int(vendor_id)
+                    orders = orders.filter(vendor_id=vendor_id)
+                except Exception:
+                    return JsonResponse({'error': 'invalid vendor_id'}, status=400)
+
+            customers_qs = (
+                orders.values('user__id', 'user__name', 'user__phone_number')
+                .annotate(
+                    total_orders=Count('id'),
+                    delivered_orders=Count('id', filter=Q(status='delivered')),
+                    cancelled_orders=Count('id', filter=Q(status='cancelled')),
+                    total_spent=Sum('total_price', filter=Q(status='delivered')),
+                    last_order=Max('created_at'),
+                )
+            )
+
+            # helpers
+            def smallify(qs):
+                out = []
+                for i in qs:
+                    out.append({
+                        "user_id": i.get('user__id'),
+                        "name": i.get('user__name'),
+                        "phone_number": i.get('user__phone_number'),
+                        "total_orders": i.get('total_orders', 0),
+                        "delivered_orders": i.get('delivered_orders', 0),
+                        "cancelled_orders": i.get('cancelled_orders', 0),
+                        "total_spent": float(i.get('total_spent') or 0),
+                    })
+                return out
+
+            top_customers = sorted(customers_qs, key=lambda x: x['total_orders'], reverse=True)[:limit]
+            top_processed = sorted(customers_qs, key=lambda x: x['delivered_orders'], reverse=True)[:limit]
+            top_cancelled = sorted(customers_qs, key=lambda x: x['cancelled_orders'], reverse=True)[:limit]
+
+            def loyalty_score(item):
+                spent = float(item['total_spent'] or 0)
+                return round(item['delivered_orders'] * 3 + spent / 100 - item['cancelled_orders'] * 2, 2)
+
+            customers_serialized = []
+            for c in sorted(customers_qs, key=lambda x: (x['delivered_orders'], x['total_orders']), reverse=True)[:limit]:
+                customers_serialized.append({
+                    "user_id": c['user__id'],
+                    "name": c.get('user__name') or "",
+                    "phone_number": c.get('user__phone_number') or "",
+                    "total_orders": c['total_orders'],
+                    "delivered_orders": c['delivered_orders'],
+                    "cancelled_orders": c['cancelled_orders'],
+                    "total_spent": float(c['total_spent'] or 0),
+                    "last_order": c.get('last_order'),
+                    "loyalty_score": loyalty_score(c),
+                })
+
+            return JsonResponse({
+                "period": {"start": start.isoformat(), "end": end.isoformat()},
+                "top_customers": smallify(top_customers),
+                "top_processed": smallify(top_processed),
+                "top_cancelled": smallify(top_cancelled),
+                "customers": customers_serialized,
+            }, safe=False)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception(f"Error in customer_data_api: {e}")
+            return JsonResponse({'error': 'internal_server_error'}, status=500)
 
 # Create a custom admin site instance
 revenue_admin_site = RevenueAnalyticsAdminSite(name='revenue_admin')
