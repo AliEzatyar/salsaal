@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django_otp.plugins.otp_totp.models import TOTPDevice
-from django.urls import path
+from django.urls import path, reverse
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.db.models import Sum, Count, F, Q, Max
@@ -56,7 +56,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
             **self.each_context(request),
             'title': 'Revenue Analytics',
             'vendors': Vendor.objects.all().order_by('vendor_name'),
-            'customer_tracking_url': self.reverse('customer_tracking'),
+            'customer_tracking_url': reverse('admin:customer_tracking'),
         }
         return render(request, 'admin/admins/revenue_analytics.html', context)
 

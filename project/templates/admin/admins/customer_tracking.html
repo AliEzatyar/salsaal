@@ -13,19 +13,120 @@
   <button id="refresh">Refresh</button>
 </div>
 
-<h2>Top Customers (by orders)</h2>
-<table id="top_customers" border="1" cellpadding="4"></table>
+<style>
+.table-section {
+  margin-bottom: 18px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.table-section .table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+.table-section table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.table-section th, .table-section td {
+  padding: 8px 6px;
+  text-align: left;
+  word-break: break-all;
+}
+.table-section th {
+  font-weight: bold;
+}
+#top_customers_section { background: #e3f2fd; }
+#top_processed_section { background: #e8f5e9; }
+#top_cancelled_section { background: #fff3e0; }
+#customers_section { background: #f3e5f5; }
+@media (max-width: 600px) {
+  .table-section table {
+    font-size: 13px;
+    min-width: 500px;
+  }
+  .table-section th, .table-section td {
+    padding: 6px 2px;
+  }
+  /* No block display, keep table layout for horizontal scroll */
+}
+.collapse-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  padding: 10px 12px;
+  font-size: 16px;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+.collapse-btn.collapsed {
+  background: #757575;
+}
+.whatsapp-link {
+  color: #25d366;
+  font-weight: bold;
+  text-decoration: none;
+}
+.table-section tr[data-whatsapp] {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.table-section tr[data-whatsapp]:hover {
+  background: #e0f7fa !important;
+}
+</style>
 
-<h2>Top Processed (delivered)</h2>
-<table id="top_processed" border="1" cellpadding="4"></table>
-
-<h2>Top Cancelled</h2>
-<table id="top_cancelled" border="1" cellpadding="4"></table>
-
-<h2>Customers</h2>
-<table id="customers" border="1" cellpadding="4"></table>
+<div class="table-section" id="customers_section">
+  <button class="collapse-btn" onclick="toggleTable('customers')">Customers</button>
+  <div id="customers_wrapper" style="display:none;">
+    <div class="table-scroll"><table id="customers"></table></div>
+  </div>
+</div>
+<div class="table-section" id="top_processed_section">
+  <button class="collapse-btn" onclick="toggleTable('top_processed')">Top Processed (delivered)</button>
+  <div id="top_processed_wrapper" style="display:none;">
+    <div class="table-scroll"><table id="top_processed"></table></div>
+  </div>
+</div>
+<div class="table-section" id="top_customers_section">
+  <button class="collapse-btn" onclick="toggleTable('top_customers')">Top Customers (by orders)</button>
+  <div id="top_customers_wrapper" style="display:none;">
+    <div class="table-scroll"><table id="top_customers"></table></div>
+  </div>
+</div>
+<div class="table-section" id="top_cancelled_section">
+  <button class="collapse-btn" onclick="toggleTable('top_cancelled')">Top Cancelled</button>
+  <div id="top_cancelled_wrapper" style="display:none;">
+    <div class="table-scroll"><table id="top_cancelled"></table></div>
+  </div>
+</div>
 
 <script>
+function toggleTable(tableId) {
+  // Toggle selected table, allow all to be closed
+  ['top_customers','top_processed','top_cancelled','customers'].forEach(function(id){
+    const wrapper = document.getElementById(id+'_wrapper');
+    const btn = document.querySelector('#'+id+'_section .collapse-btn');
+    if (id === tableId) {
+      // Toggle: open if closed, close if open
+      if (wrapper.style.display === 'block') {
+        wrapper.style.display = 'none';
+        btn.classList.remove('collapsed');
+      } else {
+        wrapper.style.display = 'block';
+        btn.classList.add('collapsed');
+      }
+    } else {
+      // Leave others unchanged
+    }
+  });
+}
+
 function renderTable(elId, rows, headers) {
   const el = document.getElementById(elId);
   el.innerHTML = '';
@@ -36,11 +137,31 @@ function renderTable(elId, rows, headers) {
   el.appendChild(thead);
   const tbody = document.createElement('tbody');
   rows.forEach(r => {
+    // WhatsApp phone normalization
+    let phone = r['phone_number'] ? r['phone_number'].replace(/[^0-9]/g,'') : '';
+    if (phone.length === 10) phone = '93'+phone;
+    if (phone.length === 11 && phone.startsWith('0')) phone = '93'+phone.slice(1);
+    if (phone.length === 12 && phone.startsWith('93')) phone = phone;
+    const wa_link = phone ? `https://wa.me/${phone}` : null;
+
     const tr = document.createElement('tr');
+    if (wa_link) {
+      tr.setAttribute('data-whatsapp', wa_link);
+      tr.onclick = function(e) {
+        // Only open WhatsApp if not clicking a link directly
+        if (!e.target.closest('a')) {
+          window.open(wa_link, '_blank');
+        }
+      };
+    }
     headers.forEach(h => {
       const key = h.toLowerCase().replace(/ /g,'_');
       const td = document.createElement('td');
-      td.textContent = r[key] !== undefined ? r[key] : '';
+      if (key === 'phone_number' && r[key]) {
+        td.innerHTML = `<a class="whatsapp-link" href="${wa_link}" target="_blank">${r[key]}</a>`;
+      } else {
+        td.textContent = r[key] !== undefined ? r[key] : '';
+      }
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -57,6 +178,11 @@ async function loadData() {
   renderTable('top_processed', data.top_processed || [], ['user_id','name','phone_number','total_orders','delivered_orders','cancelled_orders','total_spent']);
   renderTable('top_cancelled', data.top_cancelled || [], ['user_id','name','phone_number','total_orders','delivered_orders','cancelled_orders','total_spent']);
   renderTable('customers', data.customers || [], ['user_id','name','phone_number','total_orders','delivered_orders','cancelled_orders','total_spent','last_order','loyalty_score']);
+  // No default open table
+  ['top_customers','top_processed','top_cancelled','customers'].forEach(function(id){
+    document.getElementById(id+'_wrapper').style.display = 'none';
+    document.querySelector('#'+id+'_section .collapse-btn').classList.remove('collapsed');
+  });
 }
 
 document.getElementById('refresh').addEventListener('click', loadData);
