@@ -51,6 +51,11 @@ class OrderAdmin(admin.ModelAdmin):
             return "-"
         return format_html('<a href="https://www.google.com/maps?q={},{}" target="_blank">Map</a>',obj.destination.x,obj.destination.y)
 
+    def save_model(self, request, obj, form, change):
+        obj._actor = request.user
+        obj.save()
+
+
     location_link.allow_tags = True
     location_link.short_description = "Location"
 

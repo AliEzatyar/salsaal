@@ -674,7 +674,7 @@ class RevenueAnalyticsAdminSite(admin.AdminSite):
             vendor_id = request.GET.get('vendor_id')
             start_date = request.GET.get('start_date')
             end_date = request.GET.get('end_date')
-            limit = int(request.GET.get('limit', 20))
+            limit = int(request.GET.get('limit', 1000))
 
             now = timezone.now()
             if period == 'day':
