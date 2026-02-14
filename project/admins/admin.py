@@ -8,9 +8,15 @@ from django.utils import timezone
 from datetime import timedelta
 from order.models import Order
 from vendor.models import Vendor
-from django.contrib import messages
 from multiVend.country.info import PLATFORM_CASH_PAYMENT_SHARE
-
+from two_factor.admin import AdminSiteOTPRequired
+from django_celery_beat.models import (
+    PeriodicTask,
+    IntervalSchedule,
+    CrontabSchedule,
+    SolarSchedule,
+    ClockedSchedule,
+)
 
 def is_order_manager(user):
     """Check if user is an order manager or superuser"""
@@ -31,7 +37,7 @@ class TOTPDeviceAdmin(admin.ModelAdmin):
     last_used.short_description = "Last TOTP"
 
 
-class RevenueAnalyticsAdminSite(admin.AdminSite):
+class RevenueAnalyticsAdminSite(AdminSiteOTPRequired):
     """Custom admin site with revenue analytics"""
 
     def get_urls(self):
@@ -767,15 +773,6 @@ revenue_admin_site = RevenueAnalyticsAdminSite(name='revenue_admin')
 
 # Register TOTPDevice with the custom admin site
 revenue_admin_site.register(TOTPDevice, TOTPDeviceAdmin)
-
-from django_celery_beat.models import (
-    PeriodicTask,
-    IntervalSchedule,
-    CrontabSchedule,
-    SolarSchedule,
-    ClockedSchedule,
-)
-
 revenue_admin_site.register(PeriodicTask)
 revenue_admin_site.register(IntervalSchedule)
 revenue_admin_site.register(CrontabSchedule)
