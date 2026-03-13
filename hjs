@@ -1,0 +1,375 @@
+[33m34b6ab6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrest[m[33m, [m[1;31morigin/rest[m[33m)[m order manager access other thigns + multiple foods discount
+[33m3c6f67d[m[33m ([m[1;31morigin/fasthome[m[33m)[m decimal problem while discount part 1
+[33mb17f335[m step 1 login
+[33m78ce5d4[m celery mark deliver offline carrier more time+ phone number to every state TEMP
+[33mf3afd4f[m Enhance transaction details retrieval with error handling and configuration checks
+[33mc39c1ef[m Add HesabPay transaction details handling and verification
+[33mac77e85[m fixed delivery cost problem
+[33m43192c8[m fixed delivery cost problem
+[33m04963a5[m delivery cost problem logging
+[33m7b85a3d[m f-search no slice+changes
+[33m91c2f0e[m foreign users bypass mdd, max delivery distance
+[33m6c2b295[m delivery<10 =0 + foreign users distance + reorder latest food prices
+[33m55c0b93[m max delivery distance  enforced + phone numebr added to waiting
+[33mc57ceff[m mini
+[33m644403d[m ddd
+[33m7d7edb8[m mini fix carrier count fail fallback
+[33m69759fc[m qrcode for vendors 1
+[33mda6b4d9[m mini
+[33m2823e61[m platform_share_splite_from_online_payment+ phone_number_waiting_better_message
+[33m1ea7baa[m multi-vendor semi final
+[33mb4f469e[m mini fix order calculation time for foreigns
+[33m3fbe466[m hesab pay multi vendor + graphhopper fallback to haversine for out of afghanistan
+[33m528f737[m cart problem fro foreigns
+[33md4471cd[m hesab pay multi vendor
+[33m8ed9c32[m hesab pay multivendor
+[33m2bfb8a2[m hesab pay multivendor mini fix
+[33mb26f27c[m hesab pay
+[33mb64332c[m evening qoraa start 1 pm
+[33md617bb5[m mini
+[33md1fa17c[m mini
+[33m6f093f2[m circular import fix
+[33med7a42c[m is_foreign added to get_user_info and used in get_city_vendors as param
+[33m3c14dd4[m mini
+[33m3d6363f[m done
+[33m3a30ac4[m previous commit error fix
+[33m719e746[m destination link to google maps rather than geo django+ vendor detail no city limit
+[33me7c22ba[m waiting orders phone number too + default h3 in fast is shahre Naw
+[33m98efd57[m fast home foreigners 1
+[33ma5eedb5[m carrier  last location in vendor carrying orders done
+[33m7b28e06[m last carrier logcation as destination for carrying orders 1
+[33mf35aac0[m mini fix
+[33m6180394[m send_otp expire token fix
+[33mbede732[m invalid otp response
+[33m7db10ec[m order delivery better loggin + claim qora generate otp object
+[33m3329dd1[m qoraa limitations
+[33mcebe896[m carrier null allow on order
+[33mbe13ba0[m cpaas logging
+[33m7bcbc4f[m verify_otp_signup_fix+no_account_deletion
+[33mcad6b4e[m carrrier order destination fix
+[33m0799d00[m ensure previous commit works
+[33m440fbd1[m order_delivery_cost_issue+qoraa_title_add_food_name+order_model_extra_data
+[33m40654bb[m order destination problem
+[33md5b4612[m fixed hesabPay delivery cost issue 400
+[33mf746096[m Adjust delivery cost calculation to account for maximum free distance delivery
+[33me84efe7[m Increase ANON_THROTTLE_PER_HOUR limit and adjust OTP cleanup duration to 6 hours
+[33m6618e8e[m Fix formatting issue in FoodAdmin list_editable field
+[33m4cf9a0a[m Enhance UserDetailSerializer to include is_online field and update FoodAdmin to allow editing of vendor and category
+[33m5a9bcb9[m Add duplicate action to FoodAdmin and update phone number retrieval in VOrderSerializer
+[33m07548cf[m Revert "celery_Added_to_admin"
+[33m15f607a[m reveneu_graph_fixed
+[33mfd399d1[m celery_Added_to_admin
+[33m6c4a570[m advanced_search_carrier+online_offline_carriers
+[33m317459c[m create_user_account_if_not_already_in_search_carriers
+[33m7f58620[m Add action to enable/disable carrier live tracking
+[33m544c3cc[m Add 'is_online' field to Carrier serializer
+[33mb3d9082[m Modify carrier return estimate calculation
+[33m72d0d0d[m Change user role check from superuser to superadmin
+[33m44d212c[m mini fix
+[33m22f342a[m Implement mark_order_delivered task
+[33mf554ca8[m Adjusted set as carrying view to get legacy carriers simple and auto deliver order
+[33mac70265[m only preparing orders allowed phone number for vendor to see
+[33mf23834d[m Modify CarrierAdmin list_display to add 'is_online'
+[33m159546e[m Add is_carrier_online field to order serializers
+[33m6232305[m Add is_online field to Carrier model
+[33me199d1d[m Add user_phone field and corresponding method
+[33m52f4b7f[m Update avg_rating calculation to round values
+[33m0637b42[m Use local time for food readiness calculation
+[33m36fadd9[m Merge pull request #1 from AliEzatyar/fastapi-city-from-latlon
+[33md75f9ea[m Restrict order retrieval to last 30 minutes in calculate order time
+[33m95e81b2[m Increase H3 grid disk radius to 40
+[33m4da2680[m Increase max_length of description field to 500
+[33m3dbadb8[m Adjust user throttle rate for API requests
+[33m5f72fb9[m[33m ([m[1;31morigin/fastapi-city-from-latlon[m[33m)[m Update throttle limits for anonymous and user requests
+[33m1e8d1c7[m Increase anonymous user throttle rate to 10000/hour
+[33m96e42c8[m Delete order delivery tries key on payment
+[33md932d1e[m Increase H3 grid search radius from 20 to 40
+[33mce535d6[m Refactor city validation to use list comprehension
+[33ma2ac9f6[m Implement nearest_city function for location lookup
+[33m17ea4df[m Validate city and fallback to nearest city if invalid
+[33m7dfb578[m Change city names to lowercase in CITIES list
+[33ma1fa515[m Add list of cities with latitude and longitude
+[33m163ee25[m Simplify carrier status reset for vendors
+[33m5778eaa[m share_0+trans+local_vendors_range20
+[33m1c83c30[m admin_manager_revenue_graph
+[33m9cdf037[m Fix User model permission methods
+[33mdd5a67c[m Fix Group admin user count method
+[33mfb83c12[m Enhanced Django admin for superuser group management
+[33m6342e58[m Fix UserAd admin class for custom User model
+[33md2886db[m only_one_order_cancel+fcm_works100
+[33m3b09e04[m Improve Django admin interfaces for all models
+[33m4c20bb8[m mini_fcm_fix+translation
+[33ma87ba47[m otps_last_24hours+translation+claim_qoraa_creates_order_item+fixes
+[33m71de25e[m redis_dbs_seperation_btwn_srvcs+claim_qoraa_add_is_calimed_feild_on_qoraa
+[33m2069448[m qoraa_timing_fix
+[33m69bed31[m minifix
+[33m2aed4cc[m minifix
+[33mf3bdd38[m google_apple_numbers_free
+[33m935e5ac[m minifix
+[33m72af797[m qoraa_tasks_problem_fix1
+[33mc212c72[m login_vendor_try+claim_qoraa_creates_preparing_order
+[33m8f3cf0d[m fix
+[33ma23e3c3[m fix
+[33m20e070d[m fast-home-notf+platform_fee0
+[33m013bb99[m fixes
+[33mc8a668a[m carrier_default_is_active+fixes
+[33mb536e9e[m logging1+code_clean
+[33m179c75f[m better_fcm_token_manage+better_calc_order_with_notf
+[33m75d32ba[m 2fa
+[33m503aafb[m throttling1
+[33ma8fa87a[m beat_tasks_test+docker_compose_add_beat_as_new_service
+[33m988f8ee[m qoraa_fixes+otherfixes
+[33md1d9a00[m fix
+[33m17b7aeb[m cpaas_obd_otp90%
+[33m0cdb956[m login_flow_change+qoraa_flow_change_for_vendor
+[33mc06b822[m no_opening_hour+vendor_auto_approve_temporary
+[33mfe25190[m qoraa_works_with_frontend+order_dest_fix+vendor_adds_hesabpay_number
+[33m9f1919c[m migration_files_deleted
+[33m99ef7de[m migrations_fix
+[33m2bd3ff8[m vendor_hesabpay_field+fastapi_optional_login
+[33m492c589[m fast_api_image_url_fix+login_users_have_notf_count
+[33mb457554[m no_login_home_vendor_food_category_all_vendors_search1
+[33m9605894[m multi-vendor_payment_90%
+[33m35f5986[m redis+gunicorn_only+no_channels
+[33m95f14b2[m redis_password2
+[33m063d040[m redis_password
+[33mb04d53d[m carriers_reds_key_empy_handle
+[33m189c147[m static_back
+[33m3c19474[m fix
+[33m0862bab[m account_del_url
+[33mac357ff[m hesab_multi+home_all_vendors_fix
+[33mf13e07f[m order_app_fix+admin_groups_autocreate
+[33me946a4b[m +
+[33mb26a1ee[m s
+[33mbf4ab05[m hesab_pay_80+set_null_on_models_cascade
+[33ma3d7ab7[m bad_gpt_models_lat_lon_change_fix
+[33m4a13ccd[m hesab_pay_70%+models_gpt_fix
+[33mf504f8a[m hesab_pay_55%
+[33m3518ba3[m hesab_pay50%
+[33mf78a350[m fast_home_no_loc_handle+django_s
+[33mf87c09d[m hesab_pay40%+
+[33m8763840[m docs+login_cares_role
+[33mde48047[m qoraa90%
+[33m04e4515[m redis-conf
+[33m9756433[m fix2
+[33m3272777[m fix
+[33m07a09e2[m qoraa80%+some_docs
+[33mf9a1ece[m pilot_carriers_cart+full_name_to_name+device_token_save_fix+Qoraa_model_and_views70%+automated_qoraa+docs+more..
+[33m60be000[m removed_static_files_admin
+[33m517417b[m pre_con
+[33mb46008d[m refresh_token_valid_after_and_rotate_fixed+vendor_waiting_orders_fixed+
+[33m5cf99ab[m get_user_info_utiliy_func+no_is_open_now_method+fixtures
+[33mb9aab23[m fast-api-optimize+disbale_vendors_task+calc_order_time_mini_changes
+[33m12ccc10[m vendor_r_independent_from_profile
+[33me7aa990[m mini_fix
+[33m14c6d6b[m taking_fast_api
+[33mf690aa7[m one_device_only+fixtures_carrier_app_finish
+[33m6afe79f[m celery_auto_register_periodic_tasks
+[33m23f3f70[m call_token+revert_carriers_status
+[33m9b95ba5[m celery_notf_and_otp+top_vendors_direct_redis_no_cache
+[33m00f3790[m fixtures_app_v1
+[33m65723eb[m fcm_prod_fix1
+[33mc7fa8c1[m[33m ([m[1;32mmaster[m[33m)[m home_all_vendors_prefetch_fix+home_comments_delete+rating_imporve+wedsday
+[33m8b762b7[m carrier_past_orders
+[33m04bcf27[m promotions+rewards
+[33me7a6da7[m atomic_orders+preparing_orders_count_limit+carrier_always_send_location
+[33mf12afad[m device_model_ser+d_token_save+dlvry_qr_enpt_decpt+v_rtng_ini+lv_trck+more...
+[33m59c3c30[m discount_scenarios
+[33m471d901[m fix+order_live_done
+[33mfa1f2cd[m cart_notf_celer_fix
+[33mdf389d4[m ready_food_typ_duration_food+home_one_part
+[33m0fdb0cd[m cart_fixtures
+[33m5f75a35[m live_tracking_flow_uwsocket95%
+[33ma28a885[m order_time_calc_fix+f_c_.+OrderDialog
+[33m0ece414[m django_publish_notf+harvesin_distance
+[33m6c97096[m uwsocket_fix
+[33me457320[m fixture_uwsocket
+[33mf0a1246[m uwsocket_auth_verify_toke
+[33m49697f5[m step1_uwsocket+notf_destin+fixtures
+[33mbaea665[m trgm_simi+ginindex_for_name_Search+vnd_dt_imp+rating_only_vendor
+[33mb23b1c0[m food_detail+fixtures
+[33m840a0f6[m fix
+[33mf006d91[m is_open_now_handle+delivery_fee+v_mfdd+v_mfcf
+[33ma84e2f5[m s3_config
+[33mbf83f79[m fix
+[33m45f4048[m image_food+cat_icon+before_S3
+[33m43647ed[m fix
+[33mf8f30ac[m vendor_count_fix
+[33m584a933[m fix_images
+[33mf056879[m fix
+[33m9d94a77[m fix
+[33m2b90fb5[m is_open
+[33m8843db0[m vendor_log_image
+[33m9ed40fc[m home_re_structured_only_vendors
+[33md516cd3[m vendor_id_added
+[33me68ffb7[m pagination+city_lower
+[33m613cf00[m fix
+[33m0d502df[m uuid
+[33mcb12586[m vendors_on_map+vendor_foods_by_cat
+[33m6beeb26[m fix
+[33m55d6224[m fix
+[33m5ad5a5e[m Revert "fix"
+[33m34e250a[m fix
+[33m61e49f0[m list_vendor_foods+foods_by_category
+[33m4908770[m discounted_foods
+[33m79a6562[m h3_diagonals_for_distance
+[33mea104de[m new_authentication_flow
+[33m6ce403a[m celery
+[33m5cdb90e[m discount+celery
+[33m2c1caab[m fix
+[33mf0fa00c[m one_endpoint_otp_Verify
+[33m9a1e0c8[m fix1
+[33mfce6b66[m fix
+[33mdf4ec6b[m access_token_on_activate
+[33mb22bcdc[m username_last_first_to_FullName
+[33m4a907e4[m +
+[33m5eea376[m auth_phone_number
+[33me6e1424[m notification_model_changed+translation_added+notf_viewset
+[33m8261eeb[m vendor_detail_caching+one_endpoint_for_user_and_profile
+[33m4671717[m runScriptHttps
+[33me0104fd[m +++
+[33m218922c[m +++
+[33m77e9530[m nothing
+[33m8f616fb[m nothing
+[33mca4fba0[m graphhopper
+[33mf3ab5c8[m carriers_distance_time_using_osmnx
+[33m2e3c325[m current_curriers_live
+[33m6992f9a[m vendor_sets_As_carrying
+[33mc84ce1c[m log_gunicorn
+[33mbdacf3e[m order_delivery_notf
+[33m7ad2d09[m order_carrying_notf_done2
+[33m29d8092[m order_carrying_notf_done
+[33m83fc6d2[m new_order_notificationDone
+[33m78fb03b[m asgi_2
+[33m6fcdd74[m asgi_1
+[33mb4049db[m cartitempriceChoose+order+cart+fixtures
+[33mb588e76[m image_url+viewCounterFood+default_image-fix+countrybasedinfo
+[33m6a61c7b[m caching30%+recommendation30%+move_to_rds
+[33m064bc2e[m urls organized
+[33m0f32a23[m v_pub_det
+[33mfb8b47f[m opening_hours+doc_ven+fix
+[33mce52089[m test2
+[33m4256ff9[m test
+[33mdc8ba5b[m fix1
+[33m909fa97[m blacklist+favlist50%
+[33m5d4c46c[m image_tested_successfully
+[33m5e09834[m multiple_images
+[33m1a94547[m rating100+notAdmin
+[33mfba6d5a[m rating50%
+[33md466e4d[m deleted main app
+[33m50b9f88[m fooditem_deail_distance
+[33m9ae9d21[m carrier
+[33m6a6088b[m vendorOrdersViewTested
+[33md305386[m v_revenue+cartFix+orderFix+foodnoDuplic+carrier_cart_del
+[33m692f473[m templates_removed
+[33m1922f98[m aws2
+[33mf77cabd[m aws1
+[33m8d31487[m b4aws
+[33m2021b24[m orm_optimize
+[33medc2c10[m public vendor detal
+[33m0c20d33[m carrierSeeOrders
+[33m526264e[m carrierCreateVerifyEmail+CCrud
+[33ma9bca9c[m fooditem_prices
+[33m35b2184[m vendorCRUDREfined
+[33m97b1dde[m f..
+[33m544e050[m m
+[33m313cd18[m fixutre
+[33mf8c50b9[m two_food_serializer
+[33mf37a00f[m vendorTwoSers+homeWeekNearby+foodDetailWithDistance
+[33m0b6d57c[m profil+userDetailViewset
+[33mabce55b[m userProfile
+[33mb8132e3[m reciptManageErrorsFixed
+[33me602855[m reciptQRCODEVerify
+[33m741a777[m api_views_seperated_in_apps
+[33m6524553[m resendOTP
+[33me11145a[m forgot-password-OTP
+[33md695c97[m OTPEmailAccountActivation
+[33mab8f84e[m gdal_dockerimage_solution+
+[33m4ceaf27[m gdal_dockerimage_solution
+[33m74a69bb[m drf-urls-generator
+[33ma065555[m ..
+[33md855f7f[m carrierAppApi50%
+[33mc154ce0[m geoDj+search_by_distance
+[33m4cdc880[m fixtures
+[33m8a1ac13[m no-slug
+[33m241470d[m modelsFixture
+[33m7fa2312[m deployment-fixtures+
+[33m09f7736[m deployment-fixtures
+[33m9e04571[m payment-recipt
+[33mceb2dfe[m cart,order,vendor apis done
+[33m6105bc5[m rating_api
+[33m9f6fcfb[m product_api_fix
+[33m7248389[m db_fixture
+[33m92b1250[m product_api
+[33m20629ad[m api_code_organize
+[33mcc35d26[m orderApp_api_done
+[33m0eb2811[m order_cancellation+fixtures
+[33m01f8a90[m product_quantity
+[33m5d381b5[m rating95%
+[33mb288cd9[m vendor_rating
+[33m7923a0f[m general_rating_model+product_rating
+[33m0ab14fb[m order_list+order_model_fixtures
+[33mc99f073[m ajax_venodrs_page_filter2
+[33m6402000[m ajax_venodrs_page_filter
+[33me1fd1a7[m simple_search
+[33m2d87c6f[m orderProblemFix
+[33me1df15c[m add_to_cart_fix+order75%
+[33m1eeac05[m sort+filter+pagination+90%
+[33m6d7b695[m testing_manifest4
+[33m70cfdb4[m testing_manifest3
+[33m66c8c30[m testing_manifest2
+[33m6e3ddc0[m testing_manifest
+[33m4053f99[m marketplace+dynamicAjaxFilter
+[33m31e8c1f[m db_time_decorator
+[33md94252b[m indexes+time_test
+[33m8a51c8d[m mobile_menu+promotionhome_photo
+[33m8f6bf6d[m profile_latti_fix
+[33m7429b6e[m customer_profile+account_Settings
+[33m9dbee37[m footer+otherFronFixtures
+[33md8f837c[m wishlist99%
+[33mb54d08c[m peoduct_detail90%+cart100%+wishlist95%
+[33m96e480c[m front_password_reset
+[33m5a9621d[m cart_itemsbadge+
+[33md1ec0c8[m cart++
+[33mab7e27c[m shopping_cart_functionality
+[33m1ac8cd6[m marketplace_dynammic_filter+search
+[33ma11c307[m vendor_details+mob_acc_nav
+[33mb184d7d[m vendors_page+pagination
+[33m25620e5[m home++font
+[33m9ffba1c[m home+
+[33m779b621[m home
+[33mea894f8[m nginxOSversion+font
+[33m47a0fa4[m vendor_register90%
+[33m8b9f636[m nohti
+[33m33b70aa[m bo
+[33me9ad55f[m nothing
+[33m0006b24[m debugtoolbar
+[33m5cad377[m mobileheader_fix+localsettings
+[33m45f8ad0[m server_staticfiles_config+localsettings+
+[33meabbf66[m server_staticfiles_config+localsettings
+[33mcd1208c[m moving to server
+[33m41a70fa[m taking to github
+[33m471711b[m password_rest_front+bottom_header+newfont
+[33m0842b72[m v_dashboard+auth_front
+[33ma9d9607[m some_front
+[33mcf2758a[m new_template_header
+[33m9345ddb[m marketplace30%+b4_new_template
+[33m07d99da[m simple-rating
+[33m07baaca[m img.ext.fix+auto.loca.fil.other.fix
+[33m1366629[m simple product, category CRUD
+[33mc789d0b[m semi catalog built
+[33mbcdead0[m vendor_profile_done+custom_form_validation+readonly_fields
+[33m0b80f3c[m api_regist_email_ver+fapi_forgot_password
+[33mc4be0d0[m dashboard_front+alert+
+[33mb10a5aa[m admin_vendor_approval
+[33m509ce4e[m email_ver+pass_reset
+[33me98ce17[m token_betterized
+[33me574166[m token verification
+[33md889759[m api crud vendor
+[33m17953df[m authentication+dashboard redirect
+[33m6ed49ab[m vendor_reg_done
+[33mfc94ad7[m JWTtokenAuthentication activated
+[33m360d58e[m user_registeration_done
+[33me621311[m frontend-setup
+[33mf7d405d[m project setup
+[33m0df374c[m start
