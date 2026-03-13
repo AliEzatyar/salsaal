@@ -23,7 +23,7 @@ def stripe_webhook(request):
         payment_intent = event["data"]["object"]
         transaction_id = payment_intent["id"]
         order_id = payment_intent["metadata"]["order_id"]
-        logger.info(f"meta of intent {payment_intent["metadata"]}")
+        logger.info(f"meta of intent {payment_intent['metadata']}")
         # save to database
         Order.objects.filter(id=order_id).update(
             paid=True,

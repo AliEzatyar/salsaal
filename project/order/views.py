@@ -490,6 +490,7 @@ class AcceptRejectOrderView(views.APIView):
                             pass
                     # --------------------- stripe payment
                     elif payment_type == VALID_PAYMENT_TYPES[4][0]:
+                        
                         pass
                 # ------------- either payment type, this general part should be done
                 self.request.user.cart.clear()

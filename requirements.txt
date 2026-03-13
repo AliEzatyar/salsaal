@@ -54,14 +54,10 @@ grpcio
 grpcio-status
 gunicorn
 h11
-h2
 h3
-hpack
 httpcore
 httptools
-httpx
 hyper
-hyperframe
 idna
 inflection
 jalali_core
@@ -124,4 +120,8 @@ websockets
 yarl
 zopfli
 pillow-heif
-stripe
+stripe>=10.30.0
+h2>=4.3.0
+hyperframe>=6.1.0
+hpack>=4.1.0
+httpx>=0.26.0
