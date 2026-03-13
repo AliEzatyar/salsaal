@@ -53,6 +53,7 @@ from django.utils.translation import deactivate as deactivate_language
 from live.utils import push_notification
 from logging import getLogger
 from accounts.models import User
+
 logger = getLogger(__name__)
 
 
@@ -487,6 +488,9 @@ class AcceptRejectOrderView(views.APIView):
                             logger.exception(f"multi vendor payment failed for order {order.id}: {e}")
                             
                             pass
+                    # --------------------- stripe payment
+                    elif payment_type == VALID_PAYMENT_TYPES[4][0]:
+                        pass
                 # ------------- either payment type, this general part should be done
                 self.request.user.cart.clear()
                 order.payment_type = payment_type

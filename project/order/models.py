@@ -32,6 +32,7 @@ VALID_PAYMENT_TYPES = [
     ("hesab_pay", "hesab_pay"),
     ("reward_payment", "reward_payment"),
     ("qoraa_payment", "qoraa_payment"),
+    ("stripe","stripe")
 ]
 
 

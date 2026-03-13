@@ -14,7 +14,8 @@ class QoraaConfig(AppConfig):
         @receiver(post_migrate)
         def _register_tasks(sender, **kwargs):
             try:
-                register_periodic_tasks()
+                pass
+                # register_periodic_tasks()
             except Exception:
                 # do not interrupt app ready if celery-beat not configured yet
                 pass

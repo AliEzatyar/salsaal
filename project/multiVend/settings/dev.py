@@ -124,6 +124,14 @@ HESAB_PAY_API_KEY = env.get("HESAB_PAY_API_KEY")
 HESAB_PAY_MULTI_VENDOR_ENDPOINT = env.get("HESAB_PAY_MULTI_VENDOR_ENDPOINT")
 HESAB_PAY_ACCOUNT_PIN = env.get("HESAB_PAY_ACCOUNT_PIN")
 HESAB_PAY_TRANSACTION_DETAILS_ENDPOINT = env.get("HESAB_PAY_TRANSACTION_DETAILS_ENDPOINT")
+# stripe
+STRIPE_SECRET_KEY = env.get("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = env.get("STRIPE_PUBLISHABLE_KEY")
+STRIPE_WEBHOOK_SECRET = env.get("STRIPE_WEBHOOK_SECRET")
+
+# exchange api
+EXCHANGERATEHOSTKEY = env.get("EXCHANGERATEHOSTKEY")
+EXCHANGE_URL = env.get("EXCHANGE_URL")
 
 # cpass
 CPAAS_AUTHENTICATION_URL = env.get("CPAAS_AUTHENTICATION_URL")
@@ -207,6 +215,11 @@ LOGGING = {
             "propagate": False,
         },
         "qoraa": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "payment": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,

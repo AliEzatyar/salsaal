@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "django_otp.plugins.otp_totp",  # for TOTP tokens
     "django_otp.plugins.otp_static",  # for backup/static tokens
     "two_factor",
+    "payment.apps.PaymentConfig"
 ]
 
 MIDDLEWARE = [
