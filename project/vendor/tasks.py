@@ -71,6 +71,13 @@ def mark_order_delivered(order_id):
         return "Error in mark order delivered task for legacy carriers" + str(e.args)
 
 
+@shared_task
+def enable_vendors():
+    logger.info("enabling vendors")
+    Vendor.objects.all().update(is_available=True)
 
 
-
+@shared_task
+def disable_vendors():
+    logger.info("disbaling vendors")
+    Vendor.objects.all().update(is_available=False)

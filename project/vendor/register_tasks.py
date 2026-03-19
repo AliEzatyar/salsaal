@@ -72,19 +72,26 @@ def register_periodic_tasks():
             timezone_str=tz,
         )
 
+        _ensure_crontab_task(
+            name="Disable Vendors",
+            task_path="vendor.tasks.disable_vendors",
+            minute="0",
+            hour="9",
+            timezone_str=tz,
+        )
+
+        _ensure_crontab_task(
+            name="Enable Vendors",
+            task_path="vendor.tasks.enable_vendors",
+            minute="0",
+            hour="10",
+            timezone_str=tz,
+        )
         # Deactivate expired discounts every hour
         _ensure_interval_task(
             name="Deactivate Dead Discounts every 1 hour",
             task_path="vendor.tasks.deactivate_discounts",
             every=1,
-            period=IntervalSchedule.HOURS,
-        )
-
-        # Disable vendors every 5 hour
-        _ensure_interval_task(
-            name="Disable Vendors Every 5 hours",
-            task_path="vendor.tasks.disable_vendors",
-            every=5,
             period=IntervalSchedule.HOURS,
         )
 

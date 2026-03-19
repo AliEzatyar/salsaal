@@ -14,11 +14,9 @@ def stripe_webhook(request):
 
     payload = request.body
     sig_header = request.META["HTTP_STRIPE_SIGNATURE"]
-
     event = stripe.Webhook.construct_event(
         payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
     )
-    logger.info(f"event object on stripe webhook {event}")
     if event["type"] == "payment_intent.succeeded":
         payment_intent = event["data"]["object"]
         transaction_id = payment_intent["id"]

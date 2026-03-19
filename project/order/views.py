@@ -398,9 +398,10 @@ class AcceptRejectOrderView(views.APIView):
             order = Order.objects.get(id=order_id)
             # ------------- only 'waiting' order
             if not order.status == ORDER_STATUS_CHOICES[1][0]:
+                logger.error("order not waiting status")
                 return Response(
                     {"detail": "order_not_waiting_state"},
-                    status=rsp_status.HTTP_403_FORBIDDEN,
+                    status=rsp_status.HTTP_400_BAD_REQUEST,
                 )
             # ------------- check if this user owns the order
             self.check_object_permissions(self.request, order)
@@ -417,10 +418,12 @@ class AcceptRejectOrderView(views.APIView):
             ).first()
             with atomic():
                 # --------- payment type is reward -> deduct reward and set as payed
+                logger.info(f"request:{self.request.data}")
                 if payment_type == VALID_PAYMENT_TYPES[2][0]:
                     if not existing_reward or existing_reward.amount < float(
                         order.total_price
                     ):
+                        logger.error("reward payment")
                         return Response(
                             {"detail": "ineffecient_amount"},
                             status=rsp_status.HTTP_403_FORBIDDEN,
@@ -438,15 +441,15 @@ class AcceptRejectOrderView(views.APIView):
                     if user_region != User.REGION_CHOICES[0][0]:
                         if payment_type == VALID_PAYMENT_TYPES[0][0]:  # cash
                             logger.warning(f"foreign user {self.request.user.phone_number} attempted cash payment for order {order.id}")
-                            return Response({"detail":"foreign_users_cash_not_allowed"},status=rsp_status.HTTP_403_FORBIDDEN)
-                    # ---------------------- handling online payment    
-                    if payment_type == VALID_PAYMENT_TYPES[1][0]:  # if Hesab Pay
+                            return Response({"detail":"foreign_users_cash_not_allowed"},status=rsp_status.HTTP_400_BAD_REQUEST)
+                    # ---------------------- handling online payment
+                    if payment_type == VALID_PAYMENT_TYPES[1][0]:  # 
                         """
                             this part handles import online payment
                             after succesfull payment, user is redirected to app and request is made 
                             to this endpoint. Here we transfer vendor's share to his account.
                         """
-                        
+
                         status = r.get(get_order_payment_key(order_id))
                         # payment already in process
                         if status or order.paid:
@@ -461,9 +464,9 @@ class AcceptRejectOrderView(views.APIView):
                         if not verify_hesab_pay_transaction(settings.HESAB_PAY_API_KEY, transaction_id) == True:
                             return Response(
                                 {"detail": "invalid_transaction_id"},
-                                status=rsp_status.HTTP_403_FORBIDDEN,
+                                status=rsp_status.HTTP_400_BAD_REQUEST,
                             )
-                        
+
                         order.transaction_id = transaction_id
                         order.is_epay = True
                         order.paid = True
@@ -485,13 +488,21 @@ class AcceptRejectOrderView(views.APIView):
                             # check redis
                             create_multi_vendor_payment(vendors,order)
                         except Exception as e:
-                            logger.exception(f"multi vendor payment failed for order {order.id}: {e}")
-                            
+                            logger.exception(f"hesab pay multi vendor payment failed for order {order.id}: {e}")
+
                             pass
                     # --------------------- stripe payment
                     elif payment_type == VALID_PAYMENT_TYPES[4][0]:
-                        
-                        pass
+                        logger.info("payment type stripe")
+                        if  not order.paid:
+                            logger.error("order not paid for stripe payment")
+                            return Response({"detail":"order_not_paid"},status=rsp_status.HTTP_402_PAYMENT_REQUIRED)
+                    else:
+                        logger.error("no payment type choosen")
+                        return Response(
+                            {"detail": "choose_payment_type"},
+                            status=rsp_status.HTTP_402_PAYMENT_REQUIRED,
+                        )
                 # ------------- either payment type, this general part should be done
                 self.request.user.cart.clear()
                 order.payment_type = payment_type
