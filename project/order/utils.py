@@ -297,7 +297,7 @@ def get_new_order_message(order,distance=0):
     Generate a new order message (translated via gettext).
     """
     activate("fa")
-    if order.user.phone_number == "+93733333333":
+    if order.vendor.user.phone_number == "+93711111111":
         return _("Test order - no notification")
     message = _(
         "New order received!\n\n"

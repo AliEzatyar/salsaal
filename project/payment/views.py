@@ -29,7 +29,7 @@ def create_payment_intent(request):
         logger.error("rate not in redis")
         rate = 1 / 65
     total_in_usd = int(Decimal(rate) * order.total_price * 100)
-    total_in_usd = 0.1 * total_in_usd + total_in_usd
+    total_in_usd = 0.1 * total_in_usd + total_in_usd + 30
     intent = stripe.PaymentIntent.create(
         amount=int(total_in_usd), currency="usd", metadata={"order_id": order_id}
     )
