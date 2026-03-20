@@ -21,8 +21,7 @@ def prevent_delivered_order_delete(sender, instance, **kwargs):
     
     if instance.status == ORDER_STATUS_CHOICES[4][0]: # delivered orders
         raise ValidationError("Delivered orders cannot be deleted")
-    if instance.paid or instance.transaction_id: # delivered orders
-        raise ValidationError("Paid orders cannot be deleted")
+
 
 @receiver(pre_save, sender=Order)
 def mark_as_paid(sender, instance, **kwargs):
@@ -55,5 +54,4 @@ def prevent_delivered_order_status_change(sender, instance, **kwargs):
         return  # Order doesn't exist, nothing to check
     if pre_save_order.status == ORDER_STATUS_CHOICES[4][0]:
         raise ValidationError("Cannot change delivered order.")
-    if pre_save_order.paid:  # delivered orders
-        raise ValidationError("Paid orders cannot be changed")
+
