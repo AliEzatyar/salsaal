@@ -16,3 +16,4 @@ uvicorn
 requests
 boto3
 django-storages
+jinja2
